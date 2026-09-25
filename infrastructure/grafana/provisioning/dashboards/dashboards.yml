@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: "fse-banking-dashboards"
+    orgId: 1
+    folder: "Banking Core"
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards

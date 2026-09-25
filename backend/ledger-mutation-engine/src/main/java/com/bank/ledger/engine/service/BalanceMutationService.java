@@ -363,6 +363,13 @@ public class BalanceMutationService {
         AccountMaster sourceAccount = accountRepository.findById(tx.getFromAccountId())
                 .orElseThrow(() -> new IllegalArgumentException("Account not found: " + tx.getFromAccountId()));
 
+        if (checkerRequest.getCheckerUserId().equals(sourceAccount.getUserId())) {
+            log.error("[SECURITY VIOLATION] Maker {} attempted to reject their own transfer {}",
+                    checkerRequest.getCheckerUserId(), transactionId);
+            throw new SegregationOfDutiesException(
+                    "Maker-Checker Violation: The initiator cannot reject their own transfer.");
+        }
+
         BalanceMaster sender = balanceRepository.findByAccountIdWithLock(tx.getFromAccountId()).orElseThrow();
         BigDecimal amount = tx.getAmount();
 

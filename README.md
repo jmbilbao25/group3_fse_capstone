@@ -4,45 +4,101 @@ Group 3 Engineering Repository: Definitive Architecture, Schemas, and Developer 
 
 ---
 
-## 1. System Architecture & Topology
+## 1. System Architecture and Core Principles
 
-The platform provides a high-throughput, event-driven, dual-storage retail banking system with Maker-Checker transaction verification, optimistic and pessimistic locking, and immutable audit logging.
+The platform is a high-throughput, event-driven, dual-storage retail banking system with Maker-Checker transaction verification, deterministic concurrency locking, Kafka KRaft event streaming, and immutable audit logging.
 
-<img width="2198" height="1142" alt="image" src="https://github.com/user-attachments/assets/cd50822f-6c14-4d43-9a2f-01e3f62adff3" />
-
+```
+                                  +-----------------------+
+                                  |   Web SPA Frontend    |
+                                  |      (Port 3000)      |
+                                  +-----------+-----------+
+                                              |
+                                              v
+                              +-------------------------------+
+                              |      API Gateway Service      |
+                              |   (Port 8080 / Redis Limiter) |
+                              +-------+---------------+-------+
+                                      |               |
+              /api/v1/auth, /accounts |               | /api/v1/ledger, /notifications
+                                      v               v
+               +--------------------------+       +------------------------------+
+               |      Account Service     |       |   Ledger Mutation Engine     |
+               |        (Port 8081)       |       |        (Port 8082)           |
+               +------------+-------------+       +-------+--------------+-------+
+                            |                             |              |
+             HikariCP       v              HikariCP (30)  v              v HikariCP (30)
+                 +--------------------+     +-------------------+   +--------------------+
+                 | Oracle XE Master   |     | Oracle XE Master  |   | PostgreSQL Audit   |
+                 | (Operational State)|     | (Row Locks / CME) |   | (Append-Only Log)  |
+                 |    (Port 1521)     |     |    (Port 1521)    |   |    (Port 5432)     |
+                 +--------------------+     +-------------------+   +--------------------+
+                                                          |
+                                                 Kafka    v Event Streaming
+                                            +---------------------------+
+                                            | Apache Kafka KRaft Broker |
+                                            |   Topics: transactions,   |
+                                            |    alerts, audit-events   |
+                                            |        (Port 9092)        |
+                                            +---------------------------+
+                                                          |
+                                                          v
+                                            +---------------------------+
+                                            | Notification Consumer     |
+                                            | (Ledger Event Listener)   |
+                                            +---------------------------+
+```
 
 ### Architectural Principles
-- **Dual-Storage Isolation**: Oracle XE 21c handles operational state and row locking (`SELECT ... FOR UPDATE`), while PostgreSQL 16 serves exclusively as an immutable, append-only compliance audit vault.
-- **Strict Financial Precision**: All currency amounts across databases and APIs use eighteen total digits with four decimal places (`NUMBER(18, 4)` and `NUMERIC(18, 4)`). Floating-point types are strictly forbidden.
-- **Pool Isolation**: In services communicating with multiple databases, each datasource maintains an isolated HikariCP connection pool sized to 30 maximum connections and 5 minimum idle connections.
-- **Idempotency & Concurrency**: Double-spend attempts are blocked in memory via Redis idempotency keys (`SET NX EX 60`) and serialized at the database tier via pessimistic write locks.
+
+1. **Dual-Storage Isolation**:
+   - **Oracle XE 21c**: Manages operational state and concurrency via pessimistic row locking (`SELECT ... FOR UPDATE`).
+   - **PostgreSQL 16**: Serves as a compliance audit vault. A database trigger rejects any SQL `UPDATE` or `DELETE` statements on `ledger_mutation_audit`.
+
+2. **Strict Financial Precision**:
+   All monetary amounts across databases, DTOs, and REST payloads use eighteen total digits with four decimal places (`NUMBER(18, 4)` in Oracle, `NUMERIC(18, 4)` in PostgreSQL, and `BigDecimal` with `RoundingMode.UNNECESSARY` in Java). Floating-point data types (`FLOAT`, `DOUBLE`) are strictly forbidden.
+
+3. **Deterministic Lock Ordering (Deadlock Prevention)**:
+   When moving funds between two accounts, the engine sorts account IDs lexicographically (`sourceId.compareTo(targetId) < 0 ? sourceId : targetId`). The account with the lower ID is always locked first, guaranteeing that concurrent opposing transfers (A to B and B to A) acquire locks in the exact same sequence.
+
+4. **Maker-Checker Dual Control (BSP Compliance)**:
+   - Transfers at or below PHP 50,000.00 execute immediate atomic settlement.
+   - Transfers exceeding PHP 50,000.00 place a soft hold on the sender's available balance and enter `PENDING_APPROVAL`.
+   - A distinct authorized officer (teller or manager) must review and approve or reject the request. The initiator (maker) cannot approve or reject their own transaction.
+
+5. **Event-Driven Asynchronous Streaming**:
+   Committed transfers and alerts emit events to Apache Kafka in KRaft mode, allowing downstream processors to dispatch push alerts without delaying transaction response times.
+
+6. **Observability and Distributed Tracing**:
+   Every HTTP request carries W3C trace context headers (`traceparent`). Traces are exported over OTLP to Jaeger, and metrics are scraped by Prometheus to populate a Grafana operational dashboard.
 
 ---
 
-## 2. Complete Networking & Port Allocation Matrix
+## 2. Networking and Port Allocation Matrix
 
-Every container attaches to the bridge network `banking-net`. Host and internal port allocations are deterministic:
+Every container attaches to the bridge network `banking-net`. Host and internal port allocations are configured as follows:
 
 | Service / Container | Container Name | Host Port | Internal Port | Protocol | Purpose |
 | :--- | :--- | :---: | :---: | :--- | :--- |
-| **Frontend SPA** | `banking-frontend` | `3000` | `80` / `3000` | HTTP | React 18 customer, teller, and admin portals |
-| **API Gateway** | `gateway-service` | `8080` | `8080` | HTTP / REST | Perimeter routing, JWT validation, rate limiting |
-| **Account Service** | `account-service` | `8081` | `8081` | HTTP / REST | KYC onboarding, user profiles, account creation |
-| **Ledger Engine** | `ledger-mutation-engine`| `8082` | `8082` | HTTP / REST | Concurrency locks, balance mutations, outbox relay |
-| **Notification Service** | `notification-service` | `8083` | `8083` | HTTP / REST | Event consumer, push alerts, transaction receipts |
-| **Redis Cache** | `redis-cache` | `6379` | `6379` | RESP / TCP | Token blacklist, idempotency locks, session store |
+| **API Gateway** | `gateway-service` | `8080` | `8080` | HTTP / REST | Perimeter routing, JWT signature validation, Redis rate limiting |
+| **Account Service** | `account-service` | `8081` | `8081` | HTTP / REST | KYC onboarding, user profiles, account creation, token rotation |
+| **Ledger Engine** | `ledger-mutation-engine`| `8082` | `8082` | HTTP / REST | Concurrency locks, balance mutations, maker-checker, Kafka producer |
 | **Oracle Database XE** | `oracle-xe-master` | `1521` | `1521` | Oracle TNS | Operational relational state (`XEPDB1`) |
-| **PostgreSQL Audit** | `postgres-audit-vault`| `5432` | `5432` | PostgreSQL | Dedicated append-only audit trail (`banking_audit`) |
-| **Kafka Broker** | `kafka-broker` | `9092` | `9092` | PLAINTEXT | Event commit log in KRaft mode |
-| **Kafka UI** | `kafka-ui` | `8085` | `8080` | HTTP | Web console for topics and consumer lag inspection |
-| **Adminer Web GUI** | `db-adminer` | `8088` | `8080` | HTTP | Web database management console for visual table inspection |
+| **PostgreSQL Audit** | `postgres-audit-vault`| `5432` | `5432` | PostgreSQL | Dedicated append-only audit vault (`banking_audit`) |
+| **Redis Cache** | `redis-cache` | `6379` | `6379` | RESP / TCP | Token blacklist, session cache, Redis rate limiting counters |
+| **Kafka Broker** | `kafka-broker` | `9092` | `9092` | PLAINTEXT | Apache Kafka KRaft cluster event commit log |
+| **Kafka UI** | `kafka-ui` | `8085` | `8080` | HTTP | Web console for topics, consumer groups, and message inspection |
+| **Adminer Web GUI** | `db-adminer` | `8088` | `8080` | HTTP | Web database management console for Oracle and PostgreSQL |
+| **Jaeger Tracing** | `jaeger-tracing` | `16686` | `16686` | HTTP | Distributed trace visualization UI (OTLP receiver on `:4318`) |
+| **Prometheus** | `prometheus-engine` | `9090` | `9090` | HTTP | Time-series scraper collecting `/actuator/prometheus` metrics |
+| **Grafana** | `grafana-dashboard` | `3000` | `3000` | HTTP | Operational telemetry dashboards and KPI visualizations |
 
 ---
 
-## 3. Database Schemas & Data Model
+## 3. Database Schemas and Data Models
 
 ### A. Master Operational Database (Oracle Database XE 21c)
-Host: `localhost:1521`, Pluggable Database: `XEPDB1`, User: `fse_user`
+Host: `localhost:1521`, Pluggable Database: `XEPDB1`, User: `fse_user`, Password: `fse_password`
 
 ```sql
 -- 1. Users Table
@@ -90,349 +146,305 @@ CREATE TABLE balance_master (
     CONSTRAINT chk_bm_solvency CHECK (balance_amount >= hold_amount)
 );
 
--- 4. Credit Assessments Table
-CREATE TABLE credit_assessments (
-    assessment_id              VARCHAR2(64) PRIMARY KEY,
-    account_id                 VARCHAR2(64) NOT NULL,
-    user_id                    VARCHAR2(64) NOT NULL,
-    collateral_type            VARCHAR2(50) NOT NULL CHECK (collateral_type IN ('REAL_ESTATE', 'VEHICLE', 'TIME_DEPOSIT')),
-    collateral_description     CLOB NOT NULL,
-    collateral_market_value    NUMBER(18, 4) NOT NULL,
-    collateral_appraised_value NUMBER(18, 4) NOT NULL,
-    credit_score               NUMBER(4) NOT NULL CHECK (credit_score BETWEEN 300 AND 850),
-    approved_credit_limit      NUMBER(18, 4) NOT NULL,
-    risk_tier                  VARCHAR2(20) NOT NULL CHECK (risk_tier IN ('LOW_RISK', 'MEDIUM_RISK', 'HIGH_RISK')),
-    assessed_by_teller_id      VARCHAR2(64) NOT NULL,
-    status                     VARCHAR2(20) DEFAULT 'PENDING' NOT NULL CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
-    created_at                 TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at                 TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    CONSTRAINT fk_ca_account FOREIGN KEY (account_id) REFERENCES accounts(account_id),
-    CONSTRAINT fk_ca_user FOREIGN KEY (user_id) REFERENCES users(user_id),
-    CONSTRAINT fk_ca_teller FOREIGN KEY (assessed_by_teller_id) REFERENCES users(user_id)
-);
-
--- 5. Transactions Table
+-- 4. Transactions Table (Includes Dual-Control Metadata)
 CREATE TABLE transactions (
     transaction_id         VARCHAR2(64) PRIMARY KEY,
     from_account_id        VARCHAR2(64) NOT NULL,
     to_account_id          VARCHAR2(64),
-    type                   VARCHAR2(30) NOT NULL CHECK (type IN ('DEPOSIT', 'WITHDRAWAL', 'TRANSFER', 'CREDIT_DRAW')),
+    type                   VARCHAR2(30) NOT NULL,
     amount                 NUMBER(18, 4) NOT NULL CHECK (amount > 0),
     before_balance         NUMBER(18, 4) NOT NULL,
     after_balance          NUMBER(18, 4) NOT NULL,
     status                 VARCHAR2(30) NOT NULL CHECK (status IN ('PENDING_APPROVAL', 'COMMITTED', 'FAILED')),
-    requires_maker_checker NUMBER(1) DEFAULT 0 NOT NULL CHECK (requires_maker_checker IN (0, 1)),
+    requires_maker_checker NUMBER(1) DEFAULT 0 NOT NULL,
     approved_by_user_id    VARCHAR2(64),
     created_at             TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at             TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    CONSTRAINT fk_tx_from_acc FOREIGN KEY (from_account_id) REFERENCES accounts(account_id),
-    CONSTRAINT fk_tx_to_acc FOREIGN KEY (to_account_id) REFERENCES accounts(account_id),
-    CONSTRAINT fk_tx_approver FOREIGN KEY (approved_by_user_id) REFERENCES users(user_id)
+    CONSTRAINT fk_tx_from_acc FOREIGN KEY (from_account_id) REFERENCES accounts(account_id)
 );
-
--- 6. Outbox Events Table (Transactional Outbox Pattern)
-CREATE TABLE outbox_events (
-    event_id       VARCHAR2(64) PRIMARY KEY,
-    aggregate_type VARCHAR2(50) NOT NULL CHECK (aggregate_type IN ('TRANSACTION', 'MAKER_CHECKER', 'BALANCE_MUTATION')),
-    aggregate_id   VARCHAR2(64) NOT NULL,
-    event_type     VARCHAR2(50) NOT NULL CHECK (event_type IN ('MAKER_PENDING', 'CHECKER_APPROVED', 'MUTATION_COMMITTED')),
-    kafka_topic    VARCHAR2(100) NOT NULL,
-    payload        CLOB NOT NULL,
-    status         VARCHAR2(20) DEFAULT 'PENDING' NOT NULL CHECK (status IN ('PENDING', 'PUBLISHED', 'FAILED')),
-    retry_count    NUMBER(4) DEFAULT 0 NOT NULL,
-    created_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    published_at   TIMESTAMP WITH TIME ZONE,
-    CONSTRAINT fk_oe_aggregate FOREIGN KEY (aggregate_id) REFERENCES transactions(transaction_id)
-);
-
--- 7. Notifications Table
-CREATE TABLE notifications (
-    notification_id VARCHAR2(64) PRIMARY KEY,
-    user_id         VARCHAR2(64) NOT NULL,
-    type            VARCHAR2(50) NOT NULL CHECK (type IN ('TRANSACTION_ALERT', 'SECURITY_ALERT', 'MAKER_CHECKER_ALERT')),
-    message         CLOB NOT NULL,
-    sent_at         TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    CONSTRAINT fk_notif_user FOREIGN KEY (user_id) REFERENCES users(user_id)
-);
-
--- Note: Authentication session tokens, concurrent limits, and token revocation blacklists
--- are managed in Redis (redis-cache) rather than relational tables.
 ```
 
-### B. Dedicated Immutable Audit Vault (PostgreSQL 16)
-Host: `localhost:5432`, Database: `banking_audit`, User: `audit_user`
+### B. Immutable Audit Vault (PostgreSQL 16)
+Host: `localhost:5432`, Database: `banking_audit`, User: `audit_user`, Password: `audit_password`
 
 ```sql
 CREATE TABLE ledger_mutation_audit (
-    audit_id             BIGSERIAL PRIMARY KEY,
-    transaction_id       VARCHAR(64) UNIQUE NOT NULL,
-    account_id           VARCHAR(64) NOT NULL,
-    mutation_type        VARCHAR(20) NOT NULL CHECK (mutation_type IN ('DEBIT', 'CREDIT', 'HOLD', 'RELEASE')),
-    mutation_amount      NUMERIC(18, 4) NOT NULL CHECK (mutation_amount > 0),
-    before_balance       NUMERIC(18, 4) NOT NULL CHECK (before_balance >= 0),
-    after_balance        NUMERIC(18, 4) NOT NULL CHECK (after_balance >= 0),
-    initiator_user_id    VARCHAR(64) NOT NULL,
-    approved_by_user_id  VARCHAR(64),
-    status               VARCHAR(20) DEFAULT 'COMMITTED' NOT NULL CHECK (status IN ('COMMITTED', 'FAILED', 'ROLLED_BACK')),
-    created_at           TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
+    audit_id            BIGSERIAL PRIMARY KEY,
+    transaction_id      VARCHAR(64) NOT NULL,
+    account_id          VARCHAR(64) NOT NULL,
+    mutation_type       VARCHAR(30) NOT NULL,
+    mutation_amount     NUMERIC(18, 4) NOT NULL,
+    before_balance      NUMERIC(18, 4) NOT NULL,
+    after_balance       NUMERIC(18, 4) NOT NULL,
+    initiator_user_id   VARCHAR(64) NOT NULL,
+    approved_by_user_id VARCHAR(64),
+    status              VARCHAR(30) NOT NULL,
+    created_at          TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
--- Native trigger strictly rejecting UPDATE and DELETE
-CREATE OR REPLACE FUNCTION prevent_audit_modification()
+-- Trigger: Rejects any UPDATE or DELETE operations
+CREATE OR REPLACE FUNCTION prevent_audit_tampering()
 RETURNS TRIGGER AS $$
 BEGIN
-    RAISE EXCEPTION 'Compliance Violation: ledger_mutation_audit is strictly append-only. UPDATE and DELETE operations are forbidden.';
+    RAISE EXCEPTION 'Compliance Violation: ledger_mutation_audit is append-only.';
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trg_no_update_delete_mutation_audit
+CREATE TRIGGER trg_protect_audit_log
 BEFORE UPDATE OR DELETE ON ledger_mutation_audit
-FOR EACH ROW EXECUTE FUNCTION prevent_audit_modification();
+FOR EACH ROW EXECUTE FUNCTION prevent_audit_tampering();
 ```
 
 ---
 
-## 4. Connection Pooling Standards (HikariCP)
+## 4. Core Balance Mutation Engine (CME) and Dual Control
 
-In `backend/ledger-mutation-engine/src/main/resources/application.properties`, two isolated connection pools operate side by side:
+The Balance Mutation Engine executes financial movements with deterministic safety controls:
 
-```properties
-# ==============================================================================
-# PRIMARY POOL: ORACLE MASTER OPERATIONAL STATE
-# ==============================================================================
-spring.datasource.oracle.jdbc-url=jdbc:oracle:thin:@//localhost:1521/XEPDB1
-spring.datasource.oracle.username=fse_user
-spring.datasource.oracle.password=fse_password
-spring.datasource.oracle.driver-class-name=oracle.jdbc.OracleDriver
-
-spring.datasource.oracle.hikari.pool-name=OracleMasterHikariPool
-spring.datasource.oracle.hikari.maximum-pool-size=30
-spring.datasource.oracle.hikari.minimum-idle=5
-spring.datasource.oracle.hikari.idle-timeout=300000
-spring.datasource.oracle.hikari.connection-timeout=20000
-spring.datasource.oracle.hikari.max-lifetime=1200000
-spring.datasource.oracle.hikari.auto-commit=false
-spring.datasource.oracle.hikari.connection-test-query=SELECT 1 FROM DUAL
-
-# ==============================================================================
-# SECONDARY POOL: POSTGRESQL IMMUTABLE AUDIT VAULT
-# ==============================================================================
-spring.datasource.postgres.jdbc-url=jdbc:postgresql://localhost:5432/banking_audit
-spring.datasource.postgres.username=audit_user
-spring.datasource.postgres.password=audit_password
-spring.datasource.postgres.driver-class-name=org.postgresql.Driver
-
-spring.datasource.postgres.hikari.pool-name=PostgresAuditHikariPool
-spring.datasource.postgres.hikari.maximum-pool-size=30
-spring.datasource.postgres.hikari.minimum-idle=5
-spring.datasource.postgres.hikari.idle-timeout=300000
-spring.datasource.postgres.hikari.connection-timeout=20000
-spring.datasource.postgres.hikari.max-lifetime=1200000
-spring.datasource.postgres.hikari.auto-commit=false
-spring.datasource.postgres.hikari.connection-test-query=SELECT 1
+```
+[Incoming Transfer Request]
+           |
+           v
+ [Sanity Check: source != target]
+           |
+           v
+ [Deterministic Order: min(src, dst) locked, then max(src, dst)]
+           |
+           v
+ [Solvency Check: available_balance >= amount]
+           |
+           +---------------------------------------+
+           |                                       |
+Amount <= 50,000 PHP                     Amount > 50,000 PHP
+(Normal Transfer)                        (High-Value Dual Control)
+           |                                       |
+           v                                       v
+[Atomic Immediate Settlement]            [Place Soft Hold on Sender]
+- Deduct sender balance & avail          - hold_amount += amount
+- Credit receiver balance & avail        - available_balance -= amount
+- Tx status: COMMITTED                   - balance_amount untouched
+- Emit Kafka TransactionEvent            - Tx status: PENDING_APPROVAL
+- Write Postgres audit log               - Emit Kafka Pending Alert
+                                                   |
+                                                   v
+                                        [Teller / Checker Review]
+                                                   |
+                         +-------------------------+-------------------------+
+                         |                                                   |
+                     [Approve]                                           [Reject]
+                         |                                                   |
+           [Enforce Segregation of Duties]                     [Enforce Segregation of Duties]
+           (checkerUserId != makerUserId)                      (checkerUserId != makerUserId)
+                         |                                                   |
+                         v                                                   v
+           [Release Hold & Commit Settlement]                  [Release Hold & Restore Available]
+           - sender hold_amount -= amount                      - sender hold_amount -= amount
+           - sender balance_amount -= amount                   - sender available_balance += amount
+           - receiver balance_amount += amount                 - Tx status: FAILED
+           - receiver available_balance += amount              - Emit Kafka Rejection Alert
+           - Tx status: COMMITTED
+           - Emit Kafka TransactionEvent
+           - Write Postgres audit log
 ```
 
-### Operational Invariants
-- `maximum-pool-size=30`: Caps active database connections to avoid exhausting database system memory during high-volume spikes.
-- `minimum-idle=5`: Maintains 5 warm connections at all times for sub-millisecond checkout latency.
-- `connection-timeout=20000`: Protects worker threads from hanging indefinitely when pools are saturated.
+### Key API Endpoints
+
+1. **Initiate Transfer**:
+   `POST /api/v1/ledger/transfer`
+   ```json
+   {
+     "transactionId": "TX-100293",
+     "accountId": "acc-2001-sav-001",
+     "targetAccountId": "acc-2003-sav-002",
+     "eventType": "TRANSFER",
+     "mutationType": "TRANSFER",
+     "mutationAmount": 65000.0000,
+     "initiatorUserId": "usr-1001-cst-001"
+   }
+   ```
+
+2. **Approve High-Value Transfer**:
+   `POST /api/v1/ledger/transfers/{transactionId}/approve`
+   ```json
+   {
+     "checkerUserId": "usr-1003-tel-001",
+     "remarks": "Verified customer identity and source of funds"
+   }
+   ```
+
+3. **Reject High-Value Transfer**:
+   `POST /api/v1/ledger/transfers/{transactionId}/reject`
+   ```json
+   {
+     "checkerUserId": "usr-1003-tel-001",
+     "remarks": "Signature mismatch"
+   }
+   ```
+
+4. **Query Pending Maker-Checker Queue**:
+   `GET /api/v1/ledger/transfers/pending`
 
 ---
 
-## 5. Local Setup & Quick Start Guide
+## 5. Apache Kafka Event Streaming
+
+The platform uses Apache Kafka 7.5 running in KRaft mode (ZooKeeper-free) for asynchronous event dispatch:
+
+### Kafka Topics
+
+1. **`transaction-events`** (3 partitions, replication factor 1):
+   - Key: `sourceAccountId` (guarantees FIFO sequence for transactions per account).
+   - Payload: `TransactionEvent` with transaction ID, accounts, amount, currency, status, and timestamp.
+
+2. **`notification-alerts`** (3 partitions, replication factor 1):
+   - Key: `recipientAccountId`.
+   - Payload: `NotificationAlertEvent` with alert ID, user ID, account ID, alert type, and human-readable message.
+
+3. **`audit-events`** (3 partitions, replication factor 1):
+   - Key: `transactionId`.
+   - Payload: Compliance event stream for downstream reporting.
+
+### Kafka Web UI
+Navigate to **[http://localhost:8085](http://localhost:8085)** to inspect topics, offsets, consumer lag, and live message payloads.
+
+---
+
+## 6. Observability, Metrics, and Distributed Tracing
+
+### Distributed Tracing (OpenTelemetry and Jaeger)
+- Every microservice imports `micrometer-tracing-bridge-otel` and `opentelemetry-exporter-otlp`.
+- Inbound and outbound requests propagate standard W3C `traceparent` headers.
+- Traces are exported to the Jaeger OTLP receiver at `http://localhost:4318/v1/traces`.
+- View trace graphs and latency spans in the Jaeger UI at **[http://localhost:16686](http://localhost:16686)**.
+
+### Metrics Collection (Prometheus)
+- Each service exposes metrics at `/actuator/prometheus`.
+- Prometheus scrapes metrics every 5 seconds.
+- Access the Prometheus console at **[http://localhost:9090](http://localhost:9090)**.
+
+### Operational Dashboard (Grafana)
+Grafana automatically provisions Prometheus and Jaeger datasources on startup, loading the **FSE Core Retail Banking - Telemetry & Performance** dashboard.
+- URL: **[http://localhost:3000](http://localhost:3000)** (Anonymous viewer enabled, or login with `admin` / `admin`).
+- Panels include:
+  - System Health status badges and global throughput (req/s).
+  - HTTP 5xx error percentage and P95 latency.
+  - Gateway ingress traffic by route and status code distribution.
+  - Account Service and Ledger Mutation Engine endpoint throughput.
+  - HikariCP active vs idle connections and connection acquire times.
+  - JVM heap memory usage, garbage collection pause times, CPU percentage, and active threads.
+
+---
+
+## 7. Developer Quick Start Guide
 
 ### Prerequisites
-1. **Docker Desktop** (version 4.25+, WSL2 engine enabled on Windows).
-2. **Git** (configured with your name and email).
-3. **Java 21 JDK** (for running backend Spring Boot services).
-4. **Node.js 18+ and npm** (for running the React frontend).
+1. **Docker Desktop** (version 4.25+).
+2. **Java 21 JDK** (configured in your `PATH`).
+3. **Maven** (bundled `.\mvnw.cmd` included in the repository).
 
-### Corporate Proxy / SSL Inspection Resolution
-If running behind a corporate proxy or next-generation firewall (such as Bluecoat or Zscaler), `docker pull` commands might fail with a TLS handshake error. To fix this:
-1. Export your root CA certificate from the Windows Certificate Store in Base64 PEM format.
-2. Place the file at `%USERPROFILE%\.docker\certs.d\registry-1.docker.io\ca.crt` and `%USERPROFILE%\.docker\certs.d\auth.docker.io\ca.crt`.
-3. Restart Docker Desktop.
-
-### Step-by-Step Quick Start Tutorial
-
-#### Step 1: Ensure Your Branch Is Up to Date
-```powershell
-git checkout jm-branch
-git pull origin jm-branch
-```
-
-#### Step 2: Start All Infrastructure Services
-Run this command from the repository root:
+### Step 1: Start All Infrastructure Services
+Run from the repository root:
 
 ```powershell
-# Start Oracle XE 21c, PostgreSQL 16, Redis 7, and Adminer Web Console
-docker compose -f infrastructure/docker-compose.yml up -d --build
+docker compose -f infrastructure/docker-compose.yml up -d
 ```
 
-> [!NOTE]
-> The `--build` flag automatically compiles the custom Adminer image with Oracle Instant Client 21 and the PHP `oci8` driver locally from `infrastructure/adminer/Dockerfile`. Team members do not need to pull any external custom images or install C libraries manually.
+This starts:
+- Oracle XE 21c (`localhost:1521`)
+- PostgreSQL 16 (`localhost:5432`)
+- Redis 7 (`localhost:6379`)
+- Apache Kafka KRaft (`localhost:9092`)
+- Kafka UI (`localhost:8085`)
+- Adminer Database Console (`localhost:8088`)
+- Jaeger Distributed Tracing (`localhost:16686`)
+- Prometheus Scraper (`localhost:9090`)
+- Grafana Dashboard (`localhost:3000`)
 
-#### Step 3: Verify Running Container Health
+### Step 2: Verify Container Health
 ```powershell
 docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 ```
 
-Expected healthy output (all 4 containers active):
-```text
-NAMES                  STATUS                    PORTS
-oracle-xe-master       Up 2 minutes (healthy)    0.0.0.0:1521->1521/tcp
-postgres-audit-vault   Up 2 minutes (healthy)    0.0.0.0:5432->5432/tcp
-redis-cache            Up 2 minutes              0.0.0.0:6379->6379/tcp
-db-adminer             Up 2 minutes              0.0.0.0:8088->8080/tcp
-```
-
-#### Step 4: Open Adminer Web Console in Your Browser
-Open your browser and navigate to:
-👉 **[http://localhost:8088](http://localhost:8088)**
-
-* **Oracle XE 21c (Master Operational Store)**:
-  * Direct URL: **[http://localhost:8088/?oracle=](http://localhost:8088/?oracle=)**
-  * System: `Oracle beta`
-  * Server: `oracle-xe-master:1521/XEPDB1`
-  * Username: `fse_user`
-  * Password: `fse_password`
-  * Database: Leave blank (or enter `USERS`)
-  * *Navigation*: In the left sidebar, change **DB** from `XEPDB1` to **`USERS`**, then set **Schema** to **`FSE_USER`** to browse all 7 tables (`USERS`, `ACCOUNTS`, `BALANCE_MASTER`, `CREDIT_ASSESSMENTS`, `TRANSACTIONS`, `OUTBOX_EVENTS`, `NOTIFICATIONS`).
-
-* **PostgreSQL 16 (Immutable Audit Vault)**:
-  * Direct URL: **[http://localhost:8088/?pgsql=](http://localhost:8088/?pgsql=)**
-  * System: `PostgreSQL`
-  * Server: `postgres-audit-vault`
-  * Username: `audit_user`
-  * Password: `audit_password`
-  * Database: `banking_audit`
-  * *Navigation*: Select the `public` schema and click `ledger_mutation_audit`.
-
-#### Step 5: (Optional) Re-execute Schemas & Seed Scripts
-If containers were deleted or volumes wiped, the databases automatically seed from `init.sql`. To manually re-apply them:
+### Step 3: Build and Test All Backend Microservices
+Run from the `backend/` directory:
 
 ```powershell
-# Oracle XE 21c Pluggable Database (XEPDB1)
-Get-Content infrastructure/oracle/init.sql | docker exec -i oracle-xe-master sqlplus fse_user/fse_password@//localhost:1521/XEPDB1
-
-# PostgreSQL Audit Database (banking_audit)
-Get-Content infrastructure/postgres/init.sql | docker exec -i postgres-audit-vault psql -U audit_user -d banking_audit
+cd backend
+.\mvnw.cmd clean test
 ```
 
-### Current Capstone Phase (Day 32)
-This milestone delivers the complete architectural design, containerized dual-database infrastructure, strict schema DDL with mathematical sanity constraints, seeded test datasets, HikariCP connection pool configurations, and multi-module directory skeletons. Application feature code will be developed in subsequent implementation sprints.
+Expected result:
+```text
+[INFO] Reactor Summary for Core Retail Ledger & Balance Mutation Engine (Parent) 1.0.0-SNAPSHOT:
+[INFO] Core Retail Ledger & Balance Mutation Engine (Parent) SUCCESS
+[INFO] Common Contracts & DTOs ............................ SUCCESS
+[INFO] Ledger Mutation Engine ............................. SUCCESS
+[INFO] Account Service .................................... SUCCESS
+[INFO] gateway-service .................................... SUCCESS
+[INFO] BUILD SUCCESS
+```
+
+### Step 4: Run Microservices Locally
+
+Start services in separate terminal windows:
+
+```powershell
+# Window 1: API Gateway
+cd backend/gateway-service
+..\mvnw.cmd spring-boot:run
+
+# Window 2: Account Service
+cd backend/account-service
+..\mvnw.cmd spring-boot:run
+
+# Window 3: Ledger Mutation Engine
+cd backend/ledger-mutation-engine
+..\mvnw.cmd spring-boot:run
+```
 
 ---
 
-## 6. Database Connection Reference
-
-### Adminer Web Console (Unified Browser GUI)
-- **Base URL**: [http://localhost:8088](http://localhost:8088)
-- **Container**: `db-adminer` (Built from custom Dockerfile with Oracle Instant Client 21 and PHP OCI8)
-
-#### Connecting to Oracle XE 21c (Master Operational Store)
-- **Direct Login URL**: [http://localhost:8088/?oracle=](http://localhost:8088/?oracle=)
-- **System**: `Oracle beta`
-- **Server**: `oracle-xe-master:1521/XEPDB1`
-- **Username**: `fse_user`
-- **Password**: `fse_password`
-- **Database**: Leave blank (or enter `USERS`)
-- **Browsing Records**:
-  1. Once logged in, locate the left sidebar navigation.
-  2. Set **DB** to `USERS` (the tablespace holding your application data).
-  3. Set **Schema** to `FSE_USER`.
-  4. All 7 tables will appear: `USERS`, `ACCOUNTS`, `BALANCE_MASTER`, `CREDIT_ASSESSMENTS`, `TRANSACTIONS`, `OUTBOX_EVENTS`, and `NOTIFICATIONS`.
-  5. Click **select** next to any table to view records, or click **SQL command** to run custom queries.
-
-> [!NOTE]
-> Always verify that the **System** dropdown is set to `Oracle beta` (or use `http://localhost:8088/?oracle=`). If the URL retains `?server=`, Adminer defaults to MySQL mode and will hang waiting for a MySQL handshake. Also ensure the service name is `XEPDB1` (the pluggable database), not `XE`.
-
-#### Connecting to PostgreSQL 16 (Audit Vault)
-- **Direct Login URL**: [http://localhost:8088/?pgsql=](http://localhost:8088/?pgsql=)
-- **System**: `PostgreSQL`
-- **Server**: `postgres-audit-vault` (or `postgres-audit-vault:5432`)
-- **Username**: `audit_user`
-- **Password**: `audit_password`
-- **Database**: `banking_audit`
-- **Browsing Records**:
-  1. Once logged in, select the `public` schema.
-  2. Click **select** on `ledger_mutation_audit` to inspect immutable audit events and trigger protection.
-
-### PostgreSQL (Audit Vault CLI & External GUI)
-- **CLI via Docker**:
-  ```powershell
-  docker exec -it postgres-audit-vault psql -U audit_user -d banking_audit
-  ```
-- **GUI Tools (DBeaver / DataGrip / pgAdmin)**:
-  - Host: `localhost`
-  - Port: `5432`
-  - Database: `banking_audit`
-  - Username: `audit_user`
-  - Password: `audit_password`
-  - JDBC URL: `jdbc:postgresql://localhost:5432/banking_audit`
-
-### Oracle Database XE 21c (Master Store CLI & External GUI)
-- **CLI via Docker (SQL\*Plus)**:
-  ```powershell
-  docker exec -it oracle-xe-master sqlplus fse_user/fse_password@//localhost:1521/XEPDB1
-  ```
-- **GUI Tools (DBeaver / SQL Developer / DataGrip)**:
-  - Host: `localhost`
-  - Port: `1521`
-  - Connection Type: Service Name
-  - Service Name: `XEPDB1`
-  - Username: `fse_user` (or `system`)
-  - Password: `fse_password` (or `Password123#`)
-  - JDBC URL: `jdbc:oracle:thin:@//localhost:1521/XEPDB1`
-
----
-
-## 7. Repository Structure
+## 8. Repository Structure
 
 ```text
 .
-├── .gitignore                          # Global exclusions (target, node_modules, logs)
-├── README.md                           # Master source of truth and team onboarding guide
-├── ARCHITECTURE.md                     # Comprehensive architecture and component specifications
-├── architecture.html                   # Interactive standalone HTML architecture diagram
-├── API_SPECIFICATION.md                # REST API specifications, DTOs, and error codes
-├── api_sequence.html                   # Interactive sequence flow diagram
-├── ERD.md                              # Entity-Relationship specifications and data dictionary
-├── JIRA_BACKLOG.md                     # Sprint backlog, epic breakdowns, and EARS criteria
-├── jira_backlog_fse_capstone.xlsx      # Sprint estimation spreadsheet
-├── PROJECT_LAYOUT.md                   # Multi-module package and service directory guide
+├── README.md                           # Master single source of truth
+├── ARCHITECTURE.md                     # Architectural design specification
+├── API_SPECIFICATION.md                # REST API payloads, headers, and error codes
+├── ERD.md                              # Entity-Relationship diagram and data dictionary
+├── JIRA_BACKLOG.md                     # Sprint user stories and EARS acceptance criteria
 ├── infrastructure/
-│   ├── docker-compose.yml              # Container orchestration (Oracle, Postgres, Redis, Adminer)
+│   ├── docker-compose.yml              # Multi-container orchestration (10 containers)
 │   ├── adminer/
-│   │   └── Dockerfile                  # Custom Adminer image with Oracle Instant Client & OCI8
+│   │   ├── Dockerfile                  # Adminer with Oracle Instant Client 21 & OCI8
+│   │   ├── basic_lite.zip              # Pre-bundled Oracle Instant Client package
+│   │   └── oci8.so                     # Pre-compiled PHP OCI8 module
 │   ├── oracle/
-│   │   └── init.sql                    # Oracle XE 21c DDL, constraints, and seed records
-│   └── postgres/
-│       └── init.sql                    # PostgreSQL audit DDL, trigger, and seed records
-├── backend/
-│   ├── pom.xml                         # Aggregator POM (Spring Boot 3.3, Java 21)
-│   ├── common-contracts/               # Shared DTOs, enums, and exceptions
-│   ├── account-service/                # KYC, onboarding, and account management service
-│   │   └── src/main/resources/application.properties
-│   └── ledger-mutation-engine/         # Concurrency engine, dual-write service, HikariCP pools
-│       └── src/main/resources/application.properties
-├── frontend/                           # React 18 + Vite Retail Banking SPA
-│   ├── package.json
-│   ├── vite.config.js
-│   └── src/                            # Portals: Customer, Teller, Administrator
-└── specs/                              # Spec-Driven Development (SDD) requirements & designs
-    ├── day32_requirements.md
-    ├── day32_design.md
-    └── day32_tasks.md
+│   │   └── init.sql                    # Oracle XE 21c DDL, constraints, and seed data
+│   ├── postgres/
+│   │   └── init.sql                    # PostgreSQL audit DDL, trigger, and seed data
+│   ├── prometheus/
+│   │   ├── prometheus.yml              # Prometheus scraper configuration (5s interval)
+│   │   └── alert.rules.yml             # SLO alerting rules (5xx rate, latency, memory)
+│   └── grafana/
+│       ├── provisioning/
+│       │   ├── datasources/datasources.yml # Auto-provisioned Prometheus & Jaeger datasources
+│       │   └── dashboards/dashboards.yml   # Dashboard provider configuration
+│       └── dashboards/
+│           └── banking-core-observability.json # 20-panel telemetry dashboard
+└── backend/
+    ├── pom.xml                         # Aggregator POM (Spring Boot 3.3.5, Java 21)
+    ├── common-contracts/               # Shared DTOs, enums, events, and exceptions
+    ├── gateway-service/                # Spring Cloud Gateway, JWT verification, rate limiter
+    ├── account-service/                # KYC onboarding, account provisioning, token rotation
+    └── ledger-mutation-engine/         # Core Mutation Engine (CME), locks, Kafka, audit
 ```
 
 ---
 
-## 8. Team Contribution & Branching Strategy
+## 9. Team Contribution and Branching Guidelines
 
-1. Work on dedicated feature branches branched off `main` (for example, `jm-branch`).
-2. Keep commit messages clear following conventional commits: `feat:`, `fix:`, `refactor:`, `chore:`.
-3. Never bypass financial check constraints or modify the PostgreSQL audit trigger.
+1. Work on dedicated feature branches branched off `main` (for example, `jm-branch`, `zel-branch`).
+2. Commit messages should follow conventional commits: `feat:`, `fix:`, `refactor:`, `chore:`.
+3. Never bypass financial check constraints or tamper with the append-only PostgreSQL trigger.
 4. Ensure all unit and integration tests pass before submitting pull requests to `main`.

@@ -3,14 +3,15 @@ FROM adminer:latest
 USER root
 
 # Install dependencies required for Oracle Instant Client and Alpine compatibility
-RUN apk --no-cache add libaio libnsl libc6-compat && \
+RUN apk --no-cache add libaio libnsl libc6-compat curl autoconf m4 file gcc make g++ && \
     ln -s /lib/libc.so.6 /usr/lib/libresolv.so.2 || true
 
 # Set up Oracle environment
 ENV ORACLE_BASE=/usr/local/oracle \
     ORACLE_HOME=/usr/local/oracle/instantclient_21_7 \
     LD_LIBRARY_PATH=/usr/local/oracle/instantclient_21_7:/lib64 \
-    TNS_ADMIN=/usr/local/oracle/instantclient_21_7/network/admin
+    TNS_ADMIN=/usr/local/oracle/instantclient_21_7/network/admin \
+    AUTOCONF=/usr/bin/autoconf
 
 # Copy pre-bundled packages (zero network downloads required during docker build)
 COPY basic_lite.zip /tmp/

@@ -25,6 +25,12 @@
             <artifactId>common-contracts</artifactId>
         </dependency>
 
+                <!-- Apache Kafka Starter -->
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
+        </dependency>
+
         <!-- Spring Boot Starters -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

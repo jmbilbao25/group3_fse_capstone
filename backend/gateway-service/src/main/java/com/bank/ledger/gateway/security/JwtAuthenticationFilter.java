@@ -25,8 +25,10 @@ public class JwtAuthenticationFilter implements GlobalFilter {
 
         String path = exchange.getRequest().getPath().toString();
 
-        // Allow actuator endpoints
-        if (path.startsWith("/actuator")) {
+        // Allow public endpoints (actuator, authentication login/register)
+        if (path.startsWith("/actuator")
+                || path.startsWith("/api/v1/auth")
+                || path.startsWith("/api/auth")) {
             return chain.filter(exchange);
         }
 

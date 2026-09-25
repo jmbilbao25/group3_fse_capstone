@@ -68,7 +68,7 @@ CREATE TABLE accounts (
     created_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     CONSTRAINT fk_acc_user FOREIGN KEY (user_id) REFERENCES users(user_id),
-    CONSTRAINT chk_acc_type CHECK (account_type IN ('SAVINGS', 'CHECKING', 'CREDIT')),
+    CONSTRAINT chk_acc_type CHECK (account_type IN ('SAVINGS', 'CREDIT')),
     CONSTRAINT chk_acc_status CHECK (status IN ('ACTIVE', 'LOCKED', 'PENDING_APPROVAL')),
     CONSTRAINT chk_acc_credit_limit CHECK (credit_limit >= 0)
 );
@@ -171,13 +171,11 @@ CREATE TABLE notifications (
     user_id         VARCHAR2(64) NOT NULL,
     type            VARCHAR2(50) NOT NULL,
     message         CLOB NOT NULL,
-    read_status     NUMBER(1) DEFAULT 0 NOT NULL,
     sent_at         TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     CONSTRAINT fk_notif_user FOREIGN KEY (user_id) REFERENCES users(user_id),
-    CONSTRAINT chk_notif_type CHECK (type IN ('TRANSACTION_ALERT', 'SECURITY_ALERT', 'MAKER_CHECKER_ALERT')),
-    CONSTRAINT chk_notif_read_status CHECK (read_status IN (0, 1))
+    CONSTRAINT chk_notif_type CHECK (type IN ('TRANSACTION_ALERT', 'SECURITY_ALERT', 'MAKER_CHECKER_ALERT'))
 );
 
 -- Note: Authentication session tokens and revocations are persisted in Redis (redis-cache).
@@ -190,7 +188,7 @@ CREATE INDEX idx_tx_from_acc ON transactions(from_account_id, created_at DESC);
 CREATE INDEX idx_tx_to_acc ON transactions(to_account_id, created_at DESC);
 CREATE INDEX idx_tx_status ON transactions(status);
 CREATE INDEX idx_outbox_status ON outbox_events(status, created_at);
-CREATE INDEX idx_notif_user ON notifications(user_id, read_status, sent_at DESC);
+CREATE INDEX idx_notif_user ON notifications(user_id, sent_at DESC);
 
 -- ==============================================================================
 -- Seed Population: Realistic Banking Dataset
@@ -238,7 +236,7 @@ INSERT INTO accounts (account_id, user_id, account_number, account_type, status,
 VALUES ('acc-2001-sav-001', 'usr-1001-cst-001', '100100001234', 'SAVINGS', 'ACTIVE', 0.0000);
 
 INSERT INTO accounts (account_id, user_id, account_number, account_type, status, credit_limit)
-VALUES ('acc-2002-chk-001', 'usr-1001-cst-001', '100100005678', 'CHECKING', 'ACTIVE', 0.0000);
+VALUES ('acc-2002-chk-001', 'usr-1001-cst-001', '100100005678', 'SAVINGS', 'ACTIVE', 0.0000);
 
 INSERT INTO accounts (account_id, user_id, account_number, account_type, status, credit_limit)
 VALUES ('acc-2003-sav-002', 'usr-1002-cst-002', '100200009999', 'SAVINGS', 'ACTIVE', 0.0000);
@@ -318,16 +316,16 @@ INSERT INTO outbox_events (
 );
 
 -- 7. Notifications
-INSERT INTO notifications (notification_id, user_id, type, message, read_status)
+INSERT INTO notifications (notification_id, user_id, type, message)
 VALUES (
     'notif-6001-001', 'usr-1001-cst-001', 'TRANSACTION_ALERT',
-    'Your transfer of PHP 5,000,000.0000 is currently under Maker-Checker verification.', 0
+    'Your transfer of PHP 5,000,000.0000 is currently under Maker-Checker verification.'
 );
 
-INSERT INTO notifications (notification_id, user_id, type, message, read_status)
+INSERT INTO notifications (notification_id, user_id, type, message)
 VALUES (
     'notif-6002-002', 'usr-1003-tel-001', 'MAKER_CHECKER_ALERT',
-    'High-value transfer tx-4001-hld-001 requires Supervisor authorization.', 0
+    'High-value transfer tx-4001-hld-001 requires Supervisor authorization.'
 );
 
 COMMIT;

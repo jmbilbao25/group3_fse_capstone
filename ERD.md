@@ -42,7 +42,7 @@ erDiagram
         VARCHAR account_id PK
         VARCHAR user_id FK
         VARCHAR account_number UK
-        VARCHAR account_type "SAVINGS, CHECKING, CREDIT"
+        VARCHAR account_type "SAVINGS, CREDIT"
         VARCHAR status "ACTIVE, LOCKED, PENDING_APPROVAL"
         DECIMAL credit_limit "NUMBER(18, 4)"
         TIMESTAMP created_at
@@ -108,7 +108,6 @@ erDiagram
         VARCHAR user_id FK
         VARCHAR type "TRANSACTION_ALERT, SECURITY_ALERT, MAKER_CHECKER_ALERT"
         TEXT message
-        BOOLEAN read_status
         TIMESTAMP sent_at
         TIMESTAMP created_at
         TIMESTAMP updated_at
@@ -147,7 +146,7 @@ CREATE TABLE accounts (
     account_id     VARCHAR2(64) PRIMARY KEY,
     user_id        VARCHAR2(64) NOT NULL,
     account_number VARCHAR2(32) NOT NULL UNIQUE,
-    account_type   VARCHAR2(20) NOT NULL CHECK (account_type IN ('SAVINGS', 'CHECKING', 'CREDIT')),
+    account_type   VARCHAR2(20) NOT NULL CHECK (account_type IN ('SAVINGS', 'CREDIT')),
     status         VARCHAR2(20) DEFAULT 'ACTIVE' NOT NULL CHECK (status IN ('ACTIVE', 'LOCKED', 'PENDING_APPROVAL')),
     credit_limit   NUMBER(18, 4) DEFAULT 0.0000 NOT NULL CHECK (credit_limit >= 0),
     created_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -228,7 +227,6 @@ CREATE TABLE notifications (
     user_id         VARCHAR2(64) NOT NULL,
     type            VARCHAR2(50) NOT NULL CHECK (type IN ('TRANSACTION_ALERT', 'SECURITY_ALERT', 'MAKER_CHECKER_ALERT')),
     message         CLOB NOT NULL,
-    read_status     NUMBER(1) DEFAULT 0 NOT NULL CHECK (read_status IN (0, 1)),
     sent_at         TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -241,7 +239,7 @@ CREATE INDEX idx_tx_from_acc ON transactions(from_account_id, created_at DESC);
 CREATE INDEX idx_tx_to_acc ON transactions(to_account_id, created_at DESC);
 CREATE INDEX idx_tx_status ON transactions(status);
 CREATE INDEX idx_outbox_status ON outbox_events(status, created_at);
-CREATE INDEX idx_notif_user ON notifications(user_id, read_status, sent_at DESC);
+CREATE INDEX idx_notif_user ON notifications(user_id, sent_at DESC);
 ```
 
 ---

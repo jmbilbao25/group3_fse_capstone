@@ -65,7 +65,7 @@ services:
   # ============================================================================
   redis-cache:
     container_name: redis-cache
-    image: redis:7-alpine
+    image: redis:7.2-alpine
     restart: unless-stopped
     ports:
       - "6379:6379"

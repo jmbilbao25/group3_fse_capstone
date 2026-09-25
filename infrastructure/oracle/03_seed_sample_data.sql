@@ -58,7 +58,37 @@ INSERT INTO users (
     TIMESTAMP '2023-11-01 08:30:00 UTC', TIMESTAMP '2023-11-01 08:30:00 UTC'
 );
 
--- Bank Staff 2: Admin / Supervisor Diana Vance
+-- Bank Staff 2: Branch Operations Officer (Manager 1) Beatriz Ocampo
+INSERT INTO users (
+    user_id, first_name, middle_name, last_name, email, phone_number,
+    dob, government_id, role, password_hash, pin_hash,
+    max_concurrent_sessions, failed_login_attempts, status,
+    created_at, updated_at
+) VALUES (
+    'U3002', 'Beatriz', 'Santos', 'Ocampo', 'beatriz.manager@bank.com', '09204445566',
+    TO_DATE('1984-07-19', 'YYYY-MM-DD'), 'PRC-9988-7711', 'MANAGER',
+    '$2a$12$e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1',
+    NULL,
+    3, 0, 'ACTIVE',
+    TIMESTAMP '2023-10-01 08:30:00 UTC', TIMESTAMP '2023-10-01 08:30:00 UTC'
+);
+
+-- Bank Staff 3: Operations Manager / Branch Head (Manager 2) Carlos Mendoza
+INSERT INTO users (
+    user_id, first_name, middle_name, last_name, email, phone_number,
+    dob, government_id, role, password_hash, pin_hash,
+    max_concurrent_sessions, failed_login_attempts, status,
+    created_at, updated_at
+) VALUES (
+    'U3003', 'Carlos', 'Eduardo', 'Mendoza', 'carlos.branchhead@bank.com', '09171122334',
+    TO_DATE('1982-11-05', 'YYYY-MM-DD'), 'PRC-5544-3322', 'MANAGER',
+    '$2a$12$e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1',
+    NULL,
+    3, 0, 'ACTIVE',
+    TIMESTAMP '2023-09-15 08:30:00 UTC', TIMESTAMP '2023-09-15 08:30:00 UTC'
+);
+
+-- Bank Staff 3: Admin / IT Super User Diana Vance
 INSERT INTO users (
     user_id, first_name, middle_name, last_name, email, phone_number,
     dob, government_id, role, password_hash, pin_hash,

@@ -51,7 +51,7 @@ CREATE TABLE users (
     status                  VARCHAR2(20) DEFAULT 'ACTIVE' NOT NULL,
     created_at              TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at              TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    CONSTRAINT chk_usr_role CHECK (role IN ('CUSTOMER', 'TELLER', 'ADMIN')),
+    CONSTRAINT chk_usr_role CHECK (role IN ('CUSTOMER', 'TELLER', 'MANAGER', 'ADMIN')),
     CONSTRAINT chk_usr_status CHECK (status IN ('ACTIVE', 'LOCKED', 'SUSPENDED'))
 );
 
@@ -219,6 +219,24 @@ INSERT INTO users (
 ) VALUES (
     'usr-1003-tel-001', 'Crisostomo', 'Alfonso', 'Ibarra', 'crisostomo.ibarra@eastwestbanker.com', '+639201112233',
     TO_DATE('1985-01-10', 'YYYY-MM-DD'), 'DRIVERS-LIC-N01-90-123456', 'TELLER',
+    '$2a$10$7EqJtq98hPqEX7fNZaFWoOdi14kS13h2qBwYvUo2a7Fv6z9O1Zqwe', '$2a$10$e8V9m5gQ4F9oY9o8O8V7eeY9o8O8V7ee', 5, 0, 'ACTIVE'
+);
+
+INSERT INTO users (
+    user_id, first_name, middle_name, last_name, email, phone_number, dob,
+    government_id, role, password_hash, pin_hash, max_concurrent_sessions, failed_login_attempts, status
+) VALUES (
+    'usr-1005-boo-001', 'Beatriz', 'Santos', 'Ocampo', 'beatriz.ocampo@eastwestbanker.com', '+639204445566',
+    TO_DATE('1984-07-19', 'YYYY-MM-DD'), 'PRC-9988-7711', 'MANAGER',
+    '$2a$10$7EqJtq98hPqEX7fNZaFWoOdi14kS13h2qBwYvUo2a7Fv6z9O1Zqwe', '$2a$10$e8V9m5gQ4F9oY9o8O8V7eeY9o8O8V7ee', 5, 0, 'ACTIVE'
+);
+
+INSERT INTO users (
+    user_id, first_name, middle_name, last_name, email, phone_number, dob,
+    government_id, role, password_hash, pin_hash, max_concurrent_sessions, failed_login_attempts, status
+) VALUES (
+    'usr-1006-mgr-002', 'Carlos', 'Eduardo', 'Mendoza', 'carlos.mendoza@eastwestbanker.com', '+639171122334',
+    TO_DATE('1982-11-05', 'YYYY-MM-DD'), 'PRC-5544-3322', 'MANAGER',
     '$2a$10$7EqJtq98hPqEX7fNZaFWoOdi14kS13h2qBwYvUo2a7Fv6z9O1Zqwe', '$2a$10$e8V9m5gQ4F9oY9o8O8V7eeY9o8O8V7ee', 5, 0, 'ACTIVE'
 );
 

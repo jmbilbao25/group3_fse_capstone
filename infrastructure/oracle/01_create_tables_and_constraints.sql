@@ -23,7 +23,7 @@ CREATE TABLE users (
     phone_number            VARCHAR2(30) NOT NULL UNIQUE,
     dob                     DATE NOT NULL,
     government_id           VARCHAR2(100) NOT NULL,
-    role                    VARCHAR2(20) NOT NULL CHECK (role IN ('CUSTOMER', 'TELLER', 'ADMIN')),
+    role                    VARCHAR2(20) NOT NULL CHECK (role IN ('CUSTOMER', 'TELLER', 'MANAGER', 'ADMIN')),
     password_hash           VARCHAR2(255) NOT NULL,
     pin_hash                VARCHAR2(255),
     max_concurrent_sessions NUMBER(3) DEFAULT 3 NOT NULL,

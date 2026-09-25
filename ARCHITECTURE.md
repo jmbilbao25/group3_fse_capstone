@@ -102,12 +102,17 @@ Every containerized service in the Docker Compose bridge network (`banking-net`)
 ---
 
 ### E. Notification & Alert Microservice (`notification-service` :8083)
-- **Runtime**: Spring Boot 3, Spring Kafka Client.
+- **Runtime**: Spring Boot 3, Spring Kafka Client, Thymeleaf Template Engine.
+- **BSP MORB & AMLA Regulatory Compliance Matrix**:
+  - **Tier 1: Normal Transaction (₱0.01 – ₱50,000.00)**: Handled directly by 1 person (Teller only). Automatically dispatches customer HTML email receipt with before/after balances, masked accounts, and SHA-256 verification hash.
+  - **Tier 2: Dual Control Maker-Checker (₱50,000.01 – ₱499,999.99)**: Maker (Teller / Clerk) encodes transfer; transaction held in `PENDING_APPROVAL`. Dispatches dual-control alert to Branch Operations Officer (BOO) / Branch Cashier terminal & email for Customer ID and signature card verification.
+  - **Tier 3: High-Value / AMLA Covered (₱500,000.00 and above)**: Mandatory Covered Transaction Report (CTR) filing under Anti-Money Laundering Act (AMLA); requires dual manager approval (BOO + Branch Head / Operations Manager) before balance mutation.
 - **Core Functions**:
-  1. `TransactionEventConsumer`: Listens to `banking.transfers.events` under consumer group `notification-workers`.
-  2. `ReceiptFormatter`: Formats debit/credit receipts including transaction timestamp, before/after balances, reference numbers, and operator identity.
-  3. `PushAlertDispatcher`: Dispatches instant push and SMS alerts for customer transactions.
-  4. `TellerAlertDispatcher`: Dispatches high-priority notifications to active Teller screens when high-value transfers enter `PENDING_APPROVAL`.
+  1. `TransactionEventConsumer`: Listens to `banking.transfers.events` under consumer group `notification-workers` (4 concurrent threads).
+  2. `ReceiptFormatter`: Formats debit/credit receipts via Thymeleaf including timestamps, balances, masked account numbers, and cryptographic SHA-256 hashes.
+  3. `EmailAlertDispatcher`: Dispatches rich HTML email receipts to customer inboxes and SSE toasts to the web portal.
+  4. `TellerAlertDispatcher`: Dispatches WebSocket alerts to `/topic/teller-alerts` for Tier 2 (BOO) and Tier 3 (Branch Head) review consoles.
+  5. `Deduplication & Resilience`: Redis idempotency caching (`SET notif:seen:<id> 1 NX EX 3600`) and in-memory retry spooling for circuit buffering during SMTP outages.
 
 ---
 
@@ -243,6 +248,6 @@ sequenceDiagram
     par Audit Projection
         Kafka->>Postgres: Audit Consumer inserts ledger_mutation_audit
     and Alerts & Receipts
-        Kafka->>Notif: Notification Consumer dispatches SMS & Email
+        Kafka->>Notif: Notification Consumer dispatches HTML Email Receipt & Push
     end
 ```

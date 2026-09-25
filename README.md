@@ -8,6 +8,8 @@ Group 3 Engineering Repository: Definitive Architecture, Schemas, and Developer 
 
 The platform is a high-throughput, event-driven, dual-storage retail banking system with Maker-Checker transaction verification, deterministic concurrency locking, Kafka KRaft event streaming, and immutable audit logging.
 
+<img width="2151" height="887" alt="image" src="https://github.com/user-attachments/assets/b97a1f35-c952-4e9a-8b2c-d638de9deff5" />
+
 ```
                                   +-----------------------+
                                   |   Web SPA Frontend    |
@@ -44,8 +46,8 @@ The platform is a high-throughput, event-driven, dual-storage retail banking sys
                                                           |
                                                           v
                                             +---------------------------+
-                                            | Notification Consumer     |
-                                            | (Ledger Event Listener)   |
+                                            |   Notification Service    |
+                                            |        (Port 8083)        |
                                             +---------------------------+
 ```
 
@@ -80,18 +82,21 @@ Every container attaches to the bridge network `banking-net`. Host and internal 
 
 | Service / Container | Container Name | Host Port | Internal Port | Protocol | Purpose |
 | :--- | :--- | :---: | :---: | :--- | :--- |
+| **Frontend Web SPA** | `frontend` | `3000` | `3000` | HTTP | React 18 + Vite Retail Banking Portal |
 | **API Gateway** | `gateway-service` | `8080` | `8080` | HTTP / REST | Perimeter routing, JWT signature validation, Redis rate limiting |
 | **Account Service** | `account-service` | `8081` | `8081` | HTTP / REST | KYC onboarding, user profiles, account creation, token rotation |
 | **Ledger Engine** | `ledger-mutation-engine`| `8082` | `8082` | HTTP / REST | Concurrency locks, balance mutations, maker-checker, Kafka producer |
+| **Notification Service** | `notification-service` | `8083` | `8083` | HTTP / REST | Kafka listener, receipt generation, manager alerts, email dispatch |
+| **MailHog Mock SMTP** | `mailhog-smtp` | `8025` / `1025` | `8025` / `1025` | HTTP / SMTP | Mock email testing inbox UI (`:8025`) and SMTP receiver (`:1025`) |
 | **Oracle Database XE** | `oracle-xe-master` | `1521` | `1521` | Oracle TNS | Operational relational state (`XEPDB1`) |
-| **PostgreSQL Audit** | `postgres-audit-vault`| `5432` | `5432` | PostgreSQL | Dedicated append-only audit vault (`banking_audit`) |
+| **PostgreSQL Audit** | `postgres-audit-vault`| `5433` | `5432` | PostgreSQL | Dedicated append-only audit vault (`banking_audit`) |
 | **Redis Cache** | `redis-cache` | `6379` | `6379` | RESP / TCP | Token blacklist, session cache, Redis rate limiting counters |
 | **Kafka Broker** | `kafka-broker` | `9092` | `9092` | PLAINTEXT | Apache Kafka KRaft cluster event commit log |
 | **Kafka UI** | `kafka-ui` | `8085` | `8080` | HTTP | Web console for topics, consumer groups, and message inspection |
 | **Adminer Web GUI** | `db-adminer` | `8088` | `8080` | HTTP | Web database management console for Oracle and PostgreSQL |
 | **Jaeger Tracing** | `jaeger-tracing` | `16686` | `16686` | HTTP | Distributed trace visualization UI (OTLP receiver on `:4318`) |
 | **Prometheus** | `prometheus-engine` | `9090` | `9090` | HTTP | Time-series scraper collecting `/actuator/prometheus` metrics |
-| **Grafana** | `grafana-dashboard` | `3000` | `3000` | HTTP | Operational telemetry dashboards and KPI visualizations |
+| **Grafana** | `grafana-dashboard` | `3001` | `3000` | HTTP | Operational telemetry dashboards and KPI visualizations |
 
 ---
 

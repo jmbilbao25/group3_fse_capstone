@@ -142,7 +142,52 @@ services:
       - oracle-xe-master
 
   # ============================================================================
-  # 5. OpenTelemetry Distributed Tracing Backend & Visualizer (Jaeger All-In-One)
+  # 5. Local Mock SMTP Server & Email Web Inbox (MailHog)
+  # Container Name: mailhog-smtp
+  # Catches all transaction receipt and maker-checker emails with live Web UI
+  # ============================================================================
+  mailhog:
+    container_name: mailhog-smtp
+    image: mailhog/mailhog:latest
+    restart: unless-stopped
+    ports:
+      - "1025:1025" # SMTP port
+      - "8025:8025" # Web Inbox UI
+    networks:
+      - banking-net
+
+  # ============================================================================
+  # 6. Notification & Alert Service (Spring Boot :8083)
+  # Container Name: notification-service
+  # Asynchronous email receipt generation, Redis deduplication & teller alerts
+  # ============================================================================
+  notification-service:
+    container_name: notification-service
+    build:
+      context: ../backend/notification-service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:oracle:thin:@oracle-xe-master:1521/XEPDB1
+      - SPRING_DATASOURCE_USERNAME=fse_user
+      - SPRING_DATASOURCE_PASSWORD=fse_password
+      - SPRING_REDIS_HOST=redis-cache
+      - SPRING_REDIS_PORT=6379
+      - SPRING_MAIL_HOST=mailhog
+      - SPRING_MAIL_PORT=1025
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka-broker:29092
+    networks:
+      - banking-net
+    depends_on:
+      - oracle-xe-master
+      - redis-cache
+      - mailhog
+      - kafka-broker
+
+  # ============================================================================
+  # 7. OpenTelemetry Distributed Tracing Backend & Visualizer (Jaeger All-In-One)
   # Container Name: jaeger-tracing
   # Ingests OTLP traces (HTTP :4318, gRPC :4317) and provides trace visualization (:16686)
   # ============================================================================
@@ -160,7 +205,7 @@ services:
       - banking-net
 
   # ============================================================================
-  # 6. Prometheus Metrics Scraper & Time-Series Engine
+  # 8. Prometheus Metrics Scraper & Time-Series Engine
   # Container Name: prometheus-engine
   # Scrapes /actuator/prometheus from services and exposes metrics on :9090
   # ============================================================================
@@ -186,16 +231,16 @@ services:
       - banking-net
 
   # ============================================================================
-  # 7. Grafana Metrics Visualization & Telemetry Dashboard
+  # 9. Grafana Metrics Visualization & Telemetry Dashboard
   # Container Name: grafana-dashboard
-  # Web UI on :3000 with auto-provisioned Prometheus datasource & banking dashboards
+  # Web UI on :3001 with auto-provisioned Prometheus datasource & banking dashboards
   # ============================================================================
   grafana:
     container_name: grafana-dashboard
     image: grafana/grafana:11.1.0
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin

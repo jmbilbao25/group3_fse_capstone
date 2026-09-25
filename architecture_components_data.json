@@ -1773,7 +1773,7 @@
             "actor": "broker",
             "action": "Delivers record to group 'notification-workers'",
             "payload_or_query": "notification-workers fetches Offset 1054",
-            "result": "Notification worker formats SMS and sends alert; commits offset 1055"
+            "result": "Notification worker formats HTML email receipt and sends alert; commits offset 1055"
           }
         ],
         "outcome": "Independent consumer groups process events concurrently; neither group blocks or affects the other."
@@ -1847,7 +1847,7 @@
     "type": "backend",
     "brand": "spring",
     "tag": "Alerts & Receipts",
-    "overview": "Operates as an asynchronous event-driven worker microservice dedicated to real-time customer communications, regulatory transaction receipts, and teller alert dispatching. Built on Spring Boot 3 with Spring Kafka, it joins the notification-workers consumer group, subscribing to banking.transfers.events without blocking the core mutation engine. When a transaction completes or enters review, it formats comprehensive debit/credit receipts including pre/post balances, timestamps, and reference codes. It dispatches push notifications and simulated SMS alerts to customer mobile devices, and pushes urgent alert events to branch teller consoles when high-value transfers (> 10M PHP) require Maker-Checker compliance sign-off.",
+    "overview": "Operates as an asynchronous event-driven worker microservice dedicated to real-time customer communications, regulatory transaction receipts, and teller alert dispatching. Built on Spring Boot 3 with Spring Kafka, it joins the notification-workers consumer group, subscribing to banking.transfers.events without blocking the core mutation engine. When a transaction completes or enters review, it formats comprehensive debit/credit receipts including pre/post balances, timestamps, and reference codes. It dispatches push notifications and rich HTML email receipts to customer inboxes, and pushes urgent alert events to branch teller consoles when high-value transfers (> 10M PHP) require Maker-Checker compliance sign-off.",
     "specs": {
       "runtime": "Spring Boot 3.3.x, OpenJDK 21 LTS, Spring Kafka, Thymeleaf Template Engine",
       "ports": {
@@ -1877,12 +1877,12 @@
       },
       {
         "name": "Idempotent Consumer Deduplication via In-Memory / Redis Seen Cache",
-        "description": "Protects customers from receiving duplicate SMS or email notifications in the event of Kafka at-least-once message re-delivery, tracking processed event IDs with a 1-hour expiration window.",
-        "technical_details": "Evaluates `SET notif:seen:<event_id> 1 NX EX 3600` in Redis before triggering third-party SMS or email dispatch APIs."
+        "description": "Protects customers from receiving duplicate email notifications in the event of Kafka at-least-once message re-delivery, tracking processed event IDs with a 1-hour expiration window.",
+        "technical_details": "Evaluates `SET notif:seen:<event_id> 1 NX EX 3600` in Redis before triggering SMTP or email dispatch APIs."
       },
       {
         "name": "Graceful Degradation & Asynchronous Gateway Circuit Protection",
-        "description": "Isolates the platform from downstream SMS or email gateway outages using Resilience4j circuit breakers, spooling alerts to a dead-letter retry buffer if an external gateway fails.",
+        "description": "Isolates the platform from downstream SMTP or email gateway outages using Resilience4j circuit breakers, spooling alerts to a dead-letter retry buffer if the email service fails.",
         "technical_details": "Resilience4j CircuitBreaker with sliding window of 20 calls; opens when 50% fail, routing pending alerts to a local persistent retry spool."
       }
     ],
@@ -1909,9 +1909,9 @@
     "scenarios": [
       {
         "id": "SCEN-NOTIF-01",
-        "title": "Post-Settlement SMS Receipt Generation & Customer Dispatch",
+        "title": "Post-Settlement Email Receipt Generation & Customer Dispatch",
         "category": "Happy Path",
-        "summary": "Following balance settlement, a TransferExecuted event is consumed. The service deduplicates the message, formats a compliance receipt, and sends a push notification and SMS alert to the customer within 42ms.",
+        "summary": "Following balance settlement, a TransferExecuted event is consumed. The service deduplicates the message, formats a compliance receipt with Thymeleaf, and dispatches a push notification and HTML email receipt to the customer within 42ms.",
         "steps": [
           {
             "step": 1,
@@ -1930,55 +1930,55 @@
           {
             "step": 3,
             "actor": "notif_svc",
-            "action": "Formats receipt text with transaction reference and remaining balance",
-            "payload_or_query": "Receipt text: 'You sent PHP 50,000.00 to ACC-2009847192 on 2026-09-22 05:50:02. New balance: PHP 24,950,000.00. Ref: TRX-8921-A98F'",
-            "result": "Receipt payload constructed"
+            "action": "Formats HTML email receipt with transaction reference, accounts, and remaining balance",
+            "payload_or_query": "Thymeleaf template: transaction-receipt.html with debited amount PHP 50,000.00 and remaining balance PHP 24,950,000.00",
+            "result": "MIME HTML email payload constructed"
           },
           {
             "step": 4,
             "actor": "notif_svc",
-            "action": "Dispatches SMS via simulated SMS gateway and sends SSE toast to client :3000",
-            "payload_or_query": "Pushes SSE payload to /topic/customer/USR-882190",
-            "result": "Client SPA displays transaction success toast; SMS delivered to customer mobile in 38ms"
+            "action": "Dispatches HTML email via SMTP / JavaMailSender and sends SSE toast to client :3000",
+            "payload_or_query": "Pushes SSE payload to /topic/customer/USR-882190 and sends MIME email to customer inbox",
+            "result": "Client SPA displays transaction success toast; HTML email receipt delivered to customer inbox in 38ms"
           }
         ],
-        "outcome": "Customer instantly notified of balance debit with regulatory compliant receipt."
+        "outcome": "Customer instantly notified of balance debit with regulatory compliant HTML email receipt."
       },
       {
         "id": "SCEN-NOTIF-02",
-        "title": "Teller Alert Queue Dispatch for Pending High-Value Hold",
+        "title": "BSP Dual Control & AMLA Hold Dispatch (Tier 2 BOO & Tier 3 CTR)",
         "category": "Maker-Checker Approval",
-        "summary": "A 15,000,000.0000 PHP transfer enters review. The notification service consumes TransferPendingApproval, formats an urgent compliance item, and pushes a real-time WebSocket alert to branch teller consoles.",
+        "summary": "Transfers exceeding teller limits enter review under BSP MORB and AMLA rules: Tier 2 (₱50,000.01 – ₱499,999.99) requires BOO approval; Tier 3 (>= ₱500,000.00) requires CTR filing and dual manager approval (BOO + Branch Head). The notification service dispatches STOMP WebSocket alerts to teller consoles and compliance emails.",
         "steps": [
           {
             "step": 1,
             "actor": "broker (Kafka)",
             "action": "Emits TransferPendingApproval event on banking.transfers.events",
-            "payload_or_query": "{ \"transfer_id\": \"TRX-4491-0021\", \"maker_user_id\": \"USR-882190\", \"amount\": 15000000.0000, \"status\": \"PENDING_APPROVAL\" }",
-            "result": "Notification consumer ingests pending approval record"
+            "payload_or_query": "{ \"transfer_id\": \"TRX-4491-0021\", \"maker_user_id\": \"USR-TELLER-01\", \"amount\": 750000.0000, \"status\": \"PENDING_APPROVAL\", \"tier\": \"TIER_3_AMLA\" }",
+            "result": "Notification consumer ingests pending approval record and evaluates BSP tier"
           },
           {
             "step": 2,
             "actor": "notif_svc",
-            "action": "Builds high-priority alert payload for TellerPortal",
-            "payload_or_query": "Payload: { \"alert_type\": \"MAKER_CHECKER_REQUIRED\", \"transfer_id\": \"TRX-4491-0021\", \"amount\": 15000000.0000, \"maker_id\": \"USR-882190\" }",
-            "result": "Alert message generated"
+            "action": "Builds high-priority alert payload specifying required roles (BOO + Branch Head) and AMLA CTR status",
+            "payload_or_query": "Payload: { \"alert_type\": \"TIER_3_AMLA_HOLD_REQUIRED\", \"tier\": \"TIER_3\", \"threshold\": \">= PHP 500,000.00\", \"transfer_id\": \"TRX-4491-0021\", \"amount\": 750000.0000, \"amla_covered\": true }",
+            "result": "Alert message generated with mandatory workflow instructions"
           },
           {
             "step": 3,
             "actor": "notif_svc",
-            "action": "Broadcasts message over STOMP WebSocket topic `/topic/teller-alerts`",
-            "payload_or_query": "SimpMessagingTemplate.convertAndSend('/topic/teller-alerts', alertPayload)",
-            "result": "All connected teller browser sessions receive alert instantly; pending counter increments"
+            "action": "Broadcasts message over STOMP WebSocket topic `/topic/teller-alerts` and dispatches compliance email",
+            "payload_or_query": "SimpMessagingTemplate.convertAndSend('/topic/teller-alerts', alertPayload); emailService.sendAmlaHighValueAlert(event);",
+            "result": "All connected teller and manager consoles receive real-time alert; urgent compliance email delivered"
           }
         ],
-        "outcome": "Branch tellers immediately alerted to high-value transaction, minimizing customer wait time for manual review."
+        "outcome": "Branch Operations Officers and Branch Heads immediately alerted to high-value and AMLA-covered transactions, satisfying BSP MORB dual-control and AMLA CTR reporting regulations."
       },
       {
         "id": "SCEN-NOTIF-03",
         "title": "At-Least-Once Consumer Message Deduplication",
         "category": "Idempotency",
-        "summary": "Due to a network rebalance, Kafka redelivers a TransferExecuted record that was already processed. The notification service inspects its Redis deduplication cache and suppresses the duplicate SMS.",
+        "summary": "Due to a network rebalance, Kafka redelivers a TransferExecuted record that was already processed. The notification service inspects its Redis deduplication cache and suppresses the duplicate email.",
         "steps": [
           {
             "step": 1,
@@ -1999,44 +1999,44 @@
             "actor": "notif_svc",
             "action": "Discards duplicate event and logs informational trace",
             "payload_or_query": "logger.info('Duplicate notification suppressed for transfer: {}', 'TRX-8921-A98F')",
-            "result": "No duplicate SMS or push alert sent to customer; offset committed"
+            "result": "No duplicate email or push alert sent to customer; offset committed"
           }
         ],
         "outcome": "Customer shielded from spammy duplicate notifications; at-least-once streaming safely handled."
       },
       {
         "id": "SCEN-NOTIF-04",
-        "title": "Third-Party SMS Gateway Downstream Outage Circuit Buffering",
+        "title": "Downstream Email Gateway / SMTP Outage Circuit Buffering",
         "category": "Fault Tolerance & Compensation",
-        "summary": "The external telecommunications SMS gateway suffers an outage, returning HTTP 503. The notification service's circuit breaker opens, safely buffering pending alerts in an exponential backoff retry queue.",
+        "summary": "The downstream SMTP server or email provider suffers an outage, returning connection timeouts. The notification service's circuit breaker opens, safely buffering pending alerts in an exponential backoff retry queue.",
         "steps": [
           {
             "step": 1,
             "actor": "notif_svc",
-            "action": "Attempts to POST SMS payload to external SMS provider API",
-            "payload_or_query": "POST https://sms-gateway.telecom.ph/v1/send",
-            "result": "Provider responds HTTP 503 Service Unavailable"
+            "action": "Attempts to dispatch MIME message via JavaMailSender / SMTP",
+            "payload_or_query": "SMTP send: host=smtp.banking.net, port=587",
+            "result": "Mail server connection timeout / 503 Service Unavailable"
           },
           {
             "step": 2,
             "actor": "notif_svc",
-            "action": "Resilience4j Circuit Breaker tracks repeated 503 failures",
+            "action": "Resilience4j Circuit Breaker tracks repeated email dispatch failures",
             "payload_or_query": "Failure rate exceeds 50% threshold over 10 calls",
             "result": "Circuit breaker transitions from CLOSED to OPEN"
           },
           {
             "step": 3,
             "actor": "notif_svc",
-            "action": "Diverts pending SMS alerts to local in-memory/disk retry buffer",
+            "action": "Diverts pending email receipts to local in-memory/disk retry buffer",
             "payload_or_query": "Enqueues alert in delayed retry queue with 30s polling",
             "result": "Core microservices and customer transfer pipelines remain unaffected"
           },
           {
             "step": 4,
             "actor": "notif_svc",
-            "action": "Provider recovers; circuit breaker half-opens and flushes buffered alerts",
-            "payload_or_query": "Provider returns 200 OK; circuit resets to CLOSED",
-            "result": "All buffered SMS receipts delivered with zero lost notifications"
+            "action": "Provider recovers; circuit breaker half-opens and flushes buffered emails",
+            "payload_or_query": "SMTP server accepts connection; circuit resets to CLOSED",
+            "result": "All buffered email receipts delivered with zero lost notifications"
           }
         ],
         "outcome": "External communication outages isolated; platform stability maintained; zero notification loss."
@@ -2112,7 +2112,7 @@
         "type": "REST_ENDPOINT",
         "identifier": "Prometheus Scrape: notification-service:8083/actuator/prometheus",
         "direction": "INGRESS",
-        "contract_details": "Scrapes notification service metrics: Kafka consume rates, receipt formatting times, SMS dispatch counts."
+        "contract_details": "Scrapes notification service metrics: Kafka consume rates, receipt formatting times, email dispatch counts."
       },
       {
         "type": "METRIC_GAUGE",

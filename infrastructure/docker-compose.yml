@@ -93,6 +93,24 @@ services:
       - postgres-audit-vault
       - oracle-xe-master
 
+  # ============================================================================
+  # 5. OpenTelemetry Distributed Tracing Backend & Visualizer (Jaeger All-In-One)
+  # Container Name: jaeger-tracing
+  # Ingests OTLP traces (HTTP :4318, gRPC :4317) and provides trace visualization (:16686)
+  # ============================================================================
+  jaeger-tracing:
+    container_name: jaeger-tracing
+    image: jaegertracing/all-in-one:latest
+    restart: unless-stopped
+    ports:
+      - "16686:16686" # Web UI
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP HTTP receiver
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - banking-net
+
 volumes:
   oracle_data:
   postgres_data:

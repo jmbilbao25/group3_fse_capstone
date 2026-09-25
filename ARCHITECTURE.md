@@ -4,6 +4,7 @@ This document defines the high-throughput, event-driven, dual-storage, maker-che
 
 An interactive standalone HTML diagram is delivered at [`architecture.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/architecture.html).
 An interactive API sequence diagram is delivered at [`api_sequence.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/api_sequence.html).
+A comprehensive Markdown diagram catalog is delivered at [`ARCHITECTURE_DIAGRAMS.md`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/ARCHITECTURE_DIAGRAMS.md).
 
 ---
 

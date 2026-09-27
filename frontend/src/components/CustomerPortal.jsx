@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowUpRight, 
   Wallet, 
@@ -18,11 +18,8 @@ import {
   FileText,
   Eye,
   EyeOff,
-  QrCode,
   Search,
-  Sparkles,
   Receipt,
-  Share2,
   ChevronRight
 } from 'lucide-react';
 import { formatPHP, parseMaskedInput, generateUUID } from '../utils/currency';
@@ -34,12 +31,13 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
   const [activeTab, setActiveTab] = useState('transfer'); // 'transfer' | 'history'
   const [copied, setCopied] = useState(false);
 
-  // Eye Toggle State (Show / Hide Balance)
+  // Eye Toggle State (Show / Hide Balance & Account Number)
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
+  const [isAccountVisible, setIsAccountVisible] = useState(true);
 
-  // QR Code Modal State
-  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
-  const [qrCopied, setQrCopied] = useState(false);
+  useEffect(() => {
+    onTransactionComplete?.();
+  }, []);
 
   // Search & Filter State for Activity
   const [searchQuery, setSearchQuery] = useState('');
@@ -50,16 +48,14 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
     return formatPHP(val);
   };
 
-  const FAVORITES = [
-    { name: 'Maria Santos', account: '1000-2000-3002', initials: 'MS', badge: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
-    { name: 'Carlos Dela Cruz', account: '1000-2000-3003', initials: 'CD', badge: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30' },
-    { name: 'Elena Ramos', account: '1000-2000-3004', initials: 'ER', badge: 'bg-pink-500/15 text-pink-400 border-pink-500/30' },
-    { name: 'Tech Solutions Inc.', account: '1000-2000-3005', initials: 'TS', badge: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
-  ];
-
-  const handleSelectFavorite = (fav) => {
-    setToAccount(fav.account);
-    setRecipientName(fav.name);
+  const formatVisibleAccount = (acctId) => {
+    const raw = acctId || '1000-2000-3001';
+    if (isAccountVisible) return raw;
+    const parts = String(raw).split('-');
+    if (parts.length === 3) {
+      return `••••-••••-${parts[2]}`;
+    }
+    return raw.length > 4 ? `••••••••${raw.slice(-4)}` : '••••••••';
   };
 
   const handleViewReceipt = (tx) => {
@@ -254,11 +250,21 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
 
         <div className="flex items-center justify-between sm:justify-end gap-2 bg-slate-950/80 border border-slate-800 px-3.5 py-2.5 rounded-xl relative z-10 shadow-inner">
           <div className="mr-1">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block">
-              My Account Number
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                My Account Number
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsAccountVisible(!isAccountVisible)}
+                title={isAccountVisible ? "Hide Account Number" : "Show Account Number"}
+                className="text-slate-400 hover:text-white transition-colors p-0.5 rounded hover:bg-slate-800"
+              >
+                {isAccountVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5 text-indigo-400" />}
+              </button>
+            </div>
             <span className="text-sm font-mono font-bold text-indigo-300 tracking-wider">
-              {balance?.account_id || '1000-2000-3001'}
+              {formatVisibleAccount(balance?.account_id)}
             </span>
           </div>
           <button
@@ -278,15 +284,6 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
                 <span className="text-[11px]">Copy</span>
               </>
             )}
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsQrModalOpen(true)}
-            title="Show QR Code to Receive Money"
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 hover:text-white transition-all text-xs font-medium border border-indigo-500/30 active:scale-95"
-          >
-            <QrCode className="w-3.5 h-3.5" />
-            <span className="text-[11px]">QR Code</span>
           </button>
         </div>
       </div>
@@ -308,8 +305,16 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
                 {isBalanceVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5 text-indigo-400" />}
               </button>
             </span>
-            <span className="text-[11px] font-mono bg-indigo-500/10 text-indigo-300 px-2.5 py-0.5 rounded-full border border-indigo-500/20 font-medium">
-              Acct: {balance?.account_id || '1000-2000-3001'}
+            <span className="text-[11px] font-mono bg-indigo-500/10 text-indigo-300 px-2.5 py-0.5 rounded-full border border-indigo-500/20 font-medium flex items-center gap-1.5">
+              <span>Acct: {formatVisibleAccount(balance?.account_id)}</span>
+              <button
+                type="button"
+                onClick={() => setIsAccountVisible(!isAccountVisible)}
+                title={isAccountVisible ? "Hide Account Number" : "Show Account Number"}
+                className="text-indigo-400 hover:text-white transition-colors p-0.5 rounded hover:bg-indigo-500/20"
+              >
+                {isAccountVisible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3 text-indigo-400" />}
+              </button>
             </span>
           </div>
           <div className="text-3xl font-mono font-bold text-white tracking-tight relative z-10">
@@ -414,7 +419,7 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
                       {user?.name || 'Juan Dela Cruz'} &bull; Primary Savings
                     </span>
                     <span className="text-xs font-mono font-semibold text-indigo-300">
-                      {balance?.account_id || '1000-2000-3001'}
+                      {formatVisibleAccount(balance?.account_id)}
                     </span>
                   </div>
                 </div>
@@ -424,36 +429,6 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
                     {formatVisiblePHP(balance?.available_balance)}
                   </span>
                 </div>
-              </div>
-            </div>
-
-            {/* Frequent / Saved Beneficiaries Quick Pick */}
-            <div>
-              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-2 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                Frequent Recipients
-              </span>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {FAVORITES.map((fav) => (
-                  <button
-                    key={fav.account}
-                    type="button"
-                    onClick={() => handleSelectFavorite(fav)}
-                    className="p-2.5 rounded-xl bg-slate-950/80 hover:bg-indigo-600/15 border border-slate-800/90 hover:border-indigo-500/50 text-left transition-all duration-150 group flex items-center gap-2.5 active:scale-95 shadow-sm"
-                  >
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold border shrink-0 ${fav.badge}`}>
-                      {fav.initials}
-                    </div>
-                    <div className="overflow-hidden">
-                      <p className="text-xs font-bold text-white truncate group-hover:text-indigo-300 transition-colors">
-                        {fav.name}
-                      </p>
-                      <p className="text-[10px] font-mono text-slate-500 truncate">
-                        {fav.account}
-                      </p>
-                    </div>
-                  </button>
-                ))}
               </div>
             </div>
 
@@ -924,128 +899,6 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
                 Make Another Transfer
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* 3. Receive Money / QR Code Modal */}
-      {isQrModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-sm w-full p-6 sm:p-7 shadow-2xl relative space-y-5 animate-in zoom-in-95 duration-200 text-center overflow-hidden">
-            {/* Top decorative gradient bar */}
-            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
-
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2.5 text-left">
-                <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-                  <QrCode className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-white">Receive Money</h3>
-                  <p className="text-[11px] text-slate-400">Scan QR to transfer funds instantly</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsQrModalOpen(false)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* High-Contrast Authentic QR Canvas Card */}
-            <div className="bg-white p-5 rounded-2xl mx-auto shadow-2xl inline-block border-4 border-slate-800">
-              <svg className="w-44 h-44 mx-auto" viewBox="0 0 100 100" fill="none">
-                {/* 3 Corner Anchor Squares */}
-                <rect x="5" y="5" width="26" height="26" rx="4" fill="#0f172a" />
-                <rect x="9" y="9" width="18" height="18" rx="2" fill="#ffffff" />
-                <rect x="13" y="13" width="10" height="10" rx="1" fill="#4f46e5" />
-
-                <rect x="69" y="5" width="26" height="26" rx="4" fill="#0f172a" />
-                <rect x="73" y="9" width="18" height="18" rx="2" fill="#ffffff" />
-                <rect x="77" y="13" width="10" height="10" rx="1" fill="#4f46e5" />
-
-                <rect x="5" y="69" width="26" height="26" rx="4" fill="#0f172a" />
-                <rect x="9" y="73" width="18" height="18" rx="2" fill="#ffffff" />
-                <rect x="13" y="77" width="10" height="10" rx="1" fill="#4f46e5" />
-
-                {/* Simulated Data Matrix Dots */}
-                <rect x="36" y="8" width="5" height="5" fill="#0f172a" />
-                <rect x="46" y="8" width="5" height="5" fill="#0f172a" />
-                <rect x="56" y="8" width="5" height="5" fill="#0f172a" />
-                <rect x="36" y="18" width="8" height="5" fill="#0f172a" />
-                <rect x="50" y="18" width="5" height="5" fill="#0f172a" />
-                <rect x="40" y="28" width="5" height="5" fill="#0f172a" />
-                <rect x="52" y="28" width="8" height="5" fill="#0f172a" />
-
-                <rect x="8" y="36" width="5" height="5" fill="#0f172a" />
-                <rect x="18" y="36" width="8" height="5" fill="#0f172a" />
-                <rect x="8" y="48" width="5" height="8" fill="#0f172a" />
-                <rect x="20" y="46" width="6" height="6" fill="#0f172a" />
-                <rect x="8" y="58" width="10" height="5" fill="#0f172a" />
-
-                <rect x="35" y="35" width="30" height="30" rx="8" fill="#4f46e5" />
-                <text x="50" y="53" textAnchor="middle" fill="#ffffff" fontSize="9" fontWeight="bold" fontFamily="sans-serif">QR Ph</text>
-
-                <rect x="69" y="38" width="8" height="5" fill="#0f172a" />
-                <rect x="82" y="38" width="6" height="6" fill="#0f172a" />
-                <rect x="72" y="48" width="5" height="8" fill="#0f172a" />
-                <rect x="84" y="50" width="6" height="6" fill="#0f172a" />
-
-                <rect x="36" y="69" width="6" height="6" fill="#0f172a" />
-                <rect x="48" y="72" width="8" height="5" fill="#0f172a" />
-                <rect x="60" y="69" width="5" height="8" fill="#0f172a" />
-                <rect x="38" y="82" width="12" height="5" fill="#0f172a" />
-                <rect x="54" y="82" width="6" height="6" fill="#0f172a" />
-                <rect x="70" y="72" width="8" height="5" fill="#0f172a" />
-                <rect x="82" y="72" width="8" height="5" fill="#0f172a" />
-                <rect x="74" y="82" width="16" height="5" fill="#0f172a" />
-              </svg>
-              <p className="text-[10px] font-mono font-bold text-slate-800 mt-2">
-                QR Ph Compatible &bull; Zero Fees
-              </p>
-            </div>
-
-            {/* Account Details Box */}
-            <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 text-left space-y-2 text-xs">
-              <div className="flex justify-between items-center">
-                <span className="text-slate-400">Account Name</span>
-                <span className="font-bold text-white">{user?.name || 'Juan Dela Cruz'}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-400">Account Number</span>
-                <div className="flex items-center gap-1.5 font-mono text-indigo-300 font-bold">
-                  <span>{balance?.account_id || '1000-2000-3001'}</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (navigator.clipboard) {
-                        navigator.clipboard.writeText(balance?.account_id || '1000-2000-3001');
-                        setQrCopied(true);
-                        setTimeout(() => setQrCopied(false), 2000);
-                      }
-                    }}
-                    title="Copy Account"
-                    className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors"
-                  >
-                    {qrCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                  </button>
-                </div>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-400">Transfer Channel</span>
-                <span className="text-emerald-400 font-semibold">Core Retail Ledger (Instant)</span>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setIsQrModalOpen(false)}
-              className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-indigo-600/30"
-            >
-              Close
-            </button>
           </div>
         </div>
       )}

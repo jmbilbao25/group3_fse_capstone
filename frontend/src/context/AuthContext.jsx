@@ -58,33 +58,50 @@ export function AuthProvider({ children }) {
   };
 
   // Quick switch role utility for capstone defense & evaluation
-  const switchRole = (newRole) => {
+  const switchRole = (newRole, managerId = 'U3002') => {
     if (newRole === 'ROLE_CUSTOMER') {
       setUser({
         user_id: 'U1001',
         email: 'juan.dc@email.com',
         name: 'Juan Dela Cruz',
+        title: 'Retail Account Holder (Maker)',
         role: 'ROLE_CUSTOMER',
       });
     } else if (newRole === 'ROLE_MANAGER') {
-      setUser({
-        user_id: 'U3002',
-        email: 'beatriz.ocampo@bank.com',
-        name: 'Beatriz Ocampo',
-        role: 'ROLE_MANAGER',
-      });
+      if (managerId === 'U3003') {
+        setUser({
+          user_id: 'U3003',
+          email: 'carlos.mendoza@bank.com',
+          name: 'Carlos Mendoza',
+          title: 'Senior Manager / Branch Head (Approver L2)',
+          role: 'ROLE_MANAGER',
+        });
+      } else {
+        setUser({
+          user_id: 'U3002',
+          email: 'beatriz.ocampo@bank.com',
+          name: 'Beatriz Ocampo',
+          title: 'Operations Manager (Checker L1)',
+          role: 'ROLE_MANAGER',
+        });
+      }
     } else if (newRole === 'ROLE_ADMIN') {
       setUser({
         user_id: 'U0001',
         email: 'diana.admin@bank.com',
         name: 'Diana Vance',
+        title: 'System Auditor & Compliance',
         role: 'ROLE_ADMIN',
       });
     }
   };
 
+  const switchManager = (managerId) => {
+    switchRole('ROLE_MANAGER', managerId);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, logout, switchRole }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, logout, switchRole, switchManager }}>
       {children}
     </AuthContext.Provider>
   );

@@ -30,7 +30,7 @@ function MainApp() {
 
   useEffect(() => {
     fetchBalance();
-  }, []);
+  }, [user?.role]);
 
   const showToast = (toastObj) => {
     setToast(toastObj);
@@ -60,12 +60,12 @@ function MainApp() {
             </div>
             <h2 className="text-2xl font-bold text-white mt-2 tracking-tight">
               {user?.role === 'ROLE_CUSTOMER' && `Welcome back, ${user?.name}`}
-              {user?.role === 'ROLE_MANAGER' && 'Bank Operations Manager Console & Maker-Checker Review'}
+              {user?.role === 'ROLE_MANAGER' && 'Maker-Checker Review Console'}
               {user?.role === 'ROLE_ADMIN' && 'Audit, Compliance & Immutable SCN Vault Monitoring'}
             </h2>
             {user?.role !== 'ROLE_CUSTOMER' && (
               <p className="text-xs text-slate-400 mt-1 max-w-3xl leading-relaxed">
-                {user?.role === 'ROLE_MANAGER' && 'Level 1 Checker workstation: Authorize high-value transfers, enforce segregation of duties, and manage dual-control queue.'}
+                {user?.role === 'ROLE_MANAGER' && 'Dual-control review workstation for pending high-value transfers and soft-hold releases.'}
                 {user?.role === 'ROLE_ADMIN' && 'Dual-storage core monitoring: Oracle XE 21c (Master Ledger) and PostgreSQL 15 (Immutable Append-Only Audit Vault).'}
               </p>
             )}

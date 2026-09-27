@@ -41,8 +41,10 @@ export const THRESHOLDS = {
   AMLA_CTR_MIN: 500000.0000,    // >= ₱500k: AMLA Covered Transaction Report + Dual Control
 };
 
+const STORAGE_KEY = 'fse_core_ledger_state_v1';
+
 // Initial realistic core retail ledger state
-let mockState = {
+const initialMockState = {
   account: {
     account_id: '1000-2000-3001',
     user_id: 'U1001',
@@ -69,6 +71,16 @@ let mockState = {
       memo: 'Commercial server farm procurement batch #3',
       maker_user_id: 'U1001',
       hold_active: true,
+      approval_stage: 1, // Stage 1 of 2: Awaiting L1 (Beatriz Ocampo)
+      required_stages: 2,
+      l1_approver_id: null,
+      l1_approver_name: null,
+      l1_approved_at: null,
+      l1_notes: null,
+      l2_approver_id: null,
+      l2_approver_name: null,
+      l2_approved_at: null,
+      l2_notes: null,
     },
     {
       id: 'TX-5002-MC',
@@ -84,6 +96,8 @@ let mockState = {
       memo: 'Branch office refurbishment contractor retainer',
       maker_user_id: 'U1001',
       hold_active: true,
+      approval_stage: 1, // Stage 1 of 1: Single Manager Sign-off
+      required_stages: 1,
     },
     {
       id: 'TX-5001-STP',
@@ -99,6 +113,8 @@ let mockState = {
       memo: 'Reimbursement for regional branch supplies',
       maker_user_id: 'U1001',
       hold_active: false,
+      approval_stage: 0,
+      required_stages: 0,
     }
   ],
   auditLogs: [
@@ -142,6 +158,47 @@ let mockState = {
       status: 'VERIFIED',
     }
   ]
+};
+
+const loadMockState = () => {
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.account && Array.isArray(parsed.transfers)) {
+        // Migration and compatibility check for multi-level approval
+        parsed.transfers.forEach((tx) => {
+          if (tx.regulatory_tier === 'TIER_3_AMLA_CTR') {
+            tx.required_stages = 2;
+            if (!tx.approval_stage) {
+              tx.approval_stage = tx.l1_approver_id ? 2 : 1;
+            }
+          } else if (tx.regulatory_tier === 'TIER_2_DUAL_CONTROL') {
+            tx.required_stages = 1;
+            tx.approval_stage = 1;
+          }
+        });
+        return parsed;
+      }
+    }
+  } catch (_) {}
+  return JSON.parse(JSON.stringify(initialMockState));
+};
+
+let mockState = loadMockState();
+
+export const saveMockState = () => {
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(mockState));
+    }
+  } catch (_) {}
+};
+
+export const resetMockState = () => {
+  mockState = JSON.parse(JSON.stringify(initialMockState));
+  saveMockState();
+  return mockState;
 };
 
 // Response interceptor with Mock Simulation Fallback
@@ -268,28 +325,29 @@ function handleMockFallback(config) {
         }
 
         // Regulatory Threshold Classification
+        const isTier3 = amount >= THRESHOLDS.AMLA_CTR_MIN;
+        const isTier2 = amount > THRESHOLDS.STP_MAX && !isTier3;
+        const isHeld = isTier2 || isTier3;
+
         let tier = 'TIER_1_STP';
         let tierLabel = 'Tier 1: Instant STP Settlement';
         let status = 'SETTLED';
-        let isHeld = false;
         let responseMsg = 'Funds transfer settled instantly via Oracle XE Row-Level Lock.';
 
-        if (amount >= THRESHOLDS.AMLA_CTR_MIN) {
+        if (isTier3) {
           tier = 'TIER_3_AMLA_CTR';
           tierLabel = 'Tier 3: AMLA CTR + Dual Control';
           status = 'PENDING_APPROVAL';
-          isHeld = true;
-          responseMsg = 'AMLA Covered Transaction (CTR) threshold reached (≥ ₱500k). Soft hold placed pending Operations Manager authorization.';
-        } else if (amount > THRESHOLDS.STP_MAX) {
+          responseMsg = 'AMLA Covered Transaction (CTR) threshold reached (≥ ₱500k). Soft hold placed. Requires 2-Stage Manager Approval (L1 Operations Checker + L2 Senior Manager).';
+        } else if (isTier2) {
           tier = 'TIER_2_DUAL_CONTROL';
           tierLabel = 'Tier 2: Maker-Checker Dual Control';
           status = 'PENDING_APPROVAL';
-          isHeld = true;
           responseMsg = 'Transfer exceeds STP threshold (> ₱50k). Soft hold placed pending Operations Manager authorization.';
         }
 
         const newTransfer = {
-          id: 'TX-' + Math.floor(5000 + Math.random() * 4999) + (isHeld ? '-MC' : '-STP'),
+          id: 'TX-' + Math.floor(5000 + Math.random() * 4999) + (isTier3 ? '-AMLA' : isTier2 ? '-MC' : '-STP'),
           from_account_id: mockState.account.account_id,
           to_account_id: payload.to_account_id || '1000-2000-3002',
           recipient_name: payload.recipient_name || 'Beneficiary Account',
@@ -302,6 +360,16 @@ function handleMockFallback(config) {
           memo: payload.memo || 'Standard Retail Transfer',
           maker_user_id: payload.maker_user_id || 'U1001',
           hold_active: isHeld,
+          approval_stage: isTier3 ? 1 : (isTier2 ? 1 : 0),
+          required_stages: isTier3 ? 2 : (isTier2 ? 1 : 0),
+          l1_approver_id: null,
+          l1_approver_name: null,
+          l1_approved_at: null,
+          l1_notes: null,
+          l2_approver_id: null,
+          l2_approver_name: null,
+          l2_approved_at: null,
+          l2_notes: null,
         };
 
         if (isHeld) {
@@ -322,7 +390,7 @@ function handleMockFallback(config) {
         mockState.auditLogs.push({
           scn: nextScn,
           tx_id: newTransfer.id,
-          event_type: isHeld ? (tier === 'TIER_3_AMLA_CTR' ? 'AMLA_CTR_HOLD_FLAGGED' : 'SOFT_HOLD_RESERVATION') : 'BALANCE_MUTATION_DEBIT',
+          event_type: isHeld ? (isTier3 ? 'AMLA_CTR_HOLD_FLAGGED' : 'SOFT_HOLD_RESERVATION') : 'BALANCE_MUTATION_DEBIT',
           actor_id: newTransfer.maker_user_id,
           actor_role: 'CUSTOMER',
           account_id: mockState.account.account_id,
@@ -332,6 +400,7 @@ function handleMockFallback(config) {
           timestamp: newTransfer.created_at,
           status: 'VERIFIED',
         });
+        saveMockState();
 
         // Dispatch real email advice to notification-service (:8083) -> MailHog (:1025 / :8025)
         try {
@@ -371,7 +440,96 @@ function handleMockFallback(config) {
         return resolve({ data: pending });
       }
 
-      // 6. Approve Transfer (Manager Action)
+      // 5b. Stage 1 Sign-Off for Tier 3 AMLA Transfers (L1 Operations Manager: Beatriz Ocampo U3002)
+      if (url.includes('/transfers/') && url.endsWith('/sign-l1') && method === 'post') {
+        const id = url.split('/transfers/')[1].split('/sign-l1')[0];
+        const tx = mockState.transfers.find((t) => t.id === id);
+
+        if (!tx || tx.status !== 'PENDING_APPROVAL') {
+          return reject({ response: { status: 404, data: { detail: 'Transfer not found or already settled.' } } });
+        }
+
+        const checkerId = payload.checker_user_id || 'U3002';
+        const checkerName = payload.checker_name || (checkerId === 'U3002' ? 'Beatriz Ocampo' : 'Operations Manager');
+
+        // Segregation of Duties: Maker cannot sign L1
+        if (checkerId === tx.maker_user_id) {
+          return reject({
+            response: {
+              status: 403,
+              data: {
+                title: 'Segregation of Duties Violation',
+                detail: 'Rule FSE-204: The initiating customer/maker cannot perform operational sign-off.',
+              }
+            }
+          });
+        }
+
+        if (tx.approval_stage !== 1) {
+          return reject({
+            response: {
+              status: 400,
+              data: {
+                title: 'Invalid Workflow Stage',
+                detail: `Transfer is currently in Stage ${tx.approval_stage}. Level 1 sign-off is already completed.`,
+              }
+            }
+          });
+        }
+
+        // Advance to Stage 2 (Awaiting Level 2 Senior Manager)
+        tx.approval_stage = 2;
+        tx.l1_approver_id = checkerId;
+        tx.l1_approver_name = checkerName;
+        tx.l1_approved_at = new Date().toISOString();
+        tx.l1_notes = payload.notes || 'Verified customer identity, KYC profile, and AMLA covered transaction mandate.';
+
+        // Soft hold remains intact in Oracle XE (no balance debit yet)
+        saveMockState();
+
+        // Record Audit Entry
+        const nextScn = mockState.auditLogs.length > 0 
+          ? mockState.auditLogs[mockState.auditLogs.length - 1].scn + 1 
+          : 18492044;
+
+        mockState.auditLogs.push({
+          scn: nextScn,
+          tx_id: tx.id,
+          event_type: 'AMLA_TIER3_STAGE1_L1_SIGNOFF',
+          actor_id: checkerId,
+          actor_role: 'MANAGER',
+          account_id: tx.from_account_id,
+          delta_amount: 0,
+          balance_after: mockState.account.available_balance,
+          digest_hash: Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2),
+          timestamp: tx.l1_approved_at,
+          status: 'VERIFIED',
+        });
+        saveMockState();
+
+        // Notification dispatched to Carlos Mendoza (Senior Manager / L2 Approver)
+        try {
+          axios.post('http://localhost:8083/api/v1/notifications/simulate-tier3-amla', {
+            transfer_id: tx.id,
+            amount: tx.amount,
+            from_account_id: tx.from_account_id,
+            to_account_id: tx.to_account_id,
+            recipient_email: 'carlos.mendoza@retailbank.ph',
+            memo: `AMLA L1 Sign-off Complete by ${checkerName}. Awaiting Level 2 Senior Manager final authorization.`
+          }).catch(() => {});
+        } catch (_) {}
+
+        return resolve({
+          data: {
+            transfer_id: tx.id,
+            status: 'PENDING_APPROVAL',
+            approval_stage: 2,
+            message: `Stage 1 sign-off recorded by ${checkerName}. Forwarded to Level 2 Senior Manager (Carlos Mendoza) for final settlement release.`
+          }
+        });
+      }
+
+      // 6. Approve Transfer (Manager Action: Tier 2 single approval or Tier 3 Stage 2 final release)
       if (url.includes('/transfers/') && url.endsWith('/approve') && method === 'post') {
         const id = url.split('/transfers/')[1].split('/approve')[0];
         const tx = mockState.transfers.find((t) => t.id === id);
@@ -380,8 +538,10 @@ function handleMockFallback(config) {
           return reject({ response: { status: 404, data: { detail: 'Transfer not found or already settled.' } } });
         }
 
-        // Segregation of Duties Check
         const checkerId = payload.checker_user_id || 'U3002';
+        const checkerName = payload.checker_name || (checkerId === 'U3003' ? 'Carlos Mendoza' : 'Beatriz Ocampo');
+
+        // Segregation of Duties Check: Maker cannot approve
         if (checkerId === tx.maker_user_id) {
           return reject({
             response: {
@@ -394,42 +554,90 @@ function handleMockFallback(config) {
           });
         }
 
+        // Dual-Control Multi-Level Enforcement for Tier 3 AMLA
+        const isTier3 = tx.regulatory_tier === 'TIER_3_AMLA_CTR' || (tx.amount >= THRESHOLDS.AMLA_CTR_MIN);
+        if (isTier3) {
+          if (tx.approval_stage === 1) {
+            return reject({
+              response: {
+                status: 400,
+                data: {
+                  title: 'Multi-Level Approval Required',
+                  detail: 'Tier 3 AMLA transfers (≥ ₱500k) require Stage 1 (L1 Operations Manager) sign-off before Stage 2 release.',
+                }
+              }
+            });
+          }
+
+          // Segregation of Duties: Level 2 approver cannot be the same individual who signed Level 1!
+          if (tx.l1_approver_id && checkerId === tx.l1_approver_id) {
+            return reject({
+              response: {
+                status: 403,
+                data: {
+                  title: 'Dual-Control Segregation Violation',
+                  detail: `Rule AMLA-204: Level 2 final release must be approved by a distinct Senior Manager (Carlos Mendoza U3003). Manager ${checkerName} already executed Level 1 sign-off.`,
+                }
+              }
+            });
+          }
+
+          tx.l2_approver_id = checkerId;
+          tx.l2_approver_name = checkerName;
+          tx.l2_approved_at = new Date().toISOString();
+          tx.l2_notes = payload.notes || 'Senior Manager AMLA Covered Transaction CTR clearance verified.';
+        }
+
         tx.status = 'SETTLED';
         tx.hold_active = false;
         tx.approved_at = new Date().toISOString();
-        tx.approver_notes = payload.notes || 'Operations Manager dual-control sign-off.';
+        tx.approver_notes = payload.notes || (isTier3 ? 'AMLA CTR dual-manager final clearance.' : 'Operations Manager dual-control sign-off.');
         tx.checker_user_id = checkerId;
 
         // Release hold and settle from ledger current balance
         mockState.account.held_balance -= tx.amount;
         mockState.account.current_balance -= tx.amount;
+        saveMockState();
 
         // Record Audit Entry
-        const nextScn = mockState.auditLogs[mockState.auditLogs.length - 1].scn + 1;
+        const nextScn = mockState.auditLogs.length > 0 
+          ? mockState.auditLogs[mockState.auditLogs.length - 1].scn + 1 
+          : 18492044;
+
         mockState.auditLogs.push({
           scn: nextScn,
           tx_id: tx.id,
-          event_type: 'MANAGER_CHECKER_AUTHORIZATION',
+          event_type: isTier3 ? 'AMLA_TIER3_STAGE2_FINAL_SETTLEMENT' : 'MANAGER_CHECKER_AUTHORIZATION',
           actor_id: checkerId,
           actor_role: 'MANAGER',
           account_id: tx.from_account_id,
-          delta_amount: 0,
+          delta_amount: -tx.amount,
           balance_after: mockState.account.current_balance,
           digest_hash: Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2),
           timestamp: tx.approved_at,
           status: 'VERIFIED',
         });
+        saveMockState();
 
         // Dispatch approval release email to notification-service (:8083) -> MailHog (:1025 / :8025)
         try {
-          axios.post('http://localhost:8083/api/v1/notifications/simulate-tier2-approval').catch(() => {});
+          axios.post('http://localhost:8083/api/v1/notifications/simulate-tier2-approval', {
+            transfer_id: tx.id,
+            amount: tx.amount,
+            from_account_id: tx.from_account_id,
+            to_account_id: tx.to_account_id,
+            recipient_email: 'juan.delacruz@retailbank.ph',
+            memo: `Settlement Advice: Transfer ${tx.id} for PHP ${tx.amount.toLocaleString()} was approved and released by ${checkerName}. Funds debited.`
+          }).catch(() => {});
         } catch (_) {}
 
         return resolve({
           data: {
             transfer_id: tx.id,
             status: 'SETTLED',
-            message: 'Transfer authorized. Soft hold cleared and Oracle XE master balance permanently debited.'
+            message: isTier3
+              ? 'AMLA Tier 3 Transfer Fully Authorized. Dual manager approval completed, soft hold released, and funds settled.'
+              : 'Transfer authorized. Soft hold cleared and Oracle XE master balance permanently debited.'
           }
         });
       }
@@ -449,8 +657,9 @@ function handleMockFallback(config) {
         tx.rejection_reason = payload.reason || 'Flagged during dual-control operations review.';
 
         // Release hold back to customer's available balance
-        mockState.account.held_balance -= tx.amount;
-        mockState.account.available_balance += tx.amount;
+        mockState.account.held_balance = Math.max(0, (mockState.account.held_balance || 0) - tx.amount);
+        mockState.account.available_balance = (mockState.account.available_balance || 0) + tx.amount;
+        saveMockState();
 
         // Record Audit Entry
         const nextScn = mockState.auditLogs[mockState.auditLogs.length - 1].scn + 1;
@@ -467,6 +676,20 @@ function handleMockFallback(config) {
           timestamp: tx.rejected_at,
           status: 'VERIFIED',
         });
+        saveMockState();
+
+        // Dispatch disapproval advice to notification-service (:8083) -> MailHog (:1025 / :8025)
+        // Explicitly sent to the initiating customer (Juan Dela Cruz) per BSP Circular 1033 & RA 7394
+        try {
+          axios.post('http://localhost:8083/api/v1/notifications/simulate-transfer', {
+            amount: tx.amount,
+            transfer_id: tx.id,
+            from_account_id: tx.from_account_id,
+            to_account_id: tx.to_account_id,
+            recipient_email: 'juan.delacruz@retailbank.ph',
+            memo: `Disapproval Advice: Transfer ${tx.id} for PHP ${tx.amount.toLocaleString()} was voided by Manager Beatriz Ocampo. Reason: ${payload.reason || 'Dual-control rejection'}. Soft hold released, PHP 0 debited.`
+          }).catch(() => {});
+        } catch (_) {}
 
         return resolve({
           data: {

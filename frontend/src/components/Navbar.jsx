@@ -28,7 +28,10 @@ export default function Navbar({ onRefreshBalance }) {
         {/* Role Switcher for Capstone Demonstration */}
         <div className="hidden sm:flex items-center gap-1 bg-slate-900/90 border border-slate-800 p-1 rounded-xl text-xs shadow-inner">
           <button
-            onClick={() => switchRole('ROLE_CUSTOMER')}
+            onClick={() => {
+              switchRole('ROLE_CUSTOMER');
+              onRefreshBalance?.();
+            }}
             className={`px-3.5 py-1.5 rounded-lg font-medium transition-all ${
               user?.role === 'ROLE_CUSTOMER'
                 ? 'bg-indigo-600 text-white shadow-sm font-semibold'
@@ -38,7 +41,10 @@ export default function Navbar({ onRefreshBalance }) {
             Customer Portal
           </button>
           <button
-            onClick={() => switchRole('ROLE_MANAGER')}
+            onClick={() => {
+              switchRole('ROLE_MANAGER');
+              onRefreshBalance?.();
+            }}
             className={`px-3.5 py-1.5 rounded-lg font-medium transition-all ${
               user?.role === 'ROLE_MANAGER'
                 ? 'bg-amber-600 text-white shadow-sm font-semibold'
@@ -48,7 +54,10 @@ export default function Navbar({ onRefreshBalance }) {
             Manager Console (Maker-Checker)
           </button>
           <button
-            onClick={() => switchRole('ROLE_ADMIN')}
+            onClick={() => {
+              switchRole('ROLE_ADMIN');
+              onRefreshBalance?.();
+            }}
             className={`px-3.5 py-1.5 rounded-lg font-medium transition-all ${
               user?.role === 'ROLE_ADMIN'
                 ? 'bg-emerald-600 text-white shadow-sm font-semibold'
@@ -69,7 +78,7 @@ export default function Navbar({ onRefreshBalance }) {
           </div>
           <div className="text-left hidden md:block">
             <p className="text-xs font-semibold text-white leading-tight">{user?.name || 'Authorized User'}</p>
-            <p className="text-[10px] font-mono text-slate-400">ID: {user?.user_id}</p>
+            <p className="text-[10px] font-mono text-slate-400">ID: {user?.user_id}{user?.title ? ` • ${user.title}` : ''}</p>
           </div>
         </div>
       </div>

@@ -55,8 +55,10 @@ export default function AdminPortal() {
     );
   });
 
-  // Dynamic Transaction Lifecycle Badge
+  // Dynamic Transaction Lifecycle Badge with Uniform Size (w-[130px]) for visual consistency
   const renderAuditStatus = (log) => {
+    const baseClass = "w-[130px] py-1 rounded-full text-[10px] font-semibold inline-flex items-center justify-center gap-1.5 font-mono border shadow-sm";
+
     // 1. Settled Mutations (STP Instant Settlement or Approved by Manager)
     if (
       log.event_type === 'BALANCE_MUTATION_DEBIT' ||
@@ -64,9 +66,9 @@ export default function AdminPortal() {
       log.event_type === 'AMLA_TIER3_STAGE2_FINAL_SETTLEMENT'
     ) {
       return (
-        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 inline-flex items-center gap-1 font-mono">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-          SETTLED
+        <span className={`${baseClass} bg-emerald-500/10 text-emerald-400 border-emerald-500/25`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+          <span>SETTLED</span>
         </span>
       );
     }
@@ -74,9 +76,9 @@ export default function AdminPortal() {
     // 2. Voided / Disapproved
     if (log.event_type === 'MAKER_CHECKER_DISAPPROVAL_VOID') {
       return (
-        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20 inline-flex items-center gap-1 font-mono">
-          <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
-          VOIDED
+        <span className={`${baseClass} bg-rose-500/10 text-rose-400 border-rose-500/25`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0" />
+          <span>VOIDED</span>
         </span>
       );
     }
@@ -84,9 +86,9 @@ export default function AdminPortal() {
     // 3. Stage 1 Signed (AMLA Level 1 Sign-Off complete, awaiting L2)
     if (log.event_type === 'AMLA_TIER3_STAGE1_L1_SIGNOFF') {
       return (
-        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 inline-flex items-center gap-1 font-mono">
-          <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
-          STAGE 1 SIGNED
+        <span className={`${baseClass} bg-indigo-500/10 text-indigo-300 border-indigo-500/25`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
+          <span>STAGE 1 SIGNED</span>
         </span>
       );
     }
@@ -94,16 +96,16 @@ export default function AdminPortal() {
     // 4. Soft Hold / AMLA CTR Hold (Pending Manager Approval)
     if (log.event_type.includes('HOLD')) {
       return (
-        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/20 inline-flex items-center gap-1 font-mono">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-          PENDING (HELD)
+        <span className={`${baseClass} bg-amber-500/10 text-amber-300 border-amber-500/25`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+          <span>PENDING (HELD)</span>
         </span>
       );
     }
 
     return (
-      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-800 text-slate-300 border border-slate-700 font-mono">
-        LOGGED
+      <span className={`${baseClass} bg-slate-800 text-slate-300 border-slate-700`}>
+        <span>LOGGED</span>
       </span>
     );
   };
@@ -503,22 +505,22 @@ export default function AdminPortal() {
                           CTR MANDATORY
                         </span>
                       </td>
-                      <td className="py-3.5">
+                      <td className="py-3.5 whitespace-nowrap">
                         {isSettled ? (
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 inline-flex items-center gap-1 font-mono">
-                            <CheckCircle2 className="w-3 h-3" /> FULLY SETTLED (L1 &amp; L2 APPROVED)
+                          <span className="w-[230px] py-1 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 inline-flex items-center justify-center gap-1.5 font-mono shadow-sm">
+                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> FULLY SETTLED (L1 &amp; L2)
                           </span>
                         ) : isRejected ? (
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20 inline-flex items-center gap-1 font-mono">
-                            <XCircle className="w-3 h-3" /> DISAPPROVED &amp; VOIDED
+                          <span className="w-[230px] py-1 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/25 inline-flex items-center justify-center gap-1.5 font-mono shadow-sm">
+                            <XCircle className="w-3.5 h-3.5 shrink-0" /> DISAPPROVED &amp; VOIDED
                           </span>
                         ) : stage === 2 ? (
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 inline-flex items-center gap-1 font-mono">
-                            <Clock className="w-3 h-3" /> STAGE 2: AWAITING L2 SENIOR MANAGER
+                          <span className="w-[230px] py-1 rounded-full text-[10px] font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/25 inline-flex items-center justify-center gap-1.5 font-mono shadow-sm">
+                            <Clock className="w-3.5 h-3.5 shrink-0" /> STAGE 2: AWAITING L2 MANAGER
                           </span>
                         ) : (
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/20 inline-flex items-center gap-1 font-mono">
-                            <Clock className="w-3 h-3" /> STAGE 1: AWAITING L1 OPERATIONS CHECKER
+                          <span className="w-[230px] py-1 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/25 inline-flex items-center justify-center gap-1.5 font-mono shadow-sm">
+                            <Clock className="w-3.5 h-3.5 shrink-0" /> STAGE 1: AWAITING L1 CHECKER
                           </span>
                         )}
                       </td>

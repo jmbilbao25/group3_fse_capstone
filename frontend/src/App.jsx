@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Login from './components/Login';
@@ -51,13 +52,20 @@ function MainApp() {
     }, 6000);
   };
 
-  // If unauthenticated, present the Secure Banking Login Gateway
+  // Helper to determine home route based on role
+  const getRoleHome = () => {
+    if (user?.role === 'ROLE_MANAGER') return '/manager';
+    if (user?.role === 'ROLE_ADMIN') return '/admin';
+    return '/customer';
+  };
+
+  // If unauthenticated, route to Login gateway
   if (!user) {
     return (
-      <>
-        <Login onLoginSuccess={fetchBalance} />
-        <Toast toast={toast} onClose={() => setToast(null)} />
-      </>
+      <Routes>
+        <Route path="/login" element={<Login onLoginSuccess={fetchBalance} />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
     );
   }
 
@@ -66,7 +74,7 @@ function MainApp() {
       <Navbar onRefreshBalance={fetchBalance} />
 
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 md:p-8 space-y-6">
-        {/* Dynamic Context Header Banner (Dedicated for Operations & Compliance Consoles) */}
+        {/* Dynamic Context Header Banner */}
         {user?.role !== 'ROLE_CUSTOMER' && (
           <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-indigo-950/50 via-slate-900/80 to-slate-900 border border-indigo-500/20 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 backdrop-blur-md">
             <div>
@@ -92,26 +100,52 @@ function MainApp() {
           </div>
         )}
 
-        {/* Dynamic Role Views: STRICT ISOLATION */}
-        {user?.role === 'ROLE_CUSTOMER' && (
-          <CustomerPortal
-            balance={balance}
-            onTransactionComplete={() => fetchBalance(activeAccountId)}
-            onSwitchAccount={handleSwitchAccount}
-            showToast={showToast}
+        {/* React Router v6 Declarative Route Hierarchy */}
+        <Routes>
+          <Route
+            path="/customer"
+            element={
+              user?.role === 'ROLE_CUSTOMER' ? (
+                <CustomerPortal
+                  balance={balance}
+                  onTransactionComplete={() => fetchBalance(activeAccountId)}
+                  onSwitchAccount={handleSwitchAccount}
+                  showToast={showToast}
+                />
+              ) : (
+                <Navigate to={getRoleHome()} replace />
+              )
+            }
           />
-        )}
 
-        {user?.role === 'ROLE_MANAGER' && (
-          <ManagerPortal
-            onActionComplete={fetchBalance}
-            showToast={showToast}
+          <Route
+            path="/manager"
+            element={
+              user?.role === 'ROLE_MANAGER' ? (
+                <ManagerPortal
+                  onActionComplete={fetchBalance}
+                  showToast={showToast}
+                />
+              ) : (
+                <Navigate to={getRoleHome()} replace />
+              )
+            }
           />
-        )}
 
-        {user?.role === 'ROLE_ADMIN' && (
-          <AdminPortal />
-        )}
+          <Route
+            path="/admin"
+            element={
+              user?.role === 'ROLE_ADMIN' ? (
+                <AdminPortal />
+              ) : (
+                <Navigate to={getRoleHome()} replace />
+              )
+            }
+          />
+
+          <Route path="/" element={<Navigate to={getRoleHome()} replace />} />
+          <Route path="*" element={<Navigate to={getRoleHome()} replace />} />
+        </Routes>
       </main>
 
       <Toast toast={toast} onClose={() => setToast(null)} />
@@ -129,8 +163,11 @@ function MainApp() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <MainApp />
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <MainApp />
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
+

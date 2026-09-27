@@ -626,8 +626,12 @@ function handleMockFallback(config) {
           responseMsg = 'Transfer exceeds STP threshold (> ₱50k). Soft hold placed pending Operations Manager authorization.';
         }
 
+        const isPayCredit = (matchedAccount.account_number || toAccountId || '').includes('3003') || toAccountId === 'A2003';
+
         const newTransfer = {
-          id: 'TX-' + Math.floor(5000 + Math.random() * 4999) + (isTier3 ? '-AMLA' : isTier2 ? '-MC' : '-STP'),
+          id: isPayCredit
+            ? 'CRD-PAY-' + Math.floor(100000 + Math.random() * 900000)
+            : ('TX-' + Math.floor(5000 + Math.random() * 4999) + (isTier3 ? '-AMLA' : isTier2 ? '-MC' : '-STP')),
           from_account_id: sourceAccount.account_id,
           to_account_id: matchedAccount.account_number || toAccountId,
           recipient_name: payload.recipient_name || matchedAccount.account_name || 'Beneficiary Account',
@@ -637,7 +641,7 @@ function handleMockFallback(config) {
           regulatory_tier: tier,
           tier_label: tierLabel,
           created_at: new Date().toISOString(),
-          memo: payload.memo || 'Standard Retail Transfer',
+          memo: payload.memo || (isPayCredit ? 'Credit Line Balance Settlement' : 'Standard Retail Transfer'),
           maker_user_id: payload.maker_user_id || 'U1001',
           hold_active: isHeld,
           approval_stage: isTier3 ? 1 : (isTier2 ? 1 : 0),
@@ -664,7 +668,6 @@ function handleMockFallback(config) {
           sourceAccount.available_balance -= amount;
 
           // If paying down credit card balance from Savings:
-          const isPayCredit = (newTransfer.to_account_id || '').includes('3003') || newTransfer.to_account_id === 'A2003';
           if (isPayCredit) {
             const targetCredit = mockState.creditAccount || initialMockState.creditAccount;
             targetCredit.current_balance = Math.max(0, (targetCredit.current_balance || 0) - amount);

@@ -84,23 +84,48 @@ export default function CustomerPortal({ balance, onTransactionComplete, onSwitc
     return raw.length > 4 ? `••••••••${raw.slice(-4)}` : '••••••••';
   };
 
-  const handlePayCreditBalance = () => {
+  const handlePayCreditOption = (mode = 'FULL') => {
     setActiveTab('transfer');
     handleSelectAccount('1000-2000-3001');
     setToAccount('1000-2000-3003');
     setRecipientName('Juan Dela Cruz (Revolving Credit)');
-    const outstanding = (mockState.creditAccount?.current_balance || balance?.current_balance || 2000).toFixed(2);
-    setAmountInput(outstanding);
-    setMemo('Credit Card Statement Balance Settlement');
-    showToast({
-      type: 'info',
-      title: 'Credit Settlement Form Ready',
-      detail: `Pre-filled payment of ${formatPHP(parseFloat(outstanding))} from Savings to settle Credit Line.`,
-    });
+    const totalDue = mockState.creditAccount?.current_balance ?? (balance?.current_balance || 2000);
+    const minDue = Math.max(500, Math.min(totalDue, totalDue * 0.05));
+    setCreditSettlementPlan(mode);
+
+    if (mode === 'FULL') {
+      setAmountInput(totalDue.toFixed(2));
+      setMemo('Credit Line Full Statement Balance Settlement');
+      showToast({
+        type: 'info',
+        title: 'Full Settlement Pre-filled',
+        detail: `Pre-filled full balance of ${formatPHP(totalDue)} from Savings to Credit Line.`,
+      });
+    } else if (mode === 'MIN') {
+      setAmountInput(minDue.toFixed(2));
+      setMemo('Credit Line Minimum Amount Due (MAD) Settlement');
+      showToast({
+        type: 'info',
+        title: 'Minimum Due Pre-filled',
+        detail: `Pre-filled minimum amount due of ${formatPHP(minDue)} to avoid late charges.`,
+      });
+    } else {
+      setAmountInput('');
+      setMemo('Credit Line Partial Payment');
+      showToast({
+        type: 'info',
+        title: 'Credit Settlement Ready',
+        detail: 'Enter your preferred custom payment amount.',
+      });
+    }
   };
+
+  const handlePayCreditBalance = () => handlePayCreditOption('FULL');
 
   const handleViewReceipt = (tx) => {
     const isIncoming = tx.direction === 'INCOMING' || (tx.from_account_id || '').includes('9999') || (tx.recipient_name || '').includes('Payroll');
+    const isCreditSettlement = (tx.id || '').startsWith('CRD-PAY') || (tx.to_account_id || '').includes('3003') || (tx.memo || '').toLowerCase().includes('credit');
+    
     setReceiptData({
       refNumber: tx.id,
       fromAccount: tx.from_account_id || balance?.account_id || '1000-2000-3001',
@@ -109,9 +134,14 @@ export default function CustomerPortal({ balance, onTransactionComplete, onSwitc
       recipientName: tx.recipient_name,
       amount: tx.amount,
       fee: 0,
-      memo: tx.memo || (isIncoming ? 'Payroll Credit' : 'Fund Transfer'),
+      memo: tx.memo || (isIncoming ? 'Payroll Credit' : isCreditSettlement ? 'Credit Facility Settlement' : 'Fund Transfer'),
       isHighValue: tx.status === 'PENDING_APPROVAL',
       isIncoming,
+      isCreditSettlement,
+      settlementPlan: isCreditSettlement ? (tx.amount >= 2000 ? 'Full Statement Balance Settlement' : tx.amount >= 500 ? 'Minimum Amount Due (MAD)' : 'Partial Principal Payment') : undefined,
+      priorDebt: isCreditSettlement ? 2000 : undefined,
+      remainingDebt: isCreditSettlement ? Math.max(0, 2000 - tx.amount) : undefined,
+      restoredCreditLimit: isCreditSettlement ? Math.min(300000, 298000 + tx.amount) : undefined,
       timestamp: new Date(tx.created_at || Date.now()),
     });
   };
@@ -131,7 +161,36 @@ export default function CustomerPortal({ balance, onTransactionComplete, onSwitc
     const dateFormatted = receiptData.timestamp.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
     const timeFormatted = receiptData.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    const content = `=====================================================
+    let content = '';
+    if (receiptData.isCreditSettlement) {
+      content = `=====================================================
+         CAPSTONE CORE RETAIL BANKING
+     OFFICIAL CREDIT FACILITY SETTLEMENT RECEIPT
+=====================================================
+Reference No.  : ${receiptData.refNumber}
+Date & Time    : ${dateFormatted} ${timeFormatted}
+Status         : ${receiptData.isHighValue ? 'PENDING VERIFICATION (UNDER REVIEW)' : 'COMPLETED (INSTANT BOOK SETTLEMENT)'}
+
+SETTLEMENT SUMMARY
+-----------------------------------------------------
+Settlement Type: ${receiptData.settlementPlan || 'Full Statement Balance Settlement'}
+Amount Paid    : PHP ${receiptData.amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+Service Fee    : PHP 0.00 (FREE - INTERNAL BOOK SETTLEMENT)
+Remaining Debt : PHP ${(receiptData.remainingDebt ?? 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+Restored Limit : PHP ${(receiptData.restoredCreditLimit ?? 300000).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+
+FACILITY & SENDER PARTICULARS
+-----------------------------------------------------
+Credit Line    : ${receiptData.toAccount} (${receiptData.recipientName})
+Source Account : ${receiptData.fromAccount} (${receiptData.senderName})
+Purpose / Note : ${receiptData.memo || 'Credit Facility Balance Settlement'}
+=====================================================
+This is a computer-generated electronic receipt.
+Certified compliant with BSP Circular No. 1033 
+and the Truth in Lending Act standards.
+=====================================================`;
+    } else {
+      content = `=====================================================
          CAPSTONE CORE RETAIL BANKING
           OFFICIAL TRANSACTION RECEIPT
 =====================================================
@@ -158,6 +217,7 @@ Purpose / Note : ${receiptData.memo || 'Fund Transfer'}
 This is a computer-generated electronic receipt.
 Certified compliant with BSP Circular 1033 standards.
 =====================================================`;
+    }
 
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -188,7 +248,11 @@ Certified compliant with BSP Circular 1033 standards.
 
     const headers = ['Reference_No', 'Type', 'Party_Name', 'Account_No', 'Amount_PHP', 'Status', 'Date', 'Time', 'Purpose_Note'];
     const rows = transactionsToExport.map((tx) => {
-      const isIncoming = tx.direction === 'INCOMING' || (tx.from_account_id || '').includes('9999') || (tx.recipient_name || '').includes('Payroll');
+      const isCreditContext = accountFilter === '1000-2000-3003';
+      const isIncoming = tx.direction === 'INCOMING' || 
+                         (tx.from_account_id || '').includes('9999') || 
+                         (tx.recipient_name || '').includes('Payroll') ||
+                         (isCreditContext && (tx.to_account_id || '').includes('3003'));
       const txDate = new Date(tx.created_at);
       return [
         `"${tx.id}"`,
@@ -227,6 +291,7 @@ Certified compliant with BSP Circular 1033 standards.
   const [memo, setMemo] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentIdempotencyKey, setCurrentIdempotencyKey] = useState(generateUUID());
+  const [creditSettlementPlan, setCreditSettlementPlan] = useState('FULL'); // 'FULL' | 'MIN' | 'CUSTOM'
 
   // Modal States
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
@@ -234,6 +299,22 @@ Certified compliant with BSP Circular 1033 standards.
   const [receiptCopied, setReceiptCopied] = useState(false);
 
   const numericAmount = parseFloat(amountInput) || 0;
+
+  // Pre-flight check & credit payment state variables
+  const isPayingCreditLine = (toAccount || '').replace(/[\s-]/g, '').includes('3003') || (toAccount || '').toUpperCase() === 'A2003';
+  const totalCreditDebt = mockState.creditAccount?.current_balance ?? 2000;
+  const minimumCreditDue = Math.max(500, Math.min(totalCreditDebt, totalCreditDebt * 0.05));
+  const sourceAvailable = isCredit
+    ? (mockState.creditAccount?.available_balance || balance?.available_balance || 0)
+    : (mockState.account?.available_balance || balance?.available_balance || 0);
+
+  const isInsufficientSourceFunds = numericAmount > sourceAvailable;
+  const projectedSourceRemaining = Math.max(0, sourceAvailable - numericAmount);
+  const projectedCreditDebt = Math.max(0, totalCreditDebt - numericAmount);
+  const projectedRestoredCreditLimit = Math.min(
+    mockState.creditAccount?.credit_limit || 300000,
+    (mockState.creditAccount?.available_balance || 298000) + numericAmount
+  );
 
   const handleAmountChange = (e) => {
     const masked = parseMaskedInput(e.target.value, 2);
@@ -248,7 +329,7 @@ Certified compliant with BSP Circular 1033 standards.
   };
 
   const handleSetMaxAmount = () => {
-    const maxVal = (balance?.available_balance || 0).toFixed(2);
+    const maxVal = sourceAvailable.toFixed(2);
     setAmountInput(maxVal);
   };
 
@@ -303,11 +384,11 @@ Certified compliant with BSP Circular 1033 standards.
       return;
     }
 
-    if (numericAmount > (balance?.available_balance || 0)) {
+    if (numericAmount > sourceAvailable) {
       showToast({
         type: 'error',
         title: 'Insufficient Balance',
-        detail: `You only have ${formatPHP(balance?.available_balance)} available to transfer.`,
+        detail: `You only have ${formatPHP(sourceAvailable)} available in your source account. ${isPayingCreditLine ? 'Consider paying the Minimum Due (' + formatPHP(minimumCreditDue) + ').' : ''}`,
       });
       return;
     }
@@ -319,7 +400,11 @@ Certified compliant with BSP Circular 1033 standards.
   const handleExecuteTransfer = async () => {
     setIsSubmitting(true);
     try {
-      const generatedRef = 'TRX-' + Math.floor(100000 + Math.random() * 900000);
+      const isPayingCredit = (toAccount || '').replace(/[\s-]/g, '').includes('3003') || (toAccount || '').toUpperCase() === 'A2003';
+      const generatedRef = isPayingCredit
+        ? 'CRD-PAY-' + Math.floor(100000 + Math.random() * 900000)
+        : 'TRX-' + Math.floor(100000 + Math.random() * 900000);
+
       const res = await apiClient.post(
         '/transfers',
         {
@@ -328,7 +413,7 @@ Certified compliant with BSP Circular 1033 standards.
           recipient_name: recipientName.trim(),
           amount: numericAmount,
           currency: 'PHP',
-          memo: memo.trim() || 'Fund Transfer',
+          memo: memo.trim() || (isPayingCredit ? 'Credit Line Statement Balance Settlement' : 'Fund Transfer'),
           maker_user_id: user?.user_id || 'U1001',
         },
         {
@@ -339,12 +424,24 @@ Certified compliant with BSP Circular 1033 standards.
       );
 
       const isHighValue = numericAmount > THRESHOLDS.STP_MAX;
+      const totalCreditDebt = mockState.creditAccount?.current_balance ?? 2000;
+      const minimumCreditDue = Math.max(500, Math.min(totalCreditDebt, totalCreditDebt * 0.05));
+      const projectedRestoredCreditLimit = Math.min(
+        mockState.creditAccount?.credit_limit || 300000,
+        (mockState.creditAccount?.available_balance || 298000) + numericAmount
+      );
 
       if (isHighValue) {
         showToast({
           type: 'warning',
           title: 'Transfer Submitted for Verification',
           detail: `Your transfer of ${formatPHP(numericAmount)} to ${recipientName} has been submitted for bank manager approval.`,
+        });
+      } else if (isPayingCredit) {
+        showToast({
+          type: 'success',
+          title: 'Credit Settlement Successful',
+          detail: `Successfully paid ${formatPHP(numericAmount)} towards your Credit Line. Limit restored!`,
         });
       } else {
         showToast({
@@ -363,8 +460,15 @@ Certified compliant with BSP Circular 1033 standards.
         recipientName: recipientName.trim(),
         amount: numericAmount,
         fee: 0,
-        memo: memo.trim() || 'Fund Transfer',
+        memo: memo.trim() || (isPayingCredit ? 'Credit Line Statement Balance Settlement' : 'Fund Transfer'),
         isHighValue,
+        isCreditSettlement: isPayingCredit,
+        settlementPlan: isPayingCredit
+          ? (numericAmount >= totalCreditDebt ? 'Full Statement Balance Settlement' : numericAmount >= minimumCreditDue ? 'Minimum Amount Due (MAD)' : 'Partial Principal Payment')
+          : undefined,
+        priorDebt: isPayingCredit ? totalCreditDebt : undefined,
+        remainingDebt: isPayingCredit ? Math.max(0, totalCreditDebt - numericAmount) : undefined,
+        restoredCreditLimit: isPayingCredit ? projectedRestoredCreditLimit : undefined,
         timestamp: new Date(),
       });
 
@@ -503,115 +607,222 @@ Certified compliant with BSP Circular 1033 standards.
 
       {/* 3 Dynamic Customer Balance Cards (Shown on Activity and Send Money) */}
       {activeTab !== 'profile' && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 animate-fadeIn">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch animate-fadeIn">
           {/* Card 1: Available Funds (Available Balance vs Available Credit) */}
           <div className={`relative p-6 rounded-2xl bg-gradient-to-br ${
             isCredit 
               ? 'from-slate-900 via-slate-900 to-purple-950/50 border-purple-500/40 hover:shadow-purple-500/15 hover:border-purple-500/60' 
               : 'from-slate-900 via-slate-900 to-indigo-950/50 border-indigo-500/40 hover:shadow-indigo-500/15 hover:border-indigo-500/60'
-          } border shadow-xl overflow-hidden group hover:-translate-y-1 hover:shadow-2xl transition-all duration-300`}>
+          } border shadow-xl overflow-hidden group hover:-translate-y-1 hover:shadow-2xl transition-all duration-300 flex flex-col justify-between h-full`}>
             <div className={`absolute -right-8 -top-8 w-36 h-36 ${isCredit ? 'bg-purple-500/20 group-hover:bg-purple-500/30' : 'bg-indigo-500/20 group-hover:bg-indigo-500/30'} rounded-full blur-2xl pointer-events-none transition-all duration-500`} />
-            <div className="flex items-center justify-between mb-3 relative z-10">
-              <span className={`text-xs font-semibold uppercase tracking-wider ${isCredit ? 'text-purple-400' : 'text-indigo-400'} flex items-center gap-1.5`}>
-                {isCredit ? <CreditCard className="w-4 h-4" /> : <Wallet className="w-4 h-4" />}
-                {isCredit ? 'Available Credit' : 'Available Balance'}
-                <button
-                  type="button"
-                  onClick={() => setIsBalanceVisible(!isBalanceVisible)}
-                  title={isBalanceVisible ? "Hide Balance" : "Show Balance"}
-                  className="text-slate-400 hover:text-white transition-colors ml-1 p-0.5 rounded hover:bg-slate-800"
-                >
-                  {isBalanceVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className={`w-3.5 h-3.5 ${isCredit ? 'text-purple-400' : 'text-indigo-400'}`} />}
-                </button>
-              </span>
-              <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full border ${
-                isCredit 
-                  ? 'bg-purple-500/15 text-purple-300 border-purple-500/30' 
-                  : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-              }`}>
-                {isCredit ? 'Ready to Draw' : 'Ready to Spend'}
-              </span>
+            
+            {/* Top Section */}
+            <div>
+              <div className="flex items-center justify-between mb-3 relative z-10">
+                <span className={`text-xs font-semibold uppercase tracking-wider ${isCredit ? 'text-purple-400' : 'text-indigo-400'} flex items-center gap-1.5`}>
+                  {isCredit ? <CreditCard className="w-4 h-4" /> : <Wallet className="w-4 h-4" />}
+                  {isCredit ? 'Available Credit' : 'Available Balance'}
+                  <button
+                    type="button"
+                    onClick={() => setIsBalanceVisible(!isBalanceVisible)}
+                    title={isBalanceVisible ? "Hide Balance" : "Show Balance"}
+                    className="text-slate-400 hover:text-white transition-colors ml-1 p-0.5 rounded hover:bg-slate-800 cursor-pointer"
+                  >
+                    {isBalanceVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className={`w-3.5 h-3.5 ${isCredit ? 'text-purple-400' : 'text-indigo-400'}`} />}
+                  </button>
+                </span>
+                <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full border ${
+                  isCredit 
+                    ? 'bg-purple-500/15 text-purple-300 border-purple-500/30' 
+                    : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                }`}>
+                  {isCredit ? 'Ready to Draw' : 'Ready to Spend'}
+                </span>
+              </div>
+              <div className="text-3xl font-mono font-bold text-white tracking-tight relative z-10">
+                {formatVisiblePHP(balance?.available_balance)}
+              </div>
+              <p className="text-xs text-slate-400 mt-2 relative z-10">
+                {isCredit 
+                  ? 'Remaining revolving credit line available for withdrawal or purchase.' 
+                  : 'Funds ready for immediate withdrawal or transfer.'}
+              </p>
             </div>
-            <div className="text-3xl font-mono font-bold text-white tracking-tight relative z-10">
-              {formatVisiblePHP(balance?.available_balance)}
+
+            {/* Bottom Balance Meter */}
+            <div className="mt-5 pt-4 border-t border-slate-800/80 relative z-10 space-y-2">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-slate-400">{isCredit ? 'Revolving Line Available:' : 'Unencumbered Liquidity:'}</span>
+                <span className={`font-semibold font-mono ${isCredit ? 'text-purple-300' : 'text-emerald-400'}`}>
+                  {isCredit 
+                    ? `${(100 - Math.min(100, Math.max(0, (((balance?.current_balance || 0) / (balance?.credit_limit || 300000)) * 100)))).toFixed(1)}% Available`
+                    : `${(((balance?.available_balance || 0) / ((balance?.current_balance || 1) || 1)) * 100).toFixed(1)}% Liquid`}
+                </span>
+              </div>
+              <div className="w-full h-2 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+                <div 
+                  className={`h-full ${isCredit ? 'bg-gradient-to-r from-purple-500 to-indigo-500' : 'bg-gradient-to-r from-emerald-500 to-teal-400'} rounded-full transition-all duration-500`}
+                  style={{ 
+                    width: isCredit
+                      ? `${Math.max(1, 100 - (((balance?.current_balance || 0) / (balance?.credit_limit || 300000)) * 100))}%`
+                      : `${Math.min(100, Math.max(1, (((balance?.available_balance || 0) / ((balance?.current_balance || 1) || 1)) * 100)))}%`
+                  }}
+                />
+              </div>
+              <div className="flex items-center justify-between text-[10px] text-slate-500">
+                <span>{isCredit ? 'Limit: ₱300,000.00' : 'Held: ₱725,000.00'}</span>
+                <span>{isCredit ? 'Facility in Prime Standing' : 'Liquid Funds Ready'}</span>
+              </div>
             </div>
-            <p className="text-xs text-slate-400 mt-2 relative z-10">
-              {isCredit 
-                ? 'Remaining revolving credit line available for withdrawal or purchase.' 
-                : 'Funds ready for immediate withdrawal or transfer.'}
-            </p>
           </div>
 
           {/* Card 2: Total Balance vs Approved Credit Limit */}
-          <div className="relative p-6 rounded-2xl bg-slate-900/80 border border-slate-800/80 shadow-lg overflow-hidden group hover:-translate-y-1 hover:border-slate-700 hover:shadow-xl transition-all duration-300">
+          <div className="relative p-6 rounded-2xl bg-slate-900/80 border border-slate-800/80 shadow-lg overflow-hidden group hover:-translate-y-1 hover:border-slate-700 hover:shadow-xl transition-all duration-300 flex flex-col justify-between h-full">
             <div className="absolute -right-8 -top-8 w-36 h-36 bg-blue-500/10 rounded-full blur-2xl pointer-events-none group-hover:bg-blue-500/20 transition-all duration-500" />
-            <div className="flex items-center justify-between mb-3 relative z-10">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                {isCredit ? <Building2 className="w-4 h-4 text-slate-400" /> : <CreditCard className="w-4 h-4 text-slate-400" />}
-                {isCredit ? 'Approved Credit Limit' : 'Total Balance'}
-              </span>
-              <span className="text-[10px] font-medium bg-slate-800 text-slate-300 px-2 py-0.5 rounded">
-                {isCredit ? 'Approved Facility' : 'Gross Ledger'}
-              </span>
+            
+            {/* Top Section */}
+            <div>
+              <div className="flex items-center justify-between mb-3 relative z-10">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                  {isCredit ? <Building2 className="w-4 h-4 text-slate-400" /> : <CreditCard className="w-4 h-4 text-slate-400" />}
+                  {isCredit ? 'Approved Credit Limit' : 'Total Balance'}
+                </span>
+                <span className="text-[10px] font-medium bg-slate-800 text-slate-300 px-2 py-0.5 rounded">
+                  {isCredit ? 'Approved Facility' : 'Gross Ledger'}
+                </span>
+              </div>
+              <div className="text-3xl font-mono font-bold text-slate-200 relative z-10">
+                {formatVisiblePHP(isCredit ? (balance?.credit_limit || 300000) : balance?.current_balance)}
+              </div>
+              <p className="text-xs text-slate-400 mt-2 relative z-10">
+                {isCredit 
+                  ? 'Total revolving line approved under Oracle credit assessment.' 
+                  : 'Principal funds including active holds.'}
+              </p>
             </div>
-            <div className="text-2xl font-mono font-bold text-slate-200 relative z-10">
-              {formatVisiblePHP(isCredit ? (balance?.credit_limit || 300000) : balance?.current_balance)}
+
+            {/* Bottom Facility Parameters */}
+            <div className="mt-5 pt-4 border-t border-slate-800/80 relative z-10 space-y-1.5 text-[11px]">
+              <div className="flex items-center justify-between text-slate-400">
+                <span>{isCredit ? 'Interest Rate (APR):' : 'Deposit Interest Rate:'}</span>
+                <span className="font-semibold text-slate-200">{isCredit ? '24.0% p.a. (BSP Cap)' : '1.25% p.a. Compounded'}</span>
+              </div>
+              <div className="flex items-center justify-between text-slate-400">
+                <span>{isCredit ? 'Interest-Free Grace Period:' : 'Deposit Insurance:'}</span>
+                <span className="font-semibold text-emerald-400">{isCredit ? 'Up to 25 Days (0% Interest)' : 'PDIC Insured up to ₱500k'}</span>
+              </div>
+              <div className="flex items-center justify-between text-slate-400">
+                <span>{isCredit ? 'Facility Standing:' : 'Account KYC Standing:'}</span>
+                <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                  Active &bull; Prime Rating
+                </span>
+              </div>
             </div>
-            <p className="text-xs text-slate-400 mt-2 relative z-10">
-              {isCredit 
-                ? 'Total revolving line approved under Oracle credit assessment.' 
-                : 'Principal funds including active holds.'}
-            </p>
           </div>
 
           {/* Card 3: On Hold vs Current Drawn Balance */}
-          <div className="relative p-6 rounded-2xl bg-slate-900/80 border border-slate-800/80 shadow-lg overflow-hidden group hover:-translate-y-1 hover:border-amber-500/30 hover:shadow-xl transition-all duration-300">
+          <div className="relative p-6 rounded-2xl bg-slate-900/80 border border-slate-800/80 shadow-lg overflow-hidden group hover:-translate-y-1 hover:border-amber-500/30 hover:shadow-xl transition-all duration-300 flex flex-col justify-between h-full">
             <div className="absolute -right-8 -top-8 w-36 h-36 bg-amber-500/10 rounded-full blur-2xl pointer-events-none group-hover:bg-amber-500/20 transition-all duration-500" />
-            <div className="flex items-center justify-between mb-3 relative z-10">
-              <span className="text-xs font-semibold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-                {isCredit ? <Clock className="w-4 h-4 text-amber-400" /> : <Lock className="w-4 h-4 text-amber-400" />}
-                {isCredit ? 'Current Drawn / Due' : 'On Hold'}
-              </span>
-              {isCredit ? (
-                <span className={`text-[10px] font-medium px-2 py-0.5 rounded border ${
-                  (balance?.current_balance || 0) > 0
-                    ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                    : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                }`}>
-                  {(balance?.current_balance || 0) > 0 ? 'Outstanding' : 'Fully Paid'}
+            
+            {/* Top Section */}
+            <div>
+              <div className="flex items-center justify-between mb-3 relative z-10">
+                <span className="text-xs font-semibold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                  {isCredit ? <Clock className="w-4 h-4 text-amber-400" /> : <Lock className="w-4 h-4 text-amber-400" />}
+                  {isCredit ? 'Current Drawn / Due' : 'On Hold'}
                 </span>
-              ) : (
-                balance?.held_balance > 0 && (
-                  <span className="text-[10px] font-medium bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded border border-amber-500/20 animate-pulse">
-                    Processing
+                {isCredit ? (
+                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded border ${
+                    (balance?.current_balance || 0) > 0
+                      ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                      : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                  }`}>
+                    {(balance?.current_balance || 0) > 0 ? 'Outstanding' : 'Fully Paid'}
                   </span>
-                )
-              )}
-            </div>
-            <div className="text-2xl font-mono font-bold text-amber-400 relative z-10">
-              {formatVisiblePHP(isCredit ? (balance?.current_balance || 0) : balance?.held_balance)}
-            </div>
-            <p className="text-xs text-slate-400 mt-2 relative z-10">
-              {isCredit 
-                ? 'Current balance drawn against your credit line awaiting billing cycle.' 
-                : 'Pending transfers currently undergoing bank verification.'}
-            </p>
-
-            {/* 1-Click Pay Credit Balance Button */}
-            {isCredit && (
-              <div className="mt-3 pt-3 border-t border-slate-800/80 relative z-10">
-                {(balance?.current_balance || 0) > 0 ? (
-                  <button
-                    type="button"
-                    onClick={handlePayCreditBalance}
-                    className="w-full py-2 px-3 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 hover:text-white border border-purple-500/40 hover:border-purple-500/70 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer"
-                  >
-                    <CreditCard className="w-3.5 h-3.5 text-purple-400" />
-                    <span>Pay Full Balance • {formatVisiblePHP(balance?.current_balance || 0)}</span>
-                  </button>
                 ) : (
-                  <div className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-medium">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  balance?.held_balance > 0 && (
+                    <span className="text-[10px] font-medium bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded border border-amber-500/20 animate-pulse">
+                      Processing
+                    </span>
+                  )
+                )}
+              </div>
+              <div className="text-3xl font-mono font-bold text-amber-400 relative z-10">
+                {formatVisiblePHP(isCredit ? (balance?.current_balance || 0) : balance?.held_balance)}
+              </div>
+              <p className="text-xs text-slate-400 mt-2 relative z-10">
+                {isCredit 
+                  ? 'Current balance drawn against your credit line awaiting billing cycle.' 
+                  : 'Pending transfers currently undergoing bank verification.'}
+              </p>
+            </div>
+
+            {/* Bottom Billing Cycle & Payment Actions */}
+            {isCredit && (
+              <div className="mt-4 pt-3 relative z-10 space-y-2.5">
+                {/* Billing Summary Box */}
+                <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-2.5 space-y-1.5 text-[11px]">
+                  <div className="flex items-center justify-between text-slate-400">
+                    <span className="flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>Payment Due Date:</span>
+                    </span>
+                    <span className="font-semibold text-white font-mono flex items-center gap-1.5">
+                      Oct 15, 2026
+                      <span className="text-[10px] font-sans font-medium px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                        18 days left
+                      </span>
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-slate-400">
+                    <span className="flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Billing Cutoff:</span>
+                    </span>
+                    <span className="font-mono text-slate-300">20th of every month</span>
+                  </div>
+                  <div className="flex items-center justify-between text-slate-400">
+                    <span className="flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Min. Due (MAD):</span>
+                    </span>
+                    <span className="font-mono font-bold text-amber-300">
+                      {formatVisiblePHP(Math.max(500, Math.min(balance?.current_balance || 2000, (balance?.current_balance || 2000) * 0.05)))}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Payment Action Buttons */}
+                {(balance?.current_balance || 0) > 0 ? (
+                  <div className="space-y-1.5">
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handlePayCreditOption('FULL')}
+                        title="Settle full balance to avoid finance charges"
+                        className="py-2 px-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white border border-purple-400/40 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-purple-600/30 active:scale-95 cursor-pointer"
+                      >
+                        <CreditCard className="w-3.5 h-3.5 text-purple-200 shrink-0" />
+                        <span className="truncate">Pay Full • {formatVisiblePHP(balance?.current_balance || 0)}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handlePayCreditOption('MIN')}
+                        title="Pay minimum amount due to avoid late penalty"
+                        className="py-2 px-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 text-slate-200 hover:text-white border border-slate-700/80 text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer"
+                      >
+                        <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="truncate">Pay Min • {formatVisiblePHP(Math.max(500, Math.min(balance?.current_balance || 2000, (balance?.current_balance || 2000) * 0.05)))}</span>
+                      </button>
+                    </div>
+                    <p className="text-center text-[10px] text-slate-500">
+                      BSP Cir. 1033 &bull; Instant real-time settlement from Savings
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
+                    <CheckCircle2 className="w-4 h-4" />
                     <span>No outstanding dues &bull; Facility in good standing</span>
                   </div>
                 )}
@@ -817,11 +1028,87 @@ Certified compliant with BSP Circular 1033 standards.
               )}
             </div>
 
+            {/* Credit Settlement Options when paying Credit Line */}
+            {isPayingCreditLine && (
+              <div className="p-4 rounded-2xl bg-purple-950/30 border border-purple-500/30 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-purple-300 flex items-center gap-1.5">
+                    <CreditCard className="w-3.5 h-3.5 text-purple-400" />
+                    Credit Settlement Options
+                  </span>
+                  <span className="text-[11px] font-mono text-slate-300">
+                    Total Due: <strong className="text-amber-400 font-bold">{formatPHP(totalCreditDebt)}</strong>
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {/* Option 1: Full Balance */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCreditSettlementPlan('FULL');
+                      setAmountInput(totalCreditDebt.toFixed(2));
+                      setMemo('Credit Line Full Statement Balance Settlement');
+                    }}
+                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                      parseFloat(amountInput) === totalCreditDebt
+                        ? 'bg-purple-600/30 border-purple-400 text-white shadow-md shadow-purple-600/20 ring-1 ring-purple-500/50'
+                        : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                    }`}
+                  >
+                    <span className="text-[10px] uppercase font-bold block text-purple-300">Full Balance</span>
+                    <span className="text-xs font-mono font-bold text-white block mt-0.5">{formatPHP(totalCreditDebt)}</span>
+                    <span className="text-[9px] text-emerald-400 block mt-0.5">0% Finance Charge</span>
+                  </button>
+
+                  {/* Option 2: Minimum Amount Due */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCreditSettlementPlan('MIN');
+                      setAmountInput(minimumCreditDue.toFixed(2));
+                      setMemo('Credit Line Minimum Amount Due (MAD) Settlement');
+                    }}
+                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                      parseFloat(amountInput) === minimumCreditDue
+                        ? 'bg-purple-600/30 border-purple-400 text-white shadow-md shadow-purple-600/20 ring-1 ring-purple-500/50'
+                        : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                    }`}
+                  >
+                    <span className="text-[10px] uppercase font-bold block text-amber-300">Minimum Due</span>
+                    <span className="text-xs font-mono font-bold text-white block mt-0.5">{formatPHP(minimumCreditDue)}</span>
+                    <span className="text-[9px] text-slate-400 block mt-0.5">Avoids Late Penalty</span>
+                  </button>
+
+                  {/* Option 3: Custom Amount */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCreditSettlementPlan('CUSTOM');
+                      if (parseFloat(amountInput) === totalCreditDebt || parseFloat(amountInput) === minimumCreditDue) {
+                        setAmountInput('');
+                      }
+                      setMemo('Credit Line Partial Payment');
+                    }}
+                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                      parseFloat(amountInput) !== totalCreditDebt && parseFloat(amountInput) !== minimumCreditDue && parseFloat(amountInput) > 0
+                        ? 'bg-purple-600/30 border-purple-400 text-white shadow-md shadow-purple-600/20 ring-1 ring-purple-500/50'
+                        : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                    }`}
+                  >
+                    <span className="text-[10px] uppercase font-bold block text-indigo-300">Custom Amount</span>
+                    <span className="text-xs font-mono font-bold text-white block mt-0.5">Any ₱ Amount</span>
+                    <span className="text-[9px] text-slate-400 block mt-0.5">Partial Paydown</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
                 <span>Amount (PHP)</span>
                 <span className="text-[11px] text-slate-400">
-                  Available: <strong className="text-white font-mono">{formatPHP(balance?.available_balance)}</strong>
+                  Available in Source: <strong className="text-white font-mono">{formatPHP(sourceAvailable)}</strong>
                 </span>
               </label>
               <div className="relative">
@@ -859,6 +1146,65 @@ Certified compliant with BSP Circular 1033 standards.
               </div>
             </div>
 
+            {/* Pre-Flight Funds Sufficiency Check & Balance Simulation */}
+            {isInsufficientSourceFunds && (
+              <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-3 text-xs text-rose-300 animate-fadeIn">
+                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <strong className="block text-rose-200 font-semibold">Insufficient Source Account Balance</strong>
+                  <p>
+                    Your source account only has <strong className="font-mono text-white">{formatPHP(sourceAvailable)}</strong> available, but you requested <strong className="font-mono text-white">{formatPHP(numericAmount)}</strong>. Shortfall: <strong className="font-mono text-rose-300">{formatPHP(numericAmount - sourceAvailable)}</strong>.
+                  </p>
+                  {isPayingCreditLine && (
+                    <p className="text-[11px] text-slate-300 pt-0.5">
+                      💡 Tip: Click <strong>Minimum Due ({formatPHP(minimumCreditDue)})</strong> to maintain good credit standing within your available funds.
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {!isInsufficientSourceFunds && numericAmount > 0 && (
+              <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800/80 text-xs space-y-2 animate-fadeIn">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="flex items-center gap-1.5 font-semibold text-slate-300">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                    Pre-Flight Validation Check
+                  </span>
+                  <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                    ✓ Sufficient Funds Verified
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] pt-1.5 border-t border-slate-800/60 font-mono">
+                  <div>
+                    <span className="text-[10px] text-slate-400 block font-sans">Source Available:</span>
+                    <span className="text-white font-bold">{formatPHP(sourceAvailable)}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 block font-sans">Projected Balance:</span>
+                    <span className="text-indigo-300 font-bold">{formatPHP(projectedSourceRemaining)}</span>
+                  </div>
+                  {isPayingCreditLine ? (
+                    <>
+                      <div>
+                        <span className="text-[10px] text-slate-400 block font-sans">Remaining Debt:</span>
+                        <span className="text-emerald-400 font-bold">{formatPHP(projectedCreditDebt)}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-400 block font-sans">Restored Limit:</span>
+                        <span className="text-purple-300 font-bold">{formatPHP(projectedRestoredCreditLimit)}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="col-span-2">
+                      <span className="text-[10px] text-slate-400 block font-sans">Settlement Speed:</span>
+                      <span className="text-emerald-400 font-sans font-semibold">Real-Time STP Settlement (0 Fee)</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                 Note / Purpose <span className="text-slate-500 font-normal">(Optional)</span>
@@ -875,10 +1221,23 @@ Certified compliant with BSP Circular 1033 standards.
             <div className="pt-2">
               <button
                 type="submit"
-                className="w-full py-4 rounded-2xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all duration-200 shadow-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-indigo-600/30 hover:shadow-indigo-500/50 hover:shadow-2xl active:scale-[0.99]"
+                disabled={isSubmitting || isInsufficientSourceFunds || numericAmount <= 0}
+                className={`w-full py-4 rounded-2xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all duration-200 shadow-xl ${
+                  isInsufficientSourceFunds || numericAmount <= 0
+                    ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700/60'
+                    : isPayingCreditLine
+                    ? 'bg-gradient-to-r from-purple-600 via-indigo-600 to-indigo-500 hover:from-purple-500 hover:to-indigo-500 text-white shadow-purple-600/30 hover:shadow-purple-500/50 hover:shadow-2xl active:scale-[0.99] cursor-pointer'
+                    : 'bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-indigo-600/30 hover:shadow-indigo-500/50 hover:shadow-2xl active:scale-[0.99] cursor-pointer'
+                }`}
               >
-                <Send className="w-4 h-4" />
-                Review &amp; Send Money
+                {isPayingCreditLine ? <CreditCard className="w-4 h-4" /> : <Send className="w-4 h-4" />}
+                {isInsufficientSourceFunds
+                  ? 'Insufficient Funds to Settle'
+                  : numericAmount <= 0
+                  ? 'Enter Amount to Proceed'
+                  : isPayingCreditLine
+                  ? 'Review & Settle Credit Balance 💳'
+                  : 'Review & Send Money 🔒'}
               </button>
             </div>
 
@@ -920,7 +1279,7 @@ Certified compliant with BSP Circular 1033 standards.
                 if (accountFilter === '1000-2000-3001') {
                   matchesAccount = isFrom.includes('3001') || isFrom === 'A2001';
                 } else if (accountFilter === '1000-2000-3003') {
-                  matchesAccount = isFrom.includes('3003') || isFrom === 'A2003';
+                  matchesAccount = isFrom.includes('3003') || isFrom === 'A2003' || (tx.to_account_id || '').includes('3003');
                 }
                 const txDate = new Date(tx.created_at);
                 let matchesDate = true;
@@ -1049,7 +1408,7 @@ Certified compliant with BSP Circular 1033 standards.
               if (accountFilter === '1000-2000-3001') {
                 matchesAccount = isFrom.includes('3001') || isFrom === 'A2001';
               } else if (accountFilter === '1000-2000-3003') {
-                matchesAccount = isFrom.includes('3003') || isFrom === 'A2003';
+                matchesAccount = isFrom.includes('3003') || isFrom === 'A2003' || (tx.to_account_id || '').includes('3003');
               }
               const txDate = new Date(tx.created_at);
               let matchesDate = true;
@@ -1099,7 +1458,12 @@ Certified compliant with BSP Circular 1033 standards.
                   </thead>
                   <tbody className="divide-y divide-slate-800/60">
                     {filteredTransfers.map((tx) => {
-                      const isIncoming = tx.direction === 'INCOMING' || (tx.from_account_id || '').includes('9999') || (tx.recipient_name || '').includes('Payroll');
+                      const isCreditContext = accountFilter === '1000-2000-3003';
+                      const isPaymentToCredit = (tx.to_account_id || '').includes('3003') || tx.to_account_id === 'A2003';
+                      const isIncoming = tx.direction === 'INCOMING' || 
+                                         (tx.from_account_id || '').includes('9999') || 
+                                         (tx.recipient_name || '').includes('Payroll') ||
+                                         (isCreditContext && isPaymentToCredit);
                       return (
                         <tr
                           key={tx.id}
@@ -1113,7 +1477,11 @@ Certified compliant with BSP Circular 1033 standards.
                               <span>{tx.id}</span>
                             </div>
                             <div className="mt-1">
-                              {isIncoming ? (
+                              {isCreditContext && isPaymentToCredit ? (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-sans font-semibold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                                  <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400" /> Payment Received
+                                </span>
+                              ) : isIncoming ? (
                                 <span className="inline-flex items-center gap-1 text-[9px] font-sans font-semibold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
                                   <ArrowUpRight className="w-2.5 h-2.5 rotate-180 text-emerald-400" /> Payroll Credit
                                 </span>
@@ -1130,10 +1498,14 @@ Certified compliant with BSP Circular 1033 standards.
                           </td>
                           <td className="py-3.5">
                             <p className="font-semibold text-white group-hover:text-indigo-200 transition-colors">
-                              {tx.recipient_name}
+                              {isCreditContext && isPaymentToCredit ? 'Credit Settlement Payment' : tx.recipient_name}
                             </p>
                             <p className="text-[10px] font-mono text-slate-400">
-                              {isIncoming ? `From: ${tx.from_account_id}` : tx.to_account_id}
+                              {isCreditContext && isPaymentToCredit
+                                ? `From: ${tx.from_account_id || 'Savings'}`
+                                : isIncoming
+                                ? `From: ${tx.from_account_id}`
+                                : tx.to_account_id}
                             </p>
                           </td>
                           <td className="py-3.5 font-mono font-bold">
@@ -1195,18 +1567,22 @@ Certified compliant with BSP Circular 1033 standards.
           <div className="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl space-y-5 relative">
             <div className="flex items-center justify-between border-b border-slate-800 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-                  <ShieldCheck className="w-5 h-5" />
+                <div className={`w-10 h-10 rounded-2xl ${isPayingCreditLine ? 'bg-purple-500/10 border-purple-500/30 text-purple-400' : 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400'} border flex items-center justify-center`}>
+                  {isPayingCreditLine ? <CreditCard className="w-5 h-5" /> : <ShieldCheck className="w-5 h-5" />}
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-white tracking-tight">Review Transfer Details</h3>
-                  <p className="text-xs text-slate-400">Verify recipient information before confirming</p>
+                  <h3 className="text-base font-bold text-white tracking-tight">
+                    {isPayingCreditLine ? 'Review Credit Facility Settlement' : 'Review Transfer Details'}
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    {isPayingCreditLine ? 'Verify balance settlement before posting ledger entry' : 'Verify recipient information before confirming'}
+                  </p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setIsConfirmModalOpen(false)}
-                className="text-slate-400 hover:text-white p-1.5 rounded-xl hover:bg-slate-800 transition-colors"
+                className="text-slate-400 hover:text-white p-1.5 rounded-xl hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1215,7 +1591,7 @@ Certified compliant with BSP Circular 1033 standards.
             {/* Transfer Summary Card */}
             <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 space-y-3 text-xs">
               <div className="flex justify-between items-center py-1 border-b border-slate-800/60">
-                <span className="text-slate-400">Recipient</span>
+                <span className="text-slate-400">{isPayingCreditLine ? 'Settled Facility' : 'Recipient'}</span>
                 <div className="text-right">
                   <span className="font-bold text-white block">{recipientName}</span>
                   <span className="font-mono text-[11px] text-slate-400">{toAccount}</span>
@@ -1223,30 +1599,60 @@ Certified compliant with BSP Circular 1033 standards.
               </div>
 
               <div className="flex justify-between items-center py-1 border-b border-slate-800/60">
-                <span className="text-slate-400">From Account</span>
+                <span className="text-slate-400">From Source</span>
                 <div className="text-right">
                   <span className="font-semibold text-slate-200 block">{user?.name || 'Juan Dela Cruz'}</span>
                   <span className="font-mono text-[11px] text-slate-400">{balance?.account_id || '1000-2000-3001'}</span>
                 </div>
               </div>
 
+              {isPayingCreditLine && (
+                <div className="flex justify-between items-center py-1 border-b border-slate-800/60">
+                  <span className="text-slate-400">Settlement Option</span>
+                  <span className="font-semibold text-purple-300">
+                    {numericAmount >= totalCreditDebt 
+                      ? 'Full Balance Settlement (0% Interest)' 
+                      : numericAmount >= minimumCreditDue 
+                      ? 'Minimum Amount Due (Avoids Penalty)' 
+                      : 'Partial Principal Payment'}
+                  </span>
+                </div>
+              )}
+
               <div className="flex justify-between items-center py-1 border-b border-slate-800/60">
-                <span className="text-slate-400">Transfer Amount</span>
+                <span className="text-slate-400">Amount to Transfer</span>
                 <span className="font-mono font-bold text-white text-sm">{formatPHP(numericAmount)}</span>
               </div>
 
               <div className="flex justify-between items-center py-1 border-b border-slate-800/60">
-                <span className="text-slate-400">Transfer Fee</span>
-                <span className="font-mono font-semibold text-emerald-400">₱ 0.00 (FREE)</span>
+                <span className="text-slate-400">Posting Speed &amp; Fee</span>
+                <span className="font-mono font-semibold text-emerald-400">Instant STP &bull; ₱ 0.00 (FREE)</span>
               </div>
+
+              {isPayingCreditLine && (
+                <>
+                  <div className="flex justify-between items-center py-1 border-b border-slate-800/60">
+                    <span className="text-slate-400">Current Outstanding Debt</span>
+                    <span className="font-mono font-bold text-amber-400">{formatPHP(totalCreditDebt)}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b border-slate-800/60">
+                    <span className="text-slate-400">Remaining Debt After Payment</span>
+                    <span className="font-mono font-bold text-emerald-400">{formatPHP(projectedCreditDebt)}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b border-slate-800/60">
+                    <span className="text-slate-400">Restored Available Credit</span>
+                    <span className="font-mono font-bold text-purple-300">{formatPHP(projectedRestoredCreditLimit)}</span>
+                  </div>
+                </>
+              )}
 
               <div className="flex justify-between items-center py-1 border-b border-slate-800/60">
                 <span className="text-slate-400">Purpose / Note</span>
-                <span className="text-slate-200 italic">{memo || 'Fund Transfer'}</span>
+                <span className="text-slate-200 italic">{memo || (isPayingCreditLine ? 'Credit Facility Settlement' : 'Fund Transfer')}</span>
               </div>
 
               <div className="flex justify-between items-center pt-2">
-                <span className="font-semibold text-white">Total Amount to Deduct</span>
+                <span className="font-semibold text-white">Total Amount Deducted from Savings</span>
                 <span className="font-mono font-bold text-indigo-400 text-base">{formatPHP(numericAmount)}</span>
               </div>
             </div>
@@ -1267,7 +1673,7 @@ Certified compliant with BSP Circular 1033 standards.
                 type="button"
                 onClick={() => setIsConfirmModalOpen(false)}
                 disabled={isSubmitting}
-                className="w-1/3 py-3 rounded-xl border border-slate-700 bg-slate-800/60 hover:bg-slate-800 text-xs font-semibold text-slate-300 hover:text-white transition-all"
+                className="w-1/3 py-3 rounded-xl border border-slate-700 bg-slate-800/60 hover:bg-slate-800 text-xs font-semibold text-slate-300 hover:text-white transition-all cursor-pointer"
               >
                 Back / Edit
               </button>
@@ -1275,13 +1681,19 @@ Certified compliant with BSP Circular 1033 standards.
                 type="button"
                 onClick={handleExecuteTransfer}
                 disabled={isSubmitting}
-                className={`w-2/3 py-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg ${
+                className={`w-2/3 py-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer ${
                   isSubmitting
                     ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                    : isPayingCreditLine
+                    ? 'bg-gradient-to-r from-purple-600 via-indigo-600 to-indigo-500 hover:from-purple-500 hover:to-indigo-500 text-white shadow-purple-600/30'
                     : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30'
                 }`}
               >
-                {isSubmitting ? 'Sending...' : 'Confirm & Send Money 🔒'}
+                {isSubmitting
+                  ? 'Processing Settlement...'
+                  : isPayingCreditLine
+                  ? 'Confirm & Settle Balance 💳'
+                  : 'Confirm & Send Money 🔒'}
               </button>
             </div>
           </div>
@@ -1339,10 +1751,16 @@ Certified compliant with BSP Circular 1033 standards.
               </div>
 
               <h3 className="text-xl font-bold text-white tracking-tight print-text-dark">
-                {receiptData.isHighValue ? 'Transfer Submitted' : 'Transfer Successful!'}
+                {receiptData.isCreditSettlement 
+                  ? 'Credit Settlement Successful!' 
+                  : receiptData.isHighValue 
+                  ? 'Transfer Submitted' 
+                  : 'Transfer Successful!'}
               </h3>
               <p className="text-xs text-slate-400 mt-1 print-text-muted">
-                {receiptData.isHighValue
+                {receiptData.isCreditSettlement
+                  ? 'Funds posted instantly & revolving credit limit restored'
+                  : receiptData.isHighValue
                   ? 'Under Verification: Awaiting Bank Manager Approval'
                   : 'Funds have been securely transferred'}
               </p>
@@ -1384,8 +1802,17 @@ Certified compliant with BSP Circular 1033 standards.
                 </span>
               </div>
 
+              {receiptData.isCreditSettlement && (
+                <div className="flex justify-between items-center py-0.5">
+                  <span className="text-slate-400 print-text-muted">Settlement Plan</span>
+                  <span className="font-semibold text-purple-300 print-text-dark">
+                    {receiptData.settlementPlan || 'Full Balance Settlement'}
+                  </span>
+                </div>
+              )}
+
               <div className="flex justify-between items-center py-0.5">
-                <span className="text-slate-400 print-text-muted">Sent To</span>
+                <span className="text-slate-400 print-text-muted">{receiptData.isCreditSettlement ? 'Settled Facility' : 'Sent To'}</span>
                 <div className="text-right">
                   <span className="font-semibold text-white block print-text-dark">{receiptData.recipientName}</span>
                   <span className="text-[11px] font-mono text-slate-400 print-text-muted">{receiptData.toAccount}</span>
@@ -1393,7 +1820,7 @@ Certified compliant with BSP Circular 1033 standards.
               </div>
 
               <div className="flex justify-between items-center py-0.5">
-                <span className="text-slate-400 print-text-muted">Sent From</span>
+                <span className="text-slate-400 print-text-muted">{receiptData.isCreditSettlement ? 'Source Account' : 'Sent From'}</span>
                 <div className="text-right">
                   <span className="text-slate-300 block print-text-dark">{receiptData.senderName}</span>
                   <span className="text-[11px] font-mono text-slate-400 print-text-muted">{receiptData.fromAccount}</span>
@@ -1401,9 +1828,26 @@ Certified compliant with BSP Circular 1033 standards.
               </div>
 
               <div className="flex justify-between items-center py-0.5">
-                <span className="text-slate-400 print-text-muted">Transfer Fee</span>
-                <span className="font-mono text-emerald-400 font-semibold print-text-dark">₱ 0.00 (Waived)</span>
+                <span className="text-slate-400 print-text-muted">Service Fee</span>
+                <span className="font-mono text-emerald-400 font-semibold print-text-dark">₱ 0.00 (Waived &bull; Free)</span>
               </div>
+
+              {receiptData.isCreditSettlement && (
+                <>
+                  <div className="flex justify-between items-center py-0.5">
+                    <span className="text-slate-400 print-text-muted">Prior Drawn Debt</span>
+                    <span className="font-mono text-amber-400 font-bold print-text-dark">{formatPHP(receiptData.priorDebt ?? 2000)}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-0.5">
+                    <span className="text-slate-400 print-text-muted">Remaining Debt</span>
+                    <span className="font-mono text-emerald-400 font-bold print-text-dark">{formatPHP(receiptData.remainingDebt ?? 0)}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-0.5">
+                    <span className="text-slate-400 print-text-muted">Restored Available Credit</span>
+                    <span className="font-mono text-purple-300 font-bold print-text-dark">{formatPHP(receiptData.restoredCreditLimit ?? 300000)}</span>
+                  </div>
+                </>
+              )}
 
               {receiptData.memo && (
                 <div className="flex justify-between items-center py-0.5">

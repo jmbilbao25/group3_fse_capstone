@@ -14,7 +14,6 @@ import {
   Check,
   Building2,
   Printer,
-  ExternalLink,
   X,
   FileText
 } from 'lucide-react';
@@ -718,24 +717,8 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
               </div>
             </div>
 
-            {/* MailHog Notice Card */}
-            <div className="my-4 p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2 text-indigo-300">
-                <span className="text-base">📬</span>
-                <span>Debit Advice dispatched to email</span>
-              </div>
-              <a
-                href="http://localhost:8025"
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-1 text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 underline"
-              >
-                Open MailHog <ExternalLink className="w-3 h-3" />
-              </a>
-            </div>
-
             {/* Modal Actions */}
-            <div className="flex flex-col gap-2 pt-1">
+            <div className="flex flex-col gap-2 pt-4">
               <button
                 type="button"
                 onClick={() => window.print()}

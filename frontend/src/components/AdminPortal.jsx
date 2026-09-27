@@ -191,11 +191,19 @@ export default function AdminPortal() {
     <div className="space-y-6">
       {/* Real Data-Driven Compliance KPI Badges */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* 1. SCN Audit Records */}
-        <div className="p-5 rounded-2xl bg-slate-900/80 border border-indigo-500/30 shadow-lg relative overflow-hidden group hover:border-indigo-500/50 transition-all">
+        {/* 1. Total SCN Audit Records (Clickable Shortcut) */}
+        <div
+          onClick={() => setActiveTab('audit')}
+          className={`p-5 rounded-2xl bg-slate-900/80 border shadow-lg relative overflow-hidden group transition-all cursor-pointer ${
+            activeTab === 'audit'
+              ? 'border-indigo-500 ring-1 ring-indigo-500/40 bg-indigo-950/20'
+              : 'border-indigo-500/30 hover:border-indigo-500/60'
+          }`}
+          title="Click to view Immutable SCN Journal"
+        >
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-indigo-400">
-              SCN Audit Records
+              Total Audit Records
             </span>
             <FileCheck2 className="w-4 h-4 text-indigo-400" />
           </div>
@@ -203,12 +211,20 @@ export default function AdminPortal() {
             {totalAuditLogs} {totalAuditLogs === 1 ? 'Event' : 'Events'}
           </p>
           <p className="text-[11px] text-slate-400 mt-1">
-            Append-only SCN sequential journal
+            Chronological mutation events
           </p>
         </div>
 
-        {/* 2. AMLA CTR Covered Items */}
-        <div className="p-5 rounded-2xl bg-slate-900/80 border border-rose-500/30 shadow-lg relative overflow-hidden group hover:border-rose-500/50 transition-all">
+        {/* 2. AMLA CTR Covered Items (Clickable Shortcut) */}
+        <div
+          onClick={() => setActiveTab('amla')}
+          className={`p-5 rounded-2xl bg-slate-900/80 border shadow-lg relative overflow-hidden group transition-all cursor-pointer ${
+            activeTab === 'amla'
+              ? 'border-rose-500 ring-1 ring-rose-500/40 bg-rose-950/20'
+              : 'border-rose-500/30 hover:border-rose-500/60'
+          }`}
+          title="Click to view AMLA Covered Transactions Register"
+        >
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-rose-400">
               AMLA Covered (CTR)
@@ -260,23 +276,23 @@ export default function AdminPortal() {
       <div className="flex items-center gap-3 border-b border-slate-800/80 pb-3">
         <button
           onClick={() => setActiveTab('audit')}
-          className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
             activeTab === 'audit'
               ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
               : 'text-slate-400 hover:text-white hover:bg-slate-900'
           }`}
         >
-          <FileCheck2 className="w-3.5 h-3.5" /> Immutable PostgreSQL SCN Audit Vault
+          <FileCheck2 className="w-3.5 h-3.5" /> Immutable SCN Journal
         </button>
         <button
           onClick={() => setActiveTab('amla')}
-          className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
             activeTab === 'amla'
               ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30'
               : 'text-slate-400 hover:text-white hover:bg-slate-900'
           }`}
         >
-          <ShieldAlert className="w-3.5 h-3.5" /> AMLA Covered Transactions Register (CTR)
+          <ShieldAlert className="w-3.5 h-3.5" /> AMLA Covered Transactions (CTR)
         </button>
       </div>
 
@@ -288,10 +304,10 @@ export default function AdminPortal() {
             <div>
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <FileCheck2 className="w-4 h-4 text-emerald-400" />
-                Append-Only SCN Journal (PostgreSQL 15)
+                Transaction Mutation Journal
               </h3>
               <p className="text-xs text-slate-400 mt-0.5">
-                Click any SCN sequence number to inspect the complete cryptographic audit dossier.
+                Chronological ledger mutations with SHA-256 cryptographic verification stamps. Click any SCN to inspect dossier.
               </p>
             </div>
 

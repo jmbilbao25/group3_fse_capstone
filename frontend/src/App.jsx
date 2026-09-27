@@ -43,9 +43,9 @@ function MainApp() {
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
       <Navbar onRefreshBalance={fetchBalance} />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto p-6 md:p-8 space-y-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 md:p-8 space-y-6">
         {/* Dynamic Context Header Banner */}
-        <div className="p-6 rounded-2xl bg-gradient-to-r from-indigo-950/50 via-slate-900/80 to-slate-900 border border-indigo-500/20 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 backdrop-blur-md">
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-indigo-950/50 via-slate-900/80 to-slate-900 border border-indigo-500/20 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 backdrop-blur-md">
           <div>
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
@@ -58,15 +58,15 @@ function MainApp() {
                 {user?.role === 'ROLE_CUSTOMER' ? 'Secure Banking Session' : 'Ledger Engine Online'}
               </span>
             </div>
-            <h2 className="text-2xl font-bold text-white mt-2 tracking-tight">
+            <h2 className="text-xl sm:text-2xl font-bold text-white mt-1.5 tracking-tight">
               {user?.role === 'ROLE_CUSTOMER' && `Welcome back, ${user?.name}`}
               {user?.role === 'ROLE_MANAGER' && 'Maker-Checker Review Console'}
-              {user?.role === 'ROLE_ADMIN' && 'Audit, Compliance & Immutable SCN Vault Monitoring'}
+              {user?.role === 'ROLE_ADMIN' && 'Audit & Compliance Workspace'}
             </h2>
             {user?.role !== 'ROLE_CUSTOMER' && (
               <p className="text-xs text-slate-400 mt-1 max-w-3xl leading-relaxed">
                 {user?.role === 'ROLE_MANAGER' && 'Dual-control review workstation for pending high-value transfers and soft-hold releases.'}
-                {user?.role === 'ROLE_ADMIN' && 'Dual-storage core monitoring: Oracle XE 21c (Master Ledger) and PostgreSQL 15 (Immutable Append-Only Audit Vault).'}
+                {user?.role === 'ROLE_ADMIN' && 'Immutable ledger mutation monitoring and statutory AMLA CTR compliance registry.'}
               </p>
             )}
           </div>

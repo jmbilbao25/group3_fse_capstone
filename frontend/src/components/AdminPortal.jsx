@@ -201,8 +201,13 @@ export default function AdminPortal() {
                         {log.status}
                       </span>
                     </td>
-                    <td className="py-3 text-slate-400 text-[11px] font-mono">
-                      {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    <td className="py-3 font-mono text-[11px] whitespace-nowrap">
+                      <p className="text-slate-200 font-semibold leading-tight">
+                        {new Date(log.timestamp).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
+                      </p>
+                      <p className="text-slate-400 text-[10px]">
+                        {new Date(log.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+                      </p>
                     </td>
                   </tr>
                 ))}
@@ -279,8 +284,13 @@ export default function AdminPortal() {
                           </span>
                         )}
                       </td>
-                      <td className="py-3.5 text-slate-400 text-[11px] font-mono">
-                        {new Date(tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      <td className="py-3.5 font-mono text-[11px] whitespace-nowrap">
+                        <p className="text-slate-200 font-semibold leading-tight">
+                          {new Date(tx.created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
+                        </p>
+                        <p className="text-slate-400 text-[10px]">
+                          {new Date(tx.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+                        </p>
                       </td>
                     </tr>
                   );

@@ -768,10 +768,25 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
 
       {/* 2. On-Screen Digital Receipt / Success Slip Modal */}
       {receiptData && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div 
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setReceiptData(null);
+          }}
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+        >
           <div className="bg-slate-900 border border-slate-700/90 rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200">
             {/* Top decorative gradient bar */}
             <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-400 via-indigo-500 to-purple-500" />
+
+            {/* Close 'X' Button */}
+            <button
+              type="button"
+              onClick={() => setReceiptData(null)}
+              aria-label="Close Receipt Slip"
+              className="absolute top-4 right-4 z-10 p-2 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700/80 transition-all active:scale-95 shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
 
             {/* Perforated ticket circular notches */}
             <div className="absolute -left-3 top-[236px] w-6 h-6 rounded-full bg-slate-950 border-r border-slate-700/90 pointer-events-none" />

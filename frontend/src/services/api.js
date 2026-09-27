@@ -299,7 +299,7 @@ function handleMockFallback(config) {
       }
 
       // 4. Initiating Funds Transfer
-      if (url.includes('/transfers') && !url.includes('/pending') && !url.includes('/approve') && !url.includes('/reject') && method === 'post') {
+      if (url.includes('/transfers') && !url.includes('/pending') && !url.includes('/approve') && !url.includes('/reject') && !url.includes('/sign-l1') && method === 'post') {
         const amount = parseFloat(payload.amount);
         if (isNaN(amount) || amount <= 0) {
           return reject({

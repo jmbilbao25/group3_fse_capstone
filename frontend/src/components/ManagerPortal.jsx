@@ -13,7 +13,8 @@ import {
   ArrowRight,
   Clock,
   Layers,
-  FileText
+  FileText,
+  X
 } from 'lucide-react';
 import { formatPHP } from '../utils/currency';
 import apiClient, { mockState, THRESHOLDS } from '../services/api';
@@ -506,18 +507,30 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
                           </button>
                         ) : stage === 1 ? (
                           /* Tier 3 AMLA: Stage 1 Sign-Off (L1 Operations Checker) */
-                          <button
-                            onClick={() => {
-                              setSelectedTx(tx);
-                              setApprovalNotes('AMLA CTR Level 1: Verified customer identity, source of funds, and compliance mandate.');
-                              setActiveModal('sign-l1');
-                            }}
-                            className="px-3 py-1.5 rounded-lg font-semibold text-xs bg-amber-600 hover:bg-amber-500 text-white shadow-md shadow-amber-600/20 transition-all inline-flex items-center gap-1.5"
-                          >
-                            <ShieldAlert className="w-3.5 h-3.5" />
-                            <span>Sign L1 (1st Approver)</span>
-                            <span className="text-[10px] bg-black/30 px-1.5 py-0.5 rounded font-mono font-bold">1/2</span>
-                          </button>
+                          user?.user_id === 'U3003' ? (
+                            /* Carlos Mendoza (L2 Approver) view: Awaiting Beatriz Ocampo */
+                            <div 
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800/90 text-amber-300 border border-amber-500/30"
+                              title="Rule AMLA-204: Beatriz Ocampo (U3002) must perform Level 1 Operations review before Level 2 final sign-off."
+                            >
+                              <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                              <span>Awaiting L1 Review</span>
+                            </div>
+                          ) : (
+                            /* Beatriz Ocampo (L1 Checker) view: Active Sign L1 button */
+                            <button
+                              onClick={() => {
+                                setSelectedTx(tx);
+                                setApprovalNotes('AMLA CTR Level 1: Verified customer identity, source of funds, and compliance mandate.');
+                                setActiveModal('sign-l1');
+                              }}
+                              className="px-3 py-1.5 rounded-lg font-semibold text-xs bg-amber-600 hover:bg-amber-500 text-white shadow-md shadow-amber-600/20 transition-all inline-flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <ShieldAlert className="w-3.5 h-3.5" />
+                              <span>Sign L1 (1st Approver)</span>
+                              <span className="text-[10px] bg-black/30 px-1.5 py-0.5 rounded font-mono font-bold">1/2</span>
+                            </button>
+                          )
                         ) : isCurrentUserL1 ? (
                           /* Tier 3 AMLA: Stage 2 - Current user already signed L1 */
                           <div 
@@ -554,16 +567,29 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
 
       {/* MODAL 1: Level 1 AMLA Sign-Off Modal */}
       {activeModal === 'sign-l1' && selectedTx && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-amber-500/30 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setActiveModal(null); }}
+          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4"
+        >
+          <div className="bg-slate-900 border border-amber-500/30 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h4 className="text-base font-bold text-white flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <ShieldAlert className="w-5 h-5 text-amber-400" />
-                AMLA Tier 3 Sign-Off &bull; Stage 1 of 2
-              </h4>
-              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                Operations Checker
-              </span>
+                <h4 className="text-base font-bold text-white">
+                  AMLA Tier 3 Sign-Off &bull; Stage 1 of 2
+                </h4>
+                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  Operations Checker
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveModal(null)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                title="Close modal"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
             <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-2 font-mono">
@@ -631,18 +657,31 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
 
       {/* MODAL 2: Final Release & Settlement Modal (Tier 2 OR Tier 3 Stage 2) */}
       {activeModal === 'approve' && selectedTx && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setActiveModal(null); }}
+          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4"
+        >
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h4 className="text-base font-bold text-white flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <CheckCircle className="w-5 h-5 text-emerald-400" />
-                {(selectedTx.amount || 0) >= THRESHOLDS.AMLA_CTR_MIN 
-                  ? 'AMLA Tier 3 Final Settlement • Stage 2 of 2'
-                  : `Authorize Balance Mutation (${selectedTx.id})`}
-              </h4>
-              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                {(selectedTx.amount || 0) >= THRESHOLDS.AMLA_CTR_MIN ? 'Senior Manager L2' : 'Operations Checker'}
-              </span>
+                <h4 className="text-base font-bold text-white">
+                  {(selectedTx.amount || 0) >= THRESHOLDS.AMLA_CTR_MIN 
+                    ? 'AMLA Tier 3 Final Settlement • Stage 2 of 2'
+                    : `Authorize Balance Mutation (${selectedTx.id})`}
+                </h4>
+                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  {(selectedTx.amount || 0) >= THRESHOLDS.AMLA_CTR_MIN ? 'Senior Manager L2' : 'Operations Checker'}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveModal(null)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                title="Close modal"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
             <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-2 font-mono">
@@ -724,12 +763,25 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
 
       {/* MODAL 3: Disapproval & Void Modal */}
       {activeModal === 'reject' && selectedTx && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
-            <h4 className="text-base font-bold text-white flex items-center gap-2">
-              <XCircle className="w-5 h-5 text-rose-400" />
-              Disapprove &amp; Void Transfer ({selectedTx.id})
-            </h4>
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setActiveModal(null); }}
+          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4"
+        >
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h4 className="text-base font-bold text-white flex items-center gap-2">
+                <XCircle className="w-5 h-5 text-rose-400" />
+                Disapprove &amp; Void Transfer ({selectedTx.id})
+              </h4>
+              <button
+                type="button"
+                onClick={() => setActiveModal(null)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                title="Close modal"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
             <p className="text-xs text-slate-400">
               Disapproving this transfer will release the soft hold ({formatPHP(selectedTx.amount)}) back to the customer's liquid available balance.
             </p>

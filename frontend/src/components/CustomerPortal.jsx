@@ -3,17 +3,16 @@ import {
   ArrowUpRight, 
   Wallet, 
   Lock, 
-  CheckCircle2, 
   Clock, 
-  AlertTriangle, 
   Send, 
-  ShieldAlert,
   CreditCard,
-  Sparkles,
-  RefreshCw,
+  CheckCircle2,
+  AlertCircle,
+  ShieldCheck,
+  UserCheck,
   Copy,
-  Info,
-  ShieldCheck
+  Check,
+  Building2
 } from 'lucide-react';
 import { formatPHP, parseMaskedInput, generateUUID } from '../utils/currency';
 import apiClient, { mockState, THRESHOLDS } from '../services/api';
@@ -22,42 +21,48 @@ import { useAuth } from '../context/AuthContext';
 export default function CustomerPortal({ balance, onTransactionComplete, showToast }) {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('transfer'); // 'transfer' | 'history'
+  const [copied, setCopied] = useState(false);
 
-  // Transfer Form State
-  const [toAccount, setToAccount] = useState('1000-2000-3002');
-  const [recipientName, setRecipientName] = useState('Maria Santos');
-  const [amountInput, setAmountInput] = useState('15000.0000');
-  const [memo, setMemo] = useState('Payment for consultancy services');
+  const handleCopyAccount = () => {
+    const acct = balance?.account_id || '1000-2000-3001';
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(acct);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  // Transfer Form State (Empty by default for real customer entry)
+  const [toAccount, setToAccount] = useState('');
+  const [recipientName, setRecipientName] = useState('');
+  const [amountInput, setAmountInput] = useState('');
+  const [memo, setMemo] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentIdempotencyKey, setCurrentIdempotencyKey] = useState(generateUUID());
-  const [copiedKey, setCopiedKey] = useState(false);
 
   const numericAmount = parseFloat(amountInput) || 0;
-
-  // Regulatory Tier Calculation
-  const isTier3Amla = numericAmount >= THRESHOLDS.AMLA_CTR_MIN;
-  const isTier2DualControl = numericAmount > THRESHOLDS.STP_MAX && numericAmount < THRESHOLDS.AMLA_CTR_MIN;
-  const isTier1Stp = numericAmount > 0 && numericAmount <= THRESHOLDS.STP_MAX;
 
   const handleAmountChange = (e) => {
     const masked = parseMaskedInput(e.target.value);
     setAmountInput(masked);
   };
 
-  const handleCopyIdempotency = () => {
-    navigator.clipboard.writeText(currentIdempotencyKey);
-    setCopiedKey(true);
-    setTimeout(() => setCopiedKey(false), 2000);
-  };
-
   const handleTransferSubmit = async (e) => {
     e.preventDefault();
+    if (!toAccount.trim() || !recipientName.trim()) {
+      showToast({
+        type: 'error',
+        title: 'Missing Details',
+        detail: 'Please provide both the recipient account number and full name.',
+      });
+      return;
+    }
+
     if (numericAmount <= 0) {
       showToast({
         type: 'error',
-        title: 'Validation Error (JSR-380)',
-        detail: 'Transfer amount must be strictly greater than 0.0000 PHP.',
-        rfcInstance: '/api/v1/transfers',
+        title: 'Invalid Amount',
+        detail: 'Please enter a valid transfer amount greater than ₱0.00.',
       });
       return;
     }
@@ -65,9 +70,8 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
     if (numericAmount > (balance?.available_balance || 0)) {
       showToast({
         type: 'error',
-        title: 'Insufficient Available Funds',
-        detail: `Requested amount (${formatPHP(numericAmount)}) exceeds your liquid available balance (${formatPHP(balance?.available_balance)}).`,
-        rfcInstance: '/api/v1/transfers',
+        title: 'Insufficient Balance',
+        detail: `You only have ${formatPHP(balance?.available_balance)} available to transfer.`,
       });
       return;
     }
@@ -78,11 +82,11 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
         '/transfers',
         {
           from_account_id: balance?.account_id || '1000-2000-3001',
-          to_account_id: toAccount,
-          recipient_name: recipientName,
+          to_account_id: toAccount.trim(),
+          recipient_name: recipientName.trim(),
           amount: numericAmount,
           currency: 'PHP',
-          memo,
+          memo: memo.trim() || 'Fund Transfer',
           maker_user_id: user?.user_id || 'U1001',
         },
         {
@@ -92,39 +96,37 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
         }
       );
 
-      if (isTier3Amla) {
+      const isHighValue = numericAmount > THRESHOLDS.STP_MAX;
+
+      if (isHighValue) {
         showToast({
           type: 'warning',
-          title: 'AMLA CTR Hold Applied (HTTP 202)',
-          detail: `Transfer ${res.data.transfer_id} exceeds ₱500,000 threshold. Placed on soft hold for AMLC CTR review and Manager authorization.`,
-          rfcInstance: `/api/v1/transfers/${res.data.transfer_id}`,
-        });
-      } else if (isTier2DualControl) {
-        showToast({
-          type: 'warning',
-          title: 'Maker-Checker Hold Applied (HTTP 202)',
-          detail: `Transfer ${res.data.transfer_id} exceeds ₱50,000 STP cap. Soft hold active pending Level 1 Operations Manager sign-off.`,
-          rfcInstance: `/api/v1/transfers/${res.data.transfer_id}`,
+          title: 'Transfer Submitted for Verification',
+          detail: `Your transfer of ${formatPHP(numericAmount)} to ${recipientName} has been submitted and is currently being verified by the bank.`,
         });
       } else {
         showToast({
           type: 'success',
-          title: 'Transfer Settled Instantly (STP)',
-          detail: `Transferred ${formatPHP(numericAmount)} to ${recipientName}. Debited via Oracle XE Row-Level Lock.`,
-          rfcInstance: `/api/v1/transfers/${res.data.transfer_id}`,
+          title: 'Transfer Successful',
+          detail: `Successfully sent ${formatPHP(numericAmount)} to ${recipientName}.`,
         });
       }
 
-      // Rotate idempotency key
+      // Reset form to empty for the next transfer
+      setToAccount('');
+      setRecipientName('');
+      setAmountInput('');
+      setMemo('');
+
+      // Generate a fresh idempotency key for the next transfer
       setCurrentIdempotencyKey(generateUUID());
       onTransactionComplete();
     } catch (err) {
       const problem = err.response?.data;
       showToast({
         type: 'error',
-        title: problem?.title || 'Transfer Failed',
-        detail: problem?.detail || 'An unexpected error occurred while executing balance mutation.',
-        rfcInstance: problem?.instance || '/api/v1/transfers',
+        title: 'Transfer Failed',
+        detail: problem?.detail || 'Unable to complete transfer. Please try again.',
       });
     } finally {
       setIsSubmitting(false);
@@ -133,68 +135,117 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
 
   return (
     <div className="space-y-6">
-      {/* Top Ledger Metric Cards */}
+      {/* Prominent Customer Account Summary Banner */}
+      <div className="bg-gradient-to-r from-slate-900 via-slate-900/90 to-indigo-950/40 border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+            <Building2 className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-base font-bold text-white tracking-tight">
+                {user?.name || 'Juan Dela Cruz'}
+              </h3>
+              <span className="text-[10px] font-semibold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 px-2.5 py-0.5 rounded-full border border-emerald-500/20 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Active Account
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Primary Savings Account &bull; Philippine Peso (PHP)
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between sm:justify-end gap-3 bg-slate-950/80 border border-slate-800 px-4 py-2.5 rounded-xl">
+          <div>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block">
+              My Account Number
+            </span>
+            <span className="text-sm font-mono font-bold text-indigo-300 tracking-wider">
+              {balance?.account_id || '1000-2000-3001'}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={handleCopyAccount}
+            title="Copy account number"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all text-xs font-medium border border-slate-700/60"
+          >
+            {copied ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="text-emerald-400 font-semibold">Copied!</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-3.5 h-3.5" />
+                <span>Copy</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* 3 Clean Customer Balance Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {/* Available Balance Card */}
+        {/* Available Balance */}
         <div className="relative p-6 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/40 border border-indigo-500/30 shadow-xl overflow-hidden group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl group-hover:bg-indigo-500/20 transition-all pointer-events-none" />
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-semibold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
-              <Wallet className="w-4 h-4" /> Available Liquid Balance
+              <Wallet className="w-4 h-4" /> Available Balance
             </span>
             <span className="text-[11px] font-mono bg-indigo-500/10 text-indigo-300 px-2.5 py-0.5 rounded-full border border-indigo-500/20 font-medium">
-              {balance?.account_id || '1000-2000-3001'}
+              Acct: {balance?.account_id || '1000-2000-3001'}
             </span>
           </div>
           <div className="text-3xl font-mono font-bold text-white tracking-tight">
             {formatPHP(balance?.available_balance)}
           </div>
-          <div className="flex items-center justify-between text-xs text-slate-400 mt-2">
-            <span>Liquid funds ready for instantaneous debit</span>
-            <span className="text-emerald-400 font-mono text-[11px] flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> STP Enabled
-            </span>
-          </div>
+          <p className="text-xs text-slate-400 mt-2">
+            Funds ready for immediate withdrawal or transfer.
+          </p>
         </div>
 
-        {/* Current Master Ledger Balance */}
+        {/* Total Account Balance */}
         <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800/80 shadow-lg">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-              <CreditCard className="w-4 h-4 text-slate-400" /> Current Master Balance
+              <CreditCard className="w-4 h-4 text-slate-400" /> Total Balance
             </span>
-            <span className="text-[10px] font-mono bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700/60">
-              Oracle XE 21c
+            <span className="text-[10px] font-medium bg-slate-800 text-slate-300 px-2 py-0.5 rounded">
+              Savings
             </span>
           </div>
           <div className="text-2xl font-mono font-bold text-slate-200">
             {formatPHP(balance?.current_balance)}
           </div>
           <p className="text-xs text-slate-400 mt-2">
-            Base ledger account balance prior to unsettled hold deductions.
+            Total balance in your savings account.
           </p>
         </div>
 
-        {/* Soft Held Balance */}
+        {/* On Hold Balance */}
         <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800/80 shadow-lg">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-semibold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-              <Lock className="w-4 h-4" /> Active Soft Holds
+              <Lock className="w-4 h-4" /> On Hold
             </span>
-            <span className="text-[10px] font-mono bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded border border-amber-500/20 font-semibold">
-              Dual-Control Queue
-            </span>
+            {balance?.held_balance > 0 && (
+              <span className="text-[10px] font-medium bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded border border-amber-500/20">
+                Processing
+              </span>
+            )}
           </div>
           <div className="text-2xl font-mono font-bold text-amber-400">
             {formatPHP(balance?.held_balance)}
           </div>
           <p className="text-xs text-slate-400 mt-2">
-            Funds reserved under review by Operations Manager (Beatriz Ocampo).
+            Pending transfers currently undergoing bank verification.
           </p>
         </div>
       </div>
 
-      {/* Navigation Tabs (Transfer vs History) */}
+      {/* Tabs */}
       <div className="flex items-center gap-3 border-b border-slate-800/80 pb-3">
         <button
           onClick={() => setActiveTab('transfer')}
@@ -204,7 +255,7 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
               : 'text-slate-400 hover:text-white hover:bg-slate-900'
           }`}
         >
-          <Send className="w-3.5 h-3.5" /> Instant Fund Transfer
+          <Send className="w-3.5 h-3.5" /> Send Money
         </button>
         <button
           onClick={() => setActiveTab('history')}
@@ -214,309 +265,167 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
               : 'text-slate-400 hover:text-white hover:bg-slate-900'
           }`}
         >
-          <Clock className="w-3.5 h-3.5" /> Mutation History &amp; Journal
+          <Clock className="w-3.5 h-3.5" /> Recent Activity
         </button>
       </div>
 
-      {/* TAB 1: Fund Transfer Form */}
+      {/* TAB 1: Clean Customer Fund Transfer Form */}
       {activeTab === 'transfer' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 shadow-xl space-y-5">
+        <div className="max-w-2xl mx-auto p-6 md:p-8 rounded-2xl bg-slate-900/60 border border-slate-800/80 shadow-2xl space-y-6">
+          <div className="border-b border-slate-800/80 pb-4">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <Send className="w-5 h-5 text-indigo-400" />
+              Send Money
+            </h3>
+            <p className="text-xs text-slate-400 mt-1">
+              Transfer funds instantly to any registered bank account.
+            </p>
+          </div>
+
+          <form onSubmit={handleTransferSubmit} className="space-y-5">
             <div>
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <ArrowUpRight className="w-5 h-5 text-indigo-400" />
-                  Transfer Retail Funds
-                </h3>
-                <span className="text-[11px] font-mono text-slate-400 flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5 text-indigo-400" /> Sub-50ms Settlement
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 mt-1">
-                Executes via Oracle XE Pessimistic Row Lock (<code className="text-indigo-300">SELECT FOR UPDATE</code>) with atomic debit and credit advice dispatch.
-              </p>
-            </div>
-
-            <form onSubmit={handleTransferSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Originating Account (Debit)
-                  </label>
-                  <input
-                    type="text"
-                    disabled
-                    value={`${balance?.account_id || '1000-2000-3001'} (Juan Dela Cruz)`}
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-400 cursor-not-allowed"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Destination Account (Credit)
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={toAccount}
-                    onChange={(e) => setToAccount(e.target.value)}
-                    placeholder="e.g. 1000-2000-3002"
-                    className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs font-mono text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Beneficiary Full Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={recipientName}
-                    onChange={(e) => setRecipientName(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
-                    <span>Transfer Amount (PHP)</span>
-                    <span className="text-[10px] font-mono text-indigo-400">4-Decimal Precision</span>
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3.5 top-2.5 text-xs font-mono text-slate-400 font-bold">₱</span>
-                    <input
-                      type="text"
-                      required
-                      value={amountInput}
-                      onChange={handleAmountChange}
-                      placeholder="0.0000"
-                      className="w-full bg-slate-950 border border-slate-700/80 rounded-xl pl-8 pr-3.5 py-2.5 text-xs font-mono text-emerald-400 font-bold focus:outline-none focus:border-indigo-500 transition-all"
-                    />
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                From Account (Source Account)
+              </label>
+              <div className="flex items-center justify-between bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                    <Wallet className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-white block">
+                      {user?.name || 'Juan Dela Cruz'} &bull; Primary Savings
+                    </span>
+                    <span className="text-xs font-mono font-semibold text-indigo-300">
+                      {balance?.account_id || '1000-2000-3001'}
+                    </span>
                   </div>
                 </div>
+                <div className="text-right">
+                  <span className="text-[10px] uppercase font-semibold text-slate-400 block">Available</span>
+                  <span className="text-xs font-mono font-bold text-emerald-400">
+                    {formatPHP(balance?.available_balance)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Recipient Account Number
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={toAccount}
+                  onChange={(e) => setToAccount(e.target.value)}
+                  placeholder="Enter account number (e.g. 1000-2000-3002)"
+                  className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs font-mono text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Transaction Purpose / Reference Memo
+                  Recipient Full Name
                 </label>
                 <input
                   type="text"
-                  value={memo}
-                  onChange={(e) => setMemo(e.target.value)}
-                  placeholder="e.g. Payment for invoice #8812"
-                  className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all"
+                  required
+                  value={recipientName}
+                  onChange={(e) => setRecipientName(e.target.value)}
+                  placeholder="Enter full name (e.g. Maria Santos)"
+                  className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 transition-all"
                 />
               </div>
+            </div>
 
-              {/* DYNAMIC REGULATORY POLICY FEEDBACK CARD */}
-              <div className="pt-1">
-                {isTier3Amla ? (
-                  <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-200 flex items-start gap-3">
-                    <ShieldAlert className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-                    <div className="text-xs space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-rose-300 uppercase tracking-wider text-[11px]">
-                          Tier 3: AMLA Covered Transaction (CTR) &bull; R.A. 9160
-                        </span>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-rose-500/20 text-rose-300 border border-rose-500/30 font-semibold">
-                          ≥ ₱500,000.00
-                        </span>
-                      </div>
-                      <p className="text-slate-300 leading-relaxed text-[11px]">
-                        This transfer exceeds the Philippine AMLA statutory threshold. Upon submission, <strong>{formatPHP(numericAmount)}</strong> will be placed on soft hold. It requires mandatory AMLC CTR audit registration and dual-control sign-off from Bank Operations Manager (Beatriz Ocampo).
-                      </p>
-                    </div>
-                  </div>
-                ) : isTier2DualControl ? (
-                  <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 flex items-start gap-3">
-                    <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-                    <div className="text-xs space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-amber-300 uppercase tracking-wider text-[11px]">
-                          Tier 2: Maker-Checker Dual Control Required
-                        </span>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold">
-                          &gt; ₱50,000.00
-                        </span>
-                      </div>
-                      <p className="text-slate-300 leading-relaxed text-[11px]">
-                        Transfer exceeds standard Straight-Through Processing (STP) limits. <strong>{formatPHP(numericAmount)}</strong> will be reserved under soft hold and routed to Operations Manager (Beatriz Ocampo) for Level 1 verification.
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-200 flex items-start gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-                    <div className="text-xs space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-emerald-300 uppercase tracking-wider text-[11px]">
-                          Tier 1: Straight-Through Processing (STP)
-                        </span>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold">
-                          ≤ ₱50,000.00
-                        </span>
-                      </div>
-                      <p className="text-slate-300 leading-relaxed text-[11px]">
-                        Eligible for instantaneous settlement. Debited directly via Oracle XE row-level pessimistic lock with immediate inward credit advice notification dispatch.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Idempotency Footer & Submit Action */}
-              <div className="pt-3 border-t border-slate-800/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[11px] text-slate-400">
-                <div className="flex items-center gap-2 max-w-sm truncate">
-                  <span className="text-indigo-400 font-semibold">Idempotency Key:</span>
-                  <span className="font-mono text-slate-300 text-[10px] truncate">{currentIdempotencyKey}</span>
-                  <button
-                    type="button"
-                    onClick={handleCopyIdempotency}
-                    title="Copy Key"
-                    className="p-1 text-slate-400 hover:text-white transition-colors"
-                  >
-                    <Copy className="w-3.5 h-3.5" />
-                  </button>
-                  {copiedKey && <span className="text-[10px] text-emerald-400 font-semibold">Copied!</span>}
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className={`w-full sm:w-auto px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
-                    isSubmitting
-                      ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                      : isTier3Amla
-                      ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/30'
-                      : isTier2DualControl
-                      ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-lg shadow-amber-600/30'
-                      : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30'
-                  }`}
-                >
-                  {isSubmitting ? (
-                    'Executing Ledger Mutation...'
-                  ) : isTier3Amla ? (
-                    'Submit for Manager & AMLA Review'
-                  ) : isTier2DualControl ? (
-                    'Submit for Manager Approval'
-                  ) : (
-                    'Execute Instant Transfer'
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-
-          {/* Official Bank Limits & Settlement Policy Sidebar */}
-          <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 shadow-xl space-y-4">
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                Transfer Limits &amp; Settlement Policy
-              </h4>
-              <p className="text-[11px] text-slate-400 mt-1">
-                Bangko Sentral ng Pilipinas (BSP) core clearing guidelines and daily thresholds.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800/80 space-y-1">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-300 font-semibold">Tier 1: Instant STP</span>
-                  <span className="font-mono text-emerald-400 font-bold">≤ ₱50,000.00</span>
-                </div>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
-                  Settles instantly in &lt; 50ms via Oracle XE pessimistic row lock without requiring operational sign-off.
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800/80 space-y-1">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-300 font-semibold">Tier 2: Dual Control</span>
-                  <span className="font-mono text-amber-400 font-bold">&gt; ₱50,000.00</span>
-                </div>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
-                  Amounts over ₱50,000 are placed on soft hold and routed to Operations Manager for Maker-Checker review.
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800/80 space-y-1">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-300 font-semibold">Tier 3: AMLA CTR</span>
-                  <span className="font-mono text-rose-400 font-bold">≥ ₱500,000.00</span>
-                </div>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
-                  High-value transactions meeting the R.A. 9160 threshold are logged for mandatory AMLC regulatory filing.
-                </p>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
+                <span>Amount (PHP)</span>
+                <span className="text-[11px] text-slate-400">
+                  Available: <strong className="text-white font-mono">{formatPHP(balance?.available_balance)}</strong>
+                </span>
+              </label>
+              <div className="relative">
+                <span className="absolute left-3.5 top-2.5 text-sm font-mono text-slate-400 font-bold">₱</span>
+                <input
+                  type="text"
+                  required
+                  value={amountInput}
+                  onChange={handleAmountChange}
+                  placeholder="0.0000"
+                  className="w-full bg-slate-950 border border-slate-700/80 rounded-xl pl-8 pr-3.5 py-2.5 text-sm font-mono text-white font-bold placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 transition-all"
+                />
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-indigo-500/5 border border-indigo-500/10 flex items-start gap-2.5 text-[11px] text-slate-400">
-              <Lock className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
-              <p className="leading-relaxed">
-                Protected by PostgreSQL immutable audit sink and end-to-end cryptographic hashing.
-              </p>
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                Note / Purpose <span className="text-slate-500 font-normal">(Optional)</span>
+              </label>
+              <input
+                type="text"
+                value={memo}
+                onChange={(e) => setMemo(e.target.value)}
+                placeholder="What is this transfer for? (e.g. Allowance, Rent, Groceries)"
+                className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 transition-all"
+              />
             </div>
-          </div>
+
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className={`w-full py-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg ${
+                  isSubmitting
+                    ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                    : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30'
+                }`}
+              >
+                {isSubmitting ? 'Processing Transfer...' : 'Send Money'}
+              </button>
+            </div>
+
+            <p className="text-center text-[11px] text-slate-500 flex items-center justify-center gap-1.5 pt-1">
+              <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
+              Secured with 256-bit bank-grade encryption
+            </p>
+          </form>
         </div>
       )}
 
-      {/* TAB 2: Mutation History Table */}
+      {/* TAB 2: Clean Customer Activity Table */}
       {activeTab === 'history' && (
         <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 shadow-xl space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-base font-bold text-white">Recent Ledger Mutations</h3>
-              <p className="text-xs text-slate-400 mt-0.5">Chronological journal entries synchronized with PostgreSQL audit trail.</p>
+              <h3 className="text-base font-bold text-white">Recent Transactions</h3>
+              <p className="text-xs text-slate-400 mt-0.5">Your recent transfers and payments</p>
             </div>
-            <span className="text-xs font-mono text-slate-400">
-              {mockState.transfers.length} Recorded Mutations
-            </span>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="border-b border-slate-800 text-slate-400 font-semibold uppercase text-[10px] tracking-wider">
                 <tr>
-                  <th className="pb-3">Reference ID</th>
-                  <th className="pb-3">Beneficiary Account</th>
-                  <th className="pb-3">Transfer Amount</th>
-                  <th className="pb-3">Regulatory Classification</th>
+                  <th className="pb-3">Reference No.</th>
+                  <th className="pb-3">Recipient</th>
+                  <th className="pb-3">Amount</th>
                   <th className="pb-3">Status</th>
-                  <th className="pb-3">Timestamp</th>
+                  <th className="pb-3">Date &amp; Time</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
                 {mockState.transfers.map((tx) => (
                   <tr key={tx.id} className="hover:bg-slate-900/40 transition-colors">
-                    <td className="py-3.5 font-mono font-semibold text-indigo-400">{tx.id}</td>
+                    <td className="py-3.5 font-mono text-indigo-400 font-semibold">{tx.id}</td>
                     <td className="py-3.5">
                       <p className="font-semibold text-white">{tx.recipient_name}</p>
                       <p className="text-[10px] font-mono text-slate-400">{tx.to_account_id}</p>
                     </td>
-                    <td className="py-3.5 font-mono font-bold text-slate-200">
-                      {formatPHP(tx.amount)}
-                    </td>
-                    <td className="py-3.5">
-                      <span className="text-[11px] text-slate-300">
-                        {tx.regulatory_tier === 'TIER_3_AMLA_CTR' ? (
-                          <span className="text-rose-400 font-semibold flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-rose-400" /> Tier 3 (AMLA CTR)
-                          </span>
-                        ) : tx.regulatory_tier === 'TIER_2_DUAL_CONTROL' ? (
-                          <span className="text-amber-400 font-semibold flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" /> Tier 2 (Dual Control)
-                          </span>
-                        ) : (
-                          <span className="text-emerald-400 font-semibold flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Tier 1 (STP)
-                          </span>
-                        )}
-                      </span>
+                    <td className="py-3.5 font-mono font-bold text-slate-100">
+                      -{formatPHP(tx.amount)}
                     </td>
                     <td className="py-3.5">
                       <span
@@ -528,11 +437,12 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
                             : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
                         }`}
                       >
-                        {tx.status === 'SETTLED' ? 'SETTLED' : tx.status === 'PENDING_APPROVAL' ? 'PENDING CHECKER' : 'REJECTED'}
+                        {tx.status === 'SETTLED' ? 'Completed' : tx.status === 'PENDING_APPROVAL' ? 'Pending Verification' : 'Cancelled'}
                       </span>
                     </td>
-                    <td className="py-3.5 text-slate-400 text-[11px] font-mono">
-                      {new Date(tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    <td className="py-3.5 text-slate-400 text-[11px]">
+                      {new Date(tx.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}{' '}
+                      {new Date(tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </td>
                   </tr>
                 ))}

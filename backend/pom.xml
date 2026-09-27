@@ -22,6 +22,7 @@
 
     <modules>
         <module>common-contracts</module>
+        <module>notification-service</module>
         <module>ledger-mutation-engine</module>
         <module>account-service</module>
         <module>gateway-service</module>

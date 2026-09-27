@@ -49,11 +49,13 @@ function MainApp() {
           <div>
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                Active Console: {user?.role.replace('ROLE_', '')}
+                {user?.role === 'ROLE_CUSTOMER' && 'Verified Retail Client'}
+                {user?.role === 'ROLE_MANAGER' && 'Operations Manager Console'}
+                {user?.role === 'ROLE_ADMIN' && 'Audit & Compliance Console'}
               </span>
               <span className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-mono">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                Ledger Engine Online
+                {user?.role === 'ROLE_CUSTOMER' ? 'Secure Banking Session' : 'Ledger Engine Online'}
               </span>
             </div>
             <h2 className="text-2xl font-bold text-white mt-2 tracking-tight">
@@ -61,9 +63,12 @@ function MainApp() {
               {user?.role === 'ROLE_MANAGER' && 'Bank Operations Manager Console & Maker-Checker Review'}
               {user?.role === 'ROLE_ADMIN' && 'Audit, Compliance & Immutable SCN Vault Monitoring'}
             </h2>
-            <p className="text-xs text-slate-400 mt-1 max-w-3xl leading-relaxed">
-              Connected to Oracle XE 21c (Pessimistic Row Lock &amp; Outbox Events) and PostgreSQL 15 (Immutable SCN Audit Trail) with Spring Boot Notification Engine (:8083).
-            </p>
+            {user?.role !== 'ROLE_CUSTOMER' && (
+              <p className="text-xs text-slate-400 mt-1 max-w-3xl leading-relaxed">
+                {user?.role === 'ROLE_MANAGER' && 'Level 1 Checker workstation: Authorize high-value transfers, enforce segregation of duties, and manage dual-control queue.'}
+                {user?.role === 'ROLE_ADMIN' && 'Dual-storage core monitoring: Oracle XE 21c (Master Ledger) and PostgreSQL 15 (Immutable Append-Only Audit Vault).'}
+              </p>
+            )}
           </div>
         </div>
 

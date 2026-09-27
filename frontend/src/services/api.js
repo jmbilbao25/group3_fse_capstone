@@ -148,8 +148,13 @@ let mockState = {
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
-    // If backend is unreachable (ECONNREFUSED / Network Error), route to mock ledger engine
-    if (!error.response || error.code === 'ERR_NETWORK') {
+    // If backend is unreachable (ECONNREFUSED / Network Error / Vite proxy 500/502/504), route to mock ledger engine
+    const isBackendUnavailable =
+      !error.response ||
+      error.code === 'ERR_NETWORK' ||
+      ([500, 502, 503, 504].includes(error.response?.status) && (!error.response.data || typeof error.response.data !== 'object' || !error.response.data.title));
+
+    if (isBackendUnavailable) {
       return handleMockFallback(error.config);
     }
 
@@ -233,7 +238,7 @@ function handleMockFallback(config) {
       }
 
       // 4. Initiating Funds Transfer
-      if (url.endsWith('/transfers') && method === 'post') {
+      if (url.includes('/transfers') && !url.includes('/pending') && !url.includes('/approve') && !url.includes('/reject') && method === 'post') {
         const amount = parseFloat(payload.amount);
         if (isNaN(amount) || amount <= 0) {
           return reject({
@@ -328,6 +333,26 @@ function handleMockFallback(config) {
           status: 'VERIFIED',
         });
 
+        // Dispatch real email advice to notification-service (:8083) -> MailHog (:1025 / :8025)
+        try {
+          const notifPayload = {
+            amount: newTransfer.amount,
+            transfer_id: newTransfer.id,
+            from_account_id: newTransfer.from_account_id,
+            to_account_id: newTransfer.to_account_id,
+            recipient_name: newTransfer.recipient_name,
+            memo: newTransfer.memo,
+          };
+
+          if (tier === 'TIER_1_STP') {
+            axios.post('http://localhost:8083/api/v1/notifications/simulate-transfer', notifPayload).catch(() => {});
+          } else if (tier === 'TIER_2_DUAL_CONTROL') {
+            axios.post('http://localhost:8083/api/v1/notifications/simulate-tier2-maker-checker', notifPayload).catch(() => {});
+          } else if (tier === 'TIER_3_AMLA_CTR') {
+            axios.post('http://localhost:8083/api/v1/notifications/simulate-tier3-amla', notifPayload).catch(() => {});
+          }
+        } catch (_) {}
+
         return resolve({
           status: 202,
           data: {
@@ -394,6 +419,11 @@ function handleMockFallback(config) {
           timestamp: tx.approved_at,
           status: 'VERIFIED',
         });
+
+        // Dispatch approval release email to notification-service (:8083) -> MailHog (:1025 / :8025)
+        try {
+          axios.post('http://localhost:8083/api/v1/notifications/simulate-tier2-approval').catch(() => {});
+        } catch (_) {}
 
         return resolve({
           data: {

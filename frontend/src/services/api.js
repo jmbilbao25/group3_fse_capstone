@@ -45,6 +45,99 @@ const STORAGE_KEY = 'fse_core_ledger_state_v4';
 
 // Initial realistic core retail ledger state
 const initialMockState = {
+  // Oracle XE 21c Master USERS table records
+  users: [
+    {
+      user_id: 'U1001',
+      first_name: 'Juan',
+      middle_name: 'Reyes',
+      last_name: 'Dela Cruz',
+      email: 'juan.dc@email.com',
+      phone_number: '09171234567',
+      dob: '1990-05-14',
+      government_id: 'PSA-1234-5678',
+      role: 'CUSTOMER',
+      password_hash: '$2a$12$e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1',
+      pin_hash: '$2a$12$k4L9m1Wq2P8k4L9m1Wq2P8k4L9m1Wq2P8k4L9m1Wq2P8k4L9m1Wq2P8',
+      max_concurrent_sessions: 3,
+      failed_login_attempts: 0,
+      status: 'ACTIVE',
+      created_at: '2024-01-10T09:15:00Z',
+      updated_at: '2024-01-10T09:15:00Z',
+    },
+    {
+      user_id: 'U1002',
+      first_name: 'Maria',
+      middle_name: 'Clara',
+      last_name: 'Santos',
+      email: 'maria.s@email.com',
+      phone_number: '09187654321',
+      dob: '1992-08-22',
+      government_id: 'PASSPORT-9876-5432',
+      role: 'CUSTOMER',
+      password_hash: '$2a$12$e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1',
+      pin_hash: '$2a$12$k4L9m1Wq2P8k4L9m1Wq2P8k4L9m1Wq2P8k4L9m1Wq2P8k4L9m1Wq2P8',
+      max_concurrent_sessions: 3,
+      failed_login_attempts: 0,
+      status: 'ACTIVE',
+      created_at: '2024-01-12T10:00:00Z',
+      updated_at: '2024-01-12T10:00:00Z',
+    },
+    {
+      user_id: 'U3002',
+      first_name: 'Beatriz',
+      middle_name: 'Santos',
+      last_name: 'Ocampo',
+      email: 'beatriz.ocampo@bank.com',
+      phone_number: '09204445566',
+      dob: '1984-07-19',
+      government_id: 'PRC-9988-7711',
+      role: 'MANAGER',
+      password_hash: '$2a$12$e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1',
+      pin_hash: null,
+      max_concurrent_sessions: 3,
+      failed_login_attempts: 0,
+      status: 'ACTIVE',
+      created_at: '2023-10-01T08:30:00Z',
+      updated_at: '2023-10-01T08:30:00Z',
+    },
+    {
+      user_id: 'U3003',
+      first_name: 'Carlos',
+      middle_name: 'Eduardo',
+      last_name: 'Mendoza',
+      email: 'carlos.mendoza@bank.com',
+      phone_number: '09171122334',
+      dob: '1982-11-05',
+      government_id: 'PRC-5544-3322',
+      role: 'MANAGER',
+      password_hash: '$2a$12$e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1',
+      pin_hash: null,
+      max_concurrent_sessions: 3,
+      failed_login_attempts: 0,
+      status: 'ACTIVE',
+      created_at: '2023-09-15T08:30:00Z',
+      updated_at: '2023-09-15T08:30:00Z',
+    },
+    {
+      user_id: 'U0001',
+      first_name: 'Diana',
+      middle_name: 'Marie',
+      last_name: 'Vance',
+      email: 'diana.admin@bank.com',
+      phone_number: '09190001122',
+      dob: '1985-03-12',
+      government_id: 'GOV-1122-3344',
+      role: 'ADMIN',
+      password_hash: '$2a$12$e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1',
+      pin_hash: null,
+      max_concurrent_sessions: 3,
+      failed_login_attempts: 0,
+      status: 'ACTIVE',
+      created_at: '2023-09-01T08:30:00Z',
+      updated_at: '2023-09-01T08:30:00Z',
+    }
+  ],
   account: {
     account_id: '1000-2000-3001',
     user_id: 'U1001',
@@ -56,6 +149,12 @@ const initialMockState = {
     available_balance: 14275000.0000,
     status: 'ACTIVE',
   },
+  // Oracle XE 21c Master ACCOUNTS table records
+  registeredAccounts: [
+    { account_id: 'A2001', account_number: '1000-2000-3001', user_id: 'U1001', account_name: 'Juan Dela Cruz', status: 'ACTIVE' },
+    { account_id: 'A2002', account_number: '1000-2000-3002', user_id: 'U1002', account_name: 'Maria Clara Santos', status: 'ACTIVE' },
+    { account_id: 'A2003', account_number: '1000-2000-3003', user_id: 'U1001', account_name: 'Apex Commercial Supplies Ltd.', status: 'ACTIVE' },
+  ],
   transfers: [
     {
       id: 'TX-5003-AMLA',
@@ -182,6 +281,18 @@ const loadMockState = () => {
           parsed.account.current_balance = 15000000.0000;
           parsed.account.available_balance = 15000000.0000 - (parsed.account.held_balance || 0);
         }
+        if (!parsed.users || !Array.isArray(parsed.users) || parsed.users.length === 0) {
+          parsed.users = JSON.parse(JSON.stringify(initialMockState.users));
+        }
+        if (!parsed.registeredAccounts || !Array.isArray(parsed.registeredAccounts) || parsed.registeredAccounts.length === 0) {
+          parsed.registeredAccounts = JSON.parse(JSON.stringify(initialMockState.registeredAccounts));
+        }
+        // Filter out any bogus transfers that may have been created with non-existent accounts during testing
+        const validAccountNums = ['100020003001', '100020003002', '100020003003', 'A2001', 'A2002', 'A2003'];
+        parsed.transfers = parsed.transfers.filter((tx) => {
+          const cleanTo = (tx.to_account_id || '').replace(/[\s-]/g, '').toUpperCase();
+          return validAccountNums.includes(cleanTo);
+        });
         return parsed;
       }
     }
@@ -251,19 +362,42 @@ function handleMockFallback(config) {
       if (url.includes('/auth/login') && method === 'post') {
         const token = 'mock_jwt_access_token_' + Math.random().toString(36).substring(2);
         setAccessToken(token);
-        const email = payload.email || '';
+        const email = (payload.email || '').toLowerCase().trim();
         let role = 'ROLE_CUSTOMER';
         let user_id = 'U1001';
         let user_name = 'Juan Dela Cruz';
+        let user_title = 'Retail Account Holder (Maker)';
 
-        if (email.includes('manager') || email.includes('ocampo')) {
+        let userRecord = mockState.users.find((u) => 
+          (payload.user_id && u.user_id === payload.user_id) ||
+          u.email.toLowerCase() === email ||
+          (email && u.first_name && email.includes(u.first_name.toLowerCase())) ||
+          (email && u.last_name && email.includes(u.last_name.toLowerCase()))
+        );
+
+        if (!userRecord) {
+          if (email.includes('carlos') || email.includes('mendoza')) {
+            userRecord = mockState.users.find(u => u.user_id === 'U3003');
+          } else if (email.includes('manager') || email.includes('ocampo') || email.includes('beatriz')) {
+            userRecord = mockState.users.find(u => u.user_id === 'U3002');
+          } else if (email.includes('admin') || email.includes('vance') || email.includes('diana') || email.includes('audit')) {
+            userRecord = mockState.users.find(u => u.user_id === 'U0001');
+          } else {
+            userRecord = mockState.users.find(u => u.user_id === 'U1001') || mockState.users[0];
+          }
+        }
+
+        user_id = userRecord.user_id;
+        user_name = `${userRecord.first_name} ${userRecord.middle_name ? userRecord.middle_name + ' ' : ''}${userRecord.last_name}`;
+        if (userRecord.role === 'MANAGER') {
           role = 'ROLE_MANAGER';
-          user_id = 'U3002';
-          user_name = 'Beatriz Ocampo';
-        } else if (email.includes('admin') || email.includes('vance')) {
+          user_title = user_id === 'U3003' ? 'Senior Manager / Branch Head (Approver L2)' : 'Operations Manager (Checker L1)';
+        } else if (userRecord.role === 'ADMIN') {
           role = 'ROLE_ADMIN';
-          user_id = 'U0001';
-          user_name = 'Diana Vance';
+          user_title = 'System Auditor & Compliance';
+        } else {
+          role = 'ROLE_CUSTOMER';
+          user_title = 'Retail Account Holder (Maker)';
         }
 
         return resolve({
@@ -274,6 +408,8 @@ function handleMockFallback(config) {
             role,
             user_id,
             user_name,
+            user_title,
+            user: { ...userRecord }
           }
         });
       }
@@ -300,6 +436,80 @@ function handleMockFallback(config) {
 
       // 4. Initiating Funds Transfer
       if (url.includes('/transfers') && !url.includes('/pending') && !url.includes('/approve') && !url.includes('/reject') && !url.includes('/sign-l1') && method === 'post') {
+        const toAccountId = (payload.to_account_id || '').trim();
+        const fromAccountId = (payload.from_account_id || mockState.account.account_id || '1000-2000-3001').trim();
+
+        // 1. Beneficiary Account Required
+        if (!toAccountId) {
+          return reject({
+            response: {
+              status: 400,
+              data: {
+                type: 'https://api.banking.capstone/errors/validation-failed',
+                title: 'Missing Beneficiary Account',
+                detail: 'Recipient account number is required.',
+                invalid_params: [{ field: 'to_account_id', rejected_value: toAccountId, reason: 'must not be blank' }]
+              }
+            }
+          });
+        }
+
+        // 2. Prevent Self-Transfer (Cannot transfer to own account)
+        const cleanFrom = fromAccountId.replace(/[\s-]/g, '').toUpperCase();
+        const cleanTo = toAccountId.replace(/[\s-]/g, '').toUpperCase();
+        if (cleanFrom === cleanTo) {
+          return reject({
+            response: {
+              status: 400,
+              data: {
+                type: 'https://api.banking.capstone/errors/invalid-transfer',
+                title: 'Invalid Destination Account',
+                detail: 'Self-transfer prohibited: Cannot transfer funds to the same originating account.',
+                invalid_params: [{ field: 'to_account_id', rejected_value: toAccountId, reason: 'cannot transfer to own account' }]
+              }
+            }
+          });
+        }
+
+        // 3. Verify Destination Account Existence in Bank Ledger
+        const registeredList = (mockState.registeredAccounts && mockState.registeredAccounts.length > 0)
+          ? mockState.registeredAccounts
+          : initialMockState.registeredAccounts;
+
+        const matchedAccount = registeredList.find((acc) => {
+          const accNumClean = (acc.account_number || '').replace(/[\s-]/g, '').toUpperCase();
+          const accIdClean = (acc.account_id || '').replace(/[\s-]/g, '').toUpperCase();
+          return accNumClean === cleanTo || accIdClean === cleanTo;
+        });
+
+        if (!matchedAccount) {
+          return reject({
+            response: {
+              status: 404,
+              data: {
+                type: 'https://api.banking.capstone/errors/account-not-found',
+                title: 'Account Does Not Exist',
+                detail: `Destination account "${toAccountId}" does not exist in the bank ledger. Please verify the account number and try again.`,
+                invalid_params: [{ field: 'to_account_id', rejected_value: toAccountId, reason: 'account does not exist' }]
+              }
+            }
+          });
+        }
+
+        if (matchedAccount.status !== 'ACTIVE') {
+          return reject({
+            response: {
+              status: 422,
+              data: {
+                type: 'https://api.banking.capstone/errors/account-inactive',
+                title: 'Beneficiary Account Inactive',
+                detail: `Destination account "${toAccountId}" is currently not active or restricted.`,
+                invalid_params: [{ field: 'to_account_id', rejected_value: toAccountId, reason: 'account status is ' + matchedAccount.status }]
+              }
+            }
+          });
+        }
+
         const amount = parseFloat(payload.amount);
         if (isNaN(amount) || amount <= 0) {
           return reject({
@@ -353,8 +563,8 @@ function handleMockFallback(config) {
         const newTransfer = {
           id: 'TX-' + Math.floor(5000 + Math.random() * 4999) + (isTier3 ? '-AMLA' : isTier2 ? '-MC' : '-STP'),
           from_account_id: mockState.account.account_id,
-          to_account_id: payload.to_account_id || '1000-2000-3002',
-          recipient_name: payload.recipient_name || 'Beneficiary Account',
+          to_account_id: matchedAccount.account_number || toAccountId,
+          recipient_name: payload.recipient_name || matchedAccount.account_name || 'Beneficiary Account',
           amount: amount,
           currency: 'PHP',
           status: status,
@@ -707,6 +917,78 @@ function handleMockFallback(config) {
       // 8. Audit Logs Inquiry
       if (url.includes('/audit') && method === 'get') {
         return resolve({ data: mockState.auditLogs });
+      }
+
+      // 9. User Profile Inquiry (Oracle XE USERS Table)
+      if (url.includes('/users') && method === 'get') {
+        const parts = url.split('/users');
+        const rawParam = parts[1] ? parts[1].replace('/', '').split('?')[0] : '';
+        const targetId = rawParam || 'U1001';
+        const userRecord = mockState.users.find(u => u.user_id === targetId || u.email.toLowerCase() === targetId.toLowerCase());
+        if (!userRecord) {
+          return reject({ response: { status: 404, data: { detail: 'User record not found in Oracle XE master table.' } } });
+        }
+        return resolve({ data: { ...userRecord } });
+      }
+
+      // 10. Update User Profile (Oracle XE USERS Table Mutation)
+      if (url.includes('/users') && (method === 'put' || method === 'patch')) {
+        const parts = url.split('/users');
+        const rawParam = parts[1] ? parts[1].replace('/', '').split('?')[0] : '';
+        const targetId = rawParam || payload.user_id || 'U1001';
+        const userIdx = mockState.users.findIndex(u => u.user_id === targetId);
+        
+        if (userIdx === -1) {
+          return reject({ response: { status: 404, data: { detail: 'User record not found in Oracle XE master table.' } } });
+        }
+
+        const existing = mockState.users[userIdx];
+
+        // Strict mapping to DB columns
+        if (payload.first_name !== undefined) existing.first_name = payload.first_name.trim();
+        if (payload.middle_name !== undefined) existing.middle_name = payload.middle_name ? payload.middle_name.trim() : null;
+        if (payload.last_name !== undefined) existing.last_name = payload.last_name.trim();
+        if (payload.email !== undefined) existing.email = payload.email.trim();
+        if (payload.phone_number !== undefined) existing.phone_number = payload.phone_number.trim();
+        if (payload.dob !== undefined) existing.dob = payload.dob;
+        if (payload.government_id !== undefined) existing.government_id = payload.government_id.trim();
+        if (payload.max_concurrent_sessions !== undefined) existing.max_concurrent_sessions = Number(payload.max_concurrent_sessions);
+
+        // Security hashes updates
+        if (payload.new_password) {
+          existing.password_hash = '$2a$12$' + Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
+        }
+        if (payload.new_pin) {
+          existing.pin_hash = '$2a$12$' + Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
+        }
+
+        existing.updated_at = new Date().toISOString();
+        saveMockState();
+
+        // Record audit entry in append-only PostgreSQL log
+        const nextScn = mockState.auditLogs.length > 0 
+          ? mockState.auditLogs[mockState.auditLogs.length - 1].scn + 1 
+          : 18492044;
+        
+        mockState.auditLogs.push({
+          scn: nextScn,
+          tx_id: 'SEC-USER-' + existing.user_id,
+          event_type: 'USER_PROFILE_MUTATION',
+          actor_id: existing.user_id,
+          actor_role: existing.role,
+          account_id: '1000-2000-3001',
+          delta_amount: 0,
+          balance_after: mockState.account.available_balance,
+          digest_hash: Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2),
+          timestamp: existing.updated_at,
+          status: 'VERIFIED',
+        });
+        saveMockState();
+
+        return resolve({
+          status: 200,
+          data: { ...existing }
+        });
       }
 
       // Default mock fallback

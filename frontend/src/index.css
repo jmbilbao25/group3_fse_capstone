@@ -24,3 +24,41 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(99, 102, 241, 0.5);
 }
+
+/* Bank-Grade Print Styles for Official Receipt Slip */
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  #printable-receipt, #printable-receipt * {
+    visibility: visible !important;
+  }
+  #printable-receipt {
+    position: fixed !important;
+    left: 50% !important;
+    top: 20px !important;
+    transform: translateX(-50%) !important;
+    width: 100% !important;
+    max-width: 480px !important;
+    background: #ffffff !important;
+    color: #111827 !important;
+    border: 1px solid #e5e7eb !important;
+    box-shadow: none !important;
+    padding: 24px !important;
+    border-radius: 12px !important;
+  }
+  #printable-receipt .no-print {
+    display: none !important;
+  }
+  #printable-receipt * {
+    color: #111827 !important;
+    background-color: transparent !important;
+    border-color: #e5e7eb !important;
+  }
+  #printable-receipt .print-text-dark {
+    color: #111827 !important;
+  }
+  #printable-receipt .print-text-muted {
+    color: #4b5563 !important;
+  }
+}

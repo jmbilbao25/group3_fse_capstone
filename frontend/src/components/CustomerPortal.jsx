@@ -5,30 +5,37 @@ import {
   Lock, 
   Clock, 
   Send, 
-  CreditCard,
-  CheckCircle2,
-  AlertCircle,
-  ShieldCheck,
-  UserCheck,
-  Copy,
-  Check,
-  Building2,
-  Printer,
-  X,
-  FileText,
-  Eye,
-  EyeOff,
-  Search,
-  Receipt,
-  ChevronRight
+  CreditCard, 
+  CheckCircle2, 
+  AlertCircle, 
+  ShieldCheck, 
+  UserCheck, 
+  Copy, 
+  Check, 
+  Building2, 
+  Printer, 
+  X, 
+  FileText, 
+  Eye, 
+  EyeOff, 
+  Search, 
+  Receipt, 
+  ChevronRight, 
+  User,
+  Download,
+  Calendar,
+  Filter,
+  FileSpreadsheet,
+  RotateCcw
 } from 'lucide-react';
 import { formatPHP, parseMaskedInput, generateUUID } from '../utils/currency';
 import apiClient, { mockState, THRESHOLDS } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import CustomerProfile from './CustomerProfile';
 
 export default function CustomerPortal({ balance, onTransactionComplete, showToast }) {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('transfer'); // 'transfer' | 'history'
+  const [activeTab, setActiveTab] = useState('history'); // 'history' | 'transfer' | 'profile'
   const [copied, setCopied] = useState(false);
 
   // Eye Toggle State (Show / Hide Balance & Account Number)
@@ -42,6 +49,7 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
   // Search & Filter State for Activity
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' | 'SETTLED' | 'PENDING_APPROVAL'
+  const [dateFilter, setDateFilter] = useState('ALL');     // 'ALL' | 'TODAY' | 'MONTH'
 
   const formatVisiblePHP = (val) => {
     if (!isBalanceVisible) return '₱ ••••••••';
@@ -80,6 +88,99 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
+  };
+
+  // 1-Click Download Official Digital Slip (.txt)
+  const handleDownloadReceipt = () => {
+    if (!receiptData) return;
+    const dateFormatted = receiptData.timestamp.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+    const timeFormatted = receiptData.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    const content = `=====================================================
+         CAPSTONE CORE RETAIL BANKING
+          OFFICIAL TRANSACTION RECEIPT
+=====================================================
+Reference No.  : ${receiptData.refNumber}
+Date & Time    : ${dateFormatted} ${timeFormatted}
+Status         : ${receiptData.isHighValue ? 'PENDING VERIFICATION (UNDER REVIEW)' : 'COMPLETED (SETTLED)'}
+
+TRANSACTION DETAILS
+-----------------------------------------------------
+Amount Sent    : PHP ${receiptData.amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+Service Fee    : PHP 0.00 (FREE)
+Total Deducted : PHP ${receiptData.amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+
+BENEFICIARY & SENDER
+-----------------------------------------------------
+Sent To        : ${receiptData.recipientName}
+Account Number : ${receiptData.toAccount}
+
+Sent From      : ${receiptData.senderName}
+Source Account : ${receiptData.fromAccount}
+
+Purpose / Note : ${receiptData.memo || 'Fund Transfer'}
+=====================================================
+This is a computer-generated electronic receipt.
+Certified compliant with BSP Circular 1033 standards.
+=====================================================`;
+
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Receipt-${receiptData.refNumber}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast({
+      type: 'success',
+      title: 'Receipt Downloaded',
+      detail: `Saved official receipt slip for ${receiptData.refNumber}.`,
+    });
+  };
+
+  // Export Filtered Activity to CSV
+  const handleExportCSV = (transactionsToExport) => {
+    if (!transactionsToExport || transactionsToExport.length === 0) {
+      showToast({
+        type: 'warning',
+        title: 'No Data to Export',
+        detail: 'There are no transactions matching your current filters.',
+      });
+      return;
+    }
+
+    const headers = ['Reference_No', 'Recipient_Name', 'Recipient_Account', 'Amount_PHP', 'Status', 'Date', 'Time', 'Purpose_Note'];
+    const rows = transactionsToExport.map((tx) => {
+      const txDate = new Date(tx.created_at);
+      return [
+        `"${tx.id}"`,
+        `"${(tx.recipient_name || '').replace(/"/g, '""')}"`,
+        `"${tx.to_account_id || ''}"`,
+        tx.amount.toFixed(2),
+        `"${tx.status === 'SETTLED' ? 'Completed' : tx.status === 'PENDING_APPROVAL' ? 'Pending Review' : tx.status}"`,
+        `"${txDate.toLocaleDateString()}"`,
+        `"${txDate.toLocaleTimeString()}"`,
+        `"${(tx.memo || '').replace(/"/g, '""')}"`,
+      ];
+    });
+
+    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Account_Statement_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast({
+      type: 'success',
+      title: 'Statement Downloaded',
+      detail: `Exported ${transactionsToExport.length} transaction records as CSV.`,
+    });
   };
 
   // Transfer Form State (Empty by default for real customer entry)
@@ -124,6 +225,36 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
         detail: 'Please provide both the recipient account number and full name.',
       });
       return;
+    }
+
+    // Prevent transferring to own account
+    const myAccountClean = (balance?.account_id || '1000-2000-3001').replace(/[\s-]/g, '').toUpperCase();
+    const enteredAccountClean = toAccount.trim().replace(/[\s-]/g, '').toUpperCase();
+    if (myAccountClean === enteredAccountClean) {
+      showToast({
+        type: 'error',
+        title: 'Invalid Destination Account',
+        detail: 'You cannot transfer funds to your own account.',
+      });
+      return;
+    }
+
+    // Verify recipient existence against bank ledger
+    const registeredList = mockState?.registeredAccounts || [];
+    if (registeredList.length > 0) {
+      const match = registeredList.find((acc) => {
+        const accNumClean = (acc.account_number || '').replace(/[\s-]/g, '').toUpperCase();
+        const accIdClean = (acc.account_id || '').replace(/[\s-]/g, '').toUpperCase();
+        return accNumClean === enteredAccountClean || accIdClean === enteredAccountClean;
+      });
+      if (!match) {
+        showToast({
+          type: 'error',
+          title: 'Account Does Not Exist',
+          detail: `Destination account "${toAccount}" does not exist in the bank directory. Please enter a valid account number (e.g. 1000-2000-3002).`,
+        });
+        return;
+      }
     }
 
     if (numericAmount < 1.00) {
@@ -216,9 +347,11 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
       const problem = err.response?.data;
       showToast({
         type: 'error',
-        title: 'Transfer Failed',
-        detail: problem?.detail || 'Unable to complete transfer. Please try again.',
+        title: problem?.title || 'Transfer Failed',
+        detail: problem?.detail || 'Unable to complete transfer. Please verify recipient account and try again.',
       });
+      // Close confirmation modal so user can fix their input
+      setIsConfirmModalOpen(false);
     } finally {
       setIsSubmitting(false);
     }
@@ -235,14 +368,14 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-base font-bold text-white tracking-tight">
-                {user?.name || 'Juan Dela Cruz'}
+              <h3 className="text-lg font-bold text-white tracking-tight">
+                Welcome back, {user?.first_name || 'Juan'}
               </h3>
               <span className="text-[10px] font-semibold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 px-2.5 py-0.5 rounded-full border border-emerald-500/20 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Active Account
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-400 mt-1">
               Primary Savings Account &bull; Philippine Peso (PHP)
             </p>
           </div>
@@ -288,89 +421,93 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
         </div>
       </div>
 
-      {/* 3 Clean Customer Balance Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {/* Available Balance */}
-        <div className="relative p-6 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/50 border border-indigo-500/40 shadow-xl overflow-hidden group hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-500/15 hover:border-indigo-500/60 transition-all duration-300">
-          <div className="absolute -right-8 -top-8 w-36 h-36 bg-indigo-500/20 rounded-full blur-2xl pointer-events-none group-hover:bg-indigo-500/30 transition-all duration-500" />
-          <div className="flex items-center justify-between mb-3 relative z-10">
-            <span className="text-xs font-semibold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
-              <Wallet className="w-4 h-4" /> Available Balance
-              <button
-                type="button"
-                onClick={() => setIsBalanceVisible(!isBalanceVisible)}
-                title={isBalanceVisible ? "Hide Balance" : "Show Balance"}
-                className="text-slate-400 hover:text-white transition-colors ml-1 p-0.5 rounded hover:bg-slate-800"
-              >
-                {isBalanceVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5 text-indigo-400" />}
-              </button>
-            </span>
-            <span className="text-[11px] font-mono bg-indigo-500/10 text-indigo-300 px-2.5 py-0.5 rounded-full border border-indigo-500/20 font-medium flex items-center gap-1.5">
-              <span>Acct: {formatVisibleAccount(balance?.account_id)}</span>
-              <button
-                type="button"
-                onClick={() => setIsAccountVisible(!isAccountVisible)}
-                title={isAccountVisible ? "Hide Account Number" : "Show Account Number"}
-                className="text-indigo-400 hover:text-white transition-colors p-0.5 rounded hover:bg-indigo-500/20"
-              >
-                {isAccountVisible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3 text-indigo-400" />}
-              </button>
-            </span>
-          </div>
-          <div className="text-3xl font-mono font-bold text-white tracking-tight relative z-10">
-            {formatVisiblePHP(balance?.available_balance)}
-          </div>
-          <p className="text-xs text-slate-400 mt-2 relative z-10">
-            Funds ready for immediate withdrawal or transfer.
-          </p>
-        </div>
-
-        {/* Total Account Balance */}
-        <div className="relative p-6 rounded-2xl bg-slate-900/80 border border-slate-800/80 shadow-lg overflow-hidden group hover:-translate-y-1 hover:border-slate-700 hover:shadow-xl transition-all duration-300">
-          <div className="absolute -right-8 -top-8 w-36 h-36 bg-blue-500/10 rounded-full blur-2xl pointer-events-none group-hover:bg-blue-500/20 transition-all duration-500" />
-          <div className="flex items-center justify-between mb-3 relative z-10">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-              <CreditCard className="w-4 h-4 text-slate-400" /> Total Balance
-            </span>
-            <span className="text-[10px] font-medium bg-slate-800 text-slate-300 px-2 py-0.5 rounded">
-              Savings
-            </span>
-          </div>
-          <div className="text-2xl font-mono font-bold text-slate-200 relative z-10">
-            {formatVisiblePHP(balance?.current_balance)}
-          </div>
-          <p className="text-xs text-slate-400 mt-2 relative z-10">
-            Total balance in your savings account.
-          </p>
-        </div>
-
-        {/* On Hold Balance */}
-        <div className="relative p-6 rounded-2xl bg-slate-900/80 border border-slate-800/80 shadow-lg overflow-hidden group hover:-translate-y-1 hover:border-amber-500/30 hover:shadow-xl transition-all duration-300">
-          <div className="absolute -right-8 -top-8 w-36 h-36 bg-amber-500/10 rounded-full blur-2xl pointer-events-none group-hover:bg-amber-500/20 transition-all duration-500" />
-          <div className="flex items-center justify-between mb-3 relative z-10">
-            <span className="text-xs font-semibold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-              <Lock className="w-4 h-4" /> On Hold
-            </span>
-            {balance?.held_balance > 0 && (
-              <span className="text-[10px] font-medium bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded border border-amber-500/20 animate-pulse">
-                Processing
+      {/* 3 Clean Customer Balance Cards (Shown on Activity and Send Money) */}
+      {activeTab !== 'profile' && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 animate-fadeIn">
+          {/* Available Balance */}
+          <div className="relative p-6 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/50 border border-indigo-500/40 shadow-xl overflow-hidden group hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-500/15 hover:border-indigo-500/60 transition-all duration-300">
+            <div className="absolute -right-8 -top-8 w-36 h-36 bg-indigo-500/20 rounded-full blur-2xl pointer-events-none group-hover:bg-indigo-500/30 transition-all duration-500" />
+            <div className="flex items-center justify-between mb-3 relative z-10">
+              <span className="text-xs font-semibold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+                <Wallet className="w-4 h-4" /> Available Balance
+                <button
+                  type="button"
+                  onClick={() => setIsBalanceVisible(!isBalanceVisible)}
+                  title={isBalanceVisible ? "Hide Balance" : "Show Balance"}
+                  className="text-slate-400 hover:text-white transition-colors ml-1 p-0.5 rounded hover:bg-slate-800"
+                >
+                  {isBalanceVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5 text-indigo-400" />}
+                </button>
               </span>
-            )}
+              <span className="text-[10px] font-semibold bg-emerald-500/15 text-emerald-400 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
+                Ready to Spend
+              </span>
+            </div>
+            <div className="text-3xl font-mono font-bold text-white tracking-tight relative z-10">
+              {formatVisiblePHP(balance?.available_balance)}
+            </div>
+            <p className="text-xs text-slate-400 mt-2 relative z-10">
+              Funds ready for immediate withdrawal or transfer.
+            </p>
           </div>
-          <div className="text-2xl font-mono font-bold text-amber-400 relative z-10">
-            {formatVisiblePHP(balance?.held_balance)}
+
+          {/* Total Account Balance */}
+          <div className="relative p-6 rounded-2xl bg-slate-900/80 border border-slate-800/80 shadow-lg overflow-hidden group hover:-translate-y-1 hover:border-slate-700 hover:shadow-xl transition-all duration-300">
+            <div className="absolute -right-8 -top-8 w-36 h-36 bg-blue-500/10 rounded-full blur-2xl pointer-events-none group-hover:bg-blue-500/20 transition-all duration-500" />
+            <div className="flex items-center justify-between mb-3 relative z-10">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <CreditCard className="w-4 h-4 text-slate-400" /> Total Balance
+              </span>
+              <span className="text-[10px] font-medium bg-slate-800 text-slate-300 px-2 py-0.5 rounded">
+                Gross Ledger
+              </span>
+            </div>
+            <div className="text-2xl font-mono font-bold text-slate-200 relative z-10">
+              {formatVisiblePHP(balance?.current_balance)}
+            </div>
+            <p className="text-xs text-slate-400 mt-2 relative z-10">
+              Principal funds including active holds.
+            </p>
           </div>
-          <p className="text-xs text-slate-400 mt-2 relative z-10">
-            Pending transfers currently undergoing bank verification.
-          </p>
+
+          {/* On Hold Balance */}
+          <div className="relative p-6 rounded-2xl bg-slate-900/80 border border-slate-800/80 shadow-lg overflow-hidden group hover:-translate-y-1 hover:border-amber-500/30 hover:shadow-xl transition-all duration-300">
+            <div className="absolute -right-8 -top-8 w-36 h-36 bg-amber-500/10 rounded-full blur-2xl pointer-events-none group-hover:bg-amber-500/20 transition-all duration-500" />
+            <div className="flex items-center justify-between mb-3 relative z-10">
+              <span className="text-xs font-semibold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                <Lock className="w-4 h-4" /> On Hold
+              </span>
+              {balance?.held_balance > 0 && (
+                <span className="text-[10px] font-medium bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded border border-amber-500/20 animate-pulse">
+                  Processing
+                </span>
+              )}
+            </div>
+            <div className="text-2xl font-mono font-bold text-amber-400 relative z-10">
+              {formatVisiblePHP(balance?.held_balance)}
+            </div>
+            <p className="text-xs text-slate-400 mt-2 relative z-10">
+              Pending transfers currently undergoing bank verification.
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Tabs */}
       <div className="flex items-center gap-3 border-b border-slate-800/80 pb-3">
         <button
+          onClick={() => setActiveTab('history')}
+          className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === 'history'
+              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+              : 'text-slate-400 hover:text-white hover:bg-slate-900'
+          }`}
+        >
+          <Clock className="w-3.5 h-3.5" /> Recent Activity
+        </button>
+        <button
           onClick={() => setActiveTab('transfer')}
-          className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
             activeTab === 'transfer'
               ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
               : 'text-slate-400 hover:text-white hover:bg-slate-900'
@@ -379,14 +516,14 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
           <Send className="w-3.5 h-3.5" /> Send Money
         </button>
         <button
-          onClick={() => setActiveTab('history')}
-          className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
-            activeTab === 'history'
+          onClick={() => setActiveTab('profile')}
+          className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === 'profile'
               ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
               : 'text-slate-400 hover:text-white hover:bg-slate-900'
           }`}
         >
-          <Clock className="w-3.5 h-3.5" /> Recent Activity
+          <User className="w-3.5 h-3.5" /> Profile &amp; Security
         </button>
       </div>
 
@@ -441,7 +578,16 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
                   type="text"
                   required
                   value={toAccount}
-                  onChange={(e) => setToAccount(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setToAccount(val);
+                    const clean = val.replace(/[\s-]/g, '').toUpperCase();
+                    if (clean === '100020003002' || clean === 'A2002') {
+                      if (!recipientName) setRecipientName('Maria Clara Santos');
+                    } else if (clean === '100020003003' || clean === 'A2003') {
+                      if (!recipientName) setRecipientName('Apex Commercial Supplies Ltd.');
+                    }
+                  }}
                   placeholder="Enter account number (e.g. 1000-2000-3002)"
                   className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs font-mono text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/40 focus:shadow-lg focus:shadow-indigo-500/10 transition-all duration-200"
                 />
@@ -460,6 +606,33 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
                   className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/40 focus:shadow-lg focus:shadow-indigo-500/10 transition-all duration-200"
                 />
               </div>
+            </div>
+
+            {/* Quick Beneficiary Shortcuts */}
+            <div className="flex flex-wrap items-center gap-2 -mt-2">
+              <span className="text-[11px] text-slate-400">Quick Select:</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setToAccount('1000-2000-3002');
+                  setRecipientName('Maria Clara Santos');
+                }}
+                className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-indigo-600/20 border border-slate-700/80 hover:border-indigo-500/40 text-[11px] text-indigo-300 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <UserCheck className="w-3 h-3 text-indigo-400" />
+                Maria Santos (1000-2000-3002)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setToAccount('1000-2000-3003');
+                  setRecipientName('Apex Commercial Supplies Ltd.');
+                }}
+                className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-indigo-600/20 border border-slate-700/80 hover:border-indigo-500/40 text-[11px] text-indigo-300 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <Building2 className="w-3 h-3 text-indigo-400" />
+                Apex Supplies (1000-2000-3003)
+              </button>
             </div>
 
             <div>
@@ -536,26 +709,106 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
       )}
 
       {/* TAB 2: Clean Customer Activity Table with Search & Filter */}
+      {/* TAB 2: Clean Customer Activity Table with Search, Date Filter, Status Filter & CSV Export */}
       {activeTab === 'history' && (
         <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 shadow-xl space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div>
-              <h3 className="text-base font-bold text-white">Recent Transactions</h3>
-              <p className="text-xs text-slate-400 mt-0.5">Click any transaction to view and print its official receipt</p>
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <FileText className="w-4 h-4 text-indigo-400" />
+                Transaction Statement
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">Click any entry to view, print, or download its official receipt</p>
+            </div>
+
+            {/* Quick Export Statement Button */}
+            {(() => {
+              const now = new Date();
+              const filteredForExport = mockState.transfers.filter((tx) => {
+                const query = searchQuery.toLowerCase().trim();
+                const matchesSearch =
+                  !query ||
+                  tx.recipient_name?.toLowerCase().includes(query) ||
+                  tx.to_account_id?.toLowerCase().includes(query) ||
+                  tx.id?.toLowerCase().includes(query);
+                const matchesStatus =
+                  statusFilter === 'ALL' || tx.status === statusFilter;
+                const txDate = new Date(tx.created_at);
+                let matchesDate = true;
+                if (dateFilter === 'TODAY') {
+                  matchesDate = txDate.toDateString() === now.toDateString();
+                } else if (dateFilter === 'MONTH') {
+                  matchesDate =
+                    txDate.getMonth() === now.getMonth() &&
+                    txDate.getFullYear() === now.getFullYear();
+                }
+                return matchesSearch && matchesStatus && matchesDate;
+              });
+
+              return (
+                <button
+                  type="button"
+                  onClick={() => handleExportCSV(filteredForExport)}
+                  title="Download filtered transactions as CSV statement"
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/80 text-xs font-medium transition-all shadow-sm active:scale-95 self-start md:self-auto cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Export Statement (CSV)</span>
+                </button>
+              );
+            })()}
+          </div>
+
+          {/* Search Bar & Filter Controls Row */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 pt-1">
+            {/* Search Box */}
+            <div className="relative md:col-span-6">
+              <Search className="w-4 h-4 absolute left-3.5 top-2.5 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by recipient, account number, or reference..."
+                className="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-500/30 transition-all"
+              />
+            </div>
+
+            {/* Date Filter Pills */}
+            <div className="md:col-span-3 flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800/90">
+              <Calendar className="w-3.5 h-3.5 text-slate-500 ml-1.5 mr-0.5 shrink-0" />
+              {[
+                { id: 'ALL', label: 'All Dates' },
+                { id: 'TODAY', label: 'Today' },
+                { id: 'MONTH', label: 'This Month' },
+              ].map((pill) => (
+                <button
+                  key={pill.id}
+                  type="button"
+                  onClick={() => setDateFilter(pill.id)}
+                  className={`flex-1 py-1 rounded-lg text-[10px] font-semibold transition-all cursor-pointer ${
+                    dateFilter === pill.id
+                      ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {pill.label}
+                </button>
+              ))}
             </div>
 
             {/* Status Filter Pills */}
-            <div className="flex items-center gap-1.5 bg-slate-950/80 p-1 rounded-xl border border-slate-800/90 self-start sm:self-auto">
+            <div className="md:col-span-3 flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800/90">
+              <Filter className="w-3.5 h-3.5 text-slate-500 ml-1.5 mr-0.5 shrink-0" />
               {[
                 { id: 'ALL', label: 'All' },
                 { id: 'SETTLED', label: 'Completed' },
-                { id: 'PENDING_APPROVAL', label: 'Under Review' },
+                { id: 'PENDING_APPROVAL', label: 'Review' },
               ].map((pill) => (
                 <button
                   key={pill.id}
                   type="button"
                   onClick={() => setStatusFilter(pill.id)}
-                  className={`px-3 py-1 rounded-lg text-[11px] font-semibold transition-all ${
+                  className={`flex-1 py-1 rounded-lg text-[10px] font-semibold transition-all cursor-pointer ${
                     statusFilter === pill.id
                       ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
                       : 'text-slate-400 hover:text-white'
@@ -567,20 +820,9 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
             </div>
           </div>
 
-          {/* Search Box */}
-          <div className="relative">
-            <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by recipient name, account number, or reference (e.g. Maria, TRX-)..."
-              className="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-500/30 transition-all"
-            />
-          </div>
-
           {/* Filtered Transactions List */}
           {(() => {
+            const now = new Date();
             const filteredTransfers = mockState.transfers.filter((tx) => {
               const query = searchQuery.toLowerCase().trim();
               const matchesSearch =
@@ -590,13 +832,35 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
                 tx.id?.toLowerCase().includes(query);
               const matchesStatus =
                 statusFilter === 'ALL' || tx.status === statusFilter;
-              return matchesSearch && matchesStatus;
+              const txDate = new Date(tx.created_at);
+              let matchesDate = true;
+              if (dateFilter === 'TODAY') {
+                matchesDate = txDate.toDateString() === now.toDateString();
+              } else if (dateFilter === 'MONTH') {
+                matchesDate =
+                  txDate.getMonth() === now.getMonth() &&
+                  txDate.getFullYear() === now.getFullYear();
+              }
+              return matchesSearch && matchesStatus && matchesDate;
             });
 
             if (filteredTransfers.length === 0) {
               return (
-                <div className="text-center py-10 border border-dashed border-slate-800 rounded-2xl bg-slate-950/30">
+                <div className="text-center py-10 border border-dashed border-slate-800 rounded-2xl bg-slate-950/30 space-y-2">
                   <p className="text-xs text-slate-400">No transactions match your search or filter.</p>
+                  {(searchQuery || statusFilter !== 'ALL' || dateFilter !== 'ALL') && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchQuery('');
+                        setStatusFilter('ALL');
+                        setDateFilter('ALL');
+                      }}
+                      className="inline-flex items-center gap-1 text-[11px] text-indigo-400 hover:text-indigo-300 font-semibold cursor-pointer"
+                    >
+                      <RotateCcw className="w-3 h-3" /> Reset Filters
+                    </button>
+                  )}
                 </div>
               );
             }
@@ -610,8 +874,7 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
                       <th className="pb-3">Recipient</th>
                       <th className="pb-3">Amount</th>
                       <th className="pb-3">Status</th>
-                      <th className="pb-3">Date &amp; Time</th>
-                      <th className="pb-3 text-right">Receipt</th>
+                      <th className="pb-3 text-right">Date &amp; Time</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60">
@@ -619,7 +882,7 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
                       <tr
                         key={tx.id}
                         onClick={() => handleViewReceipt(tx)}
-                        title="Click to view digital receipt slip"
+                        title="Click to view transaction details and official receipt"
                         className="hover:bg-slate-800/60 cursor-pointer transition-colors group"
                       >
                         <td className="py-3.5 font-mono text-indigo-400 font-semibold flex items-center gap-1.5">
@@ -637,7 +900,7 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
                         </td>
                         <td className="py-3.5">
                           <span
-                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${
+                            className={`inline-flex items-center justify-center w-[140px] py-1 rounded-full text-[10px] font-semibold whitespace-nowrap border tracking-wide ${
                               tx.status === 'SETTLED'
                                 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                                 : tx.status === 'PENDING_APPROVAL'
@@ -645,17 +908,21 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
                                 : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
                             }`}
                           >
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full mr-1.5 shrink-0 ${
+                                tx.status === 'SETTLED'
+                                  ? 'bg-emerald-400'
+                                  : tx.status === 'PENDING_APPROVAL'
+                                  ? 'bg-amber-400 animate-pulse'
+                                  : 'bg-rose-400'
+                              }`}
+                            />
                             {tx.status === 'SETTLED' ? 'Completed' : tx.status === 'PENDING_APPROVAL' ? 'Pending Verification' : 'Cancelled'}
                           </span>
                         </td>
-                        <td className="py-3.5 text-slate-400 text-[11px]">
+                        <td className="py-3.5 text-slate-400 text-[11px] text-right">
                           {new Date(tx.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}{' '}
                           {new Date(tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </td>
-                        <td className="py-3.5 text-right">
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-400 group-hover:text-indigo-300">
-                            View <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                          </span>
                         </td>
                       </tr>
                     ))}
@@ -665,6 +932,11 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
             );
           })()}
         </div>
+      )}
+
+      {/* TAB 3: Customer Profile & KYC Details (Oracle XE USERS Schema) */}
+      {activeTab === 'profile' && (
+        <CustomerProfile showToast={showToast} />
       )}
 
       {/* 1. Transfer Review & Confirmation Modal */}
@@ -774,29 +1046,38 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
           }}
           className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
         >
-          <div className="bg-slate-900 border border-slate-700/90 rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200">
+          <div 
+            id="printable-receipt"
+            className="bg-slate-900 border border-slate-700/90 rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200"
+          >
             {/* Top decorative gradient bar */}
-            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-400 via-indigo-500 to-purple-500" />
+            <div className="no-print absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-400 via-indigo-500 to-purple-500" />
+
+            {/* Print-Only Bank Header */}
+            <div className="hidden print:block text-center border-b pb-3 mb-3">
+              <h2 className="text-base font-bold uppercase tracking-wider print-text-dark">CAPSTONE CORE RETAIL BANK</h2>
+              <p className="text-[11px] print-text-muted">Official Electronic Funds Transfer Confirmation Slip</p>
+            </div>
 
             {/* Close 'X' Button */}
             <button
               type="button"
               onClick={() => setReceiptData(null)}
               aria-label="Close Receipt Slip"
-              className="absolute top-4 right-4 z-10 p-2 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700/80 transition-all active:scale-95 shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+              className="no-print absolute top-4 right-4 z-10 p-2 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700/80 transition-all active:scale-95 shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
 
             {/* Perforated ticket circular notches */}
-            <div className="absolute -left-3 top-[236px] w-6 h-6 rounded-full bg-slate-950 border-r border-slate-700/90 pointer-events-none" />
-            <div className="absolute -right-3 top-[236px] w-6 h-6 rounded-full bg-slate-950 border-l border-slate-700/90 pointer-events-none" />
+            <div className="no-print absolute -left-3 top-[236px] w-6 h-6 rounded-full bg-slate-950 border-r border-slate-700/90 pointer-events-none" />
+            <div className="no-print absolute -right-3 top-[236px] w-6 h-6 rounded-full bg-slate-950 border-l border-slate-700/90 pointer-events-none" />
 
             {/* Header Icon with Animated Ripple */}
             <div className="text-center pt-2 pb-5 border-b border-dashed border-slate-800">
               <div className="relative w-16 h-16 mx-auto mb-3 flex items-center justify-center">
                 {!receiptData.isHighValue && (
-                  <span className="absolute inset-0 rounded-full bg-emerald-400/20 animate-ping duration-1000 pointer-events-none" />
+                  <span className="no-print absolute inset-0 rounded-full bg-emerald-400/20 animate-ping duration-1000 pointer-events-none" />
                 )}
                 <div className="relative w-16 h-16 rounded-full bg-emerald-500/10 border-2 border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-xl shadow-emerald-500/20">
                   {receiptData.isHighValue ? (
@@ -807,16 +1088,16 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
                 </div>
               </div>
 
-              <h3 className="text-xl font-bold text-white tracking-tight">
+              <h3 className="text-xl font-bold text-white tracking-tight print-text-dark">
                 {receiptData.isHighValue ? 'Transfer Submitted' : 'Transfer Successful!'}
               </h3>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-xs text-slate-400 mt-1 print-text-muted">
                 {receiptData.isHighValue
                   ? 'Under Verification: Awaiting Bank Manager Approval'
                   : 'Funds have been securely transferred'}
               </p>
 
-              <div className="mt-4 font-mono font-black text-3xl text-white tracking-tight">
+              <div className="mt-4 font-mono font-black text-3xl text-white tracking-tight print-text-dark">
                 -{formatPHP(receiptData.amount)}
               </div>
             </div>
@@ -824,9 +1105,9 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
             {/* Receipt Details Body */}
             <div className="py-5 space-y-3 text-xs border-b border-dashed border-slate-800">
               <div className="flex justify-between items-center py-0.5">
-                <span className="text-slate-400">Reference Number</span>
+                <span className="text-slate-400 print-text-muted">Reference Number</span>
                 <div className="flex items-center gap-1.5 font-mono text-indigo-400 font-bold bg-indigo-500/10 px-2 py-0.5 rounded-lg border border-indigo-500/20">
-                  <span>{receiptData.refNumber}</span>
+                  <span className="print-text-dark">{receiptData.refNumber}</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -837,7 +1118,7 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
                       }
                     }}
                     title="Copy Reference"
-                    className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors"
+                    className="no-print p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors cursor-pointer"
                   >
                     {receiptCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>
@@ -845,8 +1126,8 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
               </div>
 
               <div className="flex justify-between items-center py-0.5">
-                <span className="text-slate-400">Date &amp; Time</span>
-                <span className="text-slate-300 font-mono">
+                <span className="text-slate-400 print-text-muted">Date &amp; Time</span>
+                <span className="text-slate-300 font-mono print-text-dark">
                   {receiptData.timestamp.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}{' '}
                   &bull;{' '}
                   {receiptData.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -854,35 +1135,35 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
               </div>
 
               <div className="flex justify-between items-center py-0.5">
-                <span className="text-slate-400">Sent To</span>
+                <span className="text-slate-400 print-text-muted">Sent To</span>
                 <div className="text-right">
-                  <span className="font-semibold text-white block">{receiptData.recipientName}</span>
-                  <span className="text-[11px] font-mono text-slate-400">{receiptData.toAccount}</span>
+                  <span className="font-semibold text-white block print-text-dark">{receiptData.recipientName}</span>
+                  <span className="text-[11px] font-mono text-slate-400 print-text-muted">{receiptData.toAccount}</span>
                 </div>
               </div>
 
               <div className="flex justify-between items-center py-0.5">
-                <span className="text-slate-400">Sent From</span>
+                <span className="text-slate-400 print-text-muted">Sent From</span>
                 <div className="text-right">
-                  <span className="text-slate-300 block">{receiptData.senderName}</span>
-                  <span className="text-[11px] font-mono text-slate-400">{receiptData.fromAccount}</span>
+                  <span className="text-slate-300 block print-text-dark">{receiptData.senderName}</span>
+                  <span className="text-[11px] font-mono text-slate-400 print-text-muted">{receiptData.fromAccount}</span>
                 </div>
               </div>
 
               <div className="flex justify-between items-center py-0.5">
-                <span className="text-slate-400">Transfer Fee</span>
-                <span className="font-mono text-emerald-400 font-semibold">₱ 0.00 (Waived)</span>
+                <span className="text-slate-400 print-text-muted">Transfer Fee</span>
+                <span className="font-mono text-emerald-400 font-semibold print-text-dark">₱ 0.00 (Waived)</span>
               </div>
 
               {receiptData.memo && (
                 <div className="flex justify-between items-center py-0.5">
-                  <span className="text-slate-400">Note</span>
-                  <span className="text-slate-300 italic">{receiptData.memo}</span>
+                  <span className="text-slate-400 print-text-muted">Note</span>
+                  <span className="text-slate-300 italic print-text-dark">{receiptData.memo}</span>
                 </div>
               )}
 
               <div className="flex justify-between items-center py-0.5">
-                <span className="text-slate-400">Status</span>
+                <span className="text-slate-400 print-text-muted">Status</span>
                 <span
                   className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${
                     receiptData.isHighValue
@@ -895,23 +1176,41 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
               </div>
             </div>
 
+            {/* Print-Only Footer Notice */}
+            <div className="hidden print:block text-center pt-3 text-[9px] print-text-muted">
+              Certified compliant with BSP Circular 1033 standards &bull; Capstone FSE Core Ledger
+            </div>
+
             {/* Modal Actions */}
-            <div className="flex flex-col gap-2.5 pt-5">
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="w-full py-3 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-xs font-semibold text-slate-200 hover:text-white flex items-center justify-center gap-2 transition-all active:scale-[0.99] shadow-md hover:shadow-lg"
-              >
-                <Printer className="w-4 h-4 text-slate-400" />
-                Print / Save Receipt Slip
-              </button>
+            <div className="no-print space-y-2.5 pt-5">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleDownloadReceipt}
+                  title="Download receipt slip as text file"
+                  className="flex-1 py-2.5 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-xs font-semibold text-slate-200 hover:text-white flex items-center justify-center gap-1.5 transition-all active:scale-[0.99] shadow-md cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5 text-indigo-400" />
+                  Download (.txt)
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  title="Print or save receipt as PDF"
+                  className="flex-1 py-2.5 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-xs font-semibold text-slate-200 hover:text-white flex items-center justify-center gap-1.5 transition-all active:scale-[0.99] shadow-md cursor-pointer"
+                >
+                  <Printer className="w-3.5 h-3.5 text-slate-400" />
+                  Print / Save PDF
+                </button>
+              </div>
 
               <button
                 type="button"
                 onClick={() => setReceiptData(null)}
-                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold uppercase tracking-wider transition-all duration-200 shadow-xl shadow-indigo-600/30 hover:shadow-indigo-500/50 active:scale-[0.99]"
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold uppercase tracking-wider transition-all duration-200 shadow-xl shadow-indigo-600/30 hover:shadow-indigo-500/50 active:scale-[0.99] cursor-pointer"
               >
-                Make Another Transfer
+                Done / Close
               </button>
             </div>
           </div>

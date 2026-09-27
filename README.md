@@ -169,7 +169,7 @@ CREATE TABLE ledger_mutation_audit (
     audit_id             BIGSERIAL PRIMARY KEY,
     transaction_id       VARCHAR(64) UNIQUE NOT NULL,
     account_id           VARCHAR(64) NOT NULL,
-    mutation_type        VARCHAR(20) NOT NULL CHECK (mutation_type IN ('DEBIT', 'CREDIT', 'HOLD', 'RELEASE')),
+    mutation_type        VARCHAR(20) NOT NULL CHECK (mutation_type IN ('TRANSFER', 'HOLD', 'RELEASE')),
     mutation_amount      NUMERIC(18, 4) NOT NULL CHECK (mutation_amount > 0),
     before_balance       NUMERIC(18, 4) NOT NULL CHECK (before_balance >= 0),
     after_balance        NUMERIC(18, 4) NOT NULL CHECK (after_balance >= 0),

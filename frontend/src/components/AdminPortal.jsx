@@ -7,8 +7,9 @@ import {
   Lock, 
   Search, 
   XCircle,
-  UserCheck,
-  AlertCircle
+  Printer,
+  Download,
+  FileSpreadsheet
 } from 'lucide-react';
 import { mockState, THRESHOLDS } from '../services/api';
 import { formatPHP } from '../utils/currency';
@@ -16,13 +17,18 @@ import { formatPHP } from '../utils/currency';
 export default function AdminPortal() {
   const [activeTab, setActiveTab] = useState('audit'); // 'audit' | 'amla'
   const [searchQuery, setSearchQuery] = useState('');
+  const [eventFilter, setEventFilter] = useState('ALL'); // 'ALL' | 'DEBITS' | 'HOLDS' | 'APPROVALS' | 'DISAPPROVALS'
 
   // 100% Genuine Data-Driven Compliance Metrics
   const totalAuditLogs = mockState.auditLogs.length;
   const amlaTransactions = mockState.transfers.filter((t) => (t.amount || 0) >= THRESHOLDS.AMLA_CTR_MIN);
   
+  const debitCount = mockState.auditLogs.filter((log) => log.event_type === 'BALANCE_MUTATION_DEBIT').length;
+  const holdCount = mockState.auditLogs.filter((log) => log.event_type.includes('HOLD')).length;
+  
   const dualControlApprovals = mockState.auditLogs.filter((log) => 
     log.event_type === 'MANAGER_CHECKER_AUTHORIZATION' || 
+    log.event_type === 'AMLA_TIER3_STAGE1_L1_SIGNOFF' ||
     log.event_type === 'AMLA_TIER3_STAGE2_FINAL_SETTLEMENT'
   ).length;
 
@@ -30,7 +36,15 @@ export default function AdminPortal() {
     log.event_type === 'MAKER_CHECKER_DISAPPROVAL_VOID'
   ).length;
 
+  // Filtered SCN Journal Logs (Combined Search + Event Type Chips)
   const filteredLogs = mockState.auditLogs.filter((log) => {
+    // 1. Event Type Chip Filter
+    if (eventFilter === 'DEBITS' && log.event_type !== 'BALANCE_MUTATION_DEBIT') return false;
+    if (eventFilter === 'HOLDS' && !log.event_type.includes('HOLD')) return false;
+    if (eventFilter === 'APPROVALS' && !(log.event_type.includes('AUTHORIZATION') || log.event_type.includes('SIGNOFF') || log.event_type.includes('SETTLEMENT'))) return false;
+    if (eventFilter === 'DISAPPROVALS' && !log.event_type.includes('DISAPPROVAL')) return false;
+
+    // 2. Search Query Filter
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase().trim();
     return (
@@ -41,6 +55,60 @@ export default function AdminPortal() {
       log.scn?.toString().includes(q)
     );
   });
+
+  // Print Official Report
+  const handlePrint = () => {
+    window.print();
+  };
+
+  // Export SCN Audit Vault to CSV (AMLC / BSP Standard Ingestion Format)
+  const handleExportCSV = () => {
+    const headers = ['SCN Sequence', 'Event Type', 'Tx Reference', 'Actor ID', 'Actor Role', 'Mutation Delta (PHP)', 'SHA-256 Digest Hash', 'Status', 'Timestamp'];
+    const rows = filteredLogs.map((log) => [
+      log.scn,
+      log.event_type,
+      log.tx_id,
+      log.actor_id,
+      log.actor_role,
+      log.delta_amount,
+      log.digest_hash,
+      log.status,
+      `"${new Date(log.timestamp).toISOString()}"`
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `BSP_SCN_Audit_Vault_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Export AMLA CTR Register to CSV
+  const handleExportAmlaCSV = () => {
+    const headers = ['Reference ID', 'Sender (Maker)', 'Beneficiary Account', 'Beneficiary Name', 'Amount (PHP)', 'AMLC Status', 'Dual-Control State', 'Logged Date'];
+    const rows = amlaTransactions.map((tx) => [
+      tx.id,
+      tx.maker_user_id,
+      tx.to_account_id,
+      `"${tx.recipient_name}"`,
+      tx.amount,
+      'CTR_MANDATORY',
+      tx.status === 'SETTLED' ? 'FULLY_SETTLED_L1_L2' : tx.approval_stage === 2 ? 'AWAITING_STAGE2_L2' : 'AWAITING_STAGE1_L1',
+      `"${new Date(tx.created_at).toISOString()}"`
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `AMLA_CTR_Register_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="space-y-6">
@@ -138,7 +206,8 @@ export default function AdminPortal() {
       {/* TAB 1: Immutable Audit Log Table */}
       {activeTab === 'audit' && (
         <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 shadow-xl space-y-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          {/* Header Bar + Export/Print Actions */}
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
             <div>
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <FileCheck2 className="w-4 h-4 text-emerald-400" />
@@ -149,85 +218,188 @@ export default function AdminPortal() {
               </p>
             </div>
 
-            <div className="relative w-full sm:w-72">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
+            {/* Print & Export Actions */}
+            <div className="flex items-center gap-2 w-full lg:w-auto">
+              <button
+                onClick={handlePrint}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+                title="Print official audit report dossier"
+              >
+                <Printer className="w-3.5 h-3.5 text-slate-400" /> Print Report
+              </button>
+              <button
+                onClick={handleExportCSV}
+                className="px-4 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/30 transition-all flex items-center gap-1.5 active:scale-95"
+                title="Export SCN audit vault to CSV format for AMLC/BSP regulatory filing"
+              >
+                <Download className="w-3.5 h-3.5" /> Export CSV
+              </button>
+            </div>
+          </div>
+
+          {/* Filter Toolbar: Quick Event Filter Chips + Search Input */}
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 pt-2 border-t border-slate-800/60">
+            {/* Quick Filter Chips */}
+            <div className="flex items-center gap-1.5 bg-slate-950 p-1.5 rounded-xl border border-slate-800 text-xs overflow-x-auto max-w-full">
+              <button
+                onClick={() => setEventFilter('ALL')}
+                className={`px-3 py-1 rounded-lg transition-all font-medium whitespace-nowrap ${
+                  eventFilter === 'ALL'
+                    ? 'bg-indigo-600 text-white font-semibold shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                All Events ({totalAuditLogs})
+              </button>
+              <button
+                onClick={() => setEventFilter('DEBITS')}
+                className={`px-3 py-1 rounded-lg transition-all font-medium whitespace-nowrap ${
+                  eventFilter === 'DEBITS'
+                    ? 'bg-slate-700 text-white font-semibold shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Debits ({debitCount})
+              </button>
+              <button
+                onClick={() => setEventFilter('HOLDS')}
+                className={`px-3 py-1 rounded-lg transition-all font-medium whitespace-nowrap ${
+                  eventFilter === 'HOLDS'
+                    ? 'bg-amber-600 text-white font-semibold shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Holds ({holdCount})
+              </button>
+              <button
+                onClick={() => setEventFilter('APPROVALS')}
+                className={`px-3 py-1 rounded-lg transition-all font-medium whitespace-nowrap ${
+                  eventFilter === 'APPROVALS'
+                    ? 'bg-emerald-600 text-white font-semibold shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Approvals ({dualControlApprovals})
+              </button>
+              <button
+                onClick={() => setEventFilter('DISAPPROVALS')}
+                className={`px-3 py-1 rounded-lg transition-all font-medium whitespace-nowrap ${
+                  eventFilter === 'DISAPPROVALS'
+                    ? 'bg-rose-600 text-white font-semibold shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Disapprovals ({voidedTransactions})
+              </button>
+            </div>
+
+            {/* Search Input */}
+            <div className="relative w-full md:w-64">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search SCN, ref, actor, event..."
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                placeholder="Search SCN, ref, actor..."
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
               />
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-slate-800 text-slate-400 font-semibold uppercase text-[10px] tracking-wider">
-                <tr>
-                  <th className="pb-3">SCN Sequence</th>
-                  <th className="pb-3">Event Type</th>
-                  <th className="pb-3">Tx Reference</th>
-                  <th className="pb-3">Actor ID</th>
-                  <th className="pb-3">Mutation Delta</th>
-                  <th className="pb-3">Integrity Digest (SHA-256)</th>
-                  <th className="pb-3">Status</th>
-                  <th className="pb-3">Timestamp</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60">
-                {filteredLogs.map((log) => (
-                  <tr key={log.scn} className="hover:bg-slate-900/40 transition-colors">
-                    <td className="py-3 font-mono font-bold text-indigo-400">{log.scn}</td>
-                    <td className="py-3">
-                      <span className="font-mono text-[11px] text-slate-200">{log.event_type}</span>
-                    </td>
-                    <td className="py-3 font-mono text-slate-300 font-semibold">{log.tx_id}</td>
-                    <td className="py-3">
-                      <span className="px-2 py-0.5 rounded font-mono text-[10px] bg-slate-800 text-slate-300 border border-slate-700/60">
-                        {log.actor_id} ({log.actor_role})
-                      </span>
-                    </td>
-                    <td className="py-3 font-mono font-bold">
-                      <span className={log.delta_amount < 0 ? 'text-amber-400' : log.delta_amount > 0 ? 'text-emerald-400' : 'text-slate-400'}>
-                        {log.delta_amount === 0 ? 'SIGN-OFF' : formatPHP(log.delta_amount)}
-                      </span>
-                    </td>
-                    <td className="py-3 font-mono text-[10px] text-slate-400 max-w-xs truncate" title={log.digest_hash}>
-                      {log.digest_hash}
-                    </td>
-                    <td className="py-3">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        {log.status}
-                      </span>
-                    </td>
-                    <td className="py-3 font-mono text-[11px] whitespace-nowrap">
-                      <p className="text-slate-200 font-semibold leading-tight">
-                        {new Date(log.timestamp).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
-                      </p>
-                      <p className="text-slate-400 text-[10px]">
-                        {new Date(log.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
-                      </p>
-                    </td>
+          {filteredLogs.length === 0 ? (
+            <div className="py-12 text-center text-slate-500 text-xs">
+              <FileCheck2 className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+              No audit logs matching event filter "{eventFilter}" or search query.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="border-b border-slate-800 text-slate-400 font-semibold uppercase text-[10px] tracking-wider">
+                  <tr>
+                    <th className="pb-3">SCN Sequence</th>
+                    <th className="pb-3">Event Type</th>
+                    <th className="pb-3">Tx Reference</th>
+                    <th className="pb-3">Actor ID</th>
+                    <th className="pb-3">Mutation Delta</th>
+                    <th className="pb-3">Integrity Digest (SHA-256)</th>
+                    <th className="pb-3">Status</th>
+                    <th className="pb-3">Timestamp</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {filteredLogs.map((log) => (
+                    <tr key={log.scn} className="hover:bg-slate-900/40 transition-colors">
+                      <td className="py-3 font-mono font-bold text-indigo-400">{log.scn}</td>
+                      <td className="py-3">
+                        <span className="font-mono text-[11px] text-slate-200">{log.event_type}</span>
+                      </td>
+                      <td className="py-3 font-mono text-slate-300 font-semibold">{log.tx_id}</td>
+                      <td className="py-3">
+                        <span className="px-2 py-0.5 rounded font-mono text-[10px] bg-slate-800 text-slate-300 border border-slate-700/60">
+                          {log.actor_id} ({log.actor_role})
+                        </span>
+                      </td>
+                      <td className="py-3 font-mono font-bold">
+                        <span className={log.delta_amount < 0 ? 'text-amber-400' : log.delta_amount > 0 ? 'text-emerald-400' : 'text-slate-400'}>
+                          {log.delta_amount === 0 ? 'SIGN-OFF' : formatPHP(log.delta_amount)}
+                        </span>
+                      </td>
+                      <td className="py-3 font-mono text-[10px] text-slate-400 max-w-xs truncate" title={log.digest_hash}>
+                        {log.digest_hash}
+                      </td>
+                      <td className="py-3">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          {log.status}
+                        </span>
+                      </td>
+                      <td className="py-3 font-mono text-[11px] whitespace-nowrap">
+                        <p className="text-slate-200 font-semibold leading-tight">
+                          {new Date(log.timestamp).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
+                        </p>
+                        <p className="text-slate-400 text-[10px]">
+                          {new Date(log.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+                        </p>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
       {/* TAB 2: AMLA CTR Register */}
       {activeTab === 'amla' && (
         <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 shadow-xl space-y-4">
-          <div>
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <ShieldAlert className="w-4 h-4 text-rose-400" />
-              R.A. 9160 Anti-Money Laundering Council (AMLC) Covered Transaction Register
-            </h3>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Tracks high-value mutations exceeding ₱500,000.00 in a single banking day for statutory reporting (Sec. 3b).
-            </p>
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 text-rose-400" />
+                R.A. 9160 Anti-Money Laundering Council (AMLC) Covered Transaction Register
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Tracks high-value mutations exceeding ₱500,000.00 in a single banking day for statutory reporting (Sec. 3b).
+              </p>
+            </div>
+
+            {/* Print & Export Actions for AMLA Register */}
+            <div className="flex items-center gap-2 w-full lg:w-auto">
+              <button
+                onClick={handlePrint}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+                title="Print AMLA CTR Register"
+              >
+                <Printer className="w-3.5 h-3.5 text-slate-400" /> Print Register
+              </button>
+              <button
+                onClick={handleExportAmlaCSV}
+                className="px-4 py-1.5 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white shadow-md shadow-rose-600/30 transition-all flex items-center gap-1.5 active:scale-95"
+                title="Export AMLC CTR file to CSV format"
+              >
+                <Download className="w-3.5 h-3.5" /> Export AMLC CTR
+              </button>
+            </div>
           </div>
 
           <div className="overflow-x-auto">

@@ -12,7 +12,8 @@ import {
   Sparkles,
   RefreshCw,
   Copy,
-  Info
+  Info,
+  ShieldCheck
 } from 'lucide-react';
 import { formatPHP, parseMaskedInput, generateUUID } from '../utils/currency';
 import apiClient, { mockState, THRESHOLDS } from '../services/api';
@@ -410,71 +411,56 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
             </form>
           </div>
 
-          {/* Scenario Simulation Sidebar */}
-          <div className="p-6 rounded-2xl bg-slate-900/40 border border-slate-800/80 space-y-4">
+          {/* Official Bank Limits & Settlement Policy Sidebar */}
+          <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 shadow-xl space-y-4">
             <div>
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-indigo-400" />
-                Quick Test Scenarios
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                Transfer Limits &amp; Settlement Policy
               </h4>
               <p className="text-[11px] text-slate-400 mt-1">
-                One-click presets to demonstrate compliance rules and balance mutation tiers.
+                Bangko Sentral ng Pilipinas (BSP) core clearing guidelines and daily thresholds.
               </p>
             </div>
 
-            <button
-              onClick={() => {
-                setAmountInput('15000.0000');
-                setToAccount('1000-2000-3002');
-                setRecipientName('Maria Santos');
-                setMemo('Standard Retail Transfer (STP)');
-              }}
-              className="w-full text-left p-3.5 rounded-xl bg-slate-950/80 hover:bg-slate-900 border border-slate-800 hover:border-emerald-500/50 transition-all group"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-emerald-400">Scenario 1: Instant STP</span>
-                <span className="text-[10px] font-mono text-emerald-400/80 font-bold">₱15,000.00</span>
+            <div className="space-y-3">
+              <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800/80 space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-300 font-semibold">Tier 1: Instant STP</span>
+                  <span className="font-mono text-emerald-400 font-bold">≤ ₱50,000.00</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Settles instantly in &lt; 50ms via Oracle XE pessimistic row lock without requiring operational sign-off.
+                </p>
               </div>
-              <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
-                Sub-₱50k happy path. Settles immediately via row-level lock without manual intervention.
-              </p>
-            </button>
 
-            <button
-              onClick={() => {
-                setAmountInput('125000.0000');
-                setToAccount('1000-2000-3002');
-                setRecipientName('Maria Santos');
-                setMemo('Contractor Renovation Milestone #2');
-              }}
-              className="w-full text-left p-3.5 rounded-xl bg-slate-950/80 hover:bg-slate-900 border border-slate-800 hover:border-amber-500/50 transition-all group"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-amber-300">Scenario 2: Dual Control Hold</span>
-                <span className="text-[10px] font-mono text-amber-400 font-bold">₱125,000.00</span>
+              <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800/80 space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-300 font-semibold">Tier 2: Dual Control</span>
+                  <span className="font-mono text-amber-400 font-bold">&gt; ₱50,000.00</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Amounts over ₱50,000 are placed on soft hold and routed to Operations Manager for Maker-Checker review.
+                </p>
               </div>
-              <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
-                Exceeds ₱50k STP cap. Places funds on soft hold and routes to Operations Manager console.
-              </p>
-            </button>
 
-            <button
-              onClick={() => {
-                setAmountInput('600000.0000');
-                setToAccount('1000-2000-3003');
-                setRecipientName('Apex Commercial Supplies Ltd.');
-                setMemo('Commercial Equipment Wholesale Procurement');
-              }}
-              className="w-full text-left p-3.5 rounded-xl bg-slate-950/80 hover:bg-slate-900 border border-slate-800 hover:border-rose-500/50 transition-all group"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-rose-300">Scenario 3: AMLA CTR Hold</span>
-                <span className="text-[10px] font-mono text-rose-400 font-bold">₱600,000.00</span>
+              <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800/80 space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-300 font-semibold">Tier 3: AMLA CTR</span>
+                  <span className="font-mono text-rose-400 font-bold">≥ ₱500,000.00</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  High-value transactions meeting the R.A. 9160 threshold are logged for mandatory AMLC regulatory filing.
+                </p>
               </div>
-              <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
-                Exceeds ₱500k AMLA threshold (R.A. 9160). Triggers mandatory regulatory CTR flag + dual control.
+            </div>
+
+            <div className="p-3 rounded-xl bg-indigo-500/5 border border-indigo-500/10 flex items-start gap-2.5 text-[11px] text-slate-400">
+              <Lock className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+              <p className="leading-relaxed">
+                Protected by PostgreSQL immutable audit sink and end-to-end cryptographic hashing.
               </p>
-            </button>
+            </div>
           </div>
         </div>
       )}

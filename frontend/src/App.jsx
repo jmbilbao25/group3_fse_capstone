@@ -1,119 +1,110 @@
-import React, { useState } from 'react';
-import { 
-  Building2, 
-  ArrowLeftRight, 
-  ShieldCheck, 
-  Wallet, 
-  UserCheck, 
-  History, 
-  AlertCircle, 
-  TrendingUp,
-  CreditCard
-} from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import Navbar from './components/Navbar';
+import CustomerPortal from './components/CustomerPortal';
+import ManagerPortal from './components/ManagerPortal';
+import AdminPortal from './components/AdminPortal';
+import Toast from './components/Toast';
+import apiClient, { mockState } from './services/api';
 
-export default function App() {
-  const [activeRole, setActiveRole] = useState('CUSTOMER');
+function MainApp() {
+  const { user } = useAuth();
+  const [balance, setBalance] = useState({
+    account_id: '1000-2000-3001',
+    account_type: 'SAVINGS',
+    currency: 'PHP',
+    current_balance: 1000000.0000,
+    held_balance: 725000.0000,
+    available_balance: 275000.0000,
+  });
+  const [toast, setToast] = useState(null);
+
+  const fetchBalance = async () => {
+    try {
+      const res = await apiClient.get(`/accounts/${balance.account_id}/balance`);
+      setBalance(res.data);
+    } catch (_) {
+      setBalance({ ...mockState.account });
+    }
+  };
+
+  useEffect(() => {
+    fetchBalance();
+  }, []);
+
+  const showToast = (toastObj) => {
+    setToast(toastObj);
+    setTimeout(() => {
+      setToast(null);
+    }, 6000);
+  };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col font-sans">
-      {/* Top Navigation */}
-      <header className="border-b border-slate-800 bg-slate-950/70 backdrop-blur px-6 py-4 flex items-center justify-between sticky top-0 z-50">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-600/30">
-            <Building2 className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h1 className="font-bold text-lg text-white leading-tight">EastWest Retail Core Ledger</h1>
-            <p className="text-xs text-slate-400">High-Throughput Mutation &amp; Dual-Write Engine</p>
-          </div>
-        </div>
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
+      <Navbar onRefreshBalance={fetchBalance} />
 
-        {/* Role Switcher */}
-        <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 p-1 rounded-xl text-xs font-semibold">
-          {['CUSTOMER', 'TELLER', 'ADMIN'].map((role) => (
-            <button
-              key={role}
-              onClick={() => setActiveRole(role)}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                activeRole === role
-                  ? 'bg-indigo-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              {role}
-            </button>
-          ))}
-        </div>
-      </header>
-
-      {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-6 md:p-8 space-y-8">
-        {/* Banner */}
-        <div className="p-6 rounded-2xl bg-gradient-to-r from-indigo-900/40 via-slate-900 to-slate-900 border border-indigo-500/20 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        {/* Dynamic Context Header Banner */}
+        <div className="p-6 rounded-2xl bg-gradient-to-r from-indigo-950/50 via-slate-900/80 to-slate-900 border border-indigo-500/20 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 backdrop-blur-md">
           <div>
-            <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-              Active Mode: {activeRole}
-            </span>
-            <h2 className="text-2xl font-bold text-white mt-2">
-              {activeRole === 'CUSTOMER' && 'Welcome back, Juan Dela Cruz'}
-              {activeRole === 'TELLER' && 'Branch Teller Terminal (Workstation #1)'}
-              {activeRole === 'ADMIN' && 'Maker-Checker Approval & System Administration'}
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                Active Console: {user?.role.replace('ROLE_', '')}
+              </span>
+              <span className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-mono">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Ledger Engine Online
+              </span>
+            </div>
+            <h2 className="text-2xl font-bold text-white mt-2 tracking-tight">
+              {user?.role === 'ROLE_CUSTOMER' && `Welcome back, ${user?.name}`}
+              {user?.role === 'ROLE_MANAGER' && 'Bank Operations Manager Console & Maker-Checker Review'}
+              {user?.role === 'ROLE_ADMIN' && 'Audit, Compliance & Immutable SCN Vault Monitoring'}
             </h2>
-            <p className="text-sm text-slate-400 mt-1">
-              Dual-write storage connected to Oracle XE (Master State) &amp; PostgreSQL (Immutable Audit Trail).
-            </p>
-          </div>
-          <div className="flex items-center gap-4 bg-slate-950/60 border border-slate-800 p-4 rounded-xl">
-            <div>
-              <p className="text-xs text-slate-400">Available Balance (A2001)</p>
-              <p className="text-2xl font-mono font-bold text-emerald-400">₱ 298,000.0000</p>
-            </div>
-            <div className="w-px h-8 bg-slate-800" />
-            <div>
-              <p className="text-xs text-slate-400">Hold Amount</p>
-              <p className="text-sm font-mono text-amber-400 font-semibold">₱ 0.0000</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Action Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="p-5 rounded-2xl bg-slate-950/40 border border-slate-800 hover:border-slate-700 transition-all space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-              <ArrowLeftRight className="w-5 h-5" />
-            </div>
-            <h3 className="font-semibold text-white">Funds Transfer</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Instant balance mutation via Pessimistic Row Lock (SELECT FOR UPDATE) with sub-50ms SLA.
-            </p>
-          </div>
-
-          <div className="p-5 rounded-2xl bg-slate-950/40 border border-slate-800 hover:border-slate-700 transition-all space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-              <CreditCard className="w-5 h-5" />
-            </div>
-            <h3 className="font-semibold text-white">Credit &amp; Collateral</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              2022 Toyota Vios 1.5G appraised at ₱600,000. Approved credit limit: ₱300,000.
-            </p>
-          </div>
-
-          <div className="p-5 rounded-2xl bg-slate-950/40 border border-slate-800 hover:border-slate-700 transition-all space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <h3 className="font-semibold text-white">Immutable Audit Trail</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Append-only audit writes committed to PostgreSQL 15+ with automatic data drift rollback.
+            <p className="text-xs text-slate-400 mt-1 max-w-3xl leading-relaxed">
+              Connected to Oracle XE 21c (Pessimistic Row Lock &amp; Outbox Events) and PostgreSQL 15 (Immutable SCN Audit Trail) with Spring Boot Notification Engine (:8083).
             </p>
           </div>
         </div>
+
+        {/* Dynamic Role Views */}
+        {user?.role === 'ROLE_CUSTOMER' && (
+          <CustomerPortal
+            balance={balance}
+            onTransactionComplete={fetchBalance}
+            showToast={showToast}
+          />
+        )}
+
+        {user?.role === 'ROLE_MANAGER' && (
+          <ManagerPortal
+            onActionComplete={fetchBalance}
+            showToast={showToast}
+          />
+        )}
+
+        {user?.role === 'ROLE_ADMIN' && (
+          <AdminPortal />
+        )}
       </main>
 
+      <Toast toast={toast} onClose={() => setToast(null)} />
+
       {/* Footer */}
-      <footer className="border-t border-slate-800/80 px-6 py-4 text-center text-xs text-slate-500">
-        CAPSTONE FSE: Core Retail Ledger Engine &bull; React + Vite :3000 &bull; Spring Boot :8082
+      <footer className="border-t border-slate-800/80 px-6 py-4 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 max-w-7xl w-full mx-auto">
+        <p>CAPSTONE FSE (Group 3) &bull; Core Retail Ledger &amp; Balance Mutation Engine</p>
+        <p className="font-mono text-[11px] mt-1 sm:mt-0 text-slate-400">
+          React 18 &bull; Vite :3000 &bull; Oracle XE :1521 &bull; PostgreSQL :5432 &bull; Notification :8083
+        </p>
       </footer>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <MainApp />
+    </AuthProvider>
   );
 }

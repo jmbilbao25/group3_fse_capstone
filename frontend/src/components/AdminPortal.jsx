@@ -8,8 +8,7 @@ import {
   Search, 
   XCircle,
   Printer,
-  Download,
-  FileSpreadsheet
+  Download
 } from 'lucide-react';
 import { mockState, THRESHOLDS } from '../services/api';
 import { formatPHP } from '../utils/currency';
@@ -56,6 +55,59 @@ export default function AdminPortal() {
     );
   });
 
+  // Dynamic Transaction Lifecycle Badge
+  const renderAuditStatus = (log) => {
+    // 1. Settled Mutations (STP Instant Settlement or Approved by Manager)
+    if (
+      log.event_type === 'BALANCE_MUTATION_DEBIT' ||
+      log.event_type === 'MANAGER_CHECKER_AUTHORIZATION' ||
+      log.event_type === 'AMLA_TIER3_STAGE2_FINAL_SETTLEMENT'
+    ) {
+      return (
+        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 inline-flex items-center gap-1 font-mono">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+          SETTLED
+        </span>
+      );
+    }
+
+    // 2. Voided / Disapproved
+    if (log.event_type === 'MAKER_CHECKER_DISAPPROVAL_VOID') {
+      return (
+        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20 inline-flex items-center gap-1 font-mono">
+          <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+          VOIDED
+        </span>
+      );
+    }
+
+    // 3. Stage 1 Signed (AMLA Level 1 Sign-Off complete, awaiting L2)
+    if (log.event_type === 'AMLA_TIER3_STAGE1_L1_SIGNOFF') {
+      return (
+        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 inline-flex items-center gap-1 font-mono">
+          <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+          STAGE 1 SIGNED
+        </span>
+      );
+    }
+
+    // 4. Soft Hold / AMLA CTR Hold (Pending Manager Approval)
+    if (log.event_type.includes('HOLD')) {
+      return (
+        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/20 inline-flex items-center gap-1 font-mono">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+          PENDING (HELD)
+        </span>
+      );
+    }
+
+    return (
+      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-800 text-slate-300 border border-slate-700 font-mono">
+        LOGGED
+      </span>
+    );
+  };
+
   // Print Official Report
   const handlePrint = () => {
     window.print();
@@ -63,18 +115,31 @@ export default function AdminPortal() {
 
   // Export SCN Audit Vault to CSV (AMLC / BSP Standard Ingestion Format)
   const handleExportCSV = () => {
-    const headers = ['SCN Sequence', 'Event Type', 'Tx Reference', 'Actor ID', 'Actor Role', 'Mutation Delta (PHP)', 'SHA-256 Digest Hash', 'Status', 'Timestamp'];
-    const rows = filteredLogs.map((log) => [
-      log.scn,
-      log.event_type,
-      log.tx_id,
-      log.actor_id,
-      log.actor_role,
-      log.delta_amount,
-      log.digest_hash,
-      log.status,
-      `"${new Date(log.timestamp).toISOString()}"`
-    ]);
+    const headers = ['SCN Sequence', 'Event Type', 'Tx Reference', 'Actor ID', 'Actor Role', 'Mutation Delta (PHP)', 'SHA-256 Digest Hash', 'Execution Status', 'Timestamp'];
+    const rows = filteredLogs.map((log) => {
+      let lifecycleStatus = 'LOGGED';
+      if (log.event_type === 'BALANCE_MUTATION_DEBIT' || log.event_type.includes('AUTHORIZATION') || log.event_type.includes('SETTLEMENT')) {
+        lifecycleStatus = 'SETTLED';
+      } else if (log.event_type.includes('DISAPPROVAL')) {
+        lifecycleStatus = 'VOIDED';
+      } else if (log.event_type === 'AMLA_TIER3_STAGE1_L1_SIGNOFF') {
+        lifecycleStatus = 'STAGE_1_SIGNED';
+      } else if (log.event_type.includes('HOLD')) {
+        lifecycleStatus = 'PENDING_HELD';
+      }
+
+      return [
+        log.scn,
+        log.event_type,
+        log.tx_id,
+        log.actor_id,
+        log.actor_role,
+        log.delta_amount,
+        log.digest_hash,
+        lifecycleStatus,
+        `"${new Date(log.timestamp).toISOString()}"`
+      ];
+    });
 
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
     const encodedUri = encodeURI(csvContent);
@@ -322,7 +387,7 @@ export default function AdminPortal() {
                     <th className="pb-3">Actor ID</th>
                     <th className="pb-3">Mutation Delta</th>
                     <th className="pb-3">Integrity Digest (SHA-256)</th>
-                    <th className="pb-3">Status</th>
+                    <th className="pb-3">Execution Status</th>
                     <th className="pb-3">Timestamp</th>
                   </tr>
                 </thead>
@@ -344,13 +409,14 @@ export default function AdminPortal() {
                           {log.delta_amount === 0 ? 'SIGN-OFF' : formatPHP(log.delta_amount)}
                         </span>
                       </td>
-                      <td className="py-3 font-mono text-[10px] text-slate-400 max-w-xs truncate" title={log.digest_hash}>
-                        {log.digest_hash}
+                      <td className="py-3 font-mono text-[10px] text-slate-400 max-w-xs truncate" title={`SHA-256 Digest: ${log.digest_hash} (Immutable Hash Stamp Verified)`}>
+                        <div className="flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400/80 shrink-0" />
+                          <span className="truncate">{log.digest_hash}</span>
+                        </div>
                       </td>
                       <td className="py-3">
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                          {log.status}
-                        </span>
+                        {renderAuditStatus(log)}
                       </td>
                       <td className="py-3 font-mono text-[11px] whitespace-nowrap">
                         <p className="text-slate-200 font-semibold leading-tight">
@@ -439,19 +505,19 @@ export default function AdminPortal() {
                       </td>
                       <td className="py-3.5">
                         {isSettled ? (
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 inline-flex items-center gap-1">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 inline-flex items-center gap-1 font-mono">
                             <CheckCircle2 className="w-3 h-3" /> FULLY SETTLED (L1 &amp; L2 APPROVED)
                           </span>
                         ) : isRejected ? (
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20 inline-flex items-center gap-1">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20 inline-flex items-center gap-1 font-mono">
                             <XCircle className="w-3 h-3" /> DISAPPROVED &amp; VOIDED
                           </span>
                         ) : stage === 2 ? (
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 inline-flex items-center gap-1">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 inline-flex items-center gap-1 font-mono">
                             <Clock className="w-3 h-3" /> STAGE 2: AWAITING L2 SENIOR MANAGER
                           </span>
                         ) : (
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/20 inline-flex items-center gap-1">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/20 inline-flex items-center gap-1 font-mono">
                             <Clock className="w-3 h-3" /> STAGE 1: AWAITING L1 OPERATIONS CHECKER
                           </span>
                         )}

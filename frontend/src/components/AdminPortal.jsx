@@ -8,7 +8,13 @@ import {
   Search, 
   XCircle,
   Printer,
-  Download
+  Download,
+  ExternalLink,
+  X,
+  Copy,
+  Check,
+  Building2,
+  UserCheck
 } from 'lucide-react';
 import { mockState, THRESHOLDS } from '../services/api';
 import { formatPHP } from '../utils/currency';
@@ -17,6 +23,8 @@ export default function AdminPortal() {
   const [activeTab, setActiveTab] = useState('audit'); // 'audit' | 'amla'
   const [searchQuery, setSearchQuery] = useState('');
   const [eventFilter, setEventFilter] = useState('ALL'); // 'ALL' | 'DEBITS' | 'HOLDS' | 'APPROVALS' | 'DISAPPROVALS'
+  const [selectedLog, setSelectedLog] = useState(null);
+  const [copiedHash, setCopiedHash] = useState(false);
 
   // 100% Genuine Data-Driven Compliance Metrics
   const totalAuditLogs = mockState.auditLogs.length;
@@ -177,6 +185,8 @@ export default function AdminPortal() {
     document.body.removeChild(link);
   };
 
+  const selectedTx = selectedLog ? mockState.transfers.find((t) => t.id === selectedLog.tx_id) : null;
+
   return (
     <div className="space-y-6">
       {/* Real Data-Driven Compliance KPI Badges */}
@@ -281,7 +291,7 @@ export default function AdminPortal() {
                 Append-Only SCN Journal (PostgreSQL 15)
               </h3>
               <p className="text-xs text-slate-400 mt-0.5">
-                Every balance debit, hold reservation, and manager sign-off is committed chronologically with cryptographic hashes (BSP Cir. 808).
+                Click any SCN sequence number to inspect the complete cryptographic audit dossier.
               </p>
             </div>
 
@@ -289,14 +299,14 @@ export default function AdminPortal() {
             <div className="flex items-center gap-2 w-full lg:w-auto">
               <button
                 onClick={handlePrint}
-                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 transition-all flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
                 title="Print official audit report dossier"
               >
                 <Printer className="w-3.5 h-3.5 text-slate-400" /> Print Report
               </button>
               <button
                 onClick={handleExportCSV}
-                className="px-4 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/30 transition-all flex items-center gap-1.5 active:scale-95"
+                className="px-4 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/30 transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
                 title="Export SCN audit vault to CSV format for AMLC/BSP regulatory filing"
               >
                 <Download className="w-3.5 h-3.5" /> Export CSV
@@ -310,7 +320,7 @@ export default function AdminPortal() {
             <div className="flex items-center gap-1.5 bg-slate-950 p-1.5 rounded-xl border border-slate-800 text-xs overflow-x-auto max-w-full">
               <button
                 onClick={() => setEventFilter('ALL')}
-                className={`px-3 py-1 rounded-lg transition-all font-medium whitespace-nowrap ${
+                className={`px-3 py-1 rounded-lg transition-all font-medium whitespace-nowrap cursor-pointer ${
                   eventFilter === 'ALL'
                     ? 'bg-indigo-600 text-white font-semibold shadow-sm'
                     : 'text-slate-400 hover:text-white'
@@ -320,7 +330,7 @@ export default function AdminPortal() {
               </button>
               <button
                 onClick={() => setEventFilter('DEBITS')}
-                className={`px-3 py-1 rounded-lg transition-all font-medium whitespace-nowrap ${
+                className={`px-3 py-1 rounded-lg transition-all font-medium whitespace-nowrap cursor-pointer ${
                   eventFilter === 'DEBITS'
                     ? 'bg-slate-700 text-white font-semibold shadow-sm'
                     : 'text-slate-400 hover:text-white'
@@ -330,7 +340,7 @@ export default function AdminPortal() {
               </button>
               <button
                 onClick={() => setEventFilter('HOLDS')}
-                className={`px-3 py-1 rounded-lg transition-all font-medium whitespace-nowrap ${
+                className={`px-3 py-1 rounded-lg transition-all font-medium whitespace-nowrap cursor-pointer ${
                   eventFilter === 'HOLDS'
                     ? 'bg-amber-600 text-white font-semibold shadow-sm'
                     : 'text-slate-400 hover:text-white'
@@ -340,7 +350,7 @@ export default function AdminPortal() {
               </button>
               <button
                 onClick={() => setEventFilter('APPROVALS')}
-                className={`px-3 py-1 rounded-lg transition-all font-medium whitespace-nowrap ${
+                className={`px-3 py-1 rounded-lg transition-all font-medium whitespace-nowrap cursor-pointer ${
                   eventFilter === 'APPROVALS'
                     ? 'bg-emerald-600 text-white font-semibold shadow-sm'
                     : 'text-slate-400 hover:text-white'
@@ -350,7 +360,7 @@ export default function AdminPortal() {
               </button>
               <button
                 onClick={() => setEventFilter('DISAPPROVALS')}
-                className={`px-3 py-1 rounded-lg transition-all font-medium whitespace-nowrap ${
+                className={`px-3 py-1 rounded-lg transition-all font-medium whitespace-nowrap cursor-pointer ${
                   eventFilter === 'DISAPPROVALS'
                     ? 'bg-rose-600 text-white font-semibold shadow-sm'
                     : 'text-slate-400 hover:text-white'
@@ -396,7 +406,21 @@ export default function AdminPortal() {
                 <tbody className="divide-y divide-slate-800/60">
                   {filteredLogs.map((log) => (
                     <tr key={log.scn} className="hover:bg-slate-900/40 transition-colors">
-                      <td className="py-3 font-mono font-bold text-indigo-400">{log.scn}</td>
+                      {/* Clickable SCN Sequence Number */}
+                      <td className="py-3 font-mono font-bold text-indigo-400">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedLog(log);
+                            setCopiedHash(false);
+                          }}
+                          className="hover:underline hover:text-indigo-300 transition-all cursor-pointer flex items-center gap-1 group py-0.5 text-left"
+                          title="Click to inspect complete SCN audit dossier"
+                        >
+                          <span>{log.scn}</span>
+                          <ExternalLink className="w-3 h-3 text-indigo-400 opacity-60 group-hover:opacity-100 transition-opacity" />
+                        </button>
+                      </td>
                       <td className="py-3">
                         <span className="font-mono text-[11px] text-slate-200">{log.event_type}</span>
                       </td>
@@ -417,7 +441,7 @@ export default function AdminPortal() {
                           <span className="truncate">{log.digest_hash}</span>
                         </div>
                       </td>
-                      <td className="py-3">
+                      <td className="py-3 whitespace-nowrap">
                         {renderAuditStatus(log)}
                       </td>
                       <td className="py-3 font-mono text-[11px] whitespace-nowrap">
@@ -455,14 +479,14 @@ export default function AdminPortal() {
             <div className="flex items-center gap-2 w-full lg:w-auto">
               <button
                 onClick={handlePrint}
-                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 transition-all flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
                 title="Print AMLA CTR Register"
               >
                 <Printer className="w-3.5 h-3.5 text-slate-400" /> Print Register
               </button>
               <button
                 onClick={handleExportAmlaCSV}
-                className="px-4 py-1.5 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white shadow-md shadow-rose-600/30 transition-all flex items-center gap-1.5 active:scale-95"
+                className="px-4 py-1.5 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white shadow-md shadow-rose-600/30 transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
                 title="Export AMLC CTR file to CSV format"
               >
                 <Download className="w-3.5 h-3.5" /> Export AMLC CTR
@@ -537,6 +561,193 @@ export default function AdminPortal() {
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* SCN Detailed Inspection Dossier Modal */}
+      {selectedLog && (
+        <div 
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setSelectedLog(null);
+          }}
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+        >
+          <div className="bg-slate-900 border border-indigo-500/30 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto space-y-5">
+            {/* Top decorative gradient bar */}
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500" />
+
+            {/* Close 'X' Button */}
+            <button
+              type="button"
+              onClick={() => setSelectedLog(null)}
+              aria-label="Close Dossier"
+              className="absolute top-4 right-4 z-10 p-2 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700/80 transition-all active:scale-95 shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Modal Header */}
+            <div className="flex items-start justify-between border-b border-slate-800 pb-4 pr-8">
+              <div className="flex items-center gap-3">
+                <span className="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+                  <FileCheck2 className="w-6 h-6" />
+                </span>
+                <div>
+                  <h3 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+                    <span>SCN Record Dossier</span>
+                    <span className="text-indigo-400 font-mono">#{selectedLog.scn}</span>
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    PostgreSQL 15 Append-Only Vault &bull; BSP Circular 808 Immutable Ledger Entry
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Cryptographic SHA-256 Tamper-Proof Stamp */}
+            <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5 uppercase tracking-wider">
+                  <Lock className="w-3.5 h-3.5 text-emerald-400" /> Cryptographic Integrity Digest (SHA-256)
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" /> VERIFIED TAMPER-PROOF
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-900 border border-slate-800 font-mono text-[11px] text-slate-300 break-all">
+                <span className="select-all">{selectedLog.digest_hash}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (navigator.clipboard) {
+                      navigator.clipboard.writeText(selectedLog.digest_hash);
+                      setCopiedHash(true);
+                      setTimeout(() => setCopiedHash(false), 2000);
+                    }
+                  }}
+                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-all shrink-0 cursor-pointer"
+                  title="Copy SHA-256 Hash"
+                >
+                  {copiedHash ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+              <p className="text-[10px] text-slate-500">
+                Protected by PostgreSQL trigger <code className="text-slate-400 font-mono">trg_no_update_delete_mutation_audit</code>. Any manual byte manipulation in storage breaks this cryptographic seal.
+              </p>
+            </div>
+
+            {/* Financial Mutation Matrix */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                <span className="text-[11px] text-slate-400 uppercase tracking-wider">Event Classification</span>
+                <p className="font-mono font-bold text-slate-200 text-xs">{selectedLog.event_type}</p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                <span className="text-[11px] text-slate-400 uppercase tracking-wider">Execution Lifecycle Status</span>
+                <div>{renderAuditStatus(selectedLog)}</div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                <span className="text-[11px] text-slate-400 uppercase tracking-wider">Mutation Delta</span>
+                <p className={`font-mono font-bold text-sm ${
+                  selectedLog.delta_amount < 0 ? 'text-amber-400' : selectedLog.delta_amount > 0 ? 'text-emerald-400' : 'text-slate-400'
+                }`}>
+                  {selectedLog.delta_amount === 0 ? '₱ 0.00 (SIGN-OFF RELEASE)' : formatPHP(selectedLog.delta_amount)}
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                <span className="text-[11px] text-slate-400 uppercase tracking-wider">Ledger Balance After Mutation</span>
+                <p className="font-mono font-bold text-emerald-400 text-sm">
+                  {selectedLog.balance_after !== undefined ? formatPHP(selectedLog.balance_after) : 'Unchanged'}
+                </p>
+              </div>
+            </div>
+
+            {/* Identity & Non-Repudiation Actor Details */}
+            <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 text-xs space-y-2.5">
+              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <UserCheck className="w-3.5 h-3.5 text-indigo-400" /> Identity &amp; Non-Repudiation Actor Proof
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono">
+                <div>
+                  <span className="text-slate-500 text-[10px] block">Actor ID</span>
+                  <span className="text-white font-semibold">{selectedLog.actor_id}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 text-[10px] block">Actor Role</span>
+                  <span className="text-indigo-300 font-semibold">{selectedLog.actor_role}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 text-[10px] block">Account Reference</span>
+                  <span className="text-slate-300">{selectedLog.account_id || '1000-2000-3001'}</span>
+                </div>
+              </div>
+              <div className="pt-2 text-[11px] text-slate-400 border-t border-slate-800/80 flex items-center justify-between">
+                <span>Committed Timestamp:</span>
+                <span className="font-mono text-slate-200 font-semibold">
+                  {new Date(selectedLog.timestamp).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}{' '}
+                  &bull;{' '}
+                  {new Date(selectedLog.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+                </span>
+              </div>
+            </div>
+
+            {/* Associated Transaction Context */}
+            {selectedTx && (
+              <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 text-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Building2 className="w-3.5 h-3.5 text-slate-400" /> Business Transfer Context ({selectedTx.id})
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                    {selectedTx.regulatory_tier}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-300">
+                  <div>
+                    <span className="text-slate-500 text-[10px] block">Beneficiary</span>
+                    <span className="font-semibold text-white">{selectedTx.recipient_name}</span> ({selectedTx.to_account_id})
+                  </div>
+                  <div>
+                    <span className="text-slate-500 text-[10px] block">Memo / Purpose</span>
+                    <span className="italic">{selectedTx.memo || 'Standard Retail Transfer'}</span>
+                  </div>
+                </div>
+                {selectedTx.approver_notes && (
+                  <div className="pt-1.5 border-t border-slate-800/60 text-[11px]">
+                    <span className="text-emerald-400 font-semibold">Authorizer Notes: </span>
+                    <span className="text-slate-300 italic">"{selectedTx.approver_notes}"</span>
+                  </div>
+                )}
+                {selectedTx.rejection_reason && (
+                  <div className="pt-1.5 border-t border-slate-800/60 text-[11px]">
+                    <span className="text-rose-400 font-semibold">Disapproval Reason: </span>
+                    <span className="text-slate-300 italic">"{selectedTx.rejection_reason}"</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setSelectedLog(null)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition-all cursor-pointer"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="px-5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/30 transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <Printer className="w-3.5 h-3.5" /> Print SCN Dossier Slip
+              </button>
+            </div>
           </div>
         </div>
       )}

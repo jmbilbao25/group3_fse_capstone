@@ -41,7 +41,7 @@ export const THRESHOLDS = {
   AMLA_CTR_MIN: 500000.0000,    // >= ₱500k: AMLA Covered Transaction Report + Dual Control
 };
 
-const STORAGE_KEY = 'fse_core_ledger_state_v1';
+const STORAGE_KEY = 'fse_core_ledger_state_v4';
 
 // Initial realistic core retail ledger state
 const initialMockState = {
@@ -51,9 +51,9 @@ const initialMockState = {
     account_name: 'Juan Dela Cruz (Primary Savings)',
     account_type: 'SAVINGS',
     currency: 'PHP',
-    current_balance: 1000000.0000,
+    current_balance: 15000000.0000,
     held_balance: 725000.0000,
-    available_balance: 275000.0000,
+    available_balance: 14275000.0000,
     status: 'ACTIVE',
   },
   transfers: [
@@ -178,6 +178,10 @@ const loadMockState = () => {
             tx.approval_stage = 1;
           }
         });
+        if (parsed.account.current_balance < 15000000.0000) {
+          parsed.account.current_balance = 15000000.0000;
+          parsed.account.available_balance = 15000000.0000 - (parsed.account.held_balance || 0);
+        }
         return parsed;
       }
     }

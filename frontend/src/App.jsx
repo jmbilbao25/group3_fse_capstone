@@ -13,9 +13,9 @@ function MainApp() {
     account_id: '1000-2000-3001',
     account_type: 'SAVINGS',
     currency: 'PHP',
-    current_balance: 1000000.0000,
+    current_balance: 15000000.0000,
     held_balance: 725000.0000,
-    available_balance: 275000.0000,
+    available_balance: 14275000.0000,
   });
   const [toast, setToast] = useState(null);
 

@@ -1,89 +1,117 @@
 import React, { useState } from 'react';
 import { 
-  Database, 
-  Activity, 
   ShieldAlert, 
-  Server, 
-  Cpu, 
   CheckCircle2, 
-  Clock,
-  Layers,
-  FileCheck2,
-  Mail,
-  Lock,
-  Search,
-  ExternalLink
+  Clock, 
+  FileCheck2, 
+  Lock, 
+  Search, 
+  XCircle,
+  UserCheck,
+  AlertCircle
 } from 'lucide-react';
 import { mockState, THRESHOLDS } from '../services/api';
 import { formatPHP } from '../utils/currency';
 
 export default function AdminPortal() {
-  const [activeTab, setActiveTab] = useState('audit'); // 'audit' | 'amla' | 'telemetry'
+  const [activeTab, setActiveTab] = useState('audit'); // 'audit' | 'amla'
   const [searchQuery, setSearchQuery] = useState('');
 
+  // 100% Genuine Data-Driven Compliance Metrics
+  const totalAuditLogs = mockState.auditLogs.length;
   const amlaTransactions = mockState.transfers.filter((t) => (t.amount || 0) >= THRESHOLDS.AMLA_CTR_MIN);
+  
+  const dualControlApprovals = mockState.auditLogs.filter((log) => 
+    log.event_type === 'MANAGER_CHECKER_AUTHORIZATION' || 
+    log.event_type === 'AMLA_TIER3_STAGE2_FINAL_SETTLEMENT'
+  ).length;
+
+  const voidedTransactions = mockState.auditLogs.filter((log) => 
+    log.event_type === 'MAKER_CHECKER_DISAPPROVAL_VOID'
+  ).length;
 
   const filteredLogs = mockState.auditLogs.filter((log) => {
     if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
+    const q = searchQuery.toLowerCase().trim();
     return (
-      log.tx_id.toLowerCase().includes(q) ||
-      log.event_type.toLowerCase().includes(q) ||
-      log.actor_id.toLowerCase().includes(q) ||
-      log.scn.toString().includes(q)
+      log.tx_id?.toLowerCase().includes(q) ||
+      log.event_type?.toLowerCase().includes(q) ||
+      log.actor_id?.toLowerCase().includes(q) ||
+      log.actor_role?.toLowerCase().includes(q) ||
+      log.scn?.toString().includes(q)
     );
   });
 
   return (
     <div className="space-y-6">
-      {/* SLA & Telemetry Badges */}
+      {/* Real Data-Driven Compliance KPI Badges */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 shadow-lg">
+        {/* 1. SCN Audit Records */}
+        <div className="p-5 rounded-2xl bg-slate-900/80 border border-indigo-500/30 shadow-lg relative overflow-hidden group hover:border-indigo-500/50 transition-all">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-              Throughput Performance
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-indigo-400">
+              SCN Audit Records
             </span>
-            <Activity className="w-4 h-4 text-emerald-400" />
+            <FileCheck2 className="w-4 h-4 text-indigo-400" />
           </div>
-          <p className="text-xl font-mono font-bold text-emerald-400">248 TPS</p>
-          <p className="text-[11px] text-slate-400 mt-1">SLA Benchmark target &gt; 200 TPS</p>
+          <p className="text-2xl font-mono font-bold text-white tracking-tight">
+            {totalAuditLogs} {totalAuditLogs === 1 ? 'Event' : 'Events'}
+          </p>
+          <p className="text-[11px] text-slate-400 mt-1">
+            Append-only SCN sequential journal
+          </p>
         </div>
 
-        <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 shadow-lg">
+        {/* 2. AMLA CTR Covered Items */}
+        <div className="p-5 rounded-2xl bg-slate-900/80 border border-rose-500/30 shadow-lg relative overflow-hidden group hover:border-rose-500/50 transition-all">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-              p99 Settlement Latency
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-rose-400">
+              AMLA Covered (CTR)
             </span>
-            <Clock className="w-4 h-4 text-indigo-400" />
+            <ShieldAlert className="w-4 h-4 text-rose-400" />
           </div>
-          <p className="text-xl font-mono font-bold text-indigo-400">42 ms</p>
-          <p className="text-[11px] text-slate-400 mt-1">Row-lock SLA guarantee &lt; 150 ms</p>
+          <p className="text-2xl font-mono font-bold text-white tracking-tight">
+            {amlaTransactions.length} {amlaTransactions.length === 1 ? 'Item' : 'Items'}
+          </p>
+          <p className="text-[11px] text-slate-400 mt-1">
+            Mandatory RA 9160 statutory register (&ge; ₱500k)
+          </p>
         </div>
 
-        <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 shadow-lg">
+        {/* 3. Dual-Control Authorizations */}
+        <div className="p-5 rounded-2xl bg-slate-900/80 border border-emerald-500/30 shadow-lg relative overflow-hidden group hover:border-emerald-500/50 transition-all">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-              PostgreSQL SCN Integrity
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-400">
+              Dual-Control Approvals
             </span>
-            <Lock className="w-4 h-4 text-emerald-400" />
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           </div>
-          <p className="text-xl font-mono font-bold text-emerald-400">100% Immutable</p>
-          <p className="text-[11px] text-slate-400 mt-1">No update/delete trigger active</p>
+          <p className="text-2xl font-mono font-bold text-emerald-400 tracking-tight">
+            {dualControlApprovals} {dualControlApprovals === 1 ? 'Settlement' : 'Settlements'}
+          </p>
+          <p className="text-[11px] text-slate-400 mt-1">
+            Operations Manager verified &amp; released
+          </p>
         </div>
 
-        <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 shadow-lg">
+        {/* 4. Disapproved & Voided */}
+        <div className="p-5 rounded-2xl bg-slate-900/80 border border-amber-500/30 shadow-lg relative overflow-hidden group hover:border-amber-500/50 transition-all">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-              Notification Engine
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-amber-400">
+              Disapproved / Voided
             </span>
-            <Mail className="w-4 h-4 text-cyan-400" />
+            <XCircle className="w-4 h-4 text-amber-400" />
           </div>
-          <p className="text-xl font-mono font-bold text-cyan-400">Online (:8083)</p>
-          <p className="text-[11px] text-slate-400 mt-1">Dual-template HTML advice active</p>
+          <p className="text-2xl font-mono font-bold text-amber-300 tracking-tight">
+            {voidedTransactions} {voidedTransactions === 1 ? 'Mutation' : 'Mutations'}
+          </p>
+          <p className="text-[11px] text-slate-400 mt-1">
+            Soft holds unlocked back to customer
+          </p>
         </div>
       </div>
 
-      {/* Navigation Sub-Tabs */}
+      {/* Navigation Sub-Tabs (Strictly Regulatory Focus) */}
       <div className="flex items-center gap-3 border-b border-slate-800/80 pb-3">
         <button
           onClick={() => setActiveTab('audit')}
@@ -99,21 +127,11 @@ export default function AdminPortal() {
           onClick={() => setActiveTab('amla')}
           className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
             activeTab === 'amla'
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+              ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30'
               : 'text-slate-400 hover:text-white hover:bg-slate-900'
           }`}
         >
-          <ShieldAlert className="w-3.5 h-3.5" /> AMLA Covered Transactions (CTR)
-        </button>
-        <button
-          onClick={() => setActiveTab('telemetry')}
-          className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
-            activeTab === 'telemetry'
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-              : 'text-slate-400 hover:text-white hover:bg-slate-900'
-          }`}
-        >
-          <Server className="w-3.5 h-3.5" /> Infrastructure Health &amp; Topology
+          <ShieldAlert className="w-3.5 h-3.5" /> AMLA Covered Transactions Register (CTR)
         </button>
       </div>
 
@@ -127,17 +145,17 @@ export default function AdminPortal() {
                 Append-Only SCN Journal (PostgreSQL 15)
               </h3>
               <p className="text-xs text-slate-400 mt-0.5">
-                Every balance debit, hold reservation, and manager sign-off is committed chronologically with cryptographic hashes.
+                Every balance debit, hold reservation, and manager sign-off is committed chronologically with cryptographic hashes (BSP Cir. 808).
               </p>
             </div>
 
-            <div className="relative w-full sm:w-64">
+            <div className="relative w-full sm:w-72">
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search SCN, ref, actor..."
+                placeholder="Search SCN, ref, actor, event..."
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
               />
             </div>
@@ -166,16 +184,16 @@ export default function AdminPortal() {
                     </td>
                     <td className="py-3 font-mono text-slate-300 font-semibold">{log.tx_id}</td>
                     <td className="py-3">
-                      <span className="px-2 py-0.5 rounded font-mono text-[10px] bg-slate-800 text-slate-300">
+                      <span className="px-2 py-0.5 rounded font-mono text-[10px] bg-slate-800 text-slate-300 border border-slate-700/60">
                         {log.actor_id} ({log.actor_role})
                       </span>
                     </td>
                     <td className="py-3 font-mono font-bold">
-                      <span className={log.delta_amount < 0 ? 'text-amber-400' : 'text-slate-400'}>
+                      <span className={log.delta_amount < 0 ? 'text-amber-400' : log.delta_amount > 0 ? 'text-emerald-400' : 'text-slate-400'}>
                         {log.delta_amount === 0 ? 'SIGN-OFF' : formatPHP(log.delta_amount)}
                       </span>
                     </td>
-                    <td className="py-3 font-mono text-[10px] text-slate-500 max-w-xs truncate" title={log.digest_hash}>
+                    <td className="py-3 font-mono text-[10px] text-slate-400 max-w-xs truncate" title={log.digest_hash}>
                       {log.digest_hash}
                     </td>
                     <td className="py-3">
@@ -203,7 +221,7 @@ export default function AdminPortal() {
               R.A. 9160 Anti-Money Laundering Council (AMLC) Covered Transaction Register
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">
-              Tracks high-value mutations exceeding ₱500,000.00 in a single banking day for statutory reporting.
+              Tracks high-value mutations exceeding ₱500,000.00 in a single banking day for statutory reporting (Sec. 3b).
             </p>
           </div>
 
@@ -216,110 +234,59 @@ export default function AdminPortal() {
                   <th className="pb-3">Beneficiary</th>
                   <th className="pb-3">Transaction Amount</th>
                   <th className="pb-3">AMLC Status</th>
-                  <th className="pb-3">Dual-Control State</th>
+                  <th className="pb-3">Dual-Control Multi-Stage Status</th>
                   <th className="pb-3">Logged Date</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
-                {amlaTransactions.map((tx) => (
-                  <tr key={tx.id} className="hover:bg-slate-900/40 transition-colors">
-                    <td className="py-3.5 font-mono text-rose-400 font-bold">{tx.id}</td>
-                    <td className="py-3.5 font-mono text-slate-300">{tx.maker_user_id}</td>
-                    <td className="py-3.5">
-                      <p className="font-semibold text-white">{tx.recipient_name}</p>
-                      <p className="text-[10px] font-mono text-slate-400">{tx.to_account_id}</p>
-                    </td>
-                    <td className="py-3.5 font-mono font-bold text-rose-300">
-                      {formatPHP(tx.amount)}
-                    </td>
-                    <td className="py-3.5">
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                        AMLA CTR FLAGGED
-                      </span>
-                    </td>
-                    <td className="py-3.5">
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
-                          tx.status === 'SETTLED'
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                            : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                        }`}
-                      >
-                        {tx.status === 'SETTLED' ? 'AUTHORIZED BY MANAGER' : 'AWAITING CHECKER'}
-                      </span>
-                    </td>
-                    <td className="py-3.5 text-slate-400 text-[11px] font-mono">
-                      {new Date(tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </td>
-                  </tr>
-                ))}
+                {amlaTransactions.map((tx) => {
+                  const stage = tx.approval_stage || 1;
+                  const isSettled = tx.status === 'SETTLED';
+                  const isRejected = tx.status === 'REJECTED';
+
+                  return (
+                    <tr key={tx.id} className="hover:bg-slate-900/40 transition-colors">
+                      <td className="py-3.5 font-mono text-rose-400 font-bold">{tx.id}</td>
+                      <td className="py-3.5 font-mono text-slate-300">{tx.maker_user_id}</td>
+                      <td className="py-3.5">
+                        <p className="font-semibold text-white">{tx.recipient_name}</p>
+                        <p className="text-[10px] font-mono text-slate-400">{tx.to_account_id}</p>
+                      </td>
+                      <td className="py-3.5 font-mono font-bold text-rose-300">
+                        {formatPHP(tx.amount)}
+                      </td>
+                      <td className="py-3.5">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                          CTR MANDATORY
+                        </span>
+                      </td>
+                      <td className="py-3.5">
+                        {isSettled ? (
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 inline-flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" /> FULLY SETTLED (L1 &amp; L2 APPROVED)
+                          </span>
+                        ) : isRejected ? (
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20 inline-flex items-center gap-1">
+                            <XCircle className="w-3 h-3" /> DISAPPROVED &amp; VOIDED
+                          </span>
+                        ) : stage === 2 ? (
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 inline-flex items-center gap-1">
+                            <Clock className="w-3 h-3" /> STAGE 2: AWAITING L2 SENIOR MANAGER
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/20 inline-flex items-center gap-1">
+                            <Clock className="w-3 h-3" /> STAGE 1: AWAITING L1 OPERATIONS CHECKER
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3.5 text-slate-400 text-[11px] font-mono">
+                        {new Date(tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
-          </div>
-        </div>
-      )}
-
-      {/* TAB 3: Infrastructure Telemetry */}
-      {activeTab === 'telemetry' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 shadow-xl space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Database className="w-4 h-4 text-indigo-400" />
-                Oracle XE 21c (Pessimistic Row-Lock Master)
-              </h3>
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                Port 1521 &bull; Master ACID
-              </span>
-            </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Enforces table constraints (<code className="text-indigo-300">chk_available_balance &gt;= 0</code>) and pessimistic row-level locking via <code className="text-indigo-300">SELECT FOR UPDATE</code> to ensure zero double-spend mutations under high concurrency.
-            </p>
-            <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-mono space-y-1.5 text-slate-300">
-              <div className="flex justify-between">
-                <span>HikariCP Pool Connections:</span>
-                <span className="text-emerald-400 font-bold">4 Active / 30 Max</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Check Constraint:</span>
-                <span className="text-emerald-400 font-bold">ACTIVE (chk_available_balance &gt;= 0)</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Outbox Event Poller:</span>
-                <span className="text-indigo-400 font-bold">Online (0 ms lag)</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 shadow-xl space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Server className="w-4 h-4 text-emerald-400" />
-                PostgreSQL 15 (Immutable Audit Sink)
-              </h3>
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                Port 5432 &bull; Append-Only
-              </span>
-            </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Stores all historical balance mutations and dual-control sign-offs. Strictly protected by database trigger <code className="text-emerald-300">trg_no_update_delete_mutation_audit</code>, blocking all modifications.
-            </p>
-            <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-mono space-y-1.5 text-slate-300">
-              <div className="flex justify-between">
-                <span>Trigger Status:</span>
-                <span className="text-emerald-400 font-bold">ENFORCED (trg_no_update_delete)</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Tampered Rows Detected:</span>
-                <span className="text-emerald-400 font-bold">0 (100% Integrity)</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Audit SCN Head:</span>
-                <span className="text-indigo-400 font-bold">
-                  {mockState.auditLogs.length > 0 ? mockState.auditLogs[mockState.auditLogs.length - 1].scn : '18492044'}
-                </span>
-              </div>
-            </div>
           </div>
         </div>
       )}

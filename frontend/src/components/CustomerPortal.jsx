@@ -12,7 +12,11 @@ import {
   UserCheck,
   Copy,
   Check,
-  Building2
+  Building2,
+  Printer,
+  ExternalLink,
+  X,
+  FileText
 } from 'lucide-react';
 import { formatPHP, parseMaskedInput, generateUUID } from '../utils/currency';
 import apiClient, { mockState, THRESHOLDS } from '../services/api';
@@ -40,14 +44,32 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentIdempotencyKey, setCurrentIdempotencyKey] = useState(generateUUID());
 
+  // Modal States
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [receiptData, setReceiptData] = useState(null);
+  const [receiptCopied, setReceiptCopied] = useState(false);
+
   const numericAmount = parseFloat(amountInput) || 0;
 
   const handleAmountChange = (e) => {
-    const masked = parseMaskedInput(e.target.value);
+    const masked = parseMaskedInput(e.target.value, 2);
     setAmountInput(masked);
   };
 
-  const handleTransferSubmit = async (e) => {
+  // Quick Amount Handlers
+  const handleAddAmount = (addVal) => {
+    const current = parseFloat(amountInput) || 0;
+    const nextVal = (current + addVal).toFixed(2);
+    setAmountInput(nextVal);
+  };
+
+  const handleSetMaxAmount = () => {
+    const maxVal = (balance?.available_balance || 0).toFixed(2);
+    setAmountInput(maxVal);
+  };
+
+  // Step 1: Validate and open the Transfer Confirmation Modal
+  const handleInitiateTransfer = (e) => {
     e.preventDefault();
     if (!toAccount.trim() || !recipientName.trim()) {
       showToast({
@@ -58,11 +80,11 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
       return;
     }
 
-    if (numericAmount <= 0) {
+    if (numericAmount < 1.00) {
       showToast({
         type: 'error',
         title: 'Invalid Amount',
-        detail: 'Please enter a valid transfer amount greater than ₱0.00.',
+        detail: 'Minimum transfer amount is ₱ 1.00.',
       });
       return;
     }
@@ -76,8 +98,14 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
       return;
     }
 
+    setIsConfirmModalOpen(true);
+  };
+
+  // Step 2: User confirmed in Modal -> Execute API call & generate Receipt
+  const handleExecuteTransfer = async () => {
     setIsSubmitting(true);
     try {
+      const generatedRef = 'TRX-' + Math.floor(100000 + Math.random() * 900000);
       const res = await apiClient.post(
         '/transfers',
         {
@@ -102,7 +130,7 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
         showToast({
           type: 'warning',
           title: 'Transfer Submitted for Verification',
-          detail: `Your transfer of ${formatPHP(numericAmount)} to ${recipientName} has been submitted and is currently being verified by the bank.`,
+          detail: `Your transfer of ${formatPHP(numericAmount)} to ${recipientName} has been submitted for bank manager approval.`,
         });
       } else {
         showToast({
@@ -111,6 +139,23 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
           detail: `Successfully sent ${formatPHP(numericAmount)} to ${recipientName}.`,
         });
       }
+
+      // Populate Digital Receipt Slip
+      setReceiptData({
+        refNumber: res?.data?.transfer_id || generatedRef,
+        fromAccount: balance?.account_id || '1000-2000-3001',
+        senderName: user?.name || 'Juan Dela Cruz',
+        toAccount: toAccount.trim(),
+        recipientName: recipientName.trim(),
+        amount: numericAmount,
+        fee: 0,
+        memo: memo.trim() || 'Fund Transfer',
+        isHighValue,
+        timestamp: new Date(),
+      });
+
+      // Close confirmation modal
+      setIsConfirmModalOpen(false);
 
       // Reset form to empty for the next transfer
       setToAccount('');
@@ -282,7 +327,7 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
             </p>
           </div>
 
-          <form onSubmit={handleTransferSubmit} className="space-y-5">
+          <form onSubmit={handleInitiateTransfer} className="space-y-5">
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                 From Account (Source Account)
@@ -354,9 +399,31 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
                   required
                   value={amountInput}
                   onChange={handleAmountChange}
-                  placeholder="0.0000"
+                  placeholder="0.00"
                   className="w-full bg-slate-950 border border-slate-700/80 rounded-xl pl-8 pr-3.5 py-2.5 text-sm font-mono text-white font-bold placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 transition-all"
                 />
+              </div>
+
+              {/* Quick Amount Chips */}
+              <div className="flex flex-wrap items-center gap-2 mt-2.5">
+                <span className="text-[11px] font-medium text-slate-400 mr-1">Quick Add:</span>
+                {[500, 1000, 5000].map((quickVal) => (
+                  <button
+                    key={quickVal}
+                    type="button"
+                    onClick={() => handleAddAmount(quickVal)}
+                    className="px-2.5 py-1 rounded-lg bg-slate-800/90 hover:bg-indigo-600/30 border border-slate-700/70 hover:border-indigo-500/50 text-xs font-mono text-slate-300 hover:text-white transition-all active:scale-95"
+                  >
+                    +₱{quickVal.toLocaleString()}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={handleSetMaxAmount}
+                  className="px-2.5 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-xs font-mono font-semibold text-indigo-300 hover:text-indigo-200 transition-all ml-auto active:scale-95"
+                >
+                  Transfer MAX
+                </button>
               </div>
             </div>
 
@@ -376,14 +443,10 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
             <div className="pt-2">
               <button
                 type="submit"
-                disabled={isSubmitting}
-                className={`w-full py-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg ${
-                  isSubmitting
-                    ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                    : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30'
-                }`}
+                className="w-full py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30 active:scale-[0.99]"
               >
-                {isSubmitting ? 'Processing Transfer...' : 'Send Money'}
+                <Send className="w-4 h-4" />
+                Review &amp; Send Money
               </button>
             </div>
 
@@ -448,6 +511,248 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* 1. Transfer Review & Confirmation Modal */}
+      {isConfirmModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl space-y-5 relative">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white tracking-tight">Review Transfer Details</h3>
+                  <p className="text-xs text-slate-400">Verify recipient information before confirming</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsConfirmModalOpen(false)}
+                className="text-slate-400 hover:text-white p-1.5 rounded-xl hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Transfer Summary Card */}
+            <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 space-y-3 text-xs">
+              <div className="flex justify-between items-center py-1 border-b border-slate-800/60">
+                <span className="text-slate-400">Recipient</span>
+                <div className="text-right">
+                  <span className="font-bold text-white block">{recipientName}</span>
+                  <span className="font-mono text-[11px] text-slate-400">{toAccount}</span>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center py-1 border-b border-slate-800/60">
+                <span className="text-slate-400">From Account</span>
+                <div className="text-right">
+                  <span className="font-semibold text-slate-200 block">{user?.name || 'Juan Dela Cruz'}</span>
+                  <span className="font-mono text-[11px] text-slate-400">{balance?.account_id || '1000-2000-3001'}</span>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center py-1 border-b border-slate-800/60">
+                <span className="text-slate-400">Transfer Amount</span>
+                <span className="font-mono font-bold text-white text-sm">{formatPHP(numericAmount)}</span>
+              </div>
+
+              <div className="flex justify-between items-center py-1 border-b border-slate-800/60">
+                <span className="text-slate-400">Transfer Fee</span>
+                <span className="font-mono font-semibold text-emerald-400">₱ 0.00 (FREE)</span>
+              </div>
+
+              <div className="flex justify-between items-center py-1 border-b border-slate-800/60">
+                <span className="text-slate-400">Purpose / Note</span>
+                <span className="text-slate-200 italic">{memo || 'Fund Transfer'}</span>
+              </div>
+
+              <div className="flex justify-between items-center pt-2">
+                <span className="font-semibold text-white">Total Amount to Deduct</span>
+                <span className="font-mono font-bold text-indigo-400 text-base">{formatPHP(numericAmount)}</span>
+              </div>
+            </div>
+
+            {/* High Value Warning if > ₱50k */}
+            {numericAmount > THRESHOLDS.STP_MAX && (
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3.5 flex items-start gap-3">
+                <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <p className="text-[11px] text-amber-300/90 leading-relaxed">
+                  <strong>Notice:</strong> This transfer exceeds ₱50,000.00. It will be routed for bank manager dual-control review, and the funds will be placed <strong>On Hold</strong> until verified.
+                </p>
+              </div>
+            )}
+
+            {/* Modal Actions */}
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsConfirmModalOpen(false)}
+                disabled={isSubmitting}
+                className="w-1/3 py-3 rounded-xl border border-slate-700 bg-slate-800/60 hover:bg-slate-800 text-xs font-semibold text-slate-300 hover:text-white transition-all"
+              >
+                Back / Edit
+              </button>
+              <button
+                type="button"
+                onClick={handleExecuteTransfer}
+                disabled={isSubmitting}
+                className={`w-2/3 py-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg ${
+                  isSubmitting
+                    ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                    : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30'
+                }`}
+              >
+                {isSubmitting ? 'Sending...' : 'Confirm & Send Money 🔒'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2. On-Screen Digital Receipt / Success Slip Modal */}
+      {receiptData && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700/90 rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl relative overflow-hidden">
+            {/* Top decorative gradient bar */}
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-500 via-indigo-500 to-emerald-500" />
+
+            {/* Header Icon & Status */}
+            <div className="text-center pt-2 pb-4 border-b border-dashed border-slate-800">
+              <div className="w-14 h-14 mx-auto rounded-full bg-emerald-500/10 border-2 border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-3 shadow-lg shadow-emerald-500/10">
+                {receiptData.isHighValue ? (
+                  <Clock className="w-7 h-7 text-amber-400" />
+                ) : (
+                  <CheckCircle2 className="w-7 h-7" />
+                )}
+              </div>
+              <h3 className="text-lg font-bold text-white tracking-tight">
+                {receiptData.isHighValue ? 'Transfer Submitted' : 'Transfer Successful!'}
+              </h3>
+              <p className="text-xs text-slate-400 mt-1">
+                {receiptData.isHighValue
+                  ? 'Under Verification: Awaiting Bank Manager Approval'
+                  : 'Funds have been securely transferred'}
+              </p>
+
+              <div className="mt-4 font-mono font-black text-3xl text-white tracking-tight">
+                -{formatPHP(receiptData.amount)}
+              </div>
+            </div>
+
+            {/* Receipt Details Body */}
+            <div className="py-4 space-y-2.5 text-xs border-b border-dashed border-slate-800">
+              <div className="flex justify-between items-center py-0.5">
+                <span className="text-slate-400">Reference Number</span>
+                <div className="flex items-center gap-1.5 font-mono text-indigo-400 font-bold">
+                  <span>{receiptData.refNumber}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (navigator.clipboard) {
+                        navigator.clipboard.writeText(receiptData.refNumber);
+                        setReceiptCopied(true);
+                        setTimeout(() => setReceiptCopied(false), 2000);
+                      }
+                    }}
+                    title="Copy Reference"
+                    className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white"
+                  >
+                    {receiptCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center py-0.5">
+                <span className="text-slate-400">Date &amp; Time</span>
+                <span className="text-slate-300 font-mono">
+                  {receiptData.timestamp.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}{' '}
+                  &bull;{' '}
+                  {receiptData.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center py-0.5">
+                <span className="text-slate-400">Sent To</span>
+                <div className="text-right">
+                  <span className="font-semibold text-white block">{receiptData.recipientName}</span>
+                  <span className="text-[11px] font-mono text-slate-400">{receiptData.toAccount}</span>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center py-0.5">
+                <span className="text-slate-400">Sent From</span>
+                <div className="text-right">
+                  <span className="text-slate-300 block">{receiptData.senderName}</span>
+                  <span className="text-[11px] font-mono text-slate-400">{receiptData.fromAccount}</span>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center py-0.5">
+                <span className="text-slate-400">Transfer Fee</span>
+                <span className="font-mono text-emerald-400 font-semibold">₱ 0.00 (Waived)</span>
+              </div>
+
+              {receiptData.memo && (
+                <div className="flex justify-between items-center py-0.5">
+                  <span className="text-slate-400">Note</span>
+                  <span className="text-slate-300 italic">{receiptData.memo}</span>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center py-0.5">
+                <span className="text-slate-400">Status</span>
+                <span
+                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${
+                    receiptData.isHighValue
+                      ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                      : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                  }`}
+                >
+                  {receiptData.isHighValue ? 'PENDING VERIFICATION' : 'COMPLETED'}
+                </span>
+              </div>
+            </div>
+
+            {/* MailHog Notice Card */}
+            <div className="my-4 p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2 text-indigo-300">
+                <span className="text-base">📬</span>
+                <span>Debit Advice dispatched to email</span>
+              </div>
+              <a
+                href="http://localhost:8025"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1 text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 underline"
+              >
+                Open MailHog <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex flex-col gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="w-full py-2.5 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-xs font-semibold text-slate-200 hover:text-white flex items-center justify-center gap-2 transition-all"
+              >
+                <Printer className="w-4 h-4 text-slate-400" />
+                Print / Save Receipt Slip
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setReceiptData(null)}
+                className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-indigo-600/30"
+              >
+                Make Another Transfer
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -1,25 +1,25 @@
 // Financial 4-decimal precision helper utilities for Philippine Peso (PHP)
 
-export function formatPHP(value) {
+export function formatPHP(value, decimals = 2) {
   if (value === undefined || value === null || isNaN(value)) {
-    return '₱ 0.0000';
+    return decimals === 4 ? '₱ 0.0000' : '₱ 0.00';
   }
   const num = typeof value === 'string' ? parseFloat(value) : value;
-  const parts = num.toFixed(4).split('.');
+  const parts = num.toFixed(decimals).split('.');
   // Add comma separators to integer part
   parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   return `₱ ${parts.join('.')}`;
 }
 
-export function parseMaskedInput(input) {
+export function parseMaskedInput(input, maxDecimals = 2) {
   // Allow digits and at most one decimal point
   let clean = input.replace(/[^0-9.]/g, '');
   const parts = clean.split('.');
   if (parts.length > 2) {
     clean = parts[0] + '.' + parts.slice(1).join('');
   }
-  if (parts[1] && parts[1].length > 4) {
-    clean = parts[0] + '.' + parts[1].slice(0, 4);
+  if (parts[1] && parts[1].length > maxDecimals) {
+    clean = parts[0] + '.' + parts[1].slice(0, maxDecimals);
   }
   return clean;
 }

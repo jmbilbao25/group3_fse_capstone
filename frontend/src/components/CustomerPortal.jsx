@@ -84,17 +84,34 @@ export default function CustomerPortal({ balance, onTransactionComplete, onSwitc
     return raw.length > 4 ? `••••••••${raw.slice(-4)}` : '••••••••';
   };
 
+  const handlePayCreditBalance = () => {
+    setActiveTab('transfer');
+    handleSelectAccount('1000-2000-3001');
+    setToAccount('1000-2000-3003');
+    setRecipientName('Juan Dela Cruz (Revolving Credit)');
+    const outstanding = (mockState.creditAccount?.current_balance || balance?.current_balance || 2000).toFixed(2);
+    setAmountInput(outstanding);
+    setMemo('Credit Card Statement Balance Settlement');
+    showToast({
+      type: 'info',
+      title: 'Credit Settlement Form Ready',
+      detail: `Pre-filled payment of ${formatPHP(parseFloat(outstanding))} from Savings to settle Credit Line.`,
+    });
+  };
+
   const handleViewReceipt = (tx) => {
+    const isIncoming = tx.direction === 'INCOMING' || (tx.from_account_id || '').includes('9999') || (tx.recipient_name || '').includes('Payroll');
     setReceiptData({
       refNumber: tx.id,
       fromAccount: tx.from_account_id || balance?.account_id || '1000-2000-3001',
-      senderName: user?.name || 'Juan Dela Cruz',
+      senderName: isIncoming ? 'Executive Corporate Payroll ACH' : (user?.name || 'Juan Dela Cruz'),
       toAccount: tx.to_account_id,
       recipientName: tx.recipient_name,
       amount: tx.amount,
       fee: 0,
-      memo: tx.memo || 'Fund Transfer',
+      memo: tx.memo || (isIncoming ? 'Payroll Credit' : 'Fund Transfer'),
       isHighValue: tx.status === 'PENDING_APPROVAL',
+      isIncoming,
       timestamp: new Date(tx.created_at || Date.now()),
     });
   };
@@ -169,14 +186,16 @@ Certified compliant with BSP Circular 1033 standards.
       return;
     }
 
-    const headers = ['Reference_No', 'Recipient_Name', 'Recipient_Account', 'Amount_PHP', 'Status', 'Date', 'Time', 'Purpose_Note'];
+    const headers = ['Reference_No', 'Type', 'Party_Name', 'Account_No', 'Amount_PHP', 'Status', 'Date', 'Time', 'Purpose_Note'];
     const rows = transactionsToExport.map((tx) => {
+      const isIncoming = tx.direction === 'INCOMING' || (tx.from_account_id || '').includes('9999') || (tx.recipient_name || '').includes('Payroll');
       const txDate = new Date(tx.created_at);
       return [
         `"${tx.id}"`,
+        `"${isIncoming ? 'CREDIT (Incoming)' : 'DEBIT (Outgoing)'}"`,
         `"${(tx.recipient_name || '').replace(/"/g, '""')}"`,
-        `"${tx.to_account_id || ''}"`,
-        tx.amount.toFixed(2),
+        `"${isIncoming ? (tx.from_account_id || '') : (tx.to_account_id || '')}"`,
+        `"${isIncoming ? '+' : '-'}${tx.amount.toFixed(2)}"`,
         `"${tx.status === 'SETTLED' ? 'Completed' : tx.status === 'PENDING_APPROVAL' ? 'Pending Review' : tx.status}"`,
         `"${txDate.toLocaleDateString()}"`,
         `"${txDate.toLocaleTimeString()}"`,
@@ -554,8 +573,12 @@ Certified compliant with BSP Circular 1033 standards.
                 {isCredit ? 'Current Drawn / Due' : 'On Hold'}
               </span>
               {isCredit ? (
-                <span className="text-[10px] font-medium bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded border border-amber-500/20">
-                  Outstanding
+                <span className={`text-[10px] font-medium px-2 py-0.5 rounded border ${
+                  (balance?.current_balance || 0) > 0
+                    ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                    : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                }`}>
+                  {(balance?.current_balance || 0) > 0 ? 'Outstanding' : 'Fully Paid'}
                 </span>
               ) : (
                 balance?.held_balance > 0 && (
@@ -566,13 +589,34 @@ Certified compliant with BSP Circular 1033 standards.
               )}
             </div>
             <div className="text-2xl font-mono font-bold text-amber-400 relative z-10">
-              {formatVisiblePHP(isCredit ? (balance?.current_balance || 2000) : balance?.held_balance)}
+              {formatVisiblePHP(isCredit ? (balance?.current_balance || 0) : balance?.held_balance)}
             </div>
             <p className="text-xs text-slate-400 mt-2 relative z-10">
               {isCredit 
                 ? 'Current balance drawn against your credit line awaiting billing cycle.' 
                 : 'Pending transfers currently undergoing bank verification.'}
             </p>
+
+            {/* 1-Click Pay Credit Balance Button */}
+            {isCredit && (
+              <div className="mt-3 pt-3 border-t border-slate-800/80 relative z-10">
+                {(balance?.current_balance || 0) > 0 ? (
+                  <button
+                    type="button"
+                    onClick={handlePayCreditBalance}
+                    className="w-full py-2 px-3 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 hover:text-white border border-purple-500/40 hover:border-purple-500/70 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer"
+                  >
+                    <CreditCard className="w-3.5 h-3.5 text-purple-400" />
+                    <span>Pay Full Balance • {formatVisiblePHP(balance?.current_balance || 0)}</span>
+                  </button>
+                ) : (
+                  <div className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>No outstanding dues &bull; Facility in good standing</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1054,39 +1098,55 @@ Certified compliant with BSP Circular 1033 standards.
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60">
-                    {filteredTransfers.map((tx) => (
-                      <tr
-                        key={tx.id}
-                        onClick={() => handleViewReceipt(tx)}
-                        title="Click to view transaction details and official receipt"
-                        className="hover:bg-slate-800/60 cursor-pointer transition-colors group"
-                      >
-                        <td className="py-3.5 font-mono text-indigo-400 font-semibold">
-                          <div className="flex items-center gap-1.5">
-                            <Receipt className="w-3.5 h-3.5 text-slate-500 group-hover:text-indigo-400 transition-colors" />
-                            <span>{tx.id}</span>
-                          </div>
-                          <div className="mt-1">
-                            {(tx.from_account_id || '').includes('3003') || tx.from_account_id === 'A2003' ? (
-                              <span className="inline-flex items-center gap-1 text-[9px] font-sans font-semibold px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20">
-                                <CreditCard className="w-2.5 h-2.5" /> Credit Line
+                    {filteredTransfers.map((tx) => {
+                      const isIncoming = tx.direction === 'INCOMING' || (tx.from_account_id || '').includes('9999') || (tx.recipient_name || '').includes('Payroll');
+                      return (
+                        <tr
+                          key={tx.id}
+                          onClick={() => handleViewReceipt(tx)}
+                          title="Click to view transaction details and official receipt"
+                          className="hover:bg-slate-800/60 cursor-pointer transition-colors group"
+                        >
+                          <td className="py-3.5 font-mono text-indigo-400 font-semibold">
+                            <div className="flex items-center gap-1.5">
+                              <Receipt className="w-3.5 h-3.5 text-slate-500 group-hover:text-indigo-400 transition-colors" />
+                              <span>{tx.id}</span>
+                            </div>
+                            <div className="mt-1">
+                              {isIncoming ? (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-sans font-semibold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                                  <ArrowUpRight className="w-2.5 h-2.5 rotate-180 text-emerald-400" /> Payroll Credit
+                                </span>
+                              ) : (tx.from_account_id || '').includes('3003') || tx.from_account_id === 'A2003' ? (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-sans font-semibold px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                                  <CreditCard className="w-2.5 h-2.5" /> Credit Line
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-sans font-semibold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                  <Wallet className="w-2.5 h-2.5" /> Savings
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-3.5">
+                            <p className="font-semibold text-white group-hover:text-indigo-200 transition-colors">
+                              {tx.recipient_name}
+                            </p>
+                            <p className="text-[10px] font-mono text-slate-400">
+                              {isIncoming ? `From: ${tx.from_account_id}` : tx.to_account_id}
+                            </p>
+                          </td>
+                          <td className="py-3.5 font-mono font-bold">
+                            {isIncoming ? (
+                              <span className="text-emerald-400 inline-flex items-center gap-1 font-bold">
+                                <span className="text-xs">↙</span> +{formatPHP(tx.amount)}
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 text-[9px] font-sans font-semibold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                <Wallet className="w-2.5 h-2.5" /> Savings
+                              <span className="text-slate-100 inline-flex items-center gap-1 font-bold">
+                                <span className="text-xs text-slate-400">↗</span> -{formatPHP(tx.amount)}
                               </span>
                             )}
-                          </div>
-                        </td>
-                        <td className="py-3.5">
-                          <p className="font-semibold text-white group-hover:text-indigo-200 transition-colors">
-                            {tx.recipient_name}
-                          </p>
-                          <p className="text-[10px] font-mono text-slate-400">{tx.to_account_id}</p>
-                        </td>
-                        <td className="py-3.5 font-mono font-bold text-slate-100">
-                          -{formatPHP(tx.amount)}
-                        </td>
+                          </td>
                         <td className="py-3.5">
                           <span
                             className={`inline-flex items-center justify-center w-[140px] py-1 rounded-full text-[10px] font-semibold whitespace-nowrap border tracking-wide ${
@@ -1114,7 +1174,8 @@ Certified compliant with BSP Circular 1033 standards.
                           {new Date(tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </td>
                       </tr>
-                    ))}
+                    );
+                  })}
                   </tbody>
                 </table>
               </div>

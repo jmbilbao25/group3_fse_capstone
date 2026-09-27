@@ -227,6 +227,42 @@ const initialMockState = {
       hold_active: false,
       approval_stage: 0,
       required_stages: 0,
+    },
+    {
+      id: 'TX-5000-DIR',
+      from_account_id: '1000-9999-0001',
+      to_account_id: '1000-2000-3001',
+      recipient_name: 'Juan Dela Cruz (Payroll Deposit)',
+      amount: 75000.0000,
+      currency: 'PHP',
+      status: 'SETTLED',
+      direction: 'INCOMING',
+      regulatory_tier: 'TIER_1_STP',
+      tier_label: 'Tier 1: Instant STP Settlement',
+      created_at: new Date(Date.now() - 172800000).toISOString(),
+      memo: 'Semi-monthly corporate executive payroll credit',
+      maker_user_id: 'SYSTEM_ACH',
+      hold_active: false,
+      approval_stage: 0,
+      required_stages: 0,
+    },
+    {
+      id: 'TX-4990-CRD',
+      from_account_id: '1000-2000-3003',
+      to_account_id: '1000-2000-3002',
+      recipient_name: 'Maria Santos',
+      amount: 2000.0000,
+      currency: 'PHP',
+      status: 'SETTLED',
+      direction: 'OUTGOING',
+      regulatory_tier: 'TIER_1_STP',
+      tier_label: 'Tier 1: Instant STP Settlement',
+      created_at: new Date(Date.now() - 86400000).toISOString(),
+      memo: 'Initial revolving credit line draw / merchant spend',
+      maker_user_id: 'U1001',
+      hold_active: false,
+      approval_stage: 0,
+      required_stages: 0,
     }
   ],
   auditLogs: [
@@ -626,6 +662,21 @@ function handleMockFallback(config) {
             sourceAccount.current_balance -= amount;
           }
           sourceAccount.available_balance -= amount;
+
+          // If paying down credit card balance from Savings:
+          const isPayCredit = (newTransfer.to_account_id || '').includes('3003') || newTransfer.to_account_id === 'A2003';
+          if (isPayCredit) {
+            const targetCredit = mockState.creditAccount || initialMockState.creditAccount;
+            targetCredit.current_balance = Math.max(0, (targetCredit.current_balance || 0) - amount);
+            targetCredit.available_balance = Math.min(targetCredit.credit_limit || 300000, (targetCredit.available_balance || 0) + amount);
+          }
+
+          // If drawing cash advance from Credit to Savings:
+          const isCreditToSavings = ((newTransfer.to_account_id || '').includes('3001') || newTransfer.to_account_id === 'A2001') && isFromCredit;
+          if (isCreditToSavings) {
+            mockState.account.current_balance += amount;
+            mockState.account.available_balance += amount;
+          }
         }
 
         mockState.transfers.unshift(newTransfer);
@@ -851,6 +902,21 @@ function handleMockFallback(config) {
           sourceAcc.current_balance += tx.amount;
         } else {
           sourceAcc.current_balance -= tx.amount;
+        }
+
+        // If paying down credit card balance:
+        const isPayCredit = (tx.to_account_id || '').includes('3003') || tx.to_account_id === 'A2003';
+        if (isPayCredit) {
+          const targetCredit = mockState.creditAccount || initialMockState.creditAccount;
+          targetCredit.current_balance = Math.max(0, (targetCredit.current_balance || 0) - tx.amount);
+          targetCredit.available_balance = Math.min(targetCredit.credit_limit || 300000, (targetCredit.available_balance || 0) + tx.amount);
+        }
+
+        // If drawing cash advance from Credit to Savings:
+        const isCreditToSavings = ((tx.to_account_id || '').includes('3001') || tx.to_account_id === 'A2001') && isFromCredit;
+        if (isCreditToSavings) {
+          mockState.account.current_balance += tx.amount;
+          mockState.account.available_balance += tx.amount;
         }
         saveMockState();
 

@@ -16,11 +16,14 @@ import {
   Sparkles,
   Smartphone,
   Eye,
-  EyeOff
+  EyeOff,
+  CreditCard,
+  Landmark,
+  Wallet
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-export default function CustomerProfile({ showToast }) {
+export default function CustomerProfile({ showToast, activeAccountId = '1000-2000-3001', onSwitchAccount }) {
   const { user, updateUserProfile, isLoading } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -549,6 +552,124 @@ export default function CustomerProfile({ showToast }) {
                   <p className="text-[10px] text-slate-500">6 numeric digits used to authorize fund transfers.</p>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+
+        {/* 4. Bank Accounts & Linked Products (Oracle XE ACCOUNTS Schema) */}
+        <div className="p-6 sm:p-7 rounded-3xl bg-slate-900/80 border border-slate-800 shadow-xl space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div>
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-indigo-400" />
+                Linked Bank Accounts &amp; Products
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Official accounts registered under your customer profile in the bank ledger
+              </p>
+            </div>
+            <span className="text-[10px] font-mono font-semibold px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+              2 Accounts Linked
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+            {/* Account 1: SAVINGS */}
+            <div className={`p-4 rounded-2xl bg-slate-950/80 border transition-all space-y-3 ${
+              !activeAccountId.includes('3003')
+                ? 'border-indigo-500/60 shadow-lg shadow-indigo-500/10 ring-1 ring-indigo-500/30'
+                : 'border-slate-800/90 hover:border-slate-700'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                    <Wallet className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white">Primary Savings Deposit</h4>
+                    <span className="text-[11px] font-mono text-indigo-300 font-semibold">1000-2000-3001</span>
+                  </div>
+                </div>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  SAVINGS
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/60 text-[11px]">
+                <div>
+                  <span className="text-slate-500 block text-[10px] uppercase">Account Type</span>
+                  <span className="text-slate-200 font-medium">Standard Deposit</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-[10px] uppercase">Credit Limit</span>
+                  <span className="text-slate-400 font-mono">₱ 0.00</span>
+                </div>
+              </div>
+
+              <div className="pt-1 flex items-center justify-between border-t border-slate-800/40 text-[11px]">
+                {!activeAccountId.includes('3003') ? (
+                  <span className="text-[10px] font-semibold text-emerald-400 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Active Account View
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onSwitchAccount?.('1000-2000-3001')}
+                    className="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 hover:underline cursor-pointer"
+                  >
+                    Switch to this Account &rarr;
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Account 2: CREDIT */}
+            <div className={`p-4 rounded-2xl bg-slate-950/80 border transition-all space-y-3 ${
+              activeAccountId.includes('3003')
+                ? 'border-purple-500/60 shadow-lg shadow-purple-500/10 ring-1 ring-purple-500/30'
+                : 'border-slate-800/90 hover:border-slate-700'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+                    <CreditCard className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white">Revolving Credit Line</h4>
+                    <span className="text-[11px] font-mono text-purple-300 font-semibold">1000-2000-3003</span>
+                  </div>
+                </div>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                  CREDIT
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/60 text-[11px]">
+                <div>
+                  <span className="text-slate-500 block text-[10px] uppercase">Account Type</span>
+                  <span className="text-slate-200 font-medium">Credit Line Facility</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-[10px] uppercase">Approved Limit</span>
+                  <span className="text-purple-300 font-mono font-semibold">₱ 300,000.00</span>
+                </div>
+              </div>
+
+              <div className="pt-1 flex items-center justify-between border-t border-slate-800/40 text-[11px]">
+                {activeAccountId.includes('3003') ? (
+                  <span className="text-[10px] font-semibold text-purple-400 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" /> Active Account View
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onSwitchAccount?.('1000-2000-3003')}
+                    className="text-[11px] font-semibold text-purple-400 hover:text-purple-300 hover:underline cursor-pointer"
+                  >
+                    Switch to this Account &rarr;
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

@@ -10,6 +10,7 @@ import apiClient, { mockState } from './services/api';
 
 function MainApp() {
   const { user } = useAuth();
+  const [activeAccountId, setActiveAccountId] = useState('1000-2000-3001');
   const [balance, setBalance] = useState({
     account_id: '1000-2000-3001',
     account_type: 'SAVINGS',
@@ -17,21 +18,29 @@ function MainApp() {
     current_balance: 15000000.0000,
     held_balance: 725000.0000,
     available_balance: 14275000.0000,
+    credit_limit: 0.0000,
   });
   const [toast, setToast] = useState(null);
 
-  const fetchBalance = async () => {
+  const fetchBalance = async (targetId) => {
+    const accId = targetId || activeAccountId;
     try {
-      const res = await apiClient.get(`/accounts/${balance.account_id}/balance`);
+      const res = await apiClient.get(`/accounts/${accId}/balance`);
       setBalance(res.data);
     } catch (_) {
-      setBalance({ ...mockState.account });
+      const isCredit = accId.includes('3003') || accId === 'A2003';
+      setBalance(isCredit ? { ...mockState.creditAccount } : { ...mockState.account });
     }
+  };
+
+  const handleSwitchAccount = async (targetId) => {
+    setActiveAccountId(targetId);
+    await fetchBalance(targetId);
   };
 
   useEffect(() => {
     if (user) {
-      fetchBalance();
+      fetchBalance(activeAccountId);
     }
   }, [user?.role]);
 
@@ -87,7 +96,8 @@ function MainApp() {
         {user?.role === 'ROLE_CUSTOMER' && (
           <CustomerPortal
             balance={balance}
-            onTransactionComplete={fetchBalance}
+            onTransactionComplete={() => fetchBalance(activeAccountId)}
+            onSwitchAccount={handleSwitchAccount}
             showToast={showToast}
           />
         )}

@@ -33,10 +33,14 @@ import apiClient, { mockState, THRESHOLDS } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import CustomerProfile from './CustomerProfile';
 
-export default function CustomerPortal({ balance, onTransactionComplete, showToast }) {
+export default function CustomerPortal({ balance, onTransactionComplete, onSwitchAccount, showToast }) {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('history'); // 'history' | 'transfer' | 'profile'
   const [copied, setCopied] = useState(false);
+
+  // Active Account State (SAVINGS vs CREDIT)
+  const isCredit = balance?.account_type === 'CREDIT' || balance?.account_id === '1000-2000-3003';
+  const activeAccountId = balance?.account_id || '1000-2000-3001';
 
   // Eye Toggle State (Show / Hide Balance & Account Number)
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
@@ -50,6 +54,20 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' | 'SETTLED' | 'PENDING_APPROVAL'
   const [dateFilter, setDateFilter] = useState('ALL');     // 'ALL' | 'TODAY' | 'MONTH'
+  const [accountFilter, setAccountFilter] = useState('ALL'); // 'ALL' | '1000-2000-3001' | '1000-2000-3003'
+
+  const handleSelectAccount = (targetAccountId) => {
+    if (balance?.account_id === targetAccountId) return;
+    if (onSwitchAccount) {
+      onSwitchAccount(targetAccountId);
+      const isTargetCredit = targetAccountId.includes('3003');
+      showToast({
+        type: 'info',
+        title: isTargetCredit ? 'Switched to Credit Facility' : 'Switched to Savings Account',
+        detail: `Now managing ${isTargetCredit ? 'Revolving Credit Line (1000-2000-3003)' : 'Primary Savings (1000-2000-3001)'}.`,
+      });
+    }
+  };
 
   const formatVisiblePHP = (val) => {
     if (!isBalanceVisible) return '₱ ••••••••';
@@ -360,134 +378,200 @@ Certified compliant with BSP Circular 1033 standards.
   return (
     <div className="space-y-6">
       {/* Prominent Customer Account Summary Banner */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-slate-900/90 to-indigo-950/40 border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 group hover:border-slate-700/80 transition-all duration-300">
+      <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-slate-900/90 to-indigo-950/40 border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 group hover:border-slate-700/80 transition-all duration-300">
         <div className="absolute -right-10 -bottom-10 w-44 h-44 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
         <div className="flex items-center gap-4 relative z-10">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shadow-inner group-hover:scale-105 transition-transform duration-300">
-            <Building2 className="w-6 h-6" />
+          <div className={`w-12 h-12 rounded-2xl ${
+            isCredit ? 'bg-purple-500/10 border-purple-500/30 text-purple-400' : 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400'
+          } border flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform duration-300`}>
+            {isCredit ? <CreditCard className="w-6 h-6" /> : <Building2 className="w-6 h-6" />}
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-lg font-bold text-white tracking-tight">
                 Welcome back, {user?.first_name || 'Juan'}
               </h3>
               <span className="text-[10px] font-semibold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 px-2.5 py-0.5 rounded-full border border-emerald-500/20 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Active Account
               </span>
+              <span className={`text-[10px] font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
+                isCredit
+                  ? 'bg-purple-500/10 text-purple-300 border-purple-500/25'
+                  : 'bg-indigo-500/10 text-indigo-300 border-indigo-500/25'
+              }`}>
+                {isCredit ? 'CREDIT ACCOUNT' : 'SAVINGS ACCOUNT'}
+              </span>
             </div>
             <p className="text-xs text-slate-400 mt-1">
-              Primary Savings Account &bull; Philippine Peso (PHP)
+              {isCredit ? 'Revolving Credit Line Facility' : 'Primary Deposit Account'} &bull; Philippine Peso (PHP)
             </p>
           </div>
         </div>
 
-        <div className="flex items-center justify-between sm:justify-end gap-2 bg-slate-950/80 border border-slate-800 px-3.5 py-2.5 rounded-xl relative z-10 shadow-inner">
-          <div className="mr-1">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                My Account Number
-              </span>
-              <button
-                type="button"
-                onClick={() => setIsAccountVisible(!isAccountVisible)}
-                title={isAccountVisible ? "Hide Account Number" : "Show Account Number"}
-                className="text-slate-400 hover:text-white transition-colors p-0.5 rounded hover:bg-slate-800"
-              >
-                {isAccountVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5 text-indigo-400" />}
-              </button>
-            </div>
-            <span className="text-sm font-mono font-bold text-indigo-300 tracking-wider">
-              {formatVisibleAccount(balance?.account_id)}
-            </span>
+        {/* Account Switcher Bar & Account Number */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 relative z-10">
+          {/* Dual Account Switcher Controls */}
+          <div className="flex items-center p-1 rounded-xl bg-slate-950/90 border border-slate-800 shadow-inner">
+            <button
+              type="button"
+              onClick={() => handleSelectAccount('1000-2000-3001')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                !isCredit
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+              }`}
+            >
+              <Wallet className={`w-3.5 h-3.5 ${!isCredit ? 'text-white' : 'text-emerald-400'}`} />
+              <span>Savings</span>
+              <span className="text-[10px] font-mono opacity-80">(...3001)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSelectAccount('1000-2000-3003')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                isCredit
+                  ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+              }`}
+            >
+              <CreditCard className={`w-3.5 h-3.5 ${isCredit ? 'text-white' : 'text-purple-300'}`} />
+              <span>Credit Line</span>
+              <span className="text-[10px] font-mono opacity-80">(...3003)</span>
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={handleCopyAccount}
-            title="Copy account number"
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all text-xs font-medium border border-slate-700/60 active:scale-95"
-          >
-            {copied ? (
-              <>
-                <Check className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="text-emerald-400 font-semibold text-[11px]">Copied!</span>
-              </>
-            ) : (
-              <>
-                <Copy className="w-3.5 h-3.5" />
-                <span className="text-[11px]">Copy</span>
-              </>
-            )}
-          </button>
+
+          {/* Account Number Box */}
+          <div className="flex items-center justify-between gap-2 bg-slate-950/80 border border-slate-800 px-3 py-2 rounded-xl shadow-inner">
+            <div className="mr-1">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                  {isCredit ? 'Credit Account' : 'Savings Account'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsAccountVisible(!isAccountVisible)}
+                  title={isAccountVisible ? "Hide Account Number" : "Show Account Number"}
+                  className="text-slate-400 hover:text-white transition-colors p-0.5 rounded hover:bg-slate-800"
+                >
+                  {isAccountVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5 text-indigo-400" />}
+                </button>
+              </div>
+              <span className={`text-sm font-mono font-bold tracking-wider ${isCredit ? 'text-purple-300' : 'text-indigo-300'}`}>
+                {formatVisibleAccount(balance?.account_id)}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={handleCopyAccount}
+              title="Copy account number"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all text-xs font-medium border border-slate-700/60 active:scale-95"
+            >
+              {copied ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="text-emerald-400 font-semibold text-[11px]">Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5" />
+                  <span className="text-[11px]">Copy</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* 3 Clean Customer Balance Cards (Shown on Activity and Send Money) */}
+      {/* 3 Dynamic Customer Balance Cards (Shown on Activity and Send Money) */}
       {activeTab !== 'profile' && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 animate-fadeIn">
-          {/* Available Balance */}
-          <div className="relative p-6 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/50 border border-indigo-500/40 shadow-xl overflow-hidden group hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-500/15 hover:border-indigo-500/60 transition-all duration-300">
-            <div className="absolute -right-8 -top-8 w-36 h-36 bg-indigo-500/20 rounded-full blur-2xl pointer-events-none group-hover:bg-indigo-500/30 transition-all duration-500" />
+          {/* Card 1: Available Funds (Available Balance vs Available Credit) */}
+          <div className={`relative p-6 rounded-2xl bg-gradient-to-br ${
+            isCredit 
+              ? 'from-slate-900 via-slate-900 to-purple-950/50 border-purple-500/40 hover:shadow-purple-500/15 hover:border-purple-500/60' 
+              : 'from-slate-900 via-slate-900 to-indigo-950/50 border-indigo-500/40 hover:shadow-indigo-500/15 hover:border-indigo-500/60'
+          } border shadow-xl overflow-hidden group hover:-translate-y-1 hover:shadow-2xl transition-all duration-300`}>
+            <div className={`absolute -right-8 -top-8 w-36 h-36 ${isCredit ? 'bg-purple-500/20 group-hover:bg-purple-500/30' : 'bg-indigo-500/20 group-hover:bg-indigo-500/30'} rounded-full blur-2xl pointer-events-none transition-all duration-500`} />
             <div className="flex items-center justify-between mb-3 relative z-10">
-              <span className="text-xs font-semibold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
-                <Wallet className="w-4 h-4" /> Available Balance
+              <span className={`text-xs font-semibold uppercase tracking-wider ${isCredit ? 'text-purple-400' : 'text-indigo-400'} flex items-center gap-1.5`}>
+                {isCredit ? <CreditCard className="w-4 h-4" /> : <Wallet className="w-4 h-4" />}
+                {isCredit ? 'Available Credit' : 'Available Balance'}
                 <button
                   type="button"
                   onClick={() => setIsBalanceVisible(!isBalanceVisible)}
                   title={isBalanceVisible ? "Hide Balance" : "Show Balance"}
                   className="text-slate-400 hover:text-white transition-colors ml-1 p-0.5 rounded hover:bg-slate-800"
                 >
-                  {isBalanceVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5 text-indigo-400" />}
+                  {isBalanceVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className={`w-3.5 h-3.5 ${isCredit ? 'text-purple-400' : 'text-indigo-400'}`} />}
                 </button>
               </span>
-              <span className="text-[10px] font-semibold bg-emerald-500/15 text-emerald-400 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
-                Ready to Spend
+              <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full border ${
+                isCredit 
+                  ? 'bg-purple-500/15 text-purple-300 border-purple-500/30' 
+                  : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+              }`}>
+                {isCredit ? 'Ready to Draw' : 'Ready to Spend'}
               </span>
             </div>
             <div className="text-3xl font-mono font-bold text-white tracking-tight relative z-10">
               {formatVisiblePHP(balance?.available_balance)}
             </div>
             <p className="text-xs text-slate-400 mt-2 relative z-10">
-              Funds ready for immediate withdrawal or transfer.
+              {isCredit 
+                ? 'Remaining revolving credit line available for withdrawal or purchase.' 
+                : 'Funds ready for immediate withdrawal or transfer.'}
             </p>
           </div>
 
-          {/* Total Account Balance */}
+          {/* Card 2: Total Balance vs Approved Credit Limit */}
           <div className="relative p-6 rounded-2xl bg-slate-900/80 border border-slate-800/80 shadow-lg overflow-hidden group hover:-translate-y-1 hover:border-slate-700 hover:shadow-xl transition-all duration-300">
             <div className="absolute -right-8 -top-8 w-36 h-36 bg-blue-500/10 rounded-full blur-2xl pointer-events-none group-hover:bg-blue-500/20 transition-all duration-500" />
             <div className="flex items-center justify-between mb-3 relative z-10">
               <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                <CreditCard className="w-4 h-4 text-slate-400" /> Total Balance
+                {isCredit ? <Building2 className="w-4 h-4 text-slate-400" /> : <CreditCard className="w-4 h-4 text-slate-400" />}
+                {isCredit ? 'Approved Credit Limit' : 'Total Balance'}
               </span>
               <span className="text-[10px] font-medium bg-slate-800 text-slate-300 px-2 py-0.5 rounded">
-                Gross Ledger
+                {isCredit ? 'Approved Facility' : 'Gross Ledger'}
               </span>
             </div>
             <div className="text-2xl font-mono font-bold text-slate-200 relative z-10">
-              {formatVisiblePHP(balance?.current_balance)}
+              {formatVisiblePHP(isCredit ? (balance?.credit_limit || 300000) : balance?.current_balance)}
             </div>
             <p className="text-xs text-slate-400 mt-2 relative z-10">
-              Principal funds including active holds.
+              {isCredit 
+                ? 'Total revolving line approved under Oracle credit assessment.' 
+                : 'Principal funds including active holds.'}
             </p>
           </div>
 
-          {/* On Hold Balance */}
+          {/* Card 3: On Hold vs Current Drawn Balance */}
           <div className="relative p-6 rounded-2xl bg-slate-900/80 border border-slate-800/80 shadow-lg overflow-hidden group hover:-translate-y-1 hover:border-amber-500/30 hover:shadow-xl transition-all duration-300">
             <div className="absolute -right-8 -top-8 w-36 h-36 bg-amber-500/10 rounded-full blur-2xl pointer-events-none group-hover:bg-amber-500/20 transition-all duration-500" />
             <div className="flex items-center justify-between mb-3 relative z-10">
               <span className="text-xs font-semibold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-                <Lock className="w-4 h-4" /> On Hold
+                {isCredit ? <Clock className="w-4 h-4 text-amber-400" /> : <Lock className="w-4 h-4 text-amber-400" />}
+                {isCredit ? 'Current Drawn / Due' : 'On Hold'}
               </span>
-              {balance?.held_balance > 0 && (
-                <span className="text-[10px] font-medium bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded border border-amber-500/20 animate-pulse">
-                  Processing
+              {isCredit ? (
+                <span className="text-[10px] font-medium bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded border border-amber-500/20">
+                  Outstanding
                 </span>
+              ) : (
+                balance?.held_balance > 0 && (
+                  <span className="text-[10px] font-medium bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded border border-amber-500/20 animate-pulse">
+                    Processing
+                  </span>
+                )
               )}
             </div>
             <div className="text-2xl font-mono font-bold text-amber-400 relative z-10">
-              {formatVisiblePHP(balance?.held_balance)}
+              {formatVisiblePHP(isCredit ? (balance?.current_balance || 2000) : balance?.held_balance)}
             </div>
             <p className="text-xs text-slate-400 mt-2 relative z-10">
-              Pending transfers currently undergoing bank verification.
+              {isCredit 
+                ? 'Current balance drawn against your credit line awaiting billing cycle.' 
+                : 'Pending transfers currently undergoing bank verification.'}
             </p>
           </div>
         </div>
@@ -546,26 +630,64 @@ Certified compliant with BSP Circular 1033 standards.
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                 From Account (Source Account)
               </label>
-              <div className="flex items-center justify-between bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3 shadow-inner hover:border-slate-700/80 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shadow-inner">
-                    <Wallet className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold text-white block">
-                      {user?.name || 'Juan Dela Cruz'} &bull; Primary Savings
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Savings Choice */}
+                <button
+                  type="button"
+                  onClick={() => handleSelectAccount('1000-2000-3001')}
+                  className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden ${
+                    !isCredit
+                      ? 'bg-slate-950/90 border-indigo-500/60 shadow-lg shadow-indigo-500/10 ring-1 ring-indigo-500/30'
+                      : 'bg-slate-950/50 border-slate-800/80 hover:border-slate-700 opacity-60 hover:opacity-100'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                        <Wallet className="w-3.5 h-3.5" />
+                      </div>
+                      <span className="text-xs font-bold text-white">Savings Account</span>
+                    </div>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
+                      SAVINGS
                     </span>
-                    <span className="text-xs font-mono font-semibold text-indigo-300">
-                      {formatVisibleAccount(balance?.account_id)}
+                  </div>
+                  <div className="mt-2.5 flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-800/60">
+                    <span className="font-mono text-slate-400">{formatVisibleAccount('1000-2000-3001')}</span>
+                    <span className="font-mono font-bold text-emerald-400">
+                      {!isCredit ? formatVisiblePHP(balance?.available_balance) : '₱ ••••••••'}
                     </span>
                   </div>
-                </div>
-                <div className="text-right">
-                  <span className="text-[10px] uppercase font-semibold text-slate-400 block">Available</span>
-                  <span className="text-xs font-mono font-bold text-emerald-400">
-                    {formatVisiblePHP(balance?.available_balance)}
-                  </span>
-                </div>
+                </button>
+
+                {/* Credit Choice */}
+                <button
+                  type="button"
+                  onClick={() => handleSelectAccount('1000-2000-3003')}
+                  className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden ${
+                    isCredit
+                      ? 'bg-slate-950/90 border-purple-500/60 shadow-lg shadow-purple-500/10 ring-1 ring-purple-500/30'
+                      : 'bg-slate-950/50 border-slate-800/80 hover:border-slate-700 opacity-60 hover:opacity-100'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+                        <CreditCard className="w-3.5 h-3.5" />
+                      </div>
+                      <span className="text-xs font-bold text-white">Credit Facility</span>
+                    </div>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20 font-semibold">
+                      CREDIT
+                    </span>
+                  </div>
+                  <div className="mt-2.5 flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-800/60">
+                    <span className="font-mono text-slate-400">{formatVisibleAccount('1000-2000-3003')}</span>
+                    <span className="font-mono font-bold text-purple-300">
+                      {isCredit ? formatVisiblePHP(balance?.available_balance) : '₱ ••••••••'}
+                    </span>
+                  </div>
+                </button>
               </div>
             </div>
 
@@ -585,7 +707,9 @@ Certified compliant with BSP Circular 1033 standards.
                     if (clean === '100020003002' || clean === 'A2002') {
                       if (!recipientName) setRecipientName('Maria Clara Santos');
                     } else if (clean === '100020003003' || clean === 'A2003') {
-                      if (!recipientName) setRecipientName('Apex Commercial Supplies Ltd.');
+                      if (!recipientName) setRecipientName('Juan Dela Cruz (Revolving Credit)');
+                    } else if (clean === '100020003001' || clean === 'A2001') {
+                      if (!recipientName) setRecipientName('Juan Dela Cruz (Primary Savings)');
                     }
                   }}
                   placeholder="Enter account number (e.g. 1000-2000-3002)"
@@ -622,17 +746,31 @@ Certified compliant with BSP Circular 1033 standards.
                 <UserCheck className="w-3 h-3 text-indigo-400" />
                 Maria Santos (1000-2000-3002)
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setToAccount('1000-2000-3003');
-                  setRecipientName('Apex Commercial Supplies Ltd.');
-                }}
-                className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-indigo-600/20 border border-slate-700/80 hover:border-indigo-500/40 text-[11px] text-indigo-300 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <Building2 className="w-3 h-3 text-indigo-400" />
-                Apex Supplies (1000-2000-3003)
-              </button>
+              {!isCredit ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setToAccount('1000-2000-3003');
+                    setRecipientName('Juan Dela Cruz (Revolving Credit)');
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-purple-600/20 border border-slate-700/80 hover:border-purple-500/40 text-[11px] text-purple-300 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <CreditCard className="w-3 h-3 text-purple-400" />
+                  My Credit Line (1000-2000-3003)
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setToAccount('1000-2000-3001');
+                    setRecipientName('Juan Dela Cruz (Primary Savings)');
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-indigo-600/20 border border-slate-700/80 hover:border-indigo-500/40 text-[11px] text-indigo-300 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Wallet className="w-3 h-3 text-indigo-400" />
+                  My Savings (1000-2000-3001)
+                </button>
+              )}
             </div>
 
             <div>
@@ -733,6 +871,13 @@ Certified compliant with BSP Circular 1033 standards.
                   tx.id?.toLowerCase().includes(query);
                 const matchesStatus =
                   statusFilter === 'ALL' || tx.status === statusFilter;
+                const isFrom = (tx.from_account_id || '').trim();
+                let matchesAccount = true;
+                if (accountFilter === '1000-2000-3001') {
+                  matchesAccount = isFrom.includes('3001') || isFrom === 'A2001';
+                } else if (accountFilter === '1000-2000-3003') {
+                  matchesAccount = isFrom.includes('3003') || isFrom === 'A2003';
+                }
                 const txDate = new Date(tx.created_at);
                 let matchesDate = true;
                 if (dateFilter === 'TODAY') {
@@ -742,7 +887,7 @@ Certified compliant with BSP Circular 1033 standards.
                     txDate.getMonth() === now.getMonth() &&
                     txDate.getFullYear() === now.getFullYear();
                 }
-                return matchesSearch && matchesStatus && matchesDate;
+                return matchesSearch && matchesStatus && matchesAccount && matchesDate;
               });
 
               return (
@@ -762,15 +907,38 @@ Certified compliant with BSP Circular 1033 standards.
           {/* Search Bar & Filter Controls Row */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-3 pt-1">
             {/* Search Box */}
-            <div className="relative md:col-span-6">
+            <div className="relative md:col-span-4">
               <Search className="w-4 h-4 absolute left-3.5 top-2.5 text-slate-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by recipient, account number, or reference..."
+                placeholder="Search by recipient, account, or ref..."
                 className="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-500/30 transition-all"
               />
+            </div>
+
+            {/* Account Filter Pills */}
+            <div className="md:col-span-3 flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800/90">
+              <CreditCard className="w-3.5 h-3.5 text-slate-500 ml-1.5 mr-0.5 shrink-0" />
+              {[
+                { id: 'ALL', label: 'All' },
+                { id: '1000-2000-3001', label: 'Savings' },
+                { id: '1000-2000-3003', label: 'Credit' },
+              ].map((pill) => (
+                <button
+                  key={pill.id}
+                  type="button"
+                  onClick={() => setAccountFilter(pill.id)}
+                  className={`flex-1 py-1 rounded-lg text-[10px] font-semibold transition-all cursor-pointer ${
+                    accountFilter === pill.id
+                      ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {pill.label}
+                </button>
+              ))}
             </div>
 
             {/* Date Filter Pills */}
@@ -779,7 +947,7 @@ Certified compliant with BSP Circular 1033 standards.
               {[
                 { id: 'ALL', label: 'All Dates' },
                 { id: 'TODAY', label: 'Today' },
-                { id: 'MONTH', label: 'This Month' },
+                { id: 'MONTH', label: 'Month' },
               ].map((pill) => (
                 <button
                   key={pill.id}
@@ -797,7 +965,7 @@ Certified compliant with BSP Circular 1033 standards.
             </div>
 
             {/* Status Filter Pills */}
-            <div className="md:col-span-3 flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800/90">
+            <div className="md:col-span-2 flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800/90">
               <Filter className="w-3.5 h-3.5 text-slate-500 ml-1.5 mr-0.5 shrink-0" />
               {[
                 { id: 'ALL', label: 'All' },
@@ -832,6 +1000,13 @@ Certified compliant with BSP Circular 1033 standards.
                 tx.id?.toLowerCase().includes(query);
               const matchesStatus =
                 statusFilter === 'ALL' || tx.status === statusFilter;
+              const isFrom = (tx.from_account_id || '').trim();
+              let matchesAccount = true;
+              if (accountFilter === '1000-2000-3001') {
+                matchesAccount = isFrom.includes('3001') || isFrom === 'A2001';
+              } else if (accountFilter === '1000-2000-3003') {
+                matchesAccount = isFrom.includes('3003') || isFrom === 'A2003';
+              }
               const txDate = new Date(tx.created_at);
               let matchesDate = true;
               if (dateFilter === 'TODAY') {
@@ -841,20 +1016,21 @@ Certified compliant with BSP Circular 1033 standards.
                   txDate.getMonth() === now.getMonth() &&
                   txDate.getFullYear() === now.getFullYear();
               }
-              return matchesSearch && matchesStatus && matchesDate;
+              return matchesSearch && matchesStatus && matchesAccount && matchesDate;
             });
 
             if (filteredTransfers.length === 0) {
               return (
                 <div className="text-center py-10 border border-dashed border-slate-800 rounded-2xl bg-slate-950/30 space-y-2">
                   <p className="text-xs text-slate-400">No transactions match your search or filter.</p>
-                  {(searchQuery || statusFilter !== 'ALL' || dateFilter !== 'ALL') && (
+                  {(searchQuery || statusFilter !== 'ALL' || dateFilter !== 'ALL' || accountFilter !== 'ALL') && (
                     <button
                       type="button"
                       onClick={() => {
                         setSearchQuery('');
                         setStatusFilter('ALL');
                         setDateFilter('ALL');
+                        setAccountFilter('ALL');
                       }}
                       className="inline-flex items-center gap-1 text-[11px] text-indigo-400 hover:text-indigo-300 font-semibold cursor-pointer"
                     >
@@ -885,9 +1061,22 @@ Certified compliant with BSP Circular 1033 standards.
                         title="Click to view transaction details and official receipt"
                         className="hover:bg-slate-800/60 cursor-pointer transition-colors group"
                       >
-                        <td className="py-3.5 font-mono text-indigo-400 font-semibold flex items-center gap-1.5">
-                          <Receipt className="w-3.5 h-3.5 text-slate-500 group-hover:text-indigo-400 transition-colors" />
-                          {tx.id}
+                        <td className="py-3.5 font-mono text-indigo-400 font-semibold">
+                          <div className="flex items-center gap-1.5">
+                            <Receipt className="w-3.5 h-3.5 text-slate-500 group-hover:text-indigo-400 transition-colors" />
+                            <span>{tx.id}</span>
+                          </div>
+                          <div className="mt-1">
+                            {(tx.from_account_id || '').includes('3003') || tx.from_account_id === 'A2003' ? (
+                              <span className="inline-flex items-center gap-1 text-[9px] font-sans font-semibold px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                                <CreditCard className="w-2.5 h-2.5" /> Credit Line
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[9px] font-sans font-semibold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                <Wallet className="w-2.5 h-2.5" /> Savings
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="py-3.5">
                           <p className="font-semibold text-white group-hover:text-indigo-200 transition-colors">
@@ -936,7 +1125,7 @@ Certified compliant with BSP Circular 1033 standards.
 
       {/* TAB 3: Customer Profile & KYC Details (Oracle XE USERS Schema) */}
       {activeTab === 'profile' && (
-        <CustomerProfile showToast={showToast} />
+        <CustomerProfile showToast={showToast} activeAccountId={activeAccountId} onSwitchAccount={handleSelectAccount} />
       )}
 
       {/* 1. Transfer Review & Confirmation Modal */}

@@ -147,13 +147,26 @@ const initialMockState = {
     current_balance: 15000000.0000,
     held_balance: 725000.0000,
     available_balance: 14275000.0000,
+    credit_limit: 0.0000,
+    status: 'ACTIVE',
+  },
+  creditAccount: {
+    account_id: '1000-2000-3003',
+    user_id: 'U1001',
+    account_name: 'Juan Dela Cruz (Revolving Credit)',
+    account_type: 'CREDIT',
+    currency: 'PHP',
+    current_balance: 2000.0000,
+    held_balance: 0.0000,
+    available_balance: 298000.0000,
+    credit_limit: 300000.0000,
     status: 'ACTIVE',
   },
   // Oracle XE 21c Master ACCOUNTS table records
   registeredAccounts: [
-    { account_id: 'A2001', account_number: '1000-2000-3001', user_id: 'U1001', account_name: 'Juan Dela Cruz', status: 'ACTIVE' },
-    { account_id: 'A2002', account_number: '1000-2000-3002', user_id: 'U1002', account_name: 'Maria Clara Santos', status: 'ACTIVE' },
-    { account_id: 'A2003', account_number: '1000-2000-3003', user_id: 'U1001', account_name: 'Apex Commercial Supplies Ltd.', status: 'ACTIVE' },
+    { account_id: 'A2001', account_number: '1000-2000-3001', user_id: 'U1001', account_name: 'Juan Dela Cruz', account_type: 'SAVINGS', credit_limit: 0.0000, status: 'ACTIVE' },
+    { account_id: 'A2002', account_number: '1000-2000-3002', user_id: 'U1002', account_name: 'Maria Clara Santos', account_type: 'SAVINGS', credit_limit: 0.0000, status: 'ACTIVE' },
+    { account_id: 'A2003', account_number: '1000-2000-3003', user_id: 'U1001', account_name: 'Juan Dela Cruz (Revolving Credit)', account_type: 'CREDIT', credit_limit: 300000.0000, status: 'ACTIVE' },
   ],
   transfers: [
     {
@@ -284,8 +297,20 @@ const loadMockState = () => {
         if (!parsed.users || !Array.isArray(parsed.users) || parsed.users.length === 0) {
           parsed.users = JSON.parse(JSON.stringify(initialMockState.users));
         }
+        if (!parsed.creditAccount) {
+          parsed.creditAccount = JSON.parse(JSON.stringify(initialMockState.creditAccount));
+        }
         if (!parsed.registeredAccounts || !Array.isArray(parsed.registeredAccounts) || parsed.registeredAccounts.length === 0) {
           parsed.registeredAccounts = JSON.parse(JSON.stringify(initialMockState.registeredAccounts));
+        } else {
+          parsed.registeredAccounts.forEach((acc) => {
+            if (!acc.account_type) {
+              acc.account_type = acc.account_id === 'A2003' || acc.account_number === '1000-2000-3003' ? 'CREDIT' : 'SAVINGS';
+            }
+            if (acc.credit_limit === undefined) {
+              acc.credit_limit = acc.account_type === 'CREDIT' ? 300000.0000 : 0.0000;
+            }
+          });
         }
         // Filter out any bogus transfers that may have been created with non-existent accounts during testing
         const validAccountNums = ['100020003001', '100020003002', '100020003003', 'A2001', 'A2002', 'A2003'];
@@ -429,8 +454,10 @@ function handleMockFallback(config) {
 
       // 3. Balance Inquiry
       if (url.includes('/balance') && method === 'get') {
+        const isCredit = url.includes('1000-2000-3003') || url.includes('100020003003') || url.includes('A2003');
+        const targetAcc = isCredit ? (mockState.creditAccount || initialMockState.creditAccount) : mockState.account;
         return resolve({
-          data: { ...mockState.account, cached: true, last_updated: new Date().toISOString() }
+          data: { ...targetAcc, cached: true, last_updated: new Date().toISOString() }
         });
       }
 
@@ -525,14 +552,17 @@ function handleMockFallback(config) {
           });
         }
 
-        if (amount > mockState.account.available_balance) {
+        const isFromCredit = fromAccountId.includes('3003') || fromAccountId === 'A2003';
+        const sourceAccount = isFromCredit ? (mockState.creditAccount || initialMockState.creditAccount) : mockState.account;
+
+        if (amount > sourceAccount.available_balance) {
           return reject({
             response: {
               status: 422,
               data: {
                 type: 'https://api.banking.capstone/errors/insufficient-funds',
                 title: 'Unprocessable Entity',
-                detail: `Available balance insufficient. Available: ₱${mockState.account.available_balance.toFixed(4)}, Requested: ₱${amount.toFixed(4)}.`,
+                detail: `Available balance insufficient. Available: ₱${sourceAccount.available_balance.toFixed(4)}, Requested: ₱${amount.toFixed(4)}.`,
               }
             }
           });
@@ -562,7 +592,7 @@ function handleMockFallback(config) {
 
         const newTransfer = {
           id: 'TX-' + Math.floor(5000 + Math.random() * 4999) + (isTier3 ? '-AMLA' : isTier2 ? '-MC' : '-STP'),
-          from_account_id: mockState.account.account_id,
+          from_account_id: sourceAccount.account_id,
           to_account_id: matchedAccount.account_number || toAccountId,
           recipient_name: payload.recipient_name || matchedAccount.account_name || 'Beneficiary Account',
           amount: amount,
@@ -587,11 +617,15 @@ function handleMockFallback(config) {
         };
 
         if (isHeld) {
-          mockState.account.held_balance += amount;
-          mockState.account.available_balance -= amount;
+          sourceAccount.held_balance += amount;
+          sourceAccount.available_balance -= amount;
         } else {
-          mockState.account.current_balance -= amount;
-          mockState.account.available_balance -= amount;
+          if (isFromCredit) {
+            sourceAccount.current_balance += amount;
+          } else {
+            sourceAccount.current_balance -= amount;
+          }
+          sourceAccount.available_balance -= amount;
         }
 
         mockState.transfers.unshift(newTransfer);
@@ -607,9 +641,9 @@ function handleMockFallback(config) {
           event_type: isHeld ? (isTier3 ? 'AMLA_CTR_HOLD_FLAGGED' : 'SOFT_HOLD_RESERVATION') : 'BALANCE_MUTATION_DEBIT',
           actor_id: newTransfer.maker_user_id,
           actor_role: 'CUSTOMER',
-          account_id: mockState.account.account_id,
+          account_id: sourceAccount.account_id,
           delta_amount: -amount,
-          balance_after: mockState.account.available_balance,
+          balance_after: sourceAccount.available_balance,
           digest_hash: Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2),
           timestamp: newTransfer.created_at,
           status: 'VERIFIED',
@@ -809,8 +843,15 @@ function handleMockFallback(config) {
         tx.checker_user_id = checkerId;
 
         // Release hold and settle from ledger current balance
-        mockState.account.held_balance -= tx.amount;
-        mockState.account.current_balance -= tx.amount;
+        const isFromCredit = (tx.from_account_id || '').includes('3003') || tx.from_account_id === 'A2003';
+        const sourceAcc = isFromCredit ? (mockState.creditAccount || initialMockState.creditAccount) : mockState.account;
+
+        sourceAcc.held_balance = Math.max(0, (sourceAcc.held_balance || 0) - tx.amount);
+        if (isFromCredit) {
+          sourceAcc.current_balance += tx.amount;
+        } else {
+          sourceAcc.current_balance -= tx.amount;
+        }
         saveMockState();
 
         // Record Audit Entry
@@ -826,7 +867,7 @@ function handleMockFallback(config) {
           actor_role: 'MANAGER',
           account_id: tx.from_account_id,
           delta_amount: -tx.amount,
-          balance_after: mockState.account.current_balance,
+          balance_after: sourceAcc.current_balance,
           digest_hash: Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2),
           timestamp: tx.approved_at,
           status: 'VERIFIED',
@@ -871,8 +912,11 @@ function handleMockFallback(config) {
         tx.rejection_reason = payload.reason || 'Flagged during dual-control operations review.';
 
         // Release hold back to customer's available balance
-        mockState.account.held_balance = Math.max(0, (mockState.account.held_balance || 0) - tx.amount);
-        mockState.account.available_balance = (mockState.account.available_balance || 0) + tx.amount;
+        const isFromCredit = (tx.from_account_id || '').includes('3003') || tx.from_account_id === 'A2003';
+        const sourceAcc = isFromCredit ? (mockState.creditAccount || initialMockState.creditAccount) : mockState.account;
+
+        sourceAcc.held_balance = Math.max(0, (sourceAcc.held_balance || 0) - tx.amount);
+        sourceAcc.available_balance = (sourceAcc.available_balance || 0) + tx.amount;
         saveMockState();
 
         // Record Audit Entry
@@ -885,7 +929,7 @@ function handleMockFallback(config) {
           actor_role: 'MANAGER',
           account_id: tx.from_account_id,
           delta_amount: tx.amount,
-          balance_after: mockState.account.available_balance,
+          balance_after: sourceAcc.available_balance,
           digest_hash: Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2),
           timestamp: tx.rejected_at,
           status: 'VERIFIED',

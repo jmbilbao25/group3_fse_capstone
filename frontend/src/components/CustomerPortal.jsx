@@ -15,7 +15,15 @@ import {
   Building2,
   Printer,
   X,
-  FileText
+  FileText,
+  Eye,
+  EyeOff,
+  QrCode,
+  Search,
+  Sparkles,
+  Receipt,
+  Share2,
+  ChevronRight
 } from 'lucide-react';
 import { formatPHP, parseMaskedInput, generateUUID } from '../utils/currency';
 import apiClient, { mockState, THRESHOLDS } from '../services/api';
@@ -25,6 +33,49 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('transfer'); // 'transfer' | 'history'
   const [copied, setCopied] = useState(false);
+
+  // Eye Toggle State (Show / Hide Balance)
+  const [isBalanceVisible, setIsBalanceVisible] = useState(true);
+
+  // QR Code Modal State
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [qrCopied, setQrCopied] = useState(false);
+
+  // Search & Filter State for Activity
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' | 'SETTLED' | 'PENDING_APPROVAL'
+
+  const formatVisiblePHP = (val) => {
+    if (!isBalanceVisible) return '₱ ••••••••';
+    return formatPHP(val);
+  };
+
+  const FAVORITES = [
+    { name: 'Maria Santos', account: '1000-2000-3002', initials: 'MS', badge: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
+    { name: 'Carlos Dela Cruz', account: '1000-2000-3003', initials: 'CD', badge: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30' },
+    { name: 'Elena Ramos', account: '1000-2000-3004', initials: 'ER', badge: 'bg-pink-500/15 text-pink-400 border-pink-500/30' },
+    { name: 'Tech Solutions Inc.', account: '1000-2000-3005', initials: 'TS', badge: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
+  ];
+
+  const handleSelectFavorite = (fav) => {
+    setToAccount(fav.account);
+    setRecipientName(fav.name);
+  };
+
+  const handleViewReceipt = (tx) => {
+    setReceiptData({
+      refNumber: tx.id,
+      fromAccount: tx.from_account_id || balance?.account_id || '1000-2000-3001',
+      senderName: user?.name || 'Juan Dela Cruz',
+      toAccount: tx.to_account_id,
+      recipientName: tx.recipient_name,
+      amount: tx.amount,
+      fee: 0,
+      memo: tx.memo || 'Fund Transfer',
+      isHighValue: tx.status === 'PENDING_APPROVAL',
+      timestamp: new Date(tx.created_at || Date.now()),
+    });
+  };
 
   const handleCopyAccount = () => {
     const acct = balance?.account_id || '1000-2000-3001';
@@ -201,8 +252,8 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
           </div>
         </div>
 
-        <div className="flex items-center justify-between sm:justify-end gap-3 bg-slate-950/80 border border-slate-800 px-4 py-2.5 rounded-xl relative z-10 shadow-inner">
-          <div>
+        <div className="flex items-center justify-between sm:justify-end gap-2 bg-slate-950/80 border border-slate-800 px-3.5 py-2.5 rounded-xl relative z-10 shadow-inner">
+          <div className="mr-1">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block">
               My Account Number
             </span>
@@ -214,19 +265,28 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
             type="button"
             onClick={handleCopyAccount}
             title="Copy account number"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all text-xs font-medium border border-slate-700/60 active:scale-95"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all text-xs font-medium border border-slate-700/60 active:scale-95"
           >
             {copied ? (
               <>
                 <Check className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="text-emerald-400 font-semibold">Copied!</span>
+                <span className="text-emerald-400 font-semibold text-[11px]">Copied!</span>
               </>
             ) : (
               <>
                 <Copy className="w-3.5 h-3.5" />
-                <span>Copy</span>
+                <span className="text-[11px]">Copy</span>
               </>
             )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsQrModalOpen(true)}
+            title="Show QR Code to Receive Money"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 hover:text-white transition-all text-xs font-medium border border-indigo-500/30 active:scale-95"
+          >
+            <QrCode className="w-3.5 h-3.5" />
+            <span className="text-[11px]">QR Code</span>
           </button>
         </div>
       </div>
@@ -239,13 +299,21 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
           <div className="flex items-center justify-between mb-3 relative z-10">
             <span className="text-xs font-semibold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
               <Wallet className="w-4 h-4" /> Available Balance
+              <button
+                type="button"
+                onClick={() => setIsBalanceVisible(!isBalanceVisible)}
+                title={isBalanceVisible ? "Hide Balance" : "Show Balance"}
+                className="text-slate-400 hover:text-white transition-colors ml-1 p-0.5 rounded hover:bg-slate-800"
+              >
+                {isBalanceVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5 text-indigo-400" />}
+              </button>
             </span>
             <span className="text-[11px] font-mono bg-indigo-500/10 text-indigo-300 px-2.5 py-0.5 rounded-full border border-indigo-500/20 font-medium">
               Acct: {balance?.account_id || '1000-2000-3001'}
             </span>
           </div>
           <div className="text-3xl font-mono font-bold text-white tracking-tight relative z-10">
-            {formatPHP(balance?.available_balance)}
+            {formatVisiblePHP(balance?.available_balance)}
           </div>
           <p className="text-xs text-slate-400 mt-2 relative z-10">
             Funds ready for immediate withdrawal or transfer.
@@ -264,7 +332,7 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
             </span>
           </div>
           <div className="text-2xl font-mono font-bold text-slate-200 relative z-10">
-            {formatPHP(balance?.current_balance)}
+            {formatVisiblePHP(balance?.current_balance)}
           </div>
           <p className="text-xs text-slate-400 mt-2 relative z-10">
             Total balance in your savings account.
@@ -285,7 +353,7 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
             )}
           </div>
           <div className="text-2xl font-mono font-bold text-amber-400 relative z-10">
-            {formatPHP(balance?.held_balance)}
+            {formatVisiblePHP(balance?.held_balance)}
           </div>
           <p className="text-xs text-slate-400 mt-2 relative z-10">
             Pending transfers currently undergoing bank verification.
@@ -353,9 +421,39 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
                 <div className="text-right">
                   <span className="text-[10px] uppercase font-semibold text-slate-400 block">Available</span>
                   <span className="text-xs font-mono font-bold text-emerald-400">
-                    {formatPHP(balance?.available_balance)}
+                    {formatVisiblePHP(balance?.available_balance)}
                   </span>
                 </div>
+              </div>
+            </div>
+
+            {/* Frequent / Saved Beneficiaries Quick Pick */}
+            <div>
+              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-2 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                Frequent Recipients
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {FAVORITES.map((fav) => (
+                  <button
+                    key={fav.account}
+                    type="button"
+                    onClick={() => handleSelectFavorite(fav)}
+                    className="p-2.5 rounded-xl bg-slate-950/80 hover:bg-indigo-600/15 border border-slate-800/90 hover:border-indigo-500/50 text-left transition-all duration-150 group flex items-center gap-2.5 active:scale-95 shadow-sm"
+                  >
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold border shrink-0 ${fav.badge}`}>
+                      {fav.initials}
+                    </div>
+                    <div className="overflow-hidden">
+                      <p className="text-xs font-bold text-white truncate group-hover:text-indigo-300 transition-colors">
+                        {fav.name}
+                      </p>
+                      <p className="text-[10px] font-mono text-slate-500 truncate">
+                        {fav.account}
+                      </p>
+                    </div>
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -462,60 +560,135 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
         </div>
       )}
 
-      {/* TAB 2: Clean Customer Activity Table */}
+      {/* TAB 2: Clean Customer Activity Table with Search & Filter */}
       {activeTab === 'history' && (
         <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 shadow-xl space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h3 className="text-base font-bold text-white">Recent Transactions</h3>
-              <p className="text-xs text-slate-400 mt-0.5">Your recent transfers and payments</p>
+              <p className="text-xs text-slate-400 mt-0.5">Click any transaction to view and print its official receipt</p>
+            </div>
+
+            {/* Status Filter Pills */}
+            <div className="flex items-center gap-1.5 bg-slate-950/80 p-1 rounded-xl border border-slate-800/90 self-start sm:self-auto">
+              {[
+                { id: 'ALL', label: 'All' },
+                { id: 'SETTLED', label: 'Completed' },
+                { id: 'PENDING_APPROVAL', label: 'Under Review' },
+              ].map((pill) => (
+                <button
+                  key={pill.id}
+                  type="button"
+                  onClick={() => setStatusFilter(pill.id)}
+                  className={`px-3 py-1 rounded-lg text-[11px] font-semibold transition-all ${
+                    statusFilter === pill.id
+                      ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {pill.label}
+                </button>
+              ))}
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-slate-800 text-slate-400 font-semibold uppercase text-[10px] tracking-wider">
-                <tr>
-                  <th className="pb-3">Reference No.</th>
-                  <th className="pb-3">Recipient</th>
-                  <th className="pb-3">Amount</th>
-                  <th className="pb-3">Status</th>
-                  <th className="pb-3">Date &amp; Time</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60">
-                {mockState.transfers.map((tx) => (
-                  <tr key={tx.id} className="hover:bg-slate-900/40 transition-colors">
-                    <td className="py-3.5 font-mono text-indigo-400 font-semibold">{tx.id}</td>
-                    <td className="py-3.5">
-                      <p className="font-semibold text-white">{tx.recipient_name}</p>
-                      <p className="text-[10px] font-mono text-slate-400">{tx.to_account_id}</p>
-                    </td>
-                    <td className="py-3.5 font-mono font-bold text-slate-100">
-                      -{formatPHP(tx.amount)}
-                    </td>
-                    <td className="py-3.5">
-                      <span
-                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${
-                          tx.status === 'SETTLED'
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                            : tx.status === 'PENDING_APPROVAL'
-                            ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                            : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-                        }`}
-                      >
-                        {tx.status === 'SETTLED' ? 'Completed' : tx.status === 'PENDING_APPROVAL' ? 'Pending Verification' : 'Cancelled'}
-                      </span>
-                    </td>
-                    <td className="py-3.5 text-slate-400 text-[11px]">
-                      {new Date(tx.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}{' '}
-                      {new Date(tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          {/* Search Box */}
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by recipient name, account number, or reference (e.g. Maria, TRX-)..."
+              className="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-500/30 transition-all"
+            />
           </div>
+
+          {/* Filtered Transactions List */}
+          {(() => {
+            const filteredTransfers = mockState.transfers.filter((tx) => {
+              const query = searchQuery.toLowerCase().trim();
+              const matchesSearch =
+                !query ||
+                tx.recipient_name?.toLowerCase().includes(query) ||
+                tx.to_account_id?.toLowerCase().includes(query) ||
+                tx.id?.toLowerCase().includes(query);
+              const matchesStatus =
+                statusFilter === 'ALL' || tx.status === statusFilter;
+              return matchesSearch && matchesStatus;
+            });
+
+            if (filteredTransfers.length === 0) {
+              return (
+                <div className="text-center py-10 border border-dashed border-slate-800 rounded-2xl bg-slate-950/30">
+                  <p className="text-xs text-slate-400">No transactions match your search or filter.</p>
+                </div>
+              );
+            }
+
+            return (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="border-b border-slate-800 text-slate-400 font-semibold uppercase text-[10px] tracking-wider">
+                    <tr>
+                      <th className="pb-3">Reference No.</th>
+                      <th className="pb-3">Recipient</th>
+                      <th className="pb-3">Amount</th>
+                      <th className="pb-3">Status</th>
+                      <th className="pb-3">Date &amp; Time</th>
+                      <th className="pb-3 text-right">Receipt</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60">
+                    {filteredTransfers.map((tx) => (
+                      <tr
+                        key={tx.id}
+                        onClick={() => handleViewReceipt(tx)}
+                        title="Click to view digital receipt slip"
+                        className="hover:bg-slate-800/60 cursor-pointer transition-colors group"
+                      >
+                        <td className="py-3.5 font-mono text-indigo-400 font-semibold flex items-center gap-1.5">
+                          <Receipt className="w-3.5 h-3.5 text-slate-500 group-hover:text-indigo-400 transition-colors" />
+                          {tx.id}
+                        </td>
+                        <td className="py-3.5">
+                          <p className="font-semibold text-white group-hover:text-indigo-200 transition-colors">
+                            {tx.recipient_name}
+                          </p>
+                          <p className="text-[10px] font-mono text-slate-400">{tx.to_account_id}</p>
+                        </td>
+                        <td className="py-3.5 font-mono font-bold text-slate-100">
+                          -{formatPHP(tx.amount)}
+                        </td>
+                        <td className="py-3.5">
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${
+                              tx.status === 'SETTLED'
+                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                : tx.status === 'PENDING_APPROVAL'
+                                ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                                : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                            }`}
+                          >
+                            {tx.status === 'SETTLED' ? 'Completed' : tx.status === 'PENDING_APPROVAL' ? 'Pending Verification' : 'Cancelled'}
+                          </span>
+                        </td>
+                        <td className="py-3.5 text-slate-400 text-[11px]">
+                          {new Date(tx.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}{' '}
+                          {new Date(tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </td>
+                        <td className="py-3.5 text-right">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-400 group-hover:text-indigo-300">
+                            View <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -751,6 +924,128 @@ export default function CustomerPortal({ balance, onTransactionComplete, showToa
                 Make Another Transfer
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3. Receive Money / QR Code Modal */}
+      {isQrModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-sm w-full p-6 sm:p-7 shadow-2xl relative space-y-5 animate-in zoom-in-95 duration-200 text-center overflow-hidden">
+            {/* Top decorative gradient bar */}
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
+
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5 text-left">
+                <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                  <QrCode className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Receive Money</h3>
+                  <p className="text-[11px] text-slate-400">Scan QR to transfer funds instantly</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsQrModalOpen(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* High-Contrast Authentic QR Canvas Card */}
+            <div className="bg-white p-5 rounded-2xl mx-auto shadow-2xl inline-block border-4 border-slate-800">
+              <svg className="w-44 h-44 mx-auto" viewBox="0 0 100 100" fill="none">
+                {/* 3 Corner Anchor Squares */}
+                <rect x="5" y="5" width="26" height="26" rx="4" fill="#0f172a" />
+                <rect x="9" y="9" width="18" height="18" rx="2" fill="#ffffff" />
+                <rect x="13" y="13" width="10" height="10" rx="1" fill="#4f46e5" />
+
+                <rect x="69" y="5" width="26" height="26" rx="4" fill="#0f172a" />
+                <rect x="73" y="9" width="18" height="18" rx="2" fill="#ffffff" />
+                <rect x="77" y="13" width="10" height="10" rx="1" fill="#4f46e5" />
+
+                <rect x="5" y="69" width="26" height="26" rx="4" fill="#0f172a" />
+                <rect x="9" y="73" width="18" height="18" rx="2" fill="#ffffff" />
+                <rect x="13" y="77" width="10" height="10" rx="1" fill="#4f46e5" />
+
+                {/* Simulated Data Matrix Dots */}
+                <rect x="36" y="8" width="5" height="5" fill="#0f172a" />
+                <rect x="46" y="8" width="5" height="5" fill="#0f172a" />
+                <rect x="56" y="8" width="5" height="5" fill="#0f172a" />
+                <rect x="36" y="18" width="8" height="5" fill="#0f172a" />
+                <rect x="50" y="18" width="5" height="5" fill="#0f172a" />
+                <rect x="40" y="28" width="5" height="5" fill="#0f172a" />
+                <rect x="52" y="28" width="8" height="5" fill="#0f172a" />
+
+                <rect x="8" y="36" width="5" height="5" fill="#0f172a" />
+                <rect x="18" y="36" width="8" height="5" fill="#0f172a" />
+                <rect x="8" y="48" width="5" height="8" fill="#0f172a" />
+                <rect x="20" y="46" width="6" height="6" fill="#0f172a" />
+                <rect x="8" y="58" width="10" height="5" fill="#0f172a" />
+
+                <rect x="35" y="35" width="30" height="30" rx="8" fill="#4f46e5" />
+                <text x="50" y="53" textAnchor="middle" fill="#ffffff" fontSize="9" fontWeight="bold" fontFamily="sans-serif">QR Ph</text>
+
+                <rect x="69" y="38" width="8" height="5" fill="#0f172a" />
+                <rect x="82" y="38" width="6" height="6" fill="#0f172a" />
+                <rect x="72" y="48" width="5" height="8" fill="#0f172a" />
+                <rect x="84" y="50" width="6" height="6" fill="#0f172a" />
+
+                <rect x="36" y="69" width="6" height="6" fill="#0f172a" />
+                <rect x="48" y="72" width="8" height="5" fill="#0f172a" />
+                <rect x="60" y="69" width="5" height="8" fill="#0f172a" />
+                <rect x="38" y="82" width="12" height="5" fill="#0f172a" />
+                <rect x="54" y="82" width="6" height="6" fill="#0f172a" />
+                <rect x="70" y="72" width="8" height="5" fill="#0f172a" />
+                <rect x="82" y="72" width="8" height="5" fill="#0f172a" />
+                <rect x="74" y="82" width="16" height="5" fill="#0f172a" />
+              </svg>
+              <p className="text-[10px] font-mono font-bold text-slate-800 mt-2">
+                QR Ph Compatible &bull; Zero Fees
+              </p>
+            </div>
+
+            {/* Account Details Box */}
+            <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 text-left space-y-2 text-xs">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400">Account Name</span>
+                <span className="font-bold text-white">{user?.name || 'Juan Dela Cruz'}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400">Account Number</span>
+                <div className="flex items-center gap-1.5 font-mono text-indigo-300 font-bold">
+                  <span>{balance?.account_id || '1000-2000-3001'}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (navigator.clipboard) {
+                        navigator.clipboard.writeText(balance?.account_id || '1000-2000-3001');
+                        setQrCopied(true);
+                        setTimeout(() => setQrCopied(false), 2000);
+                      }
+                    }}
+                    title="Copy Account"
+                    className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors"
+                  >
+                    {qrCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400">Transfer Channel</span>
+                <span className="text-emerald-400 font-semibold">Core Retail Ledger (Instant)</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsQrModalOpen(false)}
+              className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-indigo-600/30"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}

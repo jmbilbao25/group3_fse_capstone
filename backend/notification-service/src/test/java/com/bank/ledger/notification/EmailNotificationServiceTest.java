@@ -84,16 +84,17 @@ class EmailNotificationServiceTest {
     @Test
     @DisplayName("Should format HTML template and send email receipt on first delivery")
     void shouldSendTransactionReceiptSuccessfully() {
-        when(valueOperations.setIfAbsent(eq("notif:seen:TRX-TEST-0001"), eq("1"), any(Duration.class)))
+        when(valueOperations.setIfAbsent(anyString(), anyString(), any(Duration.class)))
                 .thenReturn(true);
 
-        when(templateEngine.process(eq("email/transaction-receipt.html"), any(Context.class)))
+        when(templateEngine.process(anyString(), any(Context.class)))
                 .thenReturn("<html><body>Mock Receipt</body></html>");
 
         boolean result = emailService.sendTransactionReceipt(sampleEvent);
 
         assertTrue(result, "Email dispatch should succeed");
-        verify(mailSender, times(1)).send(any(MimeMessage.class));
+        // Dispatches 2 emails: 1 debit receipt to sender, 1 credit advice to beneficiary
+        verify(mailSender, times(2)).send(any(MimeMessage.class));
     }
 
     @Test
@@ -125,7 +126,7 @@ class EmailNotificationServiceTest {
 
         assertFalse(result, "Send should return false when failing to live SMTP");
         Map<String, Object> spoolStatus = emailService.getSpoolStatus();
-        assertEquals(1, spoolStatus.get("spool_size"), "Spool size should be 1 pending email");
+        assertEquals(2, spoolStatus.get("spool_size"), "Spool size should be 2 pending emails (sender + beneficiary)");
     }
 
     @Test

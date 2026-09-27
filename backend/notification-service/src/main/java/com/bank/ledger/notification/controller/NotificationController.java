@@ -26,27 +26,23 @@ public class NotificationController {
     private final NotificationRepository notificationRepository;
 
     @PostMapping("/simulate-transfer")
-    public ResponseEntity<Map<String, Object>> simulateTransferNotification(
-            @RequestBody(required = false) TransactionNotificationEvent customEvent) {
-
-        TransactionNotificationEvent event = customEvent;
-        if (event == null || event.getTransferId() == null) {
-            event = TransactionNotificationEvent.builder()
-                    .transferId("TRX-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
-                    .sourceAccount("ACC-1002938471")
-                    .destinationAccount("ACC-2009847192")
-                    .userId("USR-882190")
-                    .recipientEmail("customer@corebank.ph")
-                    .amount(new BigDecimal("25000.0000")) // Tier 1: <= PHP 50,000.00
-                    .currency("PHP")
-                    .beforeBalance(new BigDecimal("250000.0000"))
-                    .afterBalance(new BigDecimal("225000.0000"))
-                    .status("COMMITTED")
-                    .eventType("TRANSFER_EXECUTED")
-                    .timestamp(Instant.now())
-                    .description("Tier 1: Normal Retail Fund Transfer (Teller Only)")
-                    .build();
-        }
+    public ResponseEntity<Map<String, Object>> simulateTransferNotification() {
+        TransactionNotificationEvent event = TransactionNotificationEvent.builder()
+                .transferId("TRX-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                .sourceAccount("ACC-1002938471")
+                .destinationAccount("ACC-2009847192")
+                .userId("U1001")
+                .makerUserId("U1001")
+                .recipientEmail("juan.delacruz@retailbank.ph")
+                .amount(new BigDecimal("7500.0000")) // Tier 1: <= PHP 50,000.00 (STP)
+                .currency("PHP")
+                .beforeBalance(new BigDecimal("250000.0000"))
+                .afterBalance(new BigDecimal("242500.0000"))
+                .status("COMMITTED")
+                .eventType("TRANSFER_EXECUTED")
+                .timestamp(Instant.now())
+                .description("Tier 1: Normal Retail Fund Transfer (Automated STP - No Manager Approval)")
+                .build();
 
         log.info("Simulating transfer notification for: {}", event.getTransferId());
         transactionEventConsumer.consumeTransactionEvent(event);
@@ -56,8 +52,9 @@ public class NotificationController {
         response.put("tier", "TIER_1_NORMAL");
         response.put("transferId", event.getTransferId());
         response.put("amount", event.getAmount());
-        response.put("recipientEmail", event.getRecipientEmail());
-        response.put("message", "Tier 1 normal transaction consumed; email receipt dispatched & SSE toast pushed.");
+        response.put("senderEmail", event.getRecipientEmail());
+        response.put("beneficiaryEmail", "maria.santos@retailbank.ph");
+        response.put("message", "Tier 1 normal transaction consumed; Debit Receipt sent to Sender (Juan Dela Cruz) & Credit Advice sent to Beneficiary (Maria Santos).");
         return ResponseEntity.ok(response);
     }
 
@@ -72,9 +69,9 @@ public class NotificationController {
                 .transferId("TRX-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
                 .sourceAccount("ACC-1002938471")
                 .destinationAccount("ACC-9988776655")
-                .userId("USR-882190")
-                .makerUserId("USR-TELLER-01")
-                .recipientEmail("boo@corebank.ph")
+                .userId("U1001")
+                .makerUserId("U1001")
+                .recipientEmail("beatriz.ocampo@retailbank.ph")
                 .amount(new BigDecimal("150000.0000")) // Tier 2: PHP 50k - 499,999.99
                 .currency("PHP")
                 .beforeBalance(new BigDecimal("500000.0000"))
@@ -97,6 +94,40 @@ public class NotificationController {
         response.put("transferId", event.getTransferId());
         response.put("amount", event.getAmount());
         response.put("message", "Tier 2 dual-control alert broadcast and Manager compliance email dispatched.");
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/simulate-tier2-approval")
+    public ResponseEntity<Map<String, Object>> simulateTier2Approval() {
+        TransactionNotificationEvent event = TransactionNotificationEvent.builder()
+                .transferId("TRX-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                .sourceAccount("ACC-1002938471")
+                .destinationAccount("ACC-9988776655")
+                .userId("U1001")
+                .makerUserId("U1001")
+                .recipientEmail("juan.delacruz@retailbank.ph")
+                .amount(new BigDecimal("150000.0000"))
+                .currency("PHP")
+                .beforeBalance(new BigDecimal("500000.0000"))
+                .afterBalance(new BigDecimal("350000.0000"))
+                .status("COMMITTED")
+                .eventType("TRANSFER_APPROVED_BY_CHECKER")
+                .timestamp(Instant.now())
+                .description("Funds Released: Tier 2 Transfer PHP 150,000.00 Approved by Bank Operations Manager Beatriz Ocampo (U3002)")
+                .build();
+
+        log.info("Simulating Tier 2 Manager Approval release for: {}", event.getTransferId());
+        transactionEventConsumer.consumeTransactionEvent(event);
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("status", "APPROVED_AND_RELEASED");
+        response.put("tier", "TIER_2_APPROVAL");
+        response.put("checker", "Beatriz Ocampo (U3002)");
+        response.put("transferId", event.getTransferId());
+        response.put("amount", event.getAmount());
+        response.put("senderEmail", event.getRecipientEmail());
+        response.put("beneficiaryEmail", "maria.santos@retailbank.ph");
+        response.put("message", "Funds Released: Tier 2 transfer approved by Manager Beatriz Ocampo. Official debit receipt and credit advice dispatched.");
         return ResponseEntity.ok(response);
     }
 

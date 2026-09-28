@@ -77,13 +77,7 @@ SELECT transaction_id, from_account_id, to_account_id, type, amount, before_bala
 
 PROMPT 
 PROMPT ==============================================================================
-PROMPT 5. TABLE: CREDIT_ASSESSMENTS (Loan Appraisals)
-PROMPT ==============================================================================
-SELECT assessment_id, account_id, collateral_type, credit_score, approved_credit_limit, risk_tier, status FROM credit_assessments;
-
-PROMPT 
-PROMPT ==============================================================================
-PROMPT 6. TABLE: OUTBOX_EVENTS (Transactional Outbox)
+PROMPT 5. TABLE: OUTBOX_EVENTS (Transactional Outbox)
 PROMPT ==============================================================================
 SELECT event_id, aggregate_type, aggregate_id, event_type, kafka_topic, status FROM outbox_events;
 

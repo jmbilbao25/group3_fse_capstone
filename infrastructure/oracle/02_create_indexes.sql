@@ -29,16 +29,6 @@ CREATE INDEX idx_txn_to_account
 CREATE INDEX idx_txn_approved_by 
     ON transactions (approved_by_user_id);
 
--- Index on CREDIT_ASSESSMENTS foreign keys
-CREATE INDEX idx_ca_account_id 
-    ON credit_assessments (account_id);
-
-CREATE INDEX idx_ca_user_id 
-    ON credit_assessments (user_id);
-
-CREATE INDEX idx_ca_teller_id 
-    ON credit_assessments (assessed_by_teller_id);
-
 -- Index on OUTBOX_EVENTS(aggregate_id)
 CREATE INDEX idx_outbox_aggregate 
     ON outbox_events (aggregate_id);

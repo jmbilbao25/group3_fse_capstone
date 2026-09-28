@@ -26,25 +26,58 @@ public class NotificationController {
     private final NotificationRepository notificationRepository;
 
     @PostMapping("/simulate-transfer")
-    public ResponseEntity<Map<String, Object>> simulateTransferNotification() {
+    public ResponseEntity<Map<String, Object>> simulateTransferNotification(
+            @RequestBody(required = false) Map<String, Object> request,
+            @RequestParam(required = false) BigDecimal amountParam) {
+
+        BigDecimal amount = new BigDecimal("7500.0000");
+        String transferId = "TRX-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        String sourceAccount = "ACC-1002938471";
+        String destinationAccount = "ACC-2009847192";
+        String recipientEmail = "juan.delacruz@retailbank.ph";
+        String memo = "Tier 1: Normal Retail Fund Transfer (Automated STP - No Manager Approval)";
+
+        if (request != null) {
+            if (request.get("amount") != null) {
+                amount = new BigDecimal(request.get("amount").toString());
+            }
+            if (request.get("transfer_id") != null) {
+                transferId = request.get("transfer_id").toString();
+            }
+            if (request.get("from_account_id") != null) {
+                sourceAccount = request.get("from_account_id").toString();
+            }
+            if (request.get("to_account_id") != null) {
+                destinationAccount = request.get("to_account_id").toString();
+            }
+            if (request.get("recipient_email") != null) {
+                recipientEmail = request.get("recipient_email").toString();
+            }
+            if (request.get("memo") != null) {
+                memo = request.get("memo").toString();
+            }
+        } else if (amountParam != null) {
+            amount = amountParam;
+        }
+
         TransactionNotificationEvent event = TransactionNotificationEvent.builder()
-                .transferId("TRX-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
-                .sourceAccount("ACC-1002938471")
-                .destinationAccount("ACC-2009847192")
+                .transferId(transferId)
+                .sourceAccount(sourceAccount)
+                .destinationAccount(destinationAccount)
                 .userId("U1001")
                 .makerUserId("U1001")
-                .recipientEmail("juan.delacruz@retailbank.ph")
-                .amount(new BigDecimal("7500.0000")) // Tier 1: <= PHP 50,000.00 (STP)
+                .recipientEmail(recipientEmail)
+                .amount(amount)
                 .currency("PHP")
-                .beforeBalance(new BigDecimal("250000.0000"))
-                .afterBalance(new BigDecimal("242500.0000"))
+                .beforeBalance(new BigDecimal("275000.0000"))
+                .afterBalance(new BigDecimal("275000.0000").subtract(amount))
                 .status("COMMITTED")
                 .eventType("TRANSFER_EXECUTED")
                 .timestamp(Instant.now())
-                .description("Tier 1: Normal Retail Fund Transfer (Automated STP - No Manager Approval)")
+                .description(memo)
                 .build();
 
-        log.info("Simulating transfer notification for: {}", event.getTransferId());
+        log.info("Simulating transfer notification for: {}, amount: {}", event.getTransferId(), event.getAmount());
         transactionEventConsumer.consumeTransactionEvent(event);
 
         Map<String, Object> response = new LinkedHashMap<>();
@@ -60,22 +93,38 @@ public class NotificationController {
 
     @PostMapping("/simulate-maker-checker")
     public ResponseEntity<Map<String, Object>> simulateMakerCheckerNotification() {
-        return simulateTier2MakerChecker();
+        return simulateTier2MakerChecker(null, null);
     }
 
     @PostMapping("/simulate-tier2-maker-checker")
-    public ResponseEntity<Map<String, Object>> simulateTier2MakerChecker() {
+    public ResponseEntity<Map<String, Object>> simulateTier2MakerChecker(
+            @RequestBody(required = false) Map<String, Object> request,
+            @RequestParam(required = false) BigDecimal amountParam) {
+
+        BigDecimal amount = new BigDecimal("150000.0000");
+        String transferId = "TRX-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        if (request != null) {
+            if (request.get("amount") != null) {
+                amount = new BigDecimal(request.get("amount").toString());
+            }
+            if (request.get("transfer_id") != null) {
+                transferId = request.get("transfer_id").toString();
+            }
+        } else if (amountParam != null) {
+            amount = amountParam;
+        }
+
         TransactionNotificationEvent event = TransactionNotificationEvent.builder()
-                .transferId("TRX-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                .transferId(transferId)
                 .sourceAccount("ACC-1002938471")
                 .destinationAccount("ACC-9988776655")
                 .userId("U1001")
                 .makerUserId("U1001")
                 .recipientEmail("beatriz.ocampo@retailbank.ph")
-                .amount(new BigDecimal("150000.0000")) // Tier 2: PHP 50k - 499,999.99
+                .amount(amount)
                 .currency("PHP")
                 .beforeBalance(new BigDecimal("500000.0000"))
-                .afterBalance(new BigDecimal("350000.0000"))
+                .afterBalance(new BigDecimal("500000.0000").subtract(amount))
                 .status("PENDING_APPROVAL")
                 .eventType("TRANSFER_PENDING_APPROVAL")
                 .requiresMakerChecker(true)
@@ -83,7 +132,7 @@ public class NotificationController {
                 .description("Tier 2: Dual Control Transfer (Maker: Customer, Checker: Manager)")
                 .build();
 
-        log.info("Simulating Tier 2 Maker-Checker hold alert for: {}", event.getTransferId());
+        log.info("Simulating Tier 2 Maker-Checker hold alert for: {}, amount: {}", event.getTransferId(), event.getAmount());
         transactionEventConsumer.consumeTransactionEvent(event);
 
         Map<String, Object> response = new LinkedHashMap<>();
@@ -98,25 +147,41 @@ public class NotificationController {
     }
 
     @PostMapping("/simulate-tier2-approval")
-    public ResponseEntity<Map<String, Object>> simulateTier2Approval() {
+    public ResponseEntity<Map<String, Object>> simulateTier2Approval(
+            @RequestBody(required = false) Map<String, Object> request,
+            @RequestParam(required = false) BigDecimal amountParam) {
+
+        BigDecimal amount = new BigDecimal("150000.0000");
+        String transferId = "TRX-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        if (request != null) {
+            if (request.get("amount") != null) {
+                amount = new BigDecimal(request.get("amount").toString());
+            }
+            if (request.get("transfer_id") != null) {
+                transferId = request.get("transfer_id").toString();
+            }
+        } else if (amountParam != null) {
+            amount = amountParam;
+        }
+
         TransactionNotificationEvent event = TransactionNotificationEvent.builder()
-                .transferId("TRX-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                .transferId(transferId)
                 .sourceAccount("ACC-1002938471")
                 .destinationAccount("ACC-9988776655")
                 .userId("U1001")
                 .makerUserId("U1001")
                 .recipientEmail("juan.delacruz@retailbank.ph")
-                .amount(new BigDecimal("150000.0000"))
+                .amount(amount)
                 .currency("PHP")
                 .beforeBalance(new BigDecimal("500000.0000"))
-                .afterBalance(new BigDecimal("350000.0000"))
+                .afterBalance(new BigDecimal("500000.0000").subtract(amount))
                 .status("COMMITTED")
                 .eventType("TRANSFER_APPROVED_BY_CHECKER")
                 .timestamp(Instant.now())
-                .description("Funds Released: Tier 2 Transfer PHP 150,000.00 Approved by Bank Operations Manager Beatriz Ocampo (U3002)")
+                .description("Funds Released: Tier 2 Transfer PHP " + amount + " Approved by Bank Operations Manager Beatriz Ocampo (U3002)")
                 .build();
 
-        log.info("Simulating Tier 2 Manager Approval release for: {}", event.getTransferId());
+        log.info("Simulating Tier 2 Manager Approval release for: {}, amount: {}", event.getTransferId(), event.getAmount());
         transactionEventConsumer.consumeTransactionEvent(event);
 
         Map<String, Object> response = new LinkedHashMap<>();
@@ -132,18 +197,34 @@ public class NotificationController {
     }
 
     @PostMapping("/simulate-tier3-amla")
-    public ResponseEntity<Map<String, Object>> simulateTier3Amla() {
+    public ResponseEntity<Map<String, Object>> simulateTier3Amla(
+            @RequestBody(required = false) Map<String, Object> request,
+            @RequestParam(required = false) BigDecimal amountParam) {
+
+        BigDecimal amount = new BigDecimal("750000.0000");
+        String transferId = "TRX-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        if (request != null) {
+            if (request.get("amount") != null) {
+                amount = new BigDecimal(request.get("amount").toString());
+            }
+            if (request.get("transfer_id") != null) {
+                transferId = request.get("transfer_id").toString();
+            }
+        } else if (amountParam != null) {
+            amount = amountParam;
+        }
+
         TransactionNotificationEvent event = TransactionNotificationEvent.builder()
-                .transferId("TRX-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                .transferId(transferId)
                 .sourceAccount("ACC-1002938471")
                 .destinationAccount("ACC-9988776655")
                 .userId("U1001")
                 .makerUserId("U1001")
                 .recipientEmail("compliance-officer@corebank.ph")
-                .amount(new BigDecimal("750000.0000")) // Tier 3: >= PHP 500,000.00 (AMLA Covered)
+                .amount(amount)
                 .currency("PHP")
                 .beforeBalance(new BigDecimal("2000000.0000"))
-                .afterBalance(new BigDecimal("1250000.0000"))
+                .afterBalance(new BigDecimal("2000000.0000").subtract(amount))
                 .status("PENDING_APPROVAL")
                 .eventType("TRANSFER_PENDING_APPROVAL")
                 .requiresMakerChecker(true)
@@ -151,7 +232,7 @@ public class NotificationController {
                 .description("Tier 3: AMLA Covered Transfer (Requires CTR Filing + Dual Manager Approval)")
                 .build();
 
-        log.info("Simulating Tier 3 AMLA High-Value hold alert for: {}", event.getTransferId());
+        log.info("Simulating Tier 3 AMLA High-Value hold alert for: {}, amount: {}", event.getTransferId(), event.getAmount());
         transactionEventConsumer.consumeTransactionEvent(event);
 
         Map<String, Object> response = new LinkedHashMap<>();

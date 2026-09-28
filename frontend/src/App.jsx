@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { 
   Bell, 
   X, 
@@ -8,18 +9,33 @@ import {
   ShieldAlert, 
   Sparkles 
 } from 'lucide-react';
-import Header from './components/Header';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import Navbar from './components/Navbar';
+import Login from './components/Login';
 import CustomerPortal from './components/CustomerPortal';
+import ManagerPortal from './components/ManagerPortal';
 import TellerPortal from './components/TellerPortal';
 import AdminPortal from './components/AdminPortal';
-import { INITIAL_ACCOUNTS } from './api/client';
+import Toast from './components/Toast';
+import apiClient, { mockState } from './services/api';
 
-export default function App() {
-  const [activeRole, setActiveRole] = useState('CUSTOMER');
-  const [accounts, setAccounts] = useState(INITIAL_ACCOUNTS);
+function MainApp() {
+  const { user } = useAuth();
+  const [activeAccountId, setActiveAccountId] = useState('1000-2000-3001');
+  const [balance, setBalance] = useState({
+    account_id: '1000-2000-3001',
+    account_type: 'SAVINGS',
+    currency: 'PHP',
+    current_balance: 15000000.0000,
+    held_balance: 725000.0000,
+    available_balance: 14275000.0000,
+    credit_limit: 0.0000,
+  });
+  const [toast, setToast] = useState(null);
+
+  // SSE Live Notification Streaming State (Integrated from Group 3 Event Stream)
   const [isLiveConnected, setIsLiveConnected] = useState(false);
   const [liveNotifications, setLiveNotifications] = useState([]);
-
   const [pendingTransactions, setPendingTransactions] = useState([
     {
       transactionId: 'TX-772190',
@@ -45,6 +61,17 @@ export default function App() {
     },
   ]);
 
+  const addToastNotification = (newToast) => {
+    setLiveNotifications((prev) => [newToast, ...prev.slice(0, 4)]);
+    setTimeout(() => {
+      setLiveNotifications((prev) => prev.filter((t) => t.id !== newToast.id));
+    }, 7000);
+  };
+
+  const removeToastNotification = (id) => {
+    setLiveNotifications((prev) => prev.filter((t) => t.id !== id));
+  };
+
   // Connect to SSE notifications stream
   useEffect(() => {
     let eventSource = null;
@@ -52,7 +79,8 @@ export default function App() {
 
     const connectSSE = () => {
       try {
-        eventSource = new EventSource('/api/v1/notifications/stream?userId=U1001');
+        const streamUserId = user?.userId || 'U1001';
+        eventSource = new EventSource(`/api/v1/notifications/stream?userId=${streamUserId}`);
 
         eventSource.onopen = () => {
           setIsLiveConnected(true);
@@ -65,13 +93,13 @@ export default function App() {
               id: 'TOAST-' + Math.random().toString(36).substring(2, 9),
               title: data.status === 'SUCCESS' ? 'Transfer Settled' : 'System Notification',
               message: data.message || `Transaction ${data.transferId || ''} status update received.`,
-              amount: data.amount,
+              amount: data.amount ? `₱${parseFloat(data.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}` : null,
               type: data.status === 'SUCCESS' ? 'success' : 'info',
               timestamp: new Date().toLocaleTimeString(),
             };
             addToastNotification(newToast);
-          } catch (e) {
-            // Unparsed message or ping
+          } catch (_) {
+            // Heartbeat ping or unparsed stream data
           }
         };
 
@@ -80,15 +108,16 @@ export default function App() {
           if (eventSource) {
             eventSource.close();
           }
-          // Attempt graceful reconnect after 5 seconds
           reconnectTimeout = setTimeout(connectSSE, 5000);
         };
-      } catch (err) {
+      } catch (_) {
         setIsLiveConnected(false);
       }
     };
 
-    connectSSE();
+    if (user) {
+      connectSSE();
+    }
 
     return () => {
       if (eventSource) {
@@ -98,148 +127,149 @@ export default function App() {
         clearTimeout(reconnectTimeout);
       }
     };
-  }, []);
+  }, [user]);
 
-  const addToastNotification = (toast) => {
-    setLiveNotifications((prev) => [toast, ...prev.slice(0, 4)]);
+  const fetchBalance = async (targetId) => {
+    const accId = targetId || activeAccountId;
+    try {
+      const res = await apiClient.get(`/accounts/${accId}/balance`);
+      setBalance(res.data);
+    } catch (_) {
+      const isCredit = accId.includes('3003') || accId === 'A2003';
+      setBalance(isCredit ? { ...mockState.creditAccount } : { ...mockState.account });
+    }
+  };
+
+  const handleSwitchAccount = async (targetId) => {
+    setActiveAccountId(targetId);
+    await fetchBalance(targetId);
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchBalance(activeAccountId);
+    }
+  }, [user?.role]);
+
+  const showToast = (toastObj) => {
+    setToast(toastObj);
     setTimeout(() => {
-      setLiveNotifications((prev) => prev.filter((t) => t.id !== toast.id));
-    }, 7000);
+      setToast(null);
+    }, 6000);
   };
 
-  const removeToastNotification = (id) => {
-    setLiveNotifications((prev) => prev.filter((t) => t.id !== id));
+  // Helper to determine home route based on role
+  const getRoleHome = () => {
+    if (user?.role === 'ROLE_MANAGER') return '/manager';
+    if (user?.role === 'ROLE_ADMIN') return '/admin';
+    return '/customer';
   };
 
-  // Callback when Customer initiates a transfer
-  const handleTransactionComplete = (mutationData) => {
-    const isPending = mutationData.status === 'PENDING_APPROVAL';
-
-    if (isPending) {
-      const newPendingItem = {
-        transactionId: mutationData.transactionId,
-        sourceAccountId: mutationData.accountId,
-        destinationAccountId: mutationData.targetAccountId,
-        amount: mutationData.mutationAmount,
-        initiatorUserId: mutationData.initiatorUserId || 'U1001',
-        description: mutationData.description || 'Dual-control transfer review required',
-        submittedAt: new Date().toISOString(),
-        status: 'PENDING_APPROVAL',
-        riskTier: mutationData.mutationAmount >= 500000 ? 'TIER_3_AMLA' : 'TIER_2_MAKER_CHECKER',
-      };
-
-      setPendingTransactions((prev) => [newPendingItem, ...prev]);
-
-      addToastNotification({
-        id: 'TOAST-' + Math.random().toString(36).substring(2, 9),
-        title: 'Maker-Checker Hold Applied',
-        message: `Transaction ${mutationData.transactionId} queued for dual-control approval.`,
-        amount: `₱${mutationData.mutationAmount.toLocaleString('en-US', { minimumFractionDigits: 4 })}`,
-        type: 'warning',
-        timestamp: new Date().toLocaleTimeString(),
-      });
-    } else {
-      addToastNotification({
-        id: 'TOAST-' + Math.random().toString(36).substring(2, 9),
-        title: 'Transfer Completed',
-        message: `Transaction ${mutationData.transactionId} settled. Available balance updated.`,
-        amount: `₱${mutationData.mutationAmount.toLocaleString('en-US', { minimumFractionDigits: 4 })}`,
-        type: 'success',
-        timestamp: new Date().toLocaleTimeString(),
-      });
-    }
-  };
-
-  // Callback when Teller/Checker approves or rejects
-  const handleApprovalComplete = (txData, outcome) => {
-    const amount = txData.amount || txData.mutationAmount || 0;
-
-    if (outcome === 'APPROVED') {
-      setAccounts((prev) =>
-        prev.map((acc) => {
-          if (acc.accountId === txData.sourceAccountId || acc.accountId === txData.accountId) {
-            return {
-              ...acc,
-              holdAmount: Math.max(0, (acc.holdAmount || 0) - amount),
-              balanceAmount: acc.balanceAmount - amount,
-            };
-          }
-          if (acc.accountId === txData.destinationAccountId || acc.accountId === txData.targetAccountId) {
-            return {
-              ...acc,
-              balanceAmount: acc.balanceAmount + amount,
-              availableBalance: acc.availableBalance + amount,
-            };
-          }
-          return acc;
-        })
-      );
-
-      addToastNotification({
-        id: 'TOAST-' + Math.random().toString(36).substring(2, 9),
-        title: 'Checker Approved Transaction',
-        message: `Transaction ${txData.transactionId} approved. Debit advice dispatched to MailHog.`,
-        amount: `₱${amount.toLocaleString('en-US', { minimumFractionDigits: 4 })}`,
-        type: 'success',
-        timestamp: new Date().toLocaleTimeString(),
-      });
-    } else {
-      // Rejection: Release hold back to available balance
-      setAccounts((prev) =>
-        prev.map((acc) => {
-          if (acc.accountId === txData.sourceAccountId || acc.accountId === txData.accountId) {
-            return {
-              ...acc,
-              holdAmount: Math.max(0, (acc.holdAmount || 0) - amount),
-              availableBalance: acc.availableBalance + amount,
-            };
-          }
-          return acc;
-        })
-      );
-
-      addToastNotification({
-        id: 'TOAST-' + Math.random().toString(36).substring(2, 9),
-        title: 'Transaction Rejected',
-        message: `Transaction ${txData.transactionId} rejected. Soft hold released to available balance.`,
-        amount: `₱${amount.toLocaleString('en-US', { minimumFractionDigits: 4 })}`,
-        type: 'warning',
-        timestamp: new Date().toLocaleTimeString(),
-      });
-    }
-  };
+  // If unauthenticated, route to Login gateway
+  if (!user) {
+    return (
+      <Routes>
+        <Route path="/login" element={<Login onLoginSuccess={fetchBalance} />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
-      {/* Top Navigation Bar with Role Switcher & Live Indicators */}
-      <Header 
-        activeRole={activeRole} 
-        setActiveRole={setActiveRole} 
-        isLiveConnected={isLiveConnected} 
-      />
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
+      <Navbar onRefreshBalance={fetchBalance} isLiveConnected={isLiveConnected} />
 
-      {/* Main Body View based on Active Role */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8">
-        {activeRole === 'CUSTOMER' && (
-          <CustomerPortal
-            accounts={accounts}
-            setAccounts={setAccounts}
-            onTransactionComplete={handleTransactionComplete}
-          />
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 md:p-8 space-y-6">
+        {/* Dynamic Context Header Banner */}
+        {user?.role !== 'ROLE_CUSTOMER' && (
+          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-indigo-950/50 via-slate-900/80 to-slate-900 border border-indigo-500/20 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 backdrop-blur-md">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                  {user?.role === 'ROLE_MANAGER' && 'Operations Manager Console'}
+                  {user?.role === 'ROLE_ADMIN' && 'Audit & Compliance Console'}
+                </span>
+                <span className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-mono">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  Ledger Engine Online {isLiveConnected && '(SSE Active)'}
+                </span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-bold text-white mt-1.5 tracking-tight">
+                {user?.role === 'ROLE_MANAGER' && 'Maker-Checker Review Console'}
+                {user?.role === 'ROLE_ADMIN' && 'Audit & Compliance Workspace'}
+              </h2>
+              <p className="text-xs text-slate-400 mt-1 max-w-3xl leading-relaxed">
+                {user?.role === 'ROLE_MANAGER' && 'Dual-control review workstation for pending high-value transfers and soft-hold releases.'}
+                {user?.role === 'ROLE_ADMIN' && 'Immutable ledger mutation monitoring and statutory AMLA CTR compliance registry.'}
+              </p>
+            </div>
+          </div>
         )}
 
-        {activeRole === 'TELLER' && (
-          <TellerPortal
-            pendingTransactions={pendingTransactions}
-            setPendingTransactions={setPendingTransactions}
-            onApprovalComplete={handleApprovalComplete}
+        {/* React Router v6 Declarative Route Hierarchy */}
+        <Routes>
+          <Route
+            path="/customer"
+            element={
+              user?.role === 'ROLE_CUSTOMER' ? (
+                <CustomerPortal
+                  balance={balance}
+                  onTransactionComplete={() => fetchBalance(activeAccountId)}
+                  onSwitchAccount={handleSwitchAccount}
+                  showToast={showToast}
+                />
+              ) : (
+                <Navigate to={getRoleHome()} replace />
+              )
+            }
           />
-        )}
 
-        {activeRole === 'ADMIN' && <AdminPortal />}
+          <Route
+            path="/manager"
+            element={
+              user?.role === 'ROLE_MANAGER' ? (
+                <ManagerPortal
+                  onActionComplete={fetchBalance}
+                  showToast={showToast}
+                />
+              ) : (
+                <Navigate to={getRoleHome()} replace />
+              )
+            }
+          />
+
+          <Route
+            path="/teller"
+            element={
+              user?.role === 'ROLE_MANAGER' ? (
+                <TellerPortal
+                  pendingTransactions={pendingTransactions}
+                  setPendingTransactions={setPendingTransactions}
+                  onApprovalComplete={() => fetchBalance(activeAccountId)}
+                />
+              ) : (
+                <Navigate to={getRoleHome()} replace />
+              )
+            }
+          />
+
+          <Route
+            path="/admin"
+            element={
+              user?.role === 'ROLE_ADMIN' ? (
+                <AdminPortal />
+              ) : (
+                <Navigate to={getRoleHome()} replace />
+              )
+            }
+          />
+
+          <Route path="/" element={<Navigate to={getRoleHome()} replace />} />
+          <Route path="*" element={<Navigate to={getRoleHome()} replace />} />
+        </Routes>
       </main>
 
-      {/* Toast Notification Container (Bottom Right) */}
+      {/* Floating SSE Live Toast Notifications (Bottom Right) */}
       <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none">
         {liveNotifications.map((notif) => (
           <div
@@ -265,7 +295,7 @@ export default function App() {
 
             <button
               onClick={() => removeToastNotification(notif.id)}
-              className="text-slate-400 hover:text-white transition"
+              className="text-slate-400 hover:text-white transition cursor-pointer"
               title="Dismiss"
             >
               <X className="w-4 h-4" />
@@ -274,19 +304,35 @@ export default function App() {
         ))}
       </div>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-800 bg-slate-950/60 py-4 text-center text-xs text-slate-400">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>EastWest Retail Core Ledger Platform &bull; FSE Capstone 2026</span>
-          <div className="flex items-center gap-4 text-[11px] text-slate-400">
-            <span>Gateway :8080</span>
-            <span>CME :8082</span>
-            <span>Notifications :8083</span>
-            <span>PostgreSQL :5432</span>
-            <span>Oracle :1521</span>
-          </div>
+      <Toast toast={toast} onClose={() => setToast(null)} />
+
+      {/* Integrated Enterprise Footer */}
+      <footer className="border-t border-slate-800/80 px-6 py-4 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 max-w-7xl w-full mx-auto">
+        <p>CAPSTONE FSE (Group 3) &bull; Core Retail Ledger &amp; Balance Mutation Engine</p>
+        <div className="flex items-center gap-3 font-mono text-[11px] mt-1 sm:mt-0 text-slate-400">
+          <span>Gateway :8080</span>
+          <span>&bull;</span>
+          <span>CME :8082</span>
+          <span>&bull;</span>
+          <span>Notification :8083</span>
+          <span>&bull;</span>
+          <span>PostgreSQL :5432</span>
+          <span>&bull;</span>
+          <span>Oracle :1521</span>
+          <span>&bull;</span>
+          <span>BSP Cir. 808</span>
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <MainApp />
+      </AuthProvider>
+    </BrowserRouter>
   );
 }

@@ -15,6 +15,10 @@
     <artifactId>ledger-mutation-engine</artifactId>
     <packaging>jar</packaging>
 
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
     <name>Ledger Mutation Engine</name>
     <description>High-Throughput Relational Balance Mutation, Pessimistic Locking &amp; Dual-Write Service</description>
 

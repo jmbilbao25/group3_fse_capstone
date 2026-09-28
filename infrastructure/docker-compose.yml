@@ -187,7 +187,26 @@ services:
       - kafka-broker
 
   # ============================================================================
-  # 7. OpenTelemetry Distributed Tracing Backend & Visualizer (Jaeger All-In-One)
+  # ============================================================================
+  # 7. Core Retail Banking Single Page Application (React / Vite / Nginx :3000)
+  # Container Name: banking-frontend
+  # Web Portal for Customers, Tellers, Branch Managers & SysAdmins
+  # ============================================================================
+  banking-frontend:
+    container_name: banking-frontend
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    networks:
+      - banking-net
+    depends_on:
+      - notification-service
+
+  # ============================================================================
+  # 8. OpenTelemetry Distributed Tracing Backend & Visualizer (Jaeger All-In-One)
   # Container Name: jaeger-tracing
   # Ingests OTLP traces (HTTP :4318, gRPC :4317) and provides trace visualization (:16686)
   # ============================================================================
@@ -205,7 +224,7 @@ services:
       - banking-net
 
   # ============================================================================
-  # 8. Prometheus Metrics Scraper & Time-Series Engine
+  # 9. Prometheus Metrics Scraper & Time-Series Engine
   # Container Name: prometheus-engine
   # Scrapes /actuator/prometheus from services and exposes metrics on :9090
   # ============================================================================
@@ -231,7 +250,7 @@ services:
       - banking-net
 
   # ============================================================================
-  # 9. Grafana Metrics Visualization & Telemetry Dashboard
+  # 10. Grafana Metrics Visualization & Telemetry Dashboard
   # Container Name: grafana-dashboard
   # Web UI on :3001 with auto-provisioned Prometheus datasource & banking dashboards
   # ============================================================================
@@ -263,4 +282,5 @@ volumes:
   postgres_data:
   prometheus_data:
   grafana_data:
+
 

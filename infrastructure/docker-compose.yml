@@ -151,8 +151,8 @@ services:
     image: mailhog/mailhog:latest
     restart: unless-stopped
     ports:
-      - "1025:1025"
-      - "8025:8025"
+      - "1025:1025" # SMTP port
+      - "8025:8025" # Web Inbox UI
     networks:
       - banking-net
 
@@ -170,22 +170,97 @@ services:
     ports:
       - "8083:8083"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:oracle:thin:@oracle-xe-master:1521/FREEPDB1
-      - SPRING_DATASOURCE_USERNAME=SYSTEM
-      - SPRING_DATASOURCE_PASSWORD=Password123#
+      - SPRING_DATASOURCE_URL=jdbc:oracle:thin:@oracle-xe-master:1521/XEPDB1
+      - SPRING_DATASOURCE_USERNAME=fse_user
+      - SPRING_DATASOURCE_PASSWORD=fse_password
       - SPRING_REDIS_HOST=redis-cache
       - SPRING_REDIS_PORT=6379
       - SPRING_MAIL_HOST=mailhog
       - SPRING_MAIL_PORT=1025
-      - SPRING_KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka-broker:29092
     networks:
       - banking-net
     depends_on:
       - oracle-xe-master
       - redis-cache
       - mailhog
+      - kafka-broker
+
+  # ============================================================================
+  # 7. OpenTelemetry Distributed Tracing Backend & Visualizer (Jaeger All-In-One)
+  # Container Name: jaeger-tracing
+  # Ingests OTLP traces (HTTP :4318, gRPC :4317) and provides trace visualization (:16686)
+  # ============================================================================
+  jaeger-tracing:
+    container_name: jaeger-tracing
+    image: jaegertracing/all-in-one:latest
+    restart: unless-stopped
+    ports:
+      - "16686:16686" # Web UI
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP HTTP receiver
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - banking-net
+
+  # ============================================================================
+  # 8. Prometheus Metrics Scraper & Time-Series Engine
+  # Container Name: prometheus-engine
+  # Scrapes /actuator/prometheus from services and exposes metrics on :9090
+  # ============================================================================
+  prometheus:
+    container_name: prometheus-engine
+    image: prom/prometheus:v2.53.0
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alert.rules.yml:/etc/prometheus/alert.rules.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+      - "--web.enable-lifecycle"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - banking-net
+
+  # ============================================================================
+  # 9. Grafana Metrics Visualization & Telemetry Dashboard
+  # Container Name: grafana-dashboard
+  # Web UI on :3001 with auto-provisioned Prometheus datasource & banking dashboards
+  # ============================================================================
+  grafana:
+    container_name: grafana-dashboard
+    image: grafana/grafana:11.1.0
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+    volumes:
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+      - jaeger-tracing
+    networks:
+      - banking-net
 
 volumes:
   oracle_data:
   postgres_data:
+  prometheus_data:
+  grafana_data:
 

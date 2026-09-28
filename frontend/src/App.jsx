@@ -1,118 +1,291 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  Building2, 
-  ArrowLeftRight, 
-  ShieldCheck, 
-  Wallet, 
-  UserCheck, 
-  History, 
-  AlertCircle, 
-  TrendingUp,
-  CreditCard
+  Bell, 
+  X, 
+  CheckCircle2, 
+  AlertTriangle, 
+  Info, 
+  ShieldAlert, 
+  Sparkles 
 } from 'lucide-react';
+import Header from './components/Header';
+import CustomerPortal from './components/CustomerPortal';
+import TellerPortal from './components/TellerPortal';
+import AdminPortal from './components/AdminPortal';
+import { INITIAL_ACCOUNTS } from './api/client';
 
 export default function App() {
   const [activeRole, setActiveRole] = useState('CUSTOMER');
+  const [accounts, setAccounts] = useState(INITIAL_ACCOUNTS);
+  const [isLiveConnected, setIsLiveConnected] = useState(false);
+  const [liveNotifications, setLiveNotifications] = useState([]);
+
+  const [pendingTransactions, setPendingTransactions] = useState([
+    {
+      transactionId: 'TX-772190',
+      sourceAccountId: 'A2001',
+      destinationAccountId: 'A2002',
+      amount: 75000.0,
+      initiatorUserId: 'U1001',
+      description: 'Vendor Invoice Settlement (Hardware Supplier)',
+      submittedAt: new Date(Date.now() - 1000 * 60 * 14).toISOString(),
+      status: 'PENDING_APPROVAL',
+      riskTier: 'TIER_2_MAKER_CHECKER',
+    },
+    {
+      transactionId: 'TX-551029',
+      sourceAccountId: 'A2001',
+      destinationAccountId: 'A2002',
+      amount: 650000.0,
+      initiatorUserId: 'U1001',
+      description: 'Commercial Real Estate Acquisition Escrow',
+      submittedAt: new Date(Date.now() - 1000 * 60 * 32).toISOString(),
+      status: 'PENDING_APPROVAL',
+      riskTier: 'TIER_3_AMLA',
+    },
+  ]);
+
+  // Connect to SSE notifications stream
+  useEffect(() => {
+    let eventSource = null;
+    let reconnectTimeout = null;
+
+    const connectSSE = () => {
+      try {
+        eventSource = new EventSource('/api/v1/notifications/stream?userId=U1001');
+
+        eventSource.onopen = () => {
+          setIsLiveConnected(true);
+        };
+
+        eventSource.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            const newToast = {
+              id: 'TOAST-' + Math.random().toString(36).substring(2, 9),
+              title: data.status === 'SUCCESS' ? 'Transfer Settled' : 'System Notification',
+              message: data.message || `Transaction ${data.transferId || ''} status update received.`,
+              amount: data.amount,
+              type: data.status === 'SUCCESS' ? 'success' : 'info',
+              timestamp: new Date().toLocaleTimeString(),
+            };
+            addToastNotification(newToast);
+          } catch (e) {
+            // Unparsed message or ping
+          }
+        };
+
+        eventSource.onerror = () => {
+          setIsLiveConnected(false);
+          if (eventSource) {
+            eventSource.close();
+          }
+          // Attempt graceful reconnect after 5 seconds
+          reconnectTimeout = setTimeout(connectSSE, 5000);
+        };
+      } catch (err) {
+        setIsLiveConnected(false);
+      }
+    };
+
+    connectSSE();
+
+    return () => {
+      if (eventSource) {
+        eventSource.close();
+      }
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
+    };
+  }, []);
+
+  const addToastNotification = (toast) => {
+    setLiveNotifications((prev) => [toast, ...prev.slice(0, 4)]);
+    setTimeout(() => {
+      setLiveNotifications((prev) => prev.filter((t) => t.id !== toast.id));
+    }, 7000);
+  };
+
+  const removeToastNotification = (id) => {
+    setLiveNotifications((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  // Callback when Customer initiates a transfer
+  const handleTransactionComplete = (mutationData) => {
+    const isPending = mutationData.status === 'PENDING_APPROVAL';
+
+    if (isPending) {
+      const newPendingItem = {
+        transactionId: mutationData.transactionId,
+        sourceAccountId: mutationData.accountId,
+        destinationAccountId: mutationData.targetAccountId,
+        amount: mutationData.mutationAmount,
+        initiatorUserId: mutationData.initiatorUserId || 'U1001',
+        description: mutationData.description || 'Dual-control transfer review required',
+        submittedAt: new Date().toISOString(),
+        status: 'PENDING_APPROVAL',
+        riskTier: mutationData.mutationAmount >= 500000 ? 'TIER_3_AMLA' : 'TIER_2_MAKER_CHECKER',
+      };
+
+      setPendingTransactions((prev) => [newPendingItem, ...prev]);
+
+      addToastNotification({
+        id: 'TOAST-' + Math.random().toString(36).substring(2, 9),
+        title: 'Maker-Checker Hold Applied',
+        message: `Transaction ${mutationData.transactionId} queued for dual-control approval.`,
+        amount: `₱${mutationData.mutationAmount.toLocaleString('en-US', { minimumFractionDigits: 4 })}`,
+        type: 'warning',
+        timestamp: new Date().toLocaleTimeString(),
+      });
+    } else {
+      addToastNotification({
+        id: 'TOAST-' + Math.random().toString(36).substring(2, 9),
+        title: 'Transfer Completed',
+        message: `Transaction ${mutationData.transactionId} settled. Available balance updated.`,
+        amount: `₱${mutationData.mutationAmount.toLocaleString('en-US', { minimumFractionDigits: 4 })}`,
+        type: 'success',
+        timestamp: new Date().toLocaleTimeString(),
+      });
+    }
+  };
+
+  // Callback when Teller/Checker approves or rejects
+  const handleApprovalComplete = (txData, outcome) => {
+    const amount = txData.amount || txData.mutationAmount || 0;
+
+    if (outcome === 'APPROVED') {
+      setAccounts((prev) =>
+        prev.map((acc) => {
+          if (acc.accountId === txData.sourceAccountId || acc.accountId === txData.accountId) {
+            return {
+              ...acc,
+              holdAmount: Math.max(0, (acc.holdAmount || 0) - amount),
+              balanceAmount: acc.balanceAmount - amount,
+            };
+          }
+          if (acc.accountId === txData.destinationAccountId || acc.accountId === txData.targetAccountId) {
+            return {
+              ...acc,
+              balanceAmount: acc.balanceAmount + amount,
+              availableBalance: acc.availableBalance + amount,
+            };
+          }
+          return acc;
+        })
+      );
+
+      addToastNotification({
+        id: 'TOAST-' + Math.random().toString(36).substring(2, 9),
+        title: 'Checker Approved Transaction',
+        message: `Transaction ${txData.transactionId} approved. Debit advice dispatched to MailHog.`,
+        amount: `₱${amount.toLocaleString('en-US', { minimumFractionDigits: 4 })}`,
+        type: 'success',
+        timestamp: new Date().toLocaleTimeString(),
+      });
+    } else {
+      // Rejection: Release hold back to available balance
+      setAccounts((prev) =>
+        prev.map((acc) => {
+          if (acc.accountId === txData.sourceAccountId || acc.accountId === txData.accountId) {
+            return {
+              ...acc,
+              holdAmount: Math.max(0, (acc.holdAmount || 0) - amount),
+              availableBalance: acc.availableBalance + amount,
+            };
+          }
+          return acc;
+        })
+      );
+
+      addToastNotification({
+        id: 'TOAST-' + Math.random().toString(36).substring(2, 9),
+        title: 'Transaction Rejected',
+        message: `Transaction ${txData.transactionId} rejected. Soft hold released to available balance.`,
+        amount: `₱${amount.toLocaleString('en-US', { minimumFractionDigits: 4 })}`,
+        type: 'warning',
+        timestamp: new Date().toLocaleTimeString(),
+      });
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col font-sans">
-      {/* Top Navigation */}
-      <header className="border-b border-slate-800 bg-slate-950/70 backdrop-blur px-6 py-4 flex items-center justify-between sticky top-0 z-50">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-600/30">
-            <Building2 className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h1 className="font-bold text-lg text-white leading-tight">EastWest Retail Core Ledger</h1>
-            <p className="text-xs text-slate-400">High-Throughput Mutation &amp; Dual-Write Engine</p>
-          </div>
-        </div>
+    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
+      {/* Top Navigation Bar with Role Switcher & Live Indicators */}
+      <Header 
+        activeRole={activeRole} 
+        setActiveRole={setActiveRole} 
+        isLiveConnected={isLiveConnected} 
+      />
 
-        {/* Role Switcher */}
-        <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 p-1 rounded-xl text-xs font-semibold">
-          {['CUSTOMER', 'TELLER', 'ADMIN'].map((role) => (
-            <button
-              key={role}
-              onClick={() => setActiveRole(role)}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                activeRole === role
-                  ? 'bg-indigo-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              {role}
-            </button>
-          ))}
-        </div>
-      </header>
+      {/* Main Body View based on Active Role */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8">
+        {activeRole === 'CUSTOMER' && (
+          <CustomerPortal
+            accounts={accounts}
+            setAccounts={setAccounts}
+            onTransactionComplete={handleTransactionComplete}
+          />
+        )}
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-6 md:p-8 space-y-8">
-        {/* Banner */}
-        <div className="p-6 rounded-2xl bg-gradient-to-r from-indigo-900/40 via-slate-900 to-slate-900 border border-indigo-500/20 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-              Active Mode: {activeRole}
-            </span>
-            <h2 className="text-2xl font-bold text-white mt-2">
-              {activeRole === 'CUSTOMER' && 'Welcome back, Juan Dela Cruz'}
-              {activeRole === 'TELLER' && 'Branch Teller Terminal (Workstation #1)'}
-              {activeRole === 'ADMIN' && 'Maker-Checker Approval & System Administration'}
-            </h2>
-            <p className="text-sm text-slate-400 mt-1">
-              Dual-write storage connected to Oracle XE (Master State) &amp; PostgreSQL (Immutable Audit Trail).
-            </p>
-          </div>
-          <div className="flex items-center gap-4 bg-slate-950/60 border border-slate-800 p-4 rounded-xl">
-            <div>
-              <p className="text-xs text-slate-400">Available Balance (A2001)</p>
-              <p className="text-2xl font-mono font-bold text-emerald-400">₱ 298,000.0000</p>
-            </div>
-            <div className="w-px h-8 bg-slate-800" />
-            <div>
-              <p className="text-xs text-slate-400">Hold Amount</p>
-              <p className="text-sm font-mono text-amber-400 font-semibold">₱ 0.0000</p>
-            </div>
-          </div>
-        </div>
+        {activeRole === 'TELLER' && (
+          <TellerPortal
+            pendingTransactions={pendingTransactions}
+            setPendingTransactions={setPendingTransactions}
+            onApprovalComplete={handleApprovalComplete}
+          />
+        )}
 
-        {/* Action Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="p-5 rounded-2xl bg-slate-950/40 border border-slate-800 hover:border-slate-700 transition-all space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-              <ArrowLeftRight className="w-5 h-5" />
-            </div>
-            <h3 className="font-semibold text-white">Funds Transfer</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Instant balance mutation via Pessimistic Row Lock (SELECT FOR UPDATE) with sub-50ms SLA.
-            </p>
-          </div>
-
-          <div className="p-5 rounded-2xl bg-slate-950/40 border border-slate-800 hover:border-slate-700 transition-all space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-              <CreditCard className="w-5 h-5" />
-            </div>
-            <h3 className="font-semibold text-white">Credit &amp; Collateral</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              2022 Toyota Vios 1.5G appraised at ₱600,000. Approved credit limit: ₱300,000.
-            </p>
-          </div>
-
-          <div className="p-5 rounded-2xl bg-slate-950/40 border border-slate-800 hover:border-slate-700 transition-all space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <h3 className="font-semibold text-white">Immutable Audit Trail</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Append-only audit writes committed to PostgreSQL 15+ with automatic data drift rollback.
-            </p>
-          </div>
-        </div>
+        {activeRole === 'ADMIN' && <AdminPortal />}
       </main>
 
+      {/* Toast Notification Container (Bottom Right) */}
+      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none">
+        {liveNotifications.map((notif) => (
+          <div
+            key={notif.id}
+            className="pointer-events-auto p-4 rounded-xl shadow-2xl border backdrop-blur-md transition-all duration-300 transform translate-y-0 bg-slate-950/95 border-slate-700/80 flex items-start gap-3"
+          >
+            <div className="mt-0.5">
+              {notif.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-400" />}
+              {notif.type === 'warning' && <AlertTriangle className="w-5 h-5 text-amber-400" />}
+              {notif.type === 'info' && <Bell className="w-5 h-5 text-blue-400" />}
+            </div>
+
+            <div className="flex-1">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-semibold text-white">{notif.title}</p>
+                <span className="text-[10px] text-slate-400">{notif.timestamp}</span>
+              </div>
+              <p className="text-xs text-slate-300 mt-1 leading-snug">{notif.message}</p>
+              {notif.amount && (
+                <p className="text-xs font-mono font-bold text-indigo-300 mt-1">{notif.amount}</p>
+              )}
+            </div>
+
+            <button
+              onClick={() => removeToastNotification(notif.id)}
+              className="text-slate-400 hover:text-white transition"
+              title="Dismiss"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        ))}
+      </div>
+
       {/* Footer */}
-      <footer className="border-t border-slate-800/80 px-6 py-4 text-center text-xs text-slate-500">
-        CAPSTONE FSE: Core Retail Ledger Engine &bull; React + Vite :3000 &bull; Spring Boot :8082
+      <footer className="border-t border-slate-800 bg-slate-950/60 py-4 text-center text-xs text-slate-400">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <span>EastWest Retail Core Ledger Platform &bull; FSE Capstone 2026</span>
+          <div className="flex items-center gap-4 text-[11px] text-slate-400">
+            <span>Gateway :8080</span>
+            <span>CME :8082</span>
+            <span>Notifications :8083</span>
+            <span>PostgreSQL :5432</span>
+            <span>Oracle :1521</span>
+          </div>
+        </div>
       </footer>
     </div>
   );

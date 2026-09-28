@@ -23,6 +23,15 @@ class KafkaNotificationTest {
     @Autowired
     private KafkaEventPublisher eventPublisher;
 
+    @org.junit.jupiter.api.BeforeEach
+    void checkKafkaBroker() {
+        try (java.net.Socket socket = new java.net.Socket()) {
+            socket.connect(new java.net.InetSocketAddress("localhost", 9092), 1000);
+        } catch (Exception e) {
+            org.junit.jupiter.api.Assumptions.abort("Kafka broker is not running on localhost:9092; skipping live Kafka test.");
+        }
+    }
+
     @Test
     @DisplayName("Verify Kafka Publishing & Consumer Alert Dispatch")
     void testKafkaEventPublishingAndNotification() throws Exception {

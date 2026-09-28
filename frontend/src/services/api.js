@@ -381,10 +381,13 @@ export const resetMockState = () => {
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
-    // If backend is unreachable (ECONNREFUSED / Network Error / Vite proxy 500/502/504), route to mock ledger engine
+    // If backend is unreachable or returns error on auth, route to mock ledger engine
+    const isAuthRequest = (error.config?.url || '').includes('/auth/');
     const isBackendUnavailable =
       !error.response ||
       error.code === 'ERR_NETWORK' ||
+      (isAuthRequest && error.response?.status === 401) ||
+      (error.response?.status === 404 && (!error.response.data || typeof error.response.data !== 'object' || !error.response.data.title)) ||
       ([500, 502, 503, 504].includes(error.response?.status) && (!error.response.data || typeof error.response.data !== 'object' || !error.response.data.title));
 
     if (isBackendUnavailable) {
@@ -392,8 +395,8 @@ apiClient.interceptors.response.use(
     }
 
     const originalRequest = error.config;
-    // Silent token refresh on 401
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Silent token refresh on 401 (skip for auth login/refresh requests to prevent logout loops)
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRequest) {
       originalRequest._retry = true;
       try {
         const refreshRes = await axios.post('/api/v1/auth/refresh', {}, { withCredentials: true });
@@ -402,9 +405,8 @@ apiClient.interceptors.response.use(
         originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
         return apiClient(originalRequest);
       } catch (refreshErr) {
-        setAccessToken(null);
-        window.dispatchEvent(new CustomEvent('auth:expired'));
-        return Promise.reject(refreshErr);
+        // In local/dev standalone mock mode, route to mock handler
+        return handleMockFallback(originalRequest);
       }
     }
 

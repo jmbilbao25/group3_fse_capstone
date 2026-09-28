@@ -176,29 +176,29 @@ function MainApp() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen bg-slate-100/70 text-slate-900 flex flex-col font-sans selection:bg-cyan-600 selection:text-white">
       <Navbar onRefreshBalance={fetchBalance} isLiveConnected={isLiveConnected} />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 md:p-8 space-y-6">
-        {/* Dynamic Context Header Banner */}
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-5">
+        {/* Dynamic Context Header Banner for Manager and Admin */}
         {user?.role !== 'ROLE_CUSTOMER' && (
-          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-indigo-950/50 via-slate-900/80 to-slate-900 border border-indigo-500/20 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 backdrop-blur-md">
+          <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-cyan-50 text-cyan-800 border border-cyan-200">
                   {user?.role === 'ROLE_MANAGER' && 'Operations Manager Console'}
                   {user?.role === 'ROLE_ADMIN' && 'Audit & Compliance Console'}
                 </span>
-                <span className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-mono">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="flex items-center gap-1.5 text-[11px] text-emerald-700 font-mono font-medium">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                   Ledger Engine Online {isLiveConnected && '(SSE Active)'}
                 </span>
               </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-white mt-1.5 tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mt-1.5 tracking-tight">
                 {user?.role === 'ROLE_MANAGER' && 'Maker-Checker Review Console'}
                 {user?.role === 'ROLE_ADMIN' && 'Audit & Compliance Workspace'}
               </h2>
-              <p className="text-xs text-slate-400 mt-1 max-w-3xl leading-relaxed">
+              <p className="text-xs text-slate-500 mt-1 max-w-3xl leading-relaxed">
                 {user?.role === 'ROLE_MANAGER' && 'Dual-control review workstation for pending high-value transfers and soft-hold releases.'}
                 {user?.role === 'ROLE_ADMIN' && 'Immutable ledger mutation monitoring and statutory AMLA CTR compliance registry.'}
               </p>
@@ -274,28 +274,28 @@ function MainApp() {
         {liveNotifications.map((notif) => (
           <div
             key={notif.id}
-            className="pointer-events-auto p-4 rounded-xl shadow-2xl border backdrop-blur-md transition-all duration-300 transform translate-y-0 bg-slate-950/95 border-slate-700/80 flex items-start gap-3"
+            className="pointer-events-auto p-4 rounded-2xl shadow-xl border backdrop-blur-md transition-all duration-300 transform translate-y-0 bg-white/95 border-slate-200 flex items-start gap-3"
           >
             <div className="mt-0.5">
-              {notif.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-400" />}
-              {notif.type === 'warning' && <AlertTriangle className="w-5 h-5 text-amber-400" />}
-              {notif.type === 'info' && <Bell className="w-5 h-5 text-blue-400" />}
+              {notif.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-600" />}
+              {notif.type === 'warning' && <AlertTriangle className="w-5 h-5 text-amber-600" />}
+              {notif.type === 'info' && <Bell className="w-5 h-5 text-cyan-600" />}
             </div>
 
             <div className="flex-1">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-semibold text-white">{notif.title}</p>
+                <p className="text-xs font-bold text-slate-900">{notif.title}</p>
                 <span className="text-[10px] text-slate-400">{notif.timestamp}</span>
               </div>
-              <p className="text-xs text-slate-300 mt-1 leading-snug">{notif.message}</p>
+              <p className="text-xs text-slate-600 mt-1 leading-snug">{notif.message}</p>
               {notif.amount && (
-                <p className="text-xs font-mono font-bold text-indigo-300 mt-1">{notif.amount}</p>
+                <p className="text-xs font-mono font-bold text-cyan-700 mt-1">{notif.amount}</p>
               )}
             </div>
 
             <button
               onClick={() => removeToastNotification(notif.id)}
-              className="text-slate-400 hover:text-white transition cursor-pointer"
+              className="text-slate-400 hover:text-slate-700 transition cursor-pointer"
               title="Dismiss"
             >
               <X className="w-4 h-4" />
@@ -307,20 +307,20 @@ function MainApp() {
       <Toast toast={toast} onClose={() => setToast(null)} />
 
       {/* Integrated Enterprise Footer */}
-      <footer className="border-t border-slate-800/80 px-6 py-4 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 max-w-7xl w-full mx-auto">
-        <p>CAPSTONE FSE (Group 3) &bull; Core Retail Ledger &amp; Balance Mutation Engine</p>
-        <div className="flex items-center gap-3 font-mono text-[11px] mt-1 sm:mt-0 text-slate-400">
+      <footer className="border-t border-slate-200/80 bg-white/80 px-6 py-4 mt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 max-w-7xl w-full mx-auto rounded-t-xl">
+        <p className="font-medium text-slate-600">AuraBank &bull; Premier Vault Core Retail Banking Ledger &amp; Mutation Engine</p>
+        <div className="flex flex-wrap items-center gap-3 font-mono text-[11px] mt-1 sm:mt-0 text-slate-500">
           <span>Gateway :8080</span>
           <span>&bull;</span>
           <span>CME :8082</span>
           <span>&bull;</span>
-          <span>Notification :8083</span>
+          <span>Kafka :9092</span>
           <span>&bull;</span>
-          <span>PostgreSQL :5432</span>
+          <span>Redis :6379</span>
           <span>&bull;</span>
-          <span>Oracle :1521</span>
+          <span>Oracle XE 21c</span>
           <span>&bull;</span>
-          <span>BSP Cir. 808</span>
+          <span>BSP Cir. 1033</span>
         </div>
       </footer>
     </div>

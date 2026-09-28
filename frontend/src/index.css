@@ -1,64 +1,289 @@
+/* Self-hosted variable fonts. No external stylesheet request, so first paint
+   is not blocked on a third party and there is no layout shift on swap. */
+@import '@fontsource-variable/geist/index.css';
+@import '@fontsource-variable/geist-mono/index.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ===========================================================================
+   THEME TOKENS
+
+   One theme is active for the entire document at a time. Sections never
+   invert: a light page has no dark panel dropped into the middle of it.
+   Values are space-separated RGB channels so Tailwind can apply its own
+   alpha channel through `rgb(var(--token) / <alpha-value>)`.
+   =========================================================================== */
+
+:root,
+[data-theme='light'] {
+  /* Surfaces, in elevation order. The canvas is very slightly cooler than
+     the panels that sit on it, which is what separates them without needing
+     a border on every edge. */
+  --canvas: 244 245 247;
+  --surface: 255 255 255;
+  --raised: 255 255 255;
+  --sunken: 248 249 250;
+
+  /* Hairlines. `line` carries ordinary separation, `line-strong` marks real
+     structural boundaries such as a table header or a panel footer. */
+  --line: 228 230 234;
+  --line-strong: 205 209 215;
+
+  /* Text. 4 steps: primary is 15.8:1 on surface, muted 7.0:1, subtle 4.6:1.
+     Every one of them clears WCAG AA for body copy. */
+  --fg: 26 29 33;
+  --fg-muted: 84 90 99;
+  --fg-subtle: 111 118 128;
+  --fg-inverse: 255 255 255;
+
+  /* The single accent. Used for interactive affordances and the current
+     selection, never for decoration. */
+  --accent: 58 76 214;
+  --accent-hover: 47 61 180;
+  --accent-soft: 239 243 255;
+  --accent-line: 195 208 252;
+  --accent-text: 47 61 180;
+
+  --shadow: 26 29 33;
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  /* Dark is a genuine peer of light, not an inversion. Elevation still rises
+     toward the viewer, hierarchy holds, and the accent stays recognisable
+     rather than being desaturated into the background. */
+  --canvas: 16 18 21;
+  --surface: 26 29 33;
+  --raised: 31 34 39;
+  --sunken: 16 18 21;
+
+  --line: 42 46 52;
+  --line-strong: 63 68 75;
+
+  /* Contrast on the dark surface: primary 14.2:1, muted 6.8:1, subtle 4.8:1. */
+  --fg: 241 242 244;
+  --fg-muted: 155 161 171;
+  --fg-subtle: 133 140 150;
+  --fg-inverse: 16 18 21;
+
+  /* Lifted two steps so the accent keeps its identity against a dark
+     surface while still holding AA against it. */
+  --accent: 113 137 242;
+  --accent-hover: 157 177 248;
+  --accent-soft: 26 32 80;
+  --accent-line: 41 52 143;
+  --accent-text: 157 177 248;
+
+  --shadow: 0 0 0;
+  color-scheme: dark;
+}
+
+/* ===========================================================================
+   BASE
+   =========================================================================== */
+
 @layer base {
+  * {
+    @apply border-line;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    /* No smooth-scroll: this is a task surface, and hijacked scrolling makes
+       keyboard paging feel broken. */
+  }
+
   body {
-    @apply bg-slate-950 text-slate-100 antialiased selection:bg-indigo-500 selection:text-white;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    @apply bg-canvas text-fg antialiased;
+    @apply font-sans text-base;
+    font-synthesis-weight: none;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Figures are compared vertically all over this product, so digits are
+     fixed-width and lining everywhere by default. */
+  :where(input, table, .tnum) {
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  .font-mono {
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings: 'ss01';
+  }
+
+  /* One focus treatment for the whole product. Visible on any surface,
+     including inside the accent-filled buttons. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent ring-offset-2;
+    ring-offset-color: rgb(var(--surface));
+  }
+
+  /* Only suppress the ring for pointer users who never needed it. */
+  :focus:not(:focus-visible) {
+    @apply outline-none;
+  }
+
+  ::selection {
+    background-color: rgb(var(--accent) / 0.18);
+    color: rgb(var(--fg));
+  }
+
+  /* Placeholders sit at 4.6:1 against the field, so they stay readable
+     instead of dissolving the way a default placeholder does. */
+  ::placeholder {
+    @apply text-fg-subtle;
+    opacity: 1;
   }
 }
 
-/* Custom subtle scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.6);
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(51, 65, 85, 0.6);
-  border-radius: 9999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(99, 102, 241, 0.5);
+/* Scrollbars are themed, not hidden. Hiding them removes the only cue that a
+   dense table has more rows below the fold. */
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--line-strong)) transparent;
+  }
 }
 
-/* Bank-Grade Print Styles for Official Receipt Slip */
+@layer base {
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+@layer base {
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--line-strong));
+    border: 3px solid transparent;
+    background-clip: content-box;
+    border-radius: 9999px;
+  }
+}
+
+@layer base {
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--fg-subtle));
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+}
+
+/* ===========================================================================
+   REDUCED MOTION
+   Non-negotiable. Everything collapses to an instant state change: nothing
+   in this product depends on motion to convey meaning.
+   =========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ===========================================================================
+   COMPONENT CLASSES
+   Only patterns repeated across many files live here. Anything used once
+   stays inline in its component.
+   =========================================================================== */
+
+@layer components {
+  /* A panel is the primary container: hairline, flat, no pillow radius.
+     Elevation is reserved for things that genuinely float. */
+  .panel {
+    @apply bg-surface border border-line rounded-lg;
+  }
+
+  /* Section label. Rationed deliberately, see the eyebrow budget in the
+     redesign notes: these are for table headers and field groups, not for
+     decorating every heading. */
+  .label {
+    @apply text-2xs font-medium uppercase tracking-wider text-fg-subtle;
+  }
+
+  /* Monetary figure. Tabular, tight, never wrapped mid-number. */
+  .figure {
+    @apply font-mono tabular-nums whitespace-nowrap;
+  }
+}
+
+@layer components {
+  /* Skeleton placeholder. Shaped like the content it stands in for, so the
+     layout does not jump when data lands. */
+  .skeleton {
+    @apply relative overflow-hidden rounded bg-sunken;
+  }
+
+  .skeleton::after {
+    content: '';
+    @apply absolute inset-0 -translate-x-full animate-shimmer;
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      rgb(var(--fg) / 0.045),
+      transparent
+    );
+  }
+}
+
+/* ===========================================================================
+   PRINT
+   A printed transaction receipt is a real banking artefact, so it gets a real
+   stylesheet: forced light, no chrome, no interactive affordances.
+   =========================================================================== */
+
 @media print {
   body * {
     visibility: hidden !important;
   }
-  #printable-receipt, #printable-receipt * {
+
+  #printable-receipt,
+  #printable-receipt * {
     visibility: visible !important;
   }
-  #printable-receipt {
-    position: fixed !important;
-    left: 50% !important;
-    top: 20px !important;
-    transform: translateX(-50%) !important;
-    width: 100% !important;
-    max-width: 480px !important;
-    background: #ffffff !important;
-    color: #111827 !important;
-    border: 1px solid #e5e7eb !important;
-    box-shadow: none !important;
-    padding: 24px !important;
-    border-radius: 12px !important;
-  }
+
   #printable-receipt .no-print {
     display: none !important;
   }
+}
+
+@media print {
+  #printable-receipt {
+    position: fixed !important;
+    inset: 0 auto auto 0 !important;
+    width: 100% !important;
+    max-width: 480px !important;
+    margin: 0 auto !important;
+    padding: 24px !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    color: #101215 !important;
+  }
+}
+
+@media print {
+  /* Flatten every themed token to ink on paper. Tinted backgrounds cost
+     toner and carry no meaning once the receipt is physical. */
   #printable-receipt * {
-    color: #111827 !important;
-    background-color: transparent !important;
-    border-color: #e5e7eb !important;
+    color: #101215 !important;
+    background: transparent !important;
+    border-color: #cdd1d7 !important;
+    box-shadow: none !important;
   }
-  #printable-receipt .print-text-dark {
-    color: #111827 !important;
-  }
+
   #printable-receipt .print-text-muted {
-    color: #4b5563 !important;
+    color: #545a63 !important;
   }
 }

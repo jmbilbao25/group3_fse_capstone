@@ -170,7 +170,67 @@ services:
       - banking-net
 
   # ============================================================================
-  # 6. Notification & Alert Service (Spring Boot :8083)
+  # 6. Account & Identity Service (Spring Boot :8081)
+  # Container Name: account-service
+  # User registration, authentication, KYC profiles, and account provisioning
+  # ============================================================================
+  account-service:
+    container_name: account-service
+    build:
+      context: ../backend/account-service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:oracle:thin:@oracle-xe-master:1521/XEPDB1
+      - SPRING_DATASOURCE_USERNAME=fse_user
+      - SPRING_DATASOURCE_PASSWORD=fse_password
+      - SPRING_DATA_REDIS_HOST=redis-cache
+      - SPRING_DATA_REDIS_PORT=6379
+    networks:
+      - banking-net
+    depends_on:
+      - oracle-xe-master
+      - redis-cache
+
+  # ============================================================================
+  # 7. Core Ledger & Balance Mutation Engine (Spring Boot :8082)
+  # Container Name: ledger-mutation-engine
+  # High-throughput balance mutations, pessimistic row locking & outbox events
+  # ============================================================================
+  ledger-mutation-engine:
+    container_name: ledger-mutation-engine
+    build:
+      context: ../backend/ledger-mutation-engine
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_DATASOURCE_ORACLE_URL=jdbc:oracle:thin:@oracle-xe-master:1521/XEPDB1
+      - SPRING_DATASOURCE_ORACLE_JDBC_URL=jdbc:oracle:thin:@oracle-xe-master:1521/XEPDB1
+      - SPRING_DATASOURCE_ORACLE_USERNAME=fse_user
+      - SPRING_DATASOURCE_ORACLE_PASSWORD=fse_password
+      - SPRING_DATASOURCE_POSTGRES_URL=jdbc:postgresql://postgres-audit-vault:5432/banking_audit
+      - SPRING_DATASOURCE_POSTGRES_JDBC_URL=jdbc:postgresql://postgres-audit-vault:5432/banking_audit
+      - SPRING_DATASOURCE_POSTGRES_USERNAME=audit_user
+      - SPRING_DATASOURCE_POSTGRES_PASSWORD=audit_password
+      - POSTGRES_HOST=postgres-audit-vault
+      - POSTGRES_PORT=5432
+      - SPRING_DATA_REDIS_HOST=redis-cache
+      - SPRING_DATA_REDIS_PORT=6379
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka-broker:29092
+    networks:
+      - banking-net
+    depends_on:
+      - oracle-xe-master
+      - postgres-audit-vault
+      - redis-cache
+      - kafka-broker
+
+  # ============================================================================
+  # 8. Notification & Alert Service (Spring Boot :8083)
   # Container Name: notification-service
   # Asynchronous email receipt generation, Redis deduplication & teller alerts
   # ============================================================================
@@ -200,7 +260,34 @@ services:
       - kafka-broker
 
   # ============================================================================
-  # 7. Core Retail Banking Single Page Application (React / Vite / Nginx :3000)
+  # 9. API Gateway Service (Spring Cloud Gateway :8080)
+  # Container Name: gateway-service
+  # Edge perimeter routing, JWT verification, and Redis rate limiting
+  # ============================================================================
+  gateway-service:
+    container_name: gateway-service
+    build:
+      context: ../backend/gateway-service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - REDIS_HOST=redis-cache
+      - REDIS_PORT=6379
+      - ACCOUNT_SERVICE_URI=http://account-service:8081
+      - LEDGER_ENGINE_URI=http://ledger-mutation-engine:8082
+      - NOTIFICATION_SERVICE_URI=http://notification-service:8083
+    networks:
+      - banking-net
+    depends_on:
+      - redis-cache
+      - account-service
+      - ledger-mutation-engine
+      - notification-service
+
+  # ============================================================================
+  # 10. Core Retail Banking Single Page Application (React / Vite / Nginx :3000)
   # Container Name: banking-frontend
   # Web Portal for Customers, Tellers, Branch Managers & SysAdmins
   # ============================================================================
@@ -215,7 +302,7 @@ services:
     networks:
       - banking-net
     depends_on:
-      - notification-service
+      - gateway-service
 
   # ============================================================================
   # 8. OpenTelemetry Distributed Tracing Backend & Visualizer (Jaeger All-In-One)

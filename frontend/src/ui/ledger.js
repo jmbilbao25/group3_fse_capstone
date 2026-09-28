@@ -36,9 +36,9 @@ export function tierOf(amount) {
       key: 'TIER_3',
       tone: 'voided',
       label: 'Tier 3',
-      name: 'AMLA covered transaction',
-      note: 'Reported under AMLA and released by two managers.',
-      approvals: 2,
+      name: 'AMLA Covered Transaction',
+      note: 'Requires customer email verification OTP + automated AMLA CTR compliance report.',
+      approvals: 0,
     };
   }
 
@@ -47,9 +47,9 @@ export function tierOf(amount) {
       key: 'TIER_2',
       tone: 'held',
       label: 'Tier 2',
-      name: 'Manager approval required',
-      note: 'Held for one manager to approve before the funds move.',
-      approvals: 1,
+      name: 'Customer Email Verification Required',
+      note: 'Soft hold placed. 6-digit verification code dispatched to registered email via MailHog.',
+      approvals: 0,
     };
   }
 
@@ -57,8 +57,8 @@ export function tierOf(amount) {
     key: 'TIER_1',
     tone: 'settled',
     label: 'Tier 1',
-    name: 'Settles immediately',
-    note: 'Sends straight through with no approval step.',
+    name: 'Straight-Through Processing',
+    note: 'Instant settlement via row lock with zero secondary approval.',
     approvals: 0,
   };
 }

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Maker-Checker Compliance Alert</title>
+    <title>Customer Security Verification OTP</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -18,11 +18,11 @@
             background: #1e293b;
             border-radius: 12px;
             overflow: hidden;
-            border: 1px solid #e11d48;
-            box-shadow: 0 10px 25px -5px rgba(225, 29, 72, 0.2);
+            border: 1px solid #0284c7;
+            box-shadow: 0 10px 25px -5px rgba(2, 132, 199, 0.25);
         }
         .header {
-            background: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
             padding: 24px;
             text-align: center;
         }
@@ -39,9 +39,9 @@
         }
         .badge-warning {
             display: inline-block;
-            background-color: rgba(245, 158, 11, 0.15);
-            color: #fbbf24;
-            border: 1px solid #d97706;
+            background-color: rgba(6, 182, 212, 0.15);
+            color: #22d3ee;
+            border: 1px solid #0891b2;
             padding: 4px 12px;
             border-radius: 9999px;
             font-size: 12px;
@@ -55,10 +55,41 @@
             border-bottom: 1px solid #334155;
         }
         .amount-value {
-            font-size: 30px;
-            font-weight: 700;
-            color: #f43f5e;
+            font-size: 32px;
+            font-weight: 800;
+            color: #38bdf8;
             margin: 6px 0 0;
+        }
+        .otp-container {
+            margin: 22px 0;
+            padding: 22px 16px;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            border: 2px dashed #06b6d4;
+            border-radius: 14px;
+            text-align: center;
+            box-shadow: 0 8px 20px -4px rgba(6, 182, 212, 0.25);
+        }
+        .otp-title {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(6, 182, 212, 0.15);
+            border: 1px solid #0891b2;
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #22d3ee;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        .otp-code {
+            font-size: 42px;
+            font-weight: 900;
+            letter-spacing: 12px;
+            color: #38bdf8;
+            font-family: 'Courier New', Courier, monospace;
+            text-shadow: 0 0 16px rgba(56, 189, 248, 0.4);
+            padding: 8px 0;
         }
         .receipt-table {
             width: 100%;
@@ -87,59 +118,73 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1 th:text="${alertHeader != null ? alertHeader : 'URGENT: High-Value Transaction Hold'}">URGENT: Transaction Hold</h1>
-            <p style="margin: 4px 0 0; font-size: 12px; color: #ffe4e6;" th:text="${tierSubtitle != null ? tierSubtitle : 'BSP Regulations & Internal Controls'}">BSP MORB Compliance</p>
+            <h1 th:text="${alertHeader != null ? alertHeader : 'CUSTOMER SECURITY VERIFICATION: 2FA OTP REQUIRED'}">CUSTOMER SECURITY VERIFICATION: 2FA OTP REQUIRED</h1>
+            <p style="margin: 4px 0 0; font-size: 12px; color: #e0f2fe;" th:text="${tierSubtitle != null ? tierSubtitle : 'Aura Bank High-Value Transfer Protection (Amount > ₱50,000.00)'}">Aura Bank High-Value Transfer Protection</p>
         </div>
         <div class="body-content">
             <div style="text-align: center;">
-                <span class="badge-warning" th:text="${tierBadge != null ? tierBadge : 'ACTION REQUIRED: PENDING REVIEW'}">ACTION REQUIRED: PENDING REVIEW</span>
+                <span class="badge-warning" th:text="${tierBadge != null ? tierBadge : 'CUSTOMER OTP VERIFICATION REQUIRED'}">CUSTOMER OTP VERIFICATION REQUIRED</span>
             </div>
             <div class="amount-box">
-                <div style="font-size: 12px; color: #94a3b8;" th:text="${thresholdNotice != null ? thresholdNotice : 'HOLD AMOUNT EXCEEDS THRESHOLD'}">TRANSACTION AMOUNT</div>
-                <div class="amount-value" th:text="${formattedAmount}">PHP 150,000.00</div>
+                <div style="font-size: 12px; color: #94a3b8;" th:text="${thresholdNotice != null ? thresholdNotice : 'TRANSACTION AMOUNT (REQUIRING VERIFICATION)'}">TRANSACTION AMOUNT (REQUIRING VERIFICATION)</div>
+                <div class="amount-value" th:text="${formattedAmount}">PHP 90,000.00</div>
             </div>
+
+            <!-- Prominent Customer 2FA OTP Verification Box -->
+            <div class="otp-container">
+                <div class="otp-title">Customer 2FA Email Verification</div>
+                <div style="font-size: 12px; color: #94a3b8; margin-bottom: 4px;">Your One-Time Security Authorization Code:</div>
+                <div class="otp-code" th:text="${verificationCode != null ? verificationCode : '849201'}">849201</div>
+                <div style="font-size: 12px; color: #cbd5e1; margin-top: 8px; line-height: 1.4;">
+                    Enter this 6-digit code in your Aura Banking Portal to authorize and immediately settle your transfer of <strong style="color: #ffffff;" th:text="${formattedAmount}">₱90,000.00</strong>.
+                </div>
+                <div style="font-size: 11px; color: #64748b; margin-top: 10px;">
+                    🔒 Security Notice: Valid for 10 minutes. Never disclose this verification code to anyone.
+                </div>
+            </div>
+
             <table class="receipt-table">
                 <tr>
+                    <td class="label-col">Verification Method</td>
+                    <td class="value-col" style="color: #22d3ee;">Email OTP via MailHog (2FA)</td>
+                </tr>
+                <tr>
                     <td class="label-col">Regulatory Tier</td>
-                    <td class="value-col" th:text="${regulatoryTier != null ? regulatoryTier : 'Tier 2: Dual Control'}">Tier 2: Dual Control</td>
+                    <td class="value-col" th:text="${regulatoryTier != null ? regulatoryTier : 'Tier 2: Customer Email Verification'}">Tier 2: Customer Email Verification</td>
                 </tr>
                 <tr>
-                    <td class="label-col">Required Roles</td>
-                    <td class="value-col" th:text="${requiredRoles != null ? requiredRoles : 'Maker: Teller | Checker: BOO'}">Maker: Teller | Checker: BOO</td>
-                </tr>
-                <tr>
-                    <td class="label-col">AMLA / CTR Status</td>
-                    <td class="value-col" style="color: #f43f5e;" th:text="${amlaStatus != null ? amlaStatus : 'Not Applicable (Below PHP 500k)'}">Exempt</td>
+                    <td class="label-col">Required Authorization</td>
+                    <td class="value-col" th:text="${requiredRoles != null ? requiredRoles : 'Customer 2FA Verification (Maker-Checker Superseded)'}">Customer 2FA Verification (Maker-Checker Superseded)</td>
                 </tr>
                 <tr>
                     <td class="label-col">Transfer ID</td>
                     <td class="value-col" th:text="${transferId}">TRX-4491-0021</td>
                 </tr>
                 <tr>
-                    <td class="label-col">Maker User ID</td>
-                    <td class="value-col" th:text="${makerUserId}">USR-882190</td>
+                    <td class="label-col">Sender User ID</td>
+                    <td class="value-col" th:text="${makerUserId}">U1001 (Juan Dela Cruz)</td>
                 </tr>
                 <tr>
                     <td class="label-col">Source Account</td>
-                    <td class="value-col" th:text="${sourceAccount}">ACC-1002938471</td>
+                    <td class="value-col" th:text="${sourceAccount}">1000-2000-3001</td>
                 </tr>
                 <tr>
                     <td class="label-col">Destination Account</td>
-                    <td class="value-col" th:text="${destinationAccount}">ACC-2009847192</td>
+                    <td class="value-col" th:text="${destinationAccount}">1000-2000-3002</td>
                 </tr>
                 <tr>
                     <td class="label-col">Logged Time</td>
-                    <td class="value-col" th:text="${formattedDate}">2026-09-25 04:00:00 PST</td>
+                    <td class="value-col" th:text="${formattedDate}">2026-09-29 06:20:00 PST</td>
                 </tr>
             </table>
 
-            <div style="margin-top: 20px; padding: 12px; background-color: #0f172a; border-radius: 8px; border-left: 4px solid #f43f5e;">
-                <div style="font-size: 11px; text-transform: uppercase; color: #f43f5e; font-weight: 700; margin-bottom: 4px;">Mandatory Bank Workflow</div>
-                <p style="margin: 0; font-size: 12px; color: #cbd5e1; line-height: 1.4;" th:text="${workflowInstruction != null ? workflowInstruction : 'Teller encoded transfer. BOO must review ID and signature card before authorization.'}">Teller encoded transfer. BOO review required.</p>
+            <div style="margin-top: 20px; padding: 14px; background-color: #0f172a; border-radius: 8px; border-left: 4px solid #06b6d4;">
+                <div style="font-size: 11px; text-transform: uppercase; color: #22d3ee; font-weight: 700; margin-bottom: 4px;">Security Verification Policy</div>
+                <p style="margin: 0; font-size: 12px; color: #cbd5e1; line-height: 1.4;">Customer initiated transfer exceeding ₱50,000.00 threshold. In accordance with updated guidelines, dual-control maker-checker has been superseded by direct Customer Email 2FA Verification via MailHog. Enter the OTP code above in your portal to settle.</p>
             </div>
         </div>
         <div class="footer">
-            <p>Regulated under Bangko Sentral ng Pilipinas (BSP) Manual of Regulations for Banks (MORB).</p>
+            <p>Aura Bank &bull; Regulated under Bangko Sentral ng Pilipinas (BSP) &bull; 256-bit Secure SCN</p>
         </div>
     </div>
 </body>

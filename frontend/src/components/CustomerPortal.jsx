@@ -10,6 +10,7 @@ import {
   AlertCircle, 
   ShieldCheck, 
   UserCheck, 
+  Mail, 
   Copy, 
   Check, 
   Building2, 
@@ -321,6 +322,13 @@ Certified compliant with BSP Circular 1033 standards.
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [receiptData, setReceiptData] = useState(null);
   const [receiptCopied, setReceiptCopied] = useState(false);
+  
+  // Customer Email OTP Verification Modal State (Replaces Maker-Checker Approval for > ₱50k)
+  const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
+  const [otpInput, setOtpInput] = useState('');
+  const [activePendingTx, setActivePendingTx] = useState(null);
+  const [dispatchedOtpCode, setDispatchedOtpCode] = useState('');
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
 
   const numericAmount = parseFloat(amountInput) || 0;
 
@@ -451,12 +459,29 @@ Certified compliant with BSP Circular 1033 standards.
       );
 
       if (isHighValue) {
-        showToast({
-          type: 'warning',
-          title: 'Transfer Submitted for Verification',
-          detail: `Your transfer of ${formatPHP(numericAmount)} to ${recipientName} has been submitted for bank manager dual approval.`,
+        setIsConfirmModalOpen(false);
+        const code = res?.data?.verification_code || '849201';
+        setActivePendingTx({
+          transferId: res?.data?.transfer_id || res?.data?.transaction_id || generatedRef,
+          amount: numericAmount,
+          recipientName: recipientName.trim(),
+          toAccount: toAccount.trim(),
+          fromAccount: balance?.account_id || '1000-2000-3001',
+          memo: memo.trim() || 'High-Value Fund Transfer',
+          code: code,
         });
-      } else if (isPayingCredit) {
+        setDispatchedOtpCode(code);
+        setOtpInput('');
+        setIsOtpModalOpen(true);
+        showToast({
+          type: 'info',
+          title: 'Verification Code Dispatched',
+          detail: `Transfer exceeds ₱50k threshold. 6-digit OTP dispatched to registered email in MailHog (:8025).`,
+        });
+        return;
+      }
+
+      if (isPayingCredit) {
         showToast({
           type: 'success',
           title: 'Credit Settlement Successful',
@@ -471,7 +496,7 @@ Certified compliant with BSP Circular 1033 standards.
       }
 
       setReceiptData({
-        refNumber: res?.data?.transfer_id || generatedRef,
+        refNumber: res?.data?.transfer_id || res?.data?.transaction_id || generatedRef,
         fromAccount: balance?.account_id || '1000-2000-3001',
         senderName: user?.name || 'Juan Dela Cruz',
         toAccount: toAccount.trim(),
@@ -479,7 +504,8 @@ Certified compliant with BSP Circular 1033 standards.
         amount: numericAmount,
         fee: 0,
         memo: memo.trim() || (isPayingCredit ? 'Credit Line Statement Balance Settlement' : 'Fund Transfer'),
-        isHighValue,
+        isHighValue: false,
+        isEmailVerified: false,
         isCreditSettlement: isPayingCredit,
         settlementPlan: isPayingCredit
           ? (numericAmount >= totalCreditDebt ? 'Full Statement Balance Settlement' : numericAmount >= minimumCreditDue ? 'Minimum Amount Due (MAD)' : 'Partial Principal Payment')
@@ -501,12 +527,71 @@ Certified compliant with BSP Circular 1033 standards.
       const problem = err.response?.data;
       showToast({
         type: 'error',
-        title: problem?.title || 'Transfer Failed',
-        detail: problem?.detail || 'Unable to complete transfer. Please verify recipient details and try again.',
+        title: problem?.title || problem?.error || 'Transfer Failed',
+        detail: problem?.detail || problem?.message || 'Unable to complete transfer. Please verify recipient details and try again.',
       });
       setIsConfirmModalOpen(false);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleVerifyOtp = async (codeToVerify) => {
+    const code = (codeToVerify || otpInput || '').toString().trim();
+    if (!code || code.length !== 6) {
+      showToast({
+        type: 'error',
+        title: 'Invalid Code',
+        detail: 'Please enter a valid 6-digit verification code.',
+      });
+      return;
+    }
+
+    setIsVerifyingOtp(true);
+    try {
+      const res = await apiClient.post('/transfers/verify-otp', {
+        transfer_id: activePendingTx?.transferId,
+        otp: code,
+      });
+
+      showToast({
+        type: 'success',
+        title: 'Transfer Verified & Settled',
+        detail: `Transfer of ${formatPHP(activePendingTx?.amount || 0)} verified via MailHog OTP and settled successfully!`,
+      });
+
+      setReceiptData({
+        refNumber: activePendingTx?.transferId,
+        fromAccount: activePendingTx?.fromAccount || balance?.account_id || '1000-2000-3001',
+        senderName: user?.name || 'Juan Dela Cruz',
+        toAccount: activePendingTx?.toAccount,
+        recipientName: activePendingTx?.recipientName,
+        amount: activePendingTx?.amount,
+        fee: 0,
+        memo: activePendingTx?.memo,
+        isHighValue: true,
+        isEmailVerified: true,
+        timestamp: new Date(),
+      });
+
+      setIsOtpModalOpen(false);
+      setActivePendingTx(null);
+      setOtpInput('');
+      setToAccount('');
+      setRecipientName('');
+      setAmountInput('');
+      setMemo('');
+      setCurrentIdempotencyKey(generateUUID());
+      onTransactionComplete();
+    } catch (err) {
+      const problem = err.response?.data;
+      showToast({
+        type: 'error',
+        title: problem?.title || 'Verification Failed',
+        detail: problem?.detail || 'Incorrect verification code. Please check MailHog (:8025) and try again.',
+      });
+    } finally {
+      setIsVerifyingOtp(false);
     }
   };
 
@@ -1832,7 +1917,7 @@ Certified compliant with BSP Circular 1033 standards.
                                       tx.status === 'SETTLED' ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'
                                     }`}
                                   />
-                                  {tx.status === 'SETTLED' ? 'Completed' : 'Pending Dual Review'}
+                                  {tx.status === 'SETTLED' ? 'Completed' : tx.status === 'PENDING_VERIFICATION' ? 'Awaiting Email OTP' : 'Pending Review'}
                                 </span>
                               </td>
 
@@ -1934,12 +2019,12 @@ Certified compliant with BSP Circular 1033 standards.
               </div>
             </div>
 
-            {/* High Value Warning if > ₱50k */}
+            {/* High Value Customer Email Verification Notice if > ₱50k */}
             {numericAmount > THRESHOLDS.STP_MAX && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2.5 text-xs text-amber-800">
-                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <div className="bg-sky-50 border border-sky-200 rounded-xl p-3 flex items-start gap-2.5 text-xs text-sky-950">
+                <Mail className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
                 <p>
-                  <strong>AMLA Dual Approval Notice:</strong> Transfers exceeding ₱50,000.00 are placed <strong>On Hold</strong> and routed to the Operations Manager for Maker-Checker authorization.
+                  <strong>Customer Email Verification Required:</strong> Transfers exceeding ₱50,000.00 require direct email OTP verification via MailHog (:8025) to verify that it's you transferring the money.
                 </p>
               </div>
             )}
@@ -1967,9 +2052,152 @@ Certified compliant with BSP Circular 1033 standards.
                   ? 'Processing Ledger...'
                   : isPayingCreditLine
                   ? 'Confirm Settlement 💳'
+                  : numericAmount > THRESHOLDS.STP_MAX
+                  ? 'Proceed to Email Verification ✉️'
                   : 'Confirm & Transfer 🔒'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          MODAL 1B: CUSTOMER EMAIL OTP VERIFICATION MODAL (> ₱50,000.00)
+          (Direct Customer Multi-Factor Verification via MailHog)
+         ======================================================== */}
+      {isOtpModalOpen && activePendingTx && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl space-y-5 relative">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center">
+                  <Mail className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-extrabold text-slate-900 tracking-tight">
+                      Customer Email Verification
+                    </h3>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-100 text-sky-800 border border-sky-200">
+                      Tier 2 (&gt; ₱50,000)
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500">Maker-Checker superseded &bull; Direct Customer 2FA via MailHog</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOtpModalOpen(false);
+                  setActivePendingTx(null);
+                }}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Transfer Summary Card */}
+            <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-4 space-y-2 text-xs">
+              <div className="flex justify-between items-center py-1 border-b border-slate-200/60">
+                <span className="text-slate-500">Transfer Reference</span>
+                <span className="font-mono font-bold text-slate-900">{activePendingTx.transferId}</span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-slate-200/60">
+                <span className="text-slate-500">Transfer Amount</span>
+                <span className="font-mono font-extrabold text-slate-900 text-sm">{formatPHP(activePendingTx.amount)}</span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-slate-200/60">
+                <span className="text-slate-500">Beneficiary</span>
+                <span className="font-bold text-slate-900">{activePendingTx.recipientName} ({activePendingTx.toAccount})</span>
+              </div>
+              <div className="flex justify-between items-center py-1">
+                <span className="text-slate-500">Customer Registered Email</span>
+                <span className="font-mono font-semibold text-slate-800">juan.dc@email.com</span>
+              </div>
+            </div>
+
+            {/* Instruction Banner */}
+            <div className="bg-sky-50 border border-sky-200 rounded-2xl p-4 text-xs text-sky-950 space-y-2">
+              <div className="flex items-center gap-2 font-bold text-sky-900">
+                <ShieldCheck className="w-4 h-4 text-sky-600" />
+                <span>Security Verification via MailHog Inbox</span>
+              </div>
+              <p className="text-slate-600 leading-relaxed">
+                For transfers exceeding <strong>₱50,000.00</strong>, a 6-digit one-time security code was dispatched to your email to verify that it's you transferring the money.
+              </p>
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <a
+                  href="http://localhost:8025"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-600 text-white font-bold text-[11px] hover:bg-sky-700 transition shadow-sm cursor-pointer"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>Open MailHog Inbox (:8025)</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+                {dispatchedOtpCode && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOtpInput(dispatchedOtpCode);
+                      showToast({
+                        type: 'info',
+                        title: 'OTP Auto-filled',
+                        detail: `Loaded code [${dispatchedOtpCode}] from MailHog dispatch event.`,
+                      });
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-sky-300 text-sky-800 font-bold text-[11px] hover:bg-sky-50 transition cursor-pointer"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Auto-Fill Code: {dispatchedOtpCode}</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* OTP Input Form */}
+            <form onSubmit={(e) => { e.preventDefault(); handleVerifyOtp(); }} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Enter 6-Digit Verification Code
+                </label>
+                <input
+                  type="text"
+                  maxLength={6}
+                  value={otpInput}
+                  onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ''))}
+                  placeholder="&bull; &bull; &bull; &bull; &bull; &bull;"
+                  className="w-full text-center font-mono text-2xl tracking-[0.5em] py-3 px-4 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-cyan-600 focus:ring-4 focus:ring-cyan-600/10 outline-none transition font-bold"
+                  autoFocus
+                />
+                <p className="text-[11px] text-slate-400 mt-1 text-center font-mono">
+                  Check your MailHog browser tab on port 8025 for incoming verification advice.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsOtpModalOpen(false);
+                    setActivePendingTx(null);
+                  }}
+                  disabled={isVerifyingOtp}
+                  className="w-1/3 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isVerifyingOtp || otpInput.trim().length !== 6}
+                  className="w-2/3 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider text-white transition-all shadow-md bg-cyan-600 hover:bg-cyan-700 shadow-cyan-600/25 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  {isVerifyingOtp ? 'Verifying OTP...' : 'Verify & Settle Transfer 🚀'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -2014,7 +2242,7 @@ Certified compliant with BSP Circular 1033 standards.
             {/* Header Icon */}
             <div className="text-center pt-2 pb-4 border-b border-dashed border-slate-200">
               <div className="w-14 h-14 mx-auto mb-2 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-700 flex items-center justify-center shadow-md">
-                {receiptData.isHighValue ? (
+                {receiptData.isHighValue && !receiptData.isEmailVerified ? (
                   <Clock className="w-7 h-7 text-amber-600 animate-pulse" />
                 ) : (
                   <CheckCircle2 className="w-7 h-7 text-emerald-600" />
@@ -2024,15 +2252,19 @@ Certified compliant with BSP Circular 1033 standards.
               <h3 className="text-lg font-extrabold text-slate-900 tracking-tight print-text-dark">
                 {receiptData.isCreditSettlement 
                   ? 'Credit Settlement Successful' 
+                  : receiptData.isEmailVerified
+                  ? 'Transfer Verified & Settled'
                   : receiptData.isHighValue 
-                  ? 'Transfer Submitted for Review' 
+                  ? 'Transfer Awaiting Verification' 
                   : 'Transfer Successful'}
               </h3>
               <p className="text-xs text-slate-500 mt-0.5 print-text-muted">
                 {receiptData.isCreditSettlement
                   ? 'Funds posted & revolving credit limit restored'
+                  : receiptData.isEmailVerified
+                  ? 'Verified via MailHog Customer Security OTP • Settled Instantly'
                   : receiptData.isHighValue
-                  ? 'Under Verification: Bank Manager Dual Approval Queue'
+                  ? 'Customer Verification Required (Security OTP Dispatched via MailHog)'
                   : 'Funds debited and credited via STP ledger'}
               </p>
 
@@ -2118,12 +2350,12 @@ Certified compliant with BSP Circular 1033 standards.
                 <span className="text-slate-500 print-text-muted">Status</span>
                 <span
                   className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                    receiptData.isHighValue
+                    receiptData.isHighValue && !receiptData.isEmailVerified
                       ? 'bg-amber-50 text-amber-800 border-amber-200'
                       : 'bg-emerald-50 text-emerald-800 border-emerald-200'
                   }`}
                 >
-                  {receiptData.isHighValue ? 'PENDING VERIFICATION' : 'COMPLETED'}
+                  {receiptData.isHighValue && !receiptData.isEmailVerified ? 'PENDING VERIFICATION' : 'COMPLETED'}
                 </span>
               </div>
             </div>

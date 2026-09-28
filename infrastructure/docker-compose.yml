@@ -79,7 +79,7 @@ services:
       - banking-net
 
         # ============================================================================
-  # 5. Event Bus: Apache Kafka (KRaft Mode - No ZooKeeper)
+  # 4. Event Bus: Apache Kafka (KRaft Mode - No ZooKeeper)
   # Container Name: kafka-broker
   # High-throughput asynchronous event streaming for mutations & alerts
   # ============================================================================
@@ -116,7 +116,7 @@ services:
       - banking-net
 
   # ============================================================================
-  # 6. Kafka Web UI Dashboard
+  # 5. Kafka Web UI Dashboard
   # Container Name: kafka-ui
   # Real-time message, topic, and consumer inspection on port 8085
   # ============================================================================
@@ -135,7 +135,7 @@ services:
       - kafka-broker
 
   # ============================================================================
-  # 4. Database Web Console (Adminer with Oracle OCI8 & PostgreSQL)
+  # 6. Database Web Console (Adminer with Oracle OCI8 & PostgreSQL)
   # Container Name: db-adminer
   # Web management GUI for database inspection and queries
   # ============================================================================
@@ -155,9 +155,9 @@ services:
       - oracle-xe-master
 
   # ============================================================================
-  # 5. Local Mock SMTP Server & Email Web Inbox (MailHog)
+  # 7. Local Mock SMTP Server & Email Web Inbox (MailHog)
   # Container Name: mailhog-smtp
-  # Catches all transaction receipt and maker-checker emails with live Web UI
+  # Catches all transaction receipt, 2FA OTP, and admin alert emails with live Web UI
   # ============================================================================
   mailhog:
     container_name: mailhog-smtp
@@ -170,7 +170,7 @@ services:
       - banking-net
 
   # ============================================================================
-  # 6. Account & Identity Service (Spring Boot :8081)
+  # 8. Account & Identity Service (Spring Boot :8081)
   # Container Name: account-service
   # User registration, authentication, KYC profiles, and account provisioning
   # ============================================================================
@@ -195,7 +195,7 @@ services:
       - redis-cache
 
   # ============================================================================
-  # 7. Core Ledger & Balance Mutation Engine (Spring Boot :8082)
+  # 9. Core Ledger & Balance Mutation Engine (Spring Boot :8082)
   # Container Name: ledger-mutation-engine
   # High-throughput balance mutations, pessimistic row locking & outbox events
   # ============================================================================
@@ -230,9 +230,9 @@ services:
       - kafka-broker
 
   # ============================================================================
-  # 8. Notification & Alert Service (Spring Boot :8083)
+  # 10. Notification & Alert Service (Spring Boot :8083)
   # Container Name: notification-service
-  # Asynchronous email receipt generation, Redis deduplication & teller alerts
+  # Asynchronous email receipt generation, 2FA OTP dispatch & admin alerts
   # ============================================================================
   notification-service:
     container_name: notification-service
@@ -260,7 +260,7 @@ services:
       - kafka-broker
 
   # ============================================================================
-  # 9. API Gateway Service (Spring Cloud Gateway :8080)
+  # 11. API Gateway Service (Spring Cloud Gateway :8080)
   # Container Name: gateway-service
   # Edge perimeter routing, JWT verification, and Redis rate limiting
   # ============================================================================
@@ -287,9 +287,9 @@ services:
       - notification-service
 
   # ============================================================================
-  # 10. Core Retail Banking Single Page Application (React / Vite / Nginx :3000)
+  # 12. Core Retail Banking Single Page Application (React / Vite / Nginx :3000)
   # Container Name: banking-frontend
-  # Web Portal for Customers, Tellers, Branch Managers & SysAdmins
+  # Web Portal for Customers and Administrators (Reverse-proxied via Nginx)
   # ============================================================================
   banking-frontend:
     container_name: banking-frontend
@@ -305,7 +305,7 @@ services:
       - gateway-service
 
   # ============================================================================
-  # 8. OpenTelemetry Distributed Tracing Backend & Visualizer (Jaeger All-In-One)
+  # 13. OpenTelemetry Distributed Tracing Backend & Visualizer (Jaeger All-In-One)
   # Container Name: jaeger-tracing
   # Ingests OTLP traces (HTTP :4318, gRPC :4317) and provides trace visualization (:16686)
   # ============================================================================
@@ -323,7 +323,7 @@ services:
       - banking-net
 
   # ============================================================================
-  # 9. Prometheus Metrics Scraper & Time-Series Engine
+  # 14. Prometheus Metrics Scraper & Time-Series Engine
   # Container Name: prometheus-engine
   # Scrapes /actuator/prometheus from services and exposes metrics on :9090
   # ============================================================================
@@ -349,7 +349,7 @@ services:
       - banking-net
 
   # ============================================================================
-  # 10. Grafana Metrics Visualization & Telemetry Dashboard
+  # 15. Grafana Metrics Visualization & Telemetry Dashboard
   # Container Name: grafana-dashboard
   # Web UI on :3001 with auto-provisioned Prometheus datasource & banking dashboards
   # ============================================================================
@@ -377,7 +377,7 @@ services:
       - banking-net
 
   # ============================================================================
-  # 11. Enterprise Observability & Request Tracing (Datadog Agent 7)
+  # 16. Enterprise Observability & Request Tracing (Datadog Agent 7)
   # Container Name: dd-agent
   # Live metrics, APM request traces, waterfall spans, and container logs
   # ============================================================================

@@ -1,14 +1,12 @@
-# FSE Capstone: Core Retail Ledger & Balance Mutation Platform
+# FSE Capstone: Core Retail Ledger and Balance Mutation Platform
 
 Group 3 Engineering Repository: Definitive Architecture, Schemas, and Developer Source of Truth.
 
 ---
 
-## 1. System Architecture and Core Principles
+## 1. System architecture and core principles
 
-The platform is a high-throughput, event-driven, dual-storage retail banking system with Maker-Checker transaction verification, deterministic concurrency locking, Kafka KRaft event streaming, and immutable audit logging.
-
-<img width="2151" height="887" alt="image" src="https://github.com/user-attachments/assets/b97a1f35-c952-4e9a-8b2c-d638de9deff5" />
+The platform is a high-throughput, event-driven, dual-storage retail banking system with Maker-Checker transaction verification, deterministic concurrency locking, transactional outbox relays to Kafka KRaft, and immutable audit logging.
 
 ```
                                   +-----------------------+
@@ -16,76 +14,90 @@ The platform is a high-throughput, event-driven, dual-storage retail banking sys
                                   |      (Port 3000)      |
                                   +-----------+-----------+
                                               |
-                                              v
-                              +-------------------------------+
-                              |      API Gateway Service      |
-                              |   (Port 8080 / Redis Limiter) |
-                              +-------+---------------+-------+
-                                      |               |
-              /api/v1/auth, /accounts |               | /api/v1/ledger, /notifications
-                                      v               v
-               +--------------------------+       +------------------------------+
-               |      Account Service     |       |   Ledger Mutation Engine     |
-               |        (Port 8081)       |       |        (Port 8082)           |
-               +------------+-------------+       +-------+--------------+-------+
-                            |                             |              |
-             HikariCP       v              HikariCP (30)  v              v HikariCP (30)
-                 +--------------------+     +-------------------+   +--------------------+
-                 | Oracle XE Master   |     | Oracle XE Master  |   | PostgreSQL Audit   |
-                 | (Operational State)|     | (Row Locks / CME) |   | (Append-Only Log)  |
-                 |    (Port 1521)     |     |    (Port 1521)    |   |    (Port 5432)     |
-                 +--------------------+     +-------------------+   +--------------------+
-                                                          |
-                                                 Kafka    v Event Streaming
-                                            +---------------------------+
-                                            | Apache Kafka KRaft Broker |
-                                            |   Topics: transactions,   |
-                                            |    alerts, audit-events   |
-                                            |        (Port 9092)        |
-                                            +---------------------------+
-                                                          |
-                                                          v
-                                            +---------------------------+
-                                            |   Notification Service    |
-                                            |        (Port 8083)        |
-                                            +---------------------------+
+                                              v (HTTP / SSE)
+                               +-------------------------------+
+                               |      API Gateway Service      |
+                               |   (Port 8080 / Redis Limiter) |
+                               +---+-----------+-----------+---+
+                                   |           |           |
+           /api/v1/auth, /accounts |           |           | /api/v1/notifications
+                                   v           |           v
+            +--------------------------+       |   +--------------------------+
+            |      Account Service     |       |   |   Notification Service   |
+            |        (Port 8081)       |       |   |        (Port 8083)       |
+            +------------+-------------+       |   +------------+-------------+
+                         |                     |                |
+          HikariCP (10)  v                     |                v SMTP
+              +--------------------+           |        +--------------------+
+              | Oracle XE Master   |           |        |    MailHog SMTP    |
+              | (Operational State)|           |        |  (:8025 UI / :1025)|
+              |    (Port 1521)     |           |        +--------------------+
+              +--------------------+           |
+                                               v /api/v1/ledger
+                               +-------------------------------+
+                               |    Ledger Mutation Engine     |
+                               |          (Port 8082)          |
+                               +---+---------------+-------+---+
+                                   |               |       |
+                    HikariCP (30)  v  HikariCP (30)v       v Transactional Outbox
+                 +-------------------+   +--------------------+ (EVT-601 Relay)
+                 | Oracle XE Master  |   | PostgreSQL Audit   |    |
+                 | (Row Locks / CME) |   | (Append-Only Log)  |    |
+                 |    (Port 1521)    |   | (Port 5433 -> 5432)|    |
+                 +-------------------+   +--------------------+    |
+                                                                   v
+                                                     +---------------------------+
+                                                     | Apache Kafka KRaft Broker |
+                                                     |  banking.transfers.events |
+                                                     |  banking.makerchecker.pen |
+                                                     |        (Port 9092)        |
+                                                     +-------------+-------------+
+                                                                   |
+                                                                   v Events
+                                                     +---------------------------+
+                                                     |   Notification Service    |
+                                                     | (TransactionEventConsumer)|
+                                                     +---------------------------+
 ```
 
-### Architectural Principles
+### Architectural principles
 
-1. **Dual-Storage Isolation**:
-   - **Oracle XE 21c**: Manages operational state and concurrency via pessimistic row locking (`SELECT ... FOR UPDATE`).
+1. **Dual-storage isolation**:
+   - **Oracle XE 21c**: Houses operational state and concurrency via pessimistic row locking (`SELECT ... FOR UPDATE`).
    - **PostgreSQL 16**: Serves as a compliance audit vault. A database trigger rejects any SQL `UPDATE` or `DELETE` statements on `ledger_mutation_audit`.
 
-2. **Strict Financial Precision**:
+2. **Strict financial precision**:
    All monetary amounts across databases, DTOs, and REST payloads use eighteen total digits with four decimal places (`NUMBER(18, 4)` in Oracle, `NUMERIC(18, 4)` in PostgreSQL, and `BigDecimal` with `RoundingMode.UNNECESSARY` in Java). Floating-point data types (`FLOAT`, `DOUBLE`) are strictly forbidden.
 
-3. **Deterministic Lock Ordering (Deadlock Prevention)**:
+3. **Deterministic lock ordering (deadlock prevention)**:
    When moving funds between two accounts, the engine sorts account IDs lexicographically (`sourceId.compareTo(targetId) < 0 ? sourceId : targetId`). The account with the lower ID is always locked first, guaranteeing that concurrent opposing transfers (A to B and B to A) acquire locks in the exact same sequence.
 
-4. **Maker-Checker Dual Control (BSP Compliance)**:
+4. **Maker-checker dual control (BSP compliance)**:
    - Transfers at or below PHP 50,000.00 execute immediate atomic settlement.
-   - Transfers exceeding PHP 50,000.00 place a soft hold on the sender's available balance and enter `PENDING_APPROVAL`.
+   - Transfers exceeding PHP 50,000.00 place a soft hold on the sender available balance and enter `PENDING_APPROVAL`.
    - A distinct authorized officer (teller or manager) must review and approve or reject the request. The initiator (maker) cannot approve or reject their own transaction.
 
-5. **Event-Driven Asynchronous Streaming**:
-   Committed transfers and alerts emit events to Apache Kafka in KRaft mode, allowing downstream processors to dispatch push alerts without delaying transaction response times.
+5. **Transactional outbox pattern (EVT-601)**:
+   Financial mutations write the state update and an outbox event within the exact same relational transaction. A dedicated polling worker (`OutboxRelayScheduler`) runs every 2 seconds, publishing pending events to Apache Kafka and guaranteeing at-least-once message delivery without two-phase commit overhead.
 
-6. **Observability and Distributed Tracing**:
+6. **Dual email advices and circuit resiliency**:
+   Upon transfer settlement, debit advices are sent to the sender and credit advices (`inward-credit-advice.html`) are sent to the beneficiary. If the SMTP transport fails, messages enter an in-memory circuit spool buffer to protect against message loss until flushed.
+
+7. **Observability and distributed tracing**:
    Every HTTP request carries W3C trace context headers (`traceparent`). Traces are exported over OTLP to Jaeger, and metrics are scraped by Prometheus to populate a Grafana operational dashboard.
 
 ---
 
-## 2. Networking and Port Allocation Matrix
+## 2. Networking and port allocation matrix
 
 Every container attaches to the bridge network `banking-net`. Host and internal port allocations are configured as follows:
 
-| Service / Container | Container Name | Host Port | Internal Port | Protocol | Purpose |
+| Service or Container | Container Name | Host Port | Internal Port | Protocol | Purpose |
 | :--- | :--- | :---: | :---: | :--- | :--- |
 | **Frontend Web SPA** | `frontend` | `3000` | `3000` | HTTP | React 18 + Vite Retail Banking Portal |
 | **API Gateway** | `gateway-service` | `8080` | `8080` | HTTP / REST | Perimeter routing, JWT signature validation, Redis rate limiting |
 | **Account Service** | `account-service` | `8081` | `8081` | HTTP / REST | KYC onboarding, user profiles, account creation, token rotation |
-| **Ledger Engine** | `ledger-mutation-engine`| `8082` | `8082` | HTTP / REST | Concurrency locks, balance mutations, maker-checker, Kafka producer |
+| **Ledger Engine** | `ledger-mutation-engine`| `8082` | `8082` | HTTP / REST | Concurrency locks, balance mutations, maker-checker, outbox worker |
 | **Notification Service** | `notification-service` | `8083` | `8083` | HTTP / REST | Kafka listener, receipt generation, manager alerts, email dispatch |
 | **MailHog Mock SMTP** | `mailhog-smtp` | `8025` / `1025` | `8025` / `1025` | HTTP / SMTP | Mock email testing inbox UI (`:8025`) and SMTP receiver (`:1025`) |
 | **Oracle Database XE** | `oracle-xe-master` | `1521` | `1521` | Oracle TNS | Operational relational state (`XEPDB1`) |
@@ -100,9 +112,9 @@ Every container attaches to the bridge network `banking-net`. Host and internal 
 
 ---
 
-## 3. Database Schemas and Data Models
+## 3. Database schemas and data models
 
-### A. Master Operational Database (Oracle Database XE 21c)
+### A. Master operational database (Oracle Database XE 21c)
 Host: `localhost:1521`, Pluggable Database: `XEPDB1`, User: `fse_user`, Password: `fse_password`
 
 ```sql
@@ -167,17 +179,45 @@ CREATE TABLE transactions (
     updated_at             TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     CONSTRAINT fk_tx_from_acc FOREIGN KEY (from_account_id) REFERENCES accounts(account_id)
 );
+
+-- 5. Outbox Events Table (EVT-601: Transactional Outbox Pattern)
+CREATE TABLE outbox_events (
+    event_id       VARCHAR2(64) PRIMARY KEY,
+    aggregate_type VARCHAR2(50) NOT NULL,
+    aggregate_id   VARCHAR2(64) NOT NULL,
+    event_type     VARCHAR2(50) NOT NULL,
+    kafka_topic    VARCHAR2(100) NOT NULL,
+    payload        CLOB NOT NULL,
+    status         VARCHAR2(20) DEFAULT 'PENDING' NOT NULL,
+    retry_count    NUMBER(4) DEFAULT 0 NOT NULL,
+    created_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    published_at   TIMESTAMP WITH TIME ZONE,
+    CONSTRAINT fk_oe_aggregate FOREIGN KEY (aggregate_id) REFERENCES transactions(transaction_id),
+    CONSTRAINT chk_oe_aggregate_type CHECK (aggregate_type IN ('TRANSACTION', 'MAKER_CHECKER', 'BALANCE_MUTATION')),
+    CONSTRAINT chk_oe_event_type CHECK (event_type IN ('MAKER_PENDING', 'CHECKER_APPROVED', 'MUTATION_COMMITTED', 'TRANSFER_PENDING_APPROVAL', 'TRANSFER_EXECUTED')),
+    CONSTRAINT chk_oe_status CHECK (status IN ('PENDING', 'PUBLISHED', 'FAILED'))
+);
+
+-- 6. Notifications Table (Historical Delivery Audit)
+CREATE TABLE notifications (
+    notification_id VARCHAR2(64) PRIMARY KEY,
+    user_id         VARCHAR2(64) NOT NULL,
+    type            VARCHAR2(50) NOT NULL,
+    message         VARCHAR2(500) NOT NULL,
+    sent_at         TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT fk_notif_user FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
 ```
 
-### B. Immutable Audit Vault (PostgreSQL 16)
-Host: `localhost:5432`, Database: `banking_audit`, User: `audit_user`, Password: `audit_password`
+### B. Immutable audit vault (PostgreSQL 16)
+Host: `localhost:5433` (container port `5432`), Database: `banking_audit`, User: `audit_user`, Password: `audit_password`
 
 ```sql
 CREATE TABLE ledger_mutation_audit (
     audit_id             BIGSERIAL PRIMARY KEY,
     transaction_id       VARCHAR(64) UNIQUE NOT NULL,
     account_id           VARCHAR(64) NOT NULL,
-    mutation_type        VARCHAR(20) NOT NULL CHECK (mutation_type IN ('TRANSFER', 'HOLD', 'RELEASE')),
+    mutation_type        VARCHAR(20) NOT NULL CHECK (mutation_type IN ('TRANSFER', 'DEBIT', 'CREDIT', 'HOLD', 'RELEASE')),
     mutation_amount      NUMERIC(18, 4) NOT NULL CHECK (mutation_amount > 0),
     before_balance       NUMERIC(18, 4) NOT NULL CHECK (before_balance >= 0),
     after_balance        NUMERIC(18, 4) NOT NULL CHECK (after_balance >= 0),
@@ -202,7 +242,7 @@ FOR EACH ROW EXECUTE FUNCTION prevent_audit_tampering();
 
 ---
 
-## 4. Core Balance Mutation Engine (CME) and Dual Control
+## 4. Core Balance Mutation Engine (CME) and dual control
 
 The Balance Mutation Engine executes financial movements with deterministic safety controls:
 
@@ -228,8 +268,8 @@ Amount <= 50,000 PHP                     Amount > 50,000 PHP
 - Deduct sender balance & avail          - hold_amount += amount
 - Credit receiver balance & avail        - available_balance -= amount
 - Tx status: COMMITTED                   - balance_amount untouched
-- Emit Kafka TransactionEvent            - Tx status: PENDING_APPROVAL
-- Write Postgres audit log               - Emit Kafka Pending Alert
+- Write outbox: banking.transfers.events - Tx status: PENDING_APPROVAL
+- Write Postgres audit log               - Write outbox: banking.makerchecker.pending
                                                    |
                                                    v
                                         [Teller / Checker Review]
@@ -246,92 +286,139 @@ Amount <= 50,000 PHP                     Amount > 50,000 PHP
            - sender hold_amount -= amount                      - sender hold_amount -= amount
            - sender balance_amount -= amount                   - sender available_balance += amount
            - receiver balance_amount += amount                 - Tx status: FAILED
-           - receiver available_balance += amount              - Emit Kafka Rejection Alert
+           - receiver available_balance += amount              - Tx status: REJECTED
            - Tx status: COMMITTED
-           - Emit Kafka TransactionEvent
+           - Write outbox: banking.transfers.events
            - Write Postgres audit log
 ```
 
-### Key API Endpoints
+### Key API endpoints
 
-1. **Initiate Transfer**:
-   `POST /api/v1/ledger/transfer`
+1. **Initiate mutation or transfer**:
+   `POST /api/v1/ledger/mutate`
    ```json
    {
-     "transactionId": "TX-100293",
-     "accountId": "acc-2001-sav-001",
-     "targetAccountId": "acc-2003-sav-002",
-     "eventType": "TRANSFER",
-     "mutationType": "TRANSFER",
-     "mutationAmount": 65000.0000,
-     "initiatorUserId": "usr-1001-cst-001"
+     "transaction_id": "TX-100293",
+     "account_id": "acc-2001-sav-001",
+     "target_account_id": "acc-2003-sav-002",
+     "event_type": "TRANSFER",
+     "mutation_type": "TRANSFER",
+     "mutation_amount": 65000.0000,
+     "initiator_user_id": "usr-1001-cst-001"
    }
    ```
 
-2. **Approve High-Value Transfer**:
-   `POST /api/v1/ledger/transfers/{transactionId}/approve`
+2. **Approve high-value transfer**:
+   `POST /api/v1/ledger/approve`
    ```json
    {
+     "transactionId": "TX-100293",
      "checkerUserId": "usr-1003-tel-001",
      "remarks": "Verified customer identity and source of funds"
    }
    ```
 
-3. **Reject High-Value Transfer**:
-   `POST /api/v1/ledger/transfers/{transactionId}/reject`
+3. **Reject high-value transfer**:
+   `POST /api/v1/ledger/reject`
    ```json
    {
+     "transactionId": "TX-100293",
      "checkerUserId": "usr-1003-tel-001",
      "remarks": "Signature mismatch"
    }
    ```
 
-4. **Query Pending Maker-Checker Queue**:
-   `GET /api/v1/ledger/transfers/pending`
+4. **Query pending maker-checker queue**:
+   `GET /api/v1/ledger/pending`
 
 ---
 
-## 5. Apache Kafka Event Streaming
+## 5. Transactional outbox pattern and Kafka streaming
 
-The platform uses Apache Kafka 7.5 running in KRaft mode (ZooKeeper-free) for asynchronous event dispatch:
+The platform employs the Transactional Outbox Pattern (EVT-601) to bridge relational database transactions and Kafka event streams with zero data loss:
 
-### Kafka Topics
+### Outbox relay architecture
 
-1. **`transaction-events`** (3 partitions, replication factor 1):
-   - Key: `sourceAccountId` (guarantees FIFO sequence for transactions per account).
-   - Payload: `TransactionEvent` with transaction ID, accounts, amount, currency, status, and timestamp.
+1. **Atomic insertion**: When `BalanceMutationService` mutates account balances, it saves a `TransactionNotificationEvent` JSON document into the Oracle `outbox_events` table within the same transaction.
+2. **Asynchronous poller**: `OutboxRelayScheduler` polls `outbox_events` every 2000 milliseconds for records where `status = 'PENDING'`.
+3. **Guaranteed publishing**: The worker sends each record to Kafka with `acks=all`. Upon acknowledgment, the outbox record is marked `PUBLISHED`. If errors occur, `retry_count` is incremented up to 3 times before transitioning to `FAILED`.
 
-2. **`notification-alerts`** (3 partitions, replication factor 1):
-   - Key: `recipientAccountId`.
-   - Payload: `NotificationAlertEvent` with alert ID, user ID, account ID, alert type, and human-readable message.
+### Kafka topics
 
-3. **`audit-events`** (3 partitions, replication factor 1):
+1. **`banking.transfers.events`** (3 partitions, replication factor 1):
+   - Key: `sourceAccountId` or `transactionId`.
+   - Payload: `TransactionNotificationEvent` (transfer ID, source/destination accounts, amount, balances before/after, status, maker user ID, timestamp).
+   - Consumers: `notification-service` (`TransactionEventConsumer`).
+
+2. **`banking.makerchecker.pending`** (3 partitions, replication factor 1):
    - Key: `transactionId`.
-   - Payload: Compliance event stream for downstream reporting.
+   - Payload: Pending transaction metadata requiring secondary checker approval.
+
+3. **`transaction-events`** (3 partitions, replication factor 1):
+   - Internal ledger audit stream.
+
+4. **`notification-alerts`** (3 partitions, replication factor 1):
+   - Real-time customer push notification events.
 
 ### Kafka Web UI
-Navigate to **[http://localhost:8085](http://localhost:8085)** to inspect topics, offsets, consumer lag, and live message payloads.
+Navigate to **[http://localhost:8085](http://localhost:8085)** to inspect topics, partitions, consumer lag, and live message payloads.
 
 ---
 
-## 6. Observability, Metrics, and Distributed Tracing
+## 6. Notification Service and advisory system
 
-### Distributed Tracing (OpenTelemetry and Jaeger)
+The Notification Service (`:8083`) processes financial events from Kafka and delivers customer notices through email and browser push streams:
+
+### Regulatory compliance tiers
+
+1. **Tier 1 (Normal retail transfer, <= PHP 50,000.00)**:
+   - Straight-Through Processing (STP) with no manager review required.
+   - Dual email delivery: Inward debit receipt sent to sender, outward credit advice (`inward-credit-advice.html`) sent to beneficiary.
+   - Real-time browser toast delivered over Server-Sent Events (SSE).
+
+2. **Tier 2 (Dual-control hold, PHP 50,000.01 to PHP 499,999.99)**:
+   - Requires Branch Operations Officer (Level 1) approval.
+   - Manager compliance alert email (`maker-checker-alert.html`) dispatched.
+   - Hold notification pushed to customer browser.
+
+3. **Tier 3 (AMLA covered, >= PHP 500,000.00)**:
+   - Covered transaction under AMLA regulations. Requires Covered Transaction Report (CTR) filing and dual manager authorization.
+   - High-value advisory sent to Compliance Officer inbox (`compliance-officer@corebank.ph`).
+
+### Resilient offline spooling
+If the SMTP server is unavailable, messages are automatically buffered in an in-memory circuit spool buffer. Once connectivity is restored, calling `POST /api/v1/notifications/flush-spool` drains the buffer and delivers all queued notices.
+
+---
+
+## 7. Frontend web application (React 18 + Vite)
+
+The Single-Page Application (`frontend/`) provides an interactive interface for customers, branch staff, and system administrators:
+
+- **Customer Terminal**: Real-time balance cards, quick preset transfer amounts, regulatory tier calculation, and instant mutation responses.
+- **Branch Teller Terminal**: Pending Maker-Checker queue, segregation of duties validator, secondary checker authorization actions, and scenario simulators.
+- **Admin & Telemetry Grid**: 10-service health monitor, circuit spool recovery controls, and Oracle notification audit viewer.
+- **Live SSE Indicator**: Real-time connection badge with automatic reconnection and interactive floating toast notifications.
+
+---
+
+## 8. Observability, metrics, and distributed tracing
+
+### Distributed tracing (OpenTelemetry and Jaeger)
 - Every microservice imports `micrometer-tracing-bridge-otel` and `opentelemetry-exporter-otlp`.
 - Inbound and outbound requests propagate standard W3C `traceparent` headers.
 - Traces are exported to the Jaeger OTLP receiver at `http://localhost:4318/v1/traces`.
 - View trace graphs and latency spans in the Jaeger UI at **[http://localhost:16686](http://localhost:16686)**.
 
-### Metrics Collection (Prometheus)
+### Metrics collection (Prometheus)
 - Each service exposes metrics at `/actuator/prometheus`.
 - Prometheus scrapes metrics every 5 seconds.
 - Access the Prometheus console at **[http://localhost:9090](http://localhost:9090)**.
 
-### Operational Dashboard (Grafana)
+### Operational dashboard (Grafana)
 Grafana automatically provisions Prometheus and Jaeger datasources on startup, loading the **FSE Core Retail Banking - Telemetry & Performance** dashboard.
-- URL: **[http://localhost:3000](http://localhost:3000)** (Anonymous viewer enabled, or login with `admin` / `admin`).
+- URL: **[http://localhost:3001](http://localhost:3001)** (mapped from container port 3000 to prevent conflicts with the web frontend).
 - Panels include:
-  - System Health status badges and global throughput (req/s).
+  - System health status badges and global throughput (req/s).
   - HTTP 5xx error percentage and P95 latency.
   - Gateway ingress traffic by route and status code distribution.
   - Account Service and Ledger Mutation Engine endpoint throughput.
@@ -340,14 +427,15 @@ Grafana automatically provisions Prometheus and Jaeger datasources on startup, l
 
 ---
 
-## 7. Developer Quick Start Guide
+## 9. Developer quick start guide
 
 ### Prerequisites
 1. **Docker Desktop** (version 4.25+).
 2. **Java 21 JDK** (configured in your `PATH`).
-3. **Maven** (bundled `.\mvnw.cmd` included in the repository).
+3. **Node.js 18+ & npm** (for frontend development).
+4. **Maven** (bundled `.\mvnw.cmd` included in the repository).
 
-### Step 1: Start All Infrastructure Services
+### Step 1: Start infrastructure containers
 Run from the repository root:
 
 ```powershell
@@ -356,21 +444,17 @@ docker compose -f infrastructure/docker-compose.yml up -d
 
 This starts:
 - Oracle XE 21c (`localhost:1521`)
-- PostgreSQL 16 (`localhost:5432`)
+- PostgreSQL 16 Audit Vault (`localhost:5433`)
 - Redis 7 (`localhost:6379`)
 - Apache Kafka KRaft (`localhost:9092`)
 - Kafka UI (`localhost:8085`)
+- MailHog Mock SMTP (`localhost:8025` UI, `localhost:1025` SMTP)
 - Adminer Database Console (`localhost:8088`)
 - Jaeger Distributed Tracing (`localhost:16686`)
 - Prometheus Scraper (`localhost:9090`)
-- Grafana Dashboard (`localhost:3000`)
+- Grafana Dashboard (`localhost:3001`)
 
-### Step 2: Verify Container Health
-```powershell
-docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-```
-
-### Step 3: Build and Test All Backend Microservices
+### Step 2: Build and test backend microservices
 Run from the `backend/` directory:
 
 ```powershell
@@ -381,35 +465,54 @@ cd backend
 Expected result:
 ```text
 [INFO] Reactor Summary for Core Retail Ledger & Balance Mutation Engine (Parent) 1.0.0-SNAPSHOT:
+[INFO] 
 [INFO] Core Retail Ledger & Balance Mutation Engine (Parent) SUCCESS
 [INFO] Common Contracts & DTOs ............................ SUCCESS
 [INFO] Ledger Mutation Engine ............................. SUCCESS
 [INFO] Account Service .................................... SUCCESS
 [INFO] gateway-service .................................... SUCCESS
+[INFO] Notification & Alert Service ....................... SUCCESS
+[INFO] ------------------------------------------------------------------------
 [INFO] BUILD SUCCESS
 ```
 
-### Step 4: Run Microservices Locally
+### Step 3: Run backend microservices locally
 
 Start services in separate terminal windows:
 
 ```powershell
-# Window 1: API Gateway
+# Window 1: API Gateway Service (:8080)
 cd backend/gateway-service
 ..\mvnw.cmd spring-boot:run
 
-# Window 2: Account Service
+# Window 2: Account Service (:8081)
 cd backend/account-service
 ..\mvnw.cmd spring-boot:run
 
-# Window 3: Ledger Mutation Engine
+# Window 3: Ledger Mutation Engine (:8082)
 cd backend/ledger-mutation-engine
+..\mvnw.cmd spring-boot:run
+
+# Window 4: Notification Service (:8083)
+cd backend/notification-service
 ..\mvnw.cmd spring-boot:run
 ```
 
+### Step 4: Run frontend application
+
+Run from the `frontend/` directory:
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Access the application in your browser at **[http://localhost:3000](http://localhost:3000)**.
+
 ---
 
-## 8. Repository Structure
+## 10. Repository structure
 
 ```text
 .
@@ -425,7 +528,7 @@ cd backend/ledger-mutation-engine
 │   │   ├── basic_lite.zip              # Pre-bundled Oracle Instant Client package
 │   │   └── oci8.so                     # Pre-compiled PHP OCI8 module
 │   ├── oracle/
-│   │   └── init.sql                    # Oracle XE 21c DDL, constraints, and seed data
+│   │   └── init.sql                    # Oracle XE 21c DDL, outbox table, and seed data
 │   ├── postgres/
 │   │   └── init.sql                    # PostgreSQL audit DDL, trigger, and seed data
 │   ├── prometheus/
@@ -437,17 +540,30 @@ cd backend/ledger-mutation-engine
 │       │   └── dashboards/dashboards.yml   # Dashboard provider configuration
 │       └── dashboards/
 │           └── banking-core-observability.json # 20-panel telemetry dashboard
+├── frontend/                           # React 18 + Vite Web SPA
+│   ├── package.json                    # Frontend dependencies & scripts
+│   ├── vite.config.js                  # Vite server & Gateway proxy configuration
+│   ├── tailwind.config.js              # Tailwind utility classes & theme
+│   └── src/
+│       ├── api/
+│       │   └── client.js               # Axios services for CME & Notification APIs
+│       └── components/
+│           ├── Header.jsx              # Navigation header, role switcher & SSE badge
+│           ├── CustomerPortal.jsx      # Customer transfer terminal & balance cards
+│           ├── TellerPortal.jsx        # Dual-control approvals & simulation triggers
+│           └── AdminPortal.jsx         # Service health matrix & spool buffer monitor
 └── backend/
     ├── pom.xml                         # Aggregator POM (Spring Boot 3.3.5, Java 21)
     ├── common-contracts/               # Shared DTOs, enums, events, and exceptions
     ├── gateway-service/                # Spring Cloud Gateway, JWT verification, rate limiter
     ├── account-service/                # KYC onboarding, account provisioning, token rotation
-    └── ledger-mutation-engine/         # Core Mutation Engine (CME), locks, Kafka, audit
+    ├── ledger-mutation-engine/         # Core Mutation Engine (CME), locks, outbox worker
+    └── notification-service/           # Kafka consumer, dual advices, spool buffer, SSE
 ```
 
 ---
 
-## 9. Team Contribution and Branching Guidelines
+## 11. Team contribution and branching guidelines
 
 1. Work on dedicated feature branches branched off `main` (for example, `jm-branch`, `zel-branch`).
 2. Commit messages should follow conventional commits: `feat:`, `fix:`, `refactor:`, `chore:`.

@@ -1,6 +1,6 @@
 # Datadog Full-Stack Observability & APM Tracing
 
-The core retail banking platform uses **Datadog Agent 7** to unify distributed tracing, APM request waterfall graphs, container logs, and infrastructure metrics under a single pane of glass.
+The core retail banking platform uses **Datadog Agent 7** to unify distributed tracing, APM request waterfall graphs, container logs, Redis cache telemetry, and infrastructure metrics under a single pane of glass.
 
 ## Features
 
@@ -10,14 +10,57 @@ The core retail banking platform uses **Datadog Agent 7** to unify distributed t
    - Propagates standard W3C `traceparent` context headers across all microservices (`gateway-service`, `account-service`, `ledger-mutation-engine`, and `notification-service`).
    - Generates interactive span waterfall graphs showing perimeter routing latency, database query execution, pessimistic lock hold duration, and Kafka event publishing.
 
-2. **Unified Container Log Tailing**:
+2. **Redis Cache Metrics & Log Streaming**:
+   - Container `redis-cache` runs on port `6379`.
+   - Automatically monitored via Datadog Autodiscovery labels for memory utilization, hit/miss ratios, connected clients, operations/sec, and container log tailing.
+
+3. **Unified Container Log Tailing**:
    - Automatically streams container logs from all services into the Datadog Log Explorer (`https://app.datadoghq.com/logs`).
    - Correlates logs with traces via MDC tags (`traceId`, `spanId`).
 
-3. **Metrics & DogStatsD**:
+4. **Metrics & DogStatsD**:
    - Ingests host, container, and application metrics via DogStatsD on UDP port `8125`.
 
-## Container Configuration
+## How to Run Microservices with Datadog APM Java Agent
+
+The Java tracer agent has been downloaded to `C:\datadog\dd-java-agent.jar` (and mirrored in `infrastructure/datadog/dd-java-agent.jar`).
+
+### Option A: Using the PowerShell Runner
+Run from the `backend/` directory:
+
+```powershell
+# Run API Gateway
+.\start-services-datadog.ps1 -Service gateway-service
+
+# Run Ledger Mutation Engine
+.\start-services-datadog.ps1 -Service ledger-mutation-engine
+
+# Run Account Service
+.\start-services-datadog.ps1 -Service account-service
+
+# Run Notification Service
+.\start-services-datadog.ps1 -Service notification-service
+```
+
+### Option B: Running with Maven directly
+```powershell
+cd backend
+.\mvnw.cmd spring-boot:run -pl gateway-service `
+  -Dspring-boot.run.jvmArguments="-javaagent:C:\datadog\dd-java-agent.jar -Ddd.service=gateway-service -Ddd.env=local -Ddd.logs.injection=true -Ddd.agent.host=localhost -Ddd.agent.port=8126"
+```
+
+### Option C: Running packaged JAR files directly
+```powershell
+java -javaagent:C:\datadog\dd-java-agent.jar `
+     -Ddd.service=gateway-service `
+     -Ddd.env=local `
+     -Ddd.logs.injection=true `
+     -Ddd.agent.host=localhost `
+     -Ddd.agent.port=8126 `
+     -jar backend/gateway-service/target/gateway-service-1.0.0-SNAPSHOT.jar
+```
+
+## Container Configuration (infrastructure/docker-compose.yml)
 
 The agent runs as container `dd-agent` inside Docker attached to `banking-net`:
 

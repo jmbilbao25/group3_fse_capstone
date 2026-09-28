@@ -70,6 +70,11 @@ services:
     ports:
       - "6379:6379"
     command: ["redis-server", "--appendonly", "yes"]
+    labels:
+      com.datadoghq.ad.check_names: '["redisdb"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: '[{"host": "%%host%%", "port": "6379"}]'
+      com.datadoghq.ad.logs: '[{"source": "redis", "service": "redis-cache"}]'
     networks:
       - banking-net
 

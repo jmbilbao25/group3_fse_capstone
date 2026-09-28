@@ -2,21 +2,20 @@
 
 > Stack: React 18, Vite, Tailwind CSS, Lucide Icons, Nginx Alpine
 
-This single-page application provides dedicated web portals for Customer and Admin roles, featuring real-time Server-Sent Events (SSE) telemetry and email-based two-factor authentication.
+This single-page application provides dedicated web portals for Customer and Admin roles, featuring real-time Server-Sent Events (SSE) telemetry and customer email-based two-factor authentication.
 
 ## Roles and capabilities
 
 ### Customer portal
 - Real-time balance monitoring and account details
 - Instant funds transfer initiation with automated regulatory tier calculation
-- Two-factor authentication (2FA) verification via email OTP
+- Two-factor authentication (2FA) verification via email OTP for transfers above PHP 50,000.00
 - Live Server-Sent Events (SSE) transaction status alerts
 
 ### Admin portal
-- Maker-Checker transaction queue for transfers exceeding PHP 50,000.00
-- Segregation of duties enforcement (makers cannot authorize their own transactions)
-- Dual Admin authorization for AMLA covered transfers exceeding PHP 500,000.00
-- System health grid, circuit spool buffer controls, and notification audit logs
+- System health grid and telemetry monitoring across all 16 services
+- Circuit spool buffer recovery and notification retry controls
+- Database connection status and compliance audit log inspection
 
 ## Local development
 

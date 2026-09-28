@@ -6,7 +6,7 @@ Group 3 Engineering Repository: Definitive Architecture, Schemas, and Developer 
 
 ## 1. System architecture and core principles
 
-The platform is a high-throughput, event-driven, dual-storage retail banking system with Maker-Checker transaction verification, deterministic concurrency locking, transactional outbox relays to Kafka KRaft, and immutable audit logging.
+The platform is a high-throughput, event-driven, dual-storage retail banking system with customer email verification for high-value transfers, deterministic concurrency locking, transactional outbox relays to Kafka KRaft, and immutable audit logging.
 
 ```
                                   +-----------------------+
@@ -49,7 +49,7 @@ The platform is a high-throughput, event-driven, dual-storage retail banking sys
                                                      +---------------------------+
                                                      | Apache Kafka KRaft Broker |
                                                      |  banking.transfers.events |
-                                                     |  banking.makerchecker.pen |
+                                                     |  banking.customer.otp     |
                                                      |        (Port 9092)        |
                                                      +-------------+-------------+
                                                                    |
@@ -72,12 +72,12 @@ The platform is a high-throughput, event-driven, dual-storage retail banking sys
 3. **Deterministic lock ordering (deadlock prevention)**:
    When moving funds between two accounts, the engine sorts account IDs lexicographically (`sourceId.compareTo(targetId) < 0 ? sourceId : targetId`). The account with the lower ID is always locked first, guaranteeing that concurrent opposing transfers (A to B and B to A) acquire locks in the exact same sequence.
 
-4. **Maker-checker dual control (BSP compliance)**:
+4. **Customer email verification for transfers above PHP 50,000.00 (BSP compliance)**:
    - System accounts are divided into two distinct roles: `CUSTOMER` and `ADMIN`.
-   - Transfers at or below PHP 50,000.00 execute immediate atomic settlement without secondary approval.
-   - Transfers exceeding PHP 50,000.00 place a soft hold on the sender available balance and enter `PENDING_APPROVAL`.
-   - An authorized `ADMIN` user must review and approve or reject the request. The initiator (maker) cannot approve or reject their own transaction, enforcing segregation of duties.
-   - High-value transfers at or above PHP 500,000.00 (AMLA covered) require dual admin authorization (approval by two distinct Admin accounts) prior to balance deduction and settlement.
+   - Transfers at or below PHP 50,000.00 execute immediate atomic settlement without secondary challenge.
+   - Transfers exceeding PHP 50,000.00 require customer verification via email. The engine places a soft hold on the sender available balance and generates a 6-digit OTP delivered to the customer registered email address.
+   - Once the customer submits and validates the OTP, the hold is released and the balance mutation executes immediately. No admin approval is involved.
+   - Transfers at or above PHP 500,000.00 (AMLA covered) also require customer email verification and generate an automated Covered Transaction Report (CTR) regulatory notification.
 
 5. **Transactional outbox pattern (EVT-601)**:
    Financial mutations write the state update and an outbox event within the exact same relational transaction. A dedicated polling worker (`OutboxRelayScheduler`) runs every 2 seconds, publishing pending events to Apache Kafka and guaranteeing at-least-once message delivery without two-phase commit overhead.
@@ -102,14 +102,14 @@ Every container attaches to the bridge network `banking-net`. Host and internal 
 | **Frontend Web SPA** | `banking-frontend` | `3000` | `80` | HTTP | React 18 + Vite Retail Banking Portal (Nginx Reverse Proxy) |
 | **API Gateway** | `gateway-service` | `8080` | `8080` | HTTP / REST | Perimeter routing, JWT signature validation, Redis rate limiting |
 | **Account Service** | `account-service` | `8081` | `8081` | HTTP / REST | KYC onboarding, user profiles, account creation, token rotation |
-| **Ledger Engine** | `ledger-mutation-engine`| `8082` | `8082` | HTTP / REST | Concurrency locks, balance mutations, maker-checker, outbox worker |
+| **Ledger Engine** | `ledger-mutation-engine`| `8082` | `8082` | HTTP / REST | Concurrency locks, balance mutations, email 2FA verification, outbox worker |
 | **Notification Service** | `notification-service` | `8083` | `8083` | HTTP / REST | Kafka listener, receipt generation, admin alerts, email 2FA dispatch |
 | **MailHog Mock SMTP** | `mailhog-smtp` | `8025` / `1025` | `8025` / `1025` | HTTP / SMTP | Mock email testing inbox UI (`:8025`) and SMTP receiver (`:1025`) |
 | **Oracle Database XE** | `oracle-xe-master` | `1521` | `1521` | Oracle TNS | Operational relational state (`XEPDB1`) |
 | **PostgreSQL Audit** | `postgres-audit-vault`| `5433` | `5432` | PostgreSQL | Dedicated append-only audit vault (`banking_audit`) |
 | **Redis Cache** | `redis-cache` | `6379` | `6379` | RESP / TCP | Token blacklist, session cache, 2FA OTP cache, rate limiting counters |
 | **Kafka Broker** | `kafka-broker` | `9092` | `9092` | PLAINTEXT | Apache Kafka KRaft cluster event commit log |
-| **Kafka UI** | `kafka-ui` | `8085` | `8080` | HTTP | Web console for topics, consumer groups, and message inspection |
+| **Kafka UI` | `kafka-ui` | `8085` | `8080` | HTTP | Web console for topics, consumer groups, and message inspection |
 | **Adminer Web GUI** | `db-adminer` | `8088` | `8080` | HTTP | Web database management console for Oracle and PostgreSQL |
 | **Jaeger Tracing** | `jaeger-tracing` | `16686` / `4317` / `4318` | `16686` / `4317` / `4318` | HTTP / gRPC | Distributed tracing visualization and OTLP trace collection |
 | **Prometheus Metrics**| `prometheus-engine`| `9090` | `9090` | HTTP | Time-series metrics collection and alert evaluation |
@@ -158,8 +158,9 @@ CREATE TABLE users (
 );
 
 -- Note on Account Roles and 2FA:
--- - The system supports strictly two account types: CUSTOMER (retail banking clients) and ADMIN (system operators and transaction checkers).
--- - Two-factor authentication (2FA) is executed via the email service. A cryptographically random 6-digit OTP is generated and cached in Redis (5-minute TTL), then dispatched to the user registered email address via the Notification Service and local SMTP. Biometric authenticators and SMS OTPs are omitted.
+-- - The system supports strictly two account types: CUSTOMER (retail banking clients) and ADMIN (system operators and telemetry monitors).
+-- - Transfers exceeding PHP 50,000.00 require customer verification via email OTP. Once verified, the transaction settles immediately without admin approval.
+-- - Two-factor authentication (2FA) is executed via the email service. A cryptographically random 6-digit OTP is generated and cached in Redis (5-minute TTL), then dispatched to the customer registered email address via the Notification Service and local SMTP. Biometric authenticators and SMS OTPs are omitted.
 
 -- 2. Accounts Table
 CREATE TABLE accounts (
@@ -186,7 +187,7 @@ CREATE TABLE balance_master (
     CONSTRAINT chk_bm_solvency CHECK (balance_amount >= hold_amount)
 );
 
--- 4. Transactions Table (Includes Dual-Control Metadata)
+-- 4. Transactions Table (Includes Customer Verification Metadata)
 CREATE TABLE transactions (
     transaction_id         VARCHAR2(64) PRIMARY KEY,
     from_account_id        VARCHAR2(64) NOT NULL,
@@ -196,7 +197,7 @@ CREATE TABLE transactions (
     before_balance         NUMBER(18, 4) NOT NULL,
     after_balance          NUMBER(18, 4) NOT NULL,
     status                 VARCHAR2(30) NOT NULL CHECK (status IN ('PENDING_APPROVAL', 'COMMITTED', 'FAILED')),
-    requires_maker_checker NUMBER(1) DEFAULT 0 NOT NULL,
+    requires_maker_checker NUMBER(1) DEFAULT 0 NOT NULL, -- Flag indicates email OTP verification required (> PHP 50,000.00)
     approved_by_user_id    VARCHAR2(64),
     created_at             TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at             TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -315,7 +316,7 @@ Because Adminer runs inside the Docker bridge network `banking-net`, connection 
 
 ---
 
-## 4. Core Balance Mutation Engine (CME) and dual control
+## 4. Core Balance Mutation Engine (CME) and customer email verification
 
 The Balance Mutation Engine executes financial movements with deterministic safety controls:
 
@@ -334,47 +335,28 @@ The Balance Mutation Engine executes financial movements with deterministic safe
            +-------------------------------------------------------+
            |                                                       |
 Amount <= 50,000 PHP                                     Amount > 50,000 PHP
-(Normal STP Transfer)                                    (Maker-Checker Approval Required)
+(Normal STP Transfer)                                    (Customer Email Verification Required)
            |                                                       |
            v                                                       v
 [Atomic Immediate Settlement]                            [Place Soft Hold on Sender]
 - Deduct sender balance & available                      - hold_amount += amount
 - Credit receiver balance & available                    - available_balance -= amount
 - Tx status: COMMITTED                                   - balance_amount untouched
-- Write outbox: banking.transfers.events                 - Tx status: PENDING_APPROVAL
-- Write Postgres audit log                               - Write outbox: banking.makerchecker.pending
+- Write outbox: banking.transfers.events                 - Tx status: PENDING_VERIFICATION
+- Write Postgres audit log                               - Dispatch 6-digit OTP to customer email
                                                                    |
                                                                    v
-                                                        [Admin / Checker Review]
+                                                      [Customer Inputs Email OTP Code]
                                                                    |
                          +-----------------------------------------+-----------------------------------------+
                          |                                                                                   |
-                     [Approve]                                                                           [Reject]
-                         |                                                                                   |
-           [Enforce Segregation of Duties]                                                     [Enforce Segregation of Duties]
-           (checkerUserId != makerUserId)                                                      (checkerUserId != makerUserId)
-                         |                                                                                   |
-           +-------------+-------------+                                                                     |
-           |                           |                                                                     |
-Amount < 500,000 PHP        Amount >= 500,000 PHP                                                            |
-(Single Admin Approval)     (AMLA Dual Admin Control)                                                        |
-           |                           |                                                                     |
-           |                           v                                                                     |
-           |             [First Admin Approval Recorded]                                                     |
-           |             - Status remains PENDING_APPROVAL                                                   |
-           |             - Awaiting distinct Second Admin                                                    |
-           |                           |                                                                     |
-           |                           v                                                                     |
-           |             [Second Admin Approval Verified]                                                    |
-           |             (secondAdminId != firstAdminId)                                                     |
-           |                           |                                                                     |
-           +-------------+-------------+                                                                     |
+                 [OTP Code Valid]                                                            [OTP Expired / Cancelled]
                          |                                                                                   |
                          v                                                                                   v
            [Release Hold & Commit Settlement]                                                  [Release Hold & Restore Available]
            - sender hold_amount -= amount                                                      - sender hold_amount -= amount
            - sender balance_amount -= amount                                                   - sender available_balance += amount
-           - receiver balance_amount += amount                                                 - Tx status: REJECTED
+           - receiver balance_amount += amount                                                 - Tx status: CANCELLED
            - receiver available_balance += amount                                              - Write Postgres audit log
            - Tx status: COMMITTED
            - Write outbox: banking.transfers.events
@@ -396,55 +378,38 @@ Amount < 500,000 PHP        Amount >= 500,000 PHP                               
      "initiator_user_id": "usr-1001-cst-001"
    }
    ```
+   *For amounts exceeding PHP 50,000.00, the transfer enters `PENDING_VERIFICATION` status and triggers an email OTP challenge.*
 
-2. **Approve transfer (Admin checker)**:
-   `POST /api/v1/ledger/approve`
+2. **Request email verification code**:
+   `POST /api/v1/auth/2fa/send-otp`
    ```json
    {
+     "userId": "usr-1001-cst-001",
      "transactionId": "TX-100293",
-     "checkerUserId": "usr-admin-001",
-     "remarks": "Customer identity and source of funds verified"
-   }
-   ```
-   *Note: For AMLA covered transactions (>= PHP 500,000.00), two distinct Admin approvals must be submitted before final settlement is committed.*
-
-3. **Reject transfer (Admin checker)**:
-   `POST /api/v1/ledger/reject`
-   ```json
-   {
-     "transactionId": "TX-100293",
-     "checkerUserId": "usr-admin-001",
-     "remarks": "Compliance verification failed"
+     "action": "TRANSFER_VERIFICATION"
    }
    ```
 
-4. **Query pending maker-checker queue**:
-   `GET /api/v1/ledger/pending`
+3. **Verify email code and commit transfer**:
+   `POST /api/v1/auth/2fa/verify-otp`
+   ```json
+   {
+     "userId": "usr-1001-cst-001",
+     "transactionId": "TX-100293",
+     "otp": "492817"
+   }
+   ```
+   *Response:*
+   ```json
+   {
+     "status": "COMMITTED",
+     "message": "Email verification confirmed. Funds transferred successfully."
+   }
+   ```
 
-5. **Two-factor authentication via email OTP**:
-   - Request verification code:
-     `POST /api/v1/auth/2fa/send-otp`
-     ```json
-     {
-       "userId": "usr-1001-cst-001",
-       "action": "TRANSFER_VERIFICATION"
-     }
-     ```
-   - Verify code:
-     `POST /api/v1/auth/2fa/verify-otp`
-     ```json
-     {
-       "userId": "usr-1001-cst-001",
-       "otp": "492817"
-     }
-     ```
-     *Response:*
-     ```json
-     {
-       "status": "VERIFIED",
-       "message": "Email two-factor authentication successful"
-     }
-     ```
+4. **Cancel pending transfer**:
+   `POST /api/v1/transfers/TX-100293/cancel`
+   *Releases the soft hold and restores the customer available balance immediately.*
 
 ---
 
@@ -465,9 +430,9 @@ The platform employs the Transactional Outbox Pattern (EVT-601) to bridge relati
    - Payload: `TransactionNotificationEvent` (transfer ID, source/destination accounts, amount, balances before/after, status, maker user ID, timestamp).
    - Consumers: `notification-service` (`TransactionEventConsumer`).
 
-2. **`banking.makerchecker.pending`** (3 partitions, replication factor 1):
-   - Key: `transactionId`.
-   - Payload: Pending transaction metadata requiring secondary checker approval.
+2. **`banking.customer.otp`** (3 partitions, replication factor 1):
+   - Key: `userId` or `transactionId`.
+   - Payload: Customer email OTP verification event for transfers exceeding PHP 50,000.00.
 
 3. **`transaction-events`** (3 partitions, replication factor 1):
    - Internal ledger audit stream.
@@ -487,24 +452,26 @@ The Notification Service (`:8083`) processes financial events from Kafka and del
 ### Regulatory compliance tiers
 
 1. **Tier 1 (Normal retail transfer, <= PHP 50,000.00)**:
-   - Straight-Through Processing (STP) with no manual review required.
+   - Straight-Through Processing (STP) with no verification challenge.
    - Dual email delivery: Inward debit receipt sent to sender, outward credit advice (`inward-credit-advice.html`) sent to beneficiary.
    - Real-time browser toast delivered over Server-Sent Events (SSE).
 
-2. **Tier 2 (Dual-control hold, PHP 50,000.01 to PHP 499,999.99)**:
-   - Requires single Admin approval.
-   - Admin compliance alert email (`maker-checker-alert.html`) dispatched.
-   - Hold notification pushed to customer browser.
+2. **Tier 2 (Customer email OTP verification, PHP 50,000.01 to PHP 499,999.99)**:
+   - Requires customer email verification.
+   - Temporary soft hold placed on sender available balance.
+   - Single-use 6-digit OTP dispatched to customer registered email address (`email-2fa-otp.html`).
+   - Customer submits the OTP in the frontend modal to release the hold and execute immediate settlement. No admin approval is required.
 
-3. **Tier 3 (AMLA covered, >= PHP 500,000.00)**:
-   - Covered transaction under AMLA regulations. Requires Covered Transaction Report (CTR) filing and dual Admin authorization (two distinct Admin approvals required).
-   - High-value advisory sent to Compliance Officer inbox (`compliance-officer@corebank.ph`).
+3. **Tier 3 (AMLA covered transfer, >= PHP 500,000.00)**:
+   - Covered transaction under AMLA regulations.
+   - Requires customer email verification via OTP.
+   - Automated Covered Transaction Report (CTR) compliance advisory dispatched to Compliance Officer inbox (`compliance-officer@corebank.ph`) for regulatory records. No admin approval is required.
 
 ### Two-factor authentication (2FA) via email service
 - **No biometrics or SMS tokens**: The platform intentionally avoids third-party SMS aggregator dependencies and client-side biometric sensors.
-- **Email OTP dispatch**: When a customer or admin initiates a sensitive action or signs in, the Notification Service dispatches a 6-digit numeric pass code formatted in `email-2fa-otp.html`.
+- **Email OTP dispatch**: When a customer initiates a transfer above PHP 50,000.00 or signs in, the Notification Service dispatches a 6-digit numeric pass code formatted in `email-2fa-otp.html`.
 - **In-memory cache validation**: The OTP is stored in Redis under the key `2fa:otp:{userId}` with a 300-second (5-minute) time-to-live.
-- **Audit capture**: Each OTP request and verification outcome is recorded in the operational database for compliance review.
+- **Immediate settlement**: Upon successful OTP entry, the transaction is committed directly to the ledger without manual administrative review.
 
 ### Resilient offline spooling
 If the SMTP server is unavailable, messages are automatically buffered in an in-memory circuit spool buffer. Once connectivity is restored, calling `POST /api/v1/notifications/flush-spool` drains the buffer and delivers all queued notices.
@@ -515,8 +482,8 @@ If the SMTP server is unavailable, messages are automatically buffered in an in-
 
 The Single-Page Application (`frontend/`) provides an interactive interface partitioned into two distinct user experiences:
 
-- **Customer Portal**: Real-time balance cards, quick preset transfer amounts, regulatory tier calculation, email 2FA verification dialog, and transaction history.
-- **Admin Portal**: Unified Maker-Checker authorization terminal. Displays pending transfers requiring review, enforces segregation of duties (prohibits makers from approving their own transfers), coordinates single Admin approval for Tier 2 and dual Admin approvals for Tier 3 AMLA transactions, provides full system telemetry (service health grid, circuit spool controls, and database audit logs).
+- **Customer Portal**: Real-time balance cards, quick preset transfer amounts, regulatory tier calculation, email OTP verification dialog for transfers exceeding PHP 50,000.00, and transaction receipt viewer.
+- **Admin Portal**: System telemetry grid, 16-container health status, circuit spool buffer controls, database connection inspector, and audit log viewer. (Admins do not approve transfers; transfers are authorized directly by customers via email).
 - **Live SSE Indicator**: Real-time connection badge with automatic reconnection and interactive floating toast notifications.
 
 ---
@@ -662,7 +629,7 @@ Open **[http://localhost:3000](http://localhost:3000)** in your browser.
 │       └── components/
 │           ├── Header.jsx              # Navigation header, role switcher & SSE badge
 │           ├── CustomerPortal.jsx      # Customer transfer terminal, balances, email 2FA
-│           └── AdminPortal.jsx         # Maker-Checker queue, dual admin approval, health grid
+│           └── AdminPortal.jsx         # System telemetry grid, circuit spool buffer monitor, audit viewer
 └── backend/
     ├── pom.xml                         # Aggregator POM (Spring Boot 3.3.5, Java 21)
     ├── common-contracts/               # Shared DTOs, enums, events, and exceptions

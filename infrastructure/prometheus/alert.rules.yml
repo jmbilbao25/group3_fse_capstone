@@ -1,0 +1,47 @@
+groups:
+  - name: fse_banking_alerts
+    rules:
+      - alert: ServiceInstanceDown
+        expr: up == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Banking microservice instance {{ $labels.application }} is down"
+          description: "Instance {{ $labels.instance }} of application {{ $labels.application }} has been unreachable for more than 30 seconds."
+
+      - alert: HighHttp5xxErrorRate
+        expr: (sum(rate(http_server_requests_seconds_count{status=~"5.."}[1m])) by (application) / sum(rate(http_server_requests_seconds_count[1m])) by (application)) * 100 > 5
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High HTTP 5xx error rate on {{ $labels.application }}"
+          description: "Application {{ $labels.application }} has an HTTP 5xx error rate of {{ $value }}% (threshold > 5%) over the last minute."
+
+      - alert: HighP95Latency
+        expr: histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket[1m])) by (le, application, uri)) > 1.5
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High P95 response latency on {{ $labels.application }} [{{ $labels.uri }}]"
+          description: "URI {{ $labels.uri }} on {{ $labels.application }} has P95 response time of {{ $value }}s (threshold > 1.5s)."
+
+      - alert: HighJvmHeapUsage
+        expr: (jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"}) * 100 > 85
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High JVM heap memory consumption on {{ $labels.application }}"
+          description: "JVM Heap memory usage on {{ $labels.application }} ({{ $labels.instance }}) is at {{ $value }}% (threshold > 85%)."
+
+      - alert: HikariPoolExhaustion
+        expr: (hikaricp_connections_active / (hikaricp_connections_active + hikaricp_connections_idle)) * 100 > 90
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "HikariCP connection pool near saturation: {{ $labels.pool }}"
+          description: "HikariCP pool {{ $labels.pool }} on {{ $labels.application }} is {{ $value }}% utilized."

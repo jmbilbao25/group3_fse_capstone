@@ -50,6 +50,12 @@ class PostgresHikariTest {
     @Test
     @DisplayName("Verify PostgreSQL Audit Read/Write via HikariCP")
     void testAuditInsertAndRead() {
+        try (java.net.Socket socket = new java.net.Socket()) {
+            socket.connect(new java.net.InetSocketAddress("localhost", 5433), 1000);
+        } catch (Exception e) {
+            org.junit.jupiter.api.Assumptions.abort("PostgreSQL is not running on localhost:5433; skipping live database test.");
+        }
+
         String txId = "TEST-TX-" + System.currentTimeMillis();
 
         LedgerMutationAudit audit = LedgerMutationAudit.builder()

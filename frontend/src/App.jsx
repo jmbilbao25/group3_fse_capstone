@@ -1,10 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { 
+  Bell, 
+  X, 
+  CheckCircle2, 
+  AlertTriangle, 
+  Info, 
+  ShieldAlert, 
+  Sparkles 
+} from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Login from './components/Login';
 import CustomerPortal from './components/CustomerPortal';
 import ManagerPortal from './components/ManagerPortal';
+import TellerPortal from './components/TellerPortal';
 import AdminPortal from './components/AdminPortal';
 import Toast from './components/Toast';
 import apiClient, { mockState } from './services/api';
@@ -22,6 +32,102 @@ function MainApp() {
     credit_limit: 0.0000,
   });
   const [toast, setToast] = useState(null);
+
+  // SSE Live Notification Streaming State (Integrated from Group 3 Event Stream)
+  const [isLiveConnected, setIsLiveConnected] = useState(false);
+  const [liveNotifications, setLiveNotifications] = useState([]);
+  const [pendingTransactions, setPendingTransactions] = useState([
+    {
+      transactionId: 'TX-772190',
+      sourceAccountId: 'A2001',
+      destinationAccountId: 'A2002',
+      amount: 75000.0,
+      initiatorUserId: 'U1001',
+      description: 'Vendor Invoice Settlement (Hardware Supplier)',
+      submittedAt: new Date(Date.now() - 1000 * 60 * 14).toISOString(),
+      status: 'PENDING_APPROVAL',
+      riskTier: 'TIER_2_MAKER_CHECKER',
+    },
+    {
+      transactionId: 'TX-551029',
+      sourceAccountId: 'A2001',
+      destinationAccountId: 'A2002',
+      amount: 650000.0,
+      initiatorUserId: 'U1001',
+      description: 'Commercial Real Estate Acquisition Escrow',
+      submittedAt: new Date(Date.now() - 1000 * 60 * 32).toISOString(),
+      status: 'PENDING_APPROVAL',
+      riskTier: 'TIER_3_AMLA',
+    },
+  ]);
+
+  const addToastNotification = (newToast) => {
+    setLiveNotifications((prev) => [newToast, ...prev.slice(0, 4)]);
+    setTimeout(() => {
+      setLiveNotifications((prev) => prev.filter((t) => t.id !== newToast.id));
+    }, 7000);
+  };
+
+  const removeToastNotification = (id) => {
+    setLiveNotifications((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  // Connect to SSE notifications stream
+  useEffect(() => {
+    let eventSource = null;
+    let reconnectTimeout = null;
+
+    const connectSSE = () => {
+      try {
+        const streamUserId = user?.userId || 'U1001';
+        eventSource = new EventSource(`/api/v1/notifications/stream?userId=${streamUserId}`);
+
+        eventSource.onopen = () => {
+          setIsLiveConnected(true);
+        };
+
+        eventSource.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            const newToast = {
+              id: 'TOAST-' + Math.random().toString(36).substring(2, 9),
+              title: data.status === 'SUCCESS' ? 'Transfer Settled' : 'System Notification',
+              message: data.message || `Transaction ${data.transferId || ''} status update received.`,
+              amount: data.amount ? `₱${parseFloat(data.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}` : null,
+              type: data.status === 'SUCCESS' ? 'success' : 'info',
+              timestamp: new Date().toLocaleTimeString(),
+            };
+            addToastNotification(newToast);
+          } catch (_) {
+            // Heartbeat ping or unparsed stream data
+          }
+        };
+
+        eventSource.onerror = () => {
+          setIsLiveConnected(false);
+          if (eventSource) {
+            eventSource.close();
+          }
+          reconnectTimeout = setTimeout(connectSSE, 5000);
+        };
+      } catch (_) {
+        setIsLiveConnected(false);
+      }
+    };
+
+    if (user) {
+      connectSSE();
+    }
+
+    return () => {
+      if (eventSource) {
+        eventSource.close();
+      }
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
+    };
+  }, [user]);
 
   const fetchBalance = async (targetId) => {
     const accId = targetId || activeAccountId;
@@ -71,7 +177,7 @@ function MainApp() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
-      <Navbar onRefreshBalance={fetchBalance} />
+      <Navbar onRefreshBalance={fetchBalance} isLiveConnected={isLiveConnected} />
 
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 md:p-8 space-y-6">
         {/* Dynamic Context Header Banner */}
@@ -85,7 +191,7 @@ function MainApp() {
                 </span>
                 <span className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-mono">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  Ledger Engine Online
+                  Ledger Engine Online {isLiveConnected && '(SSE Active)'}
                 </span>
               </div>
               <h2 className="text-xl sm:text-2xl font-bold text-white mt-1.5 tracking-tight">
@@ -133,6 +239,21 @@ function MainApp() {
           />
 
           <Route
+            path="/teller"
+            element={
+              user?.role === 'ROLE_MANAGER' ? (
+                <TellerPortal
+                  pendingTransactions={pendingTransactions}
+                  setPendingTransactions={setPendingTransactions}
+                  onApprovalComplete={() => fetchBalance(activeAccountId)}
+                />
+              ) : (
+                <Navigate to={getRoleHome()} replace />
+              )
+            }
+          />
+
+          <Route
             path="/admin"
             element={
               user?.role === 'ROLE_ADMIN' ? (
@@ -148,14 +269,59 @@ function MainApp() {
         </Routes>
       </main>
 
+      {/* Floating SSE Live Toast Notifications (Bottom Right) */}
+      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none">
+        {liveNotifications.map((notif) => (
+          <div
+            key={notif.id}
+            className="pointer-events-auto p-4 rounded-xl shadow-2xl border backdrop-blur-md transition-all duration-300 transform translate-y-0 bg-slate-950/95 border-slate-700/80 flex items-start gap-3"
+          >
+            <div className="mt-0.5">
+              {notif.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-400" />}
+              {notif.type === 'warning' && <AlertTriangle className="w-5 h-5 text-amber-400" />}
+              {notif.type === 'info' && <Bell className="w-5 h-5 text-blue-400" />}
+            </div>
+
+            <div className="flex-1">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-semibold text-white">{notif.title}</p>
+                <span className="text-[10px] text-slate-400">{notif.timestamp}</span>
+              </div>
+              <p className="text-xs text-slate-300 mt-1 leading-snug">{notif.message}</p>
+              {notif.amount && (
+                <p className="text-xs font-mono font-bold text-indigo-300 mt-1">{notif.amount}</p>
+              )}
+            </div>
+
+            <button
+              onClick={() => removeToastNotification(notif.id)}
+              className="text-slate-400 hover:text-white transition cursor-pointer"
+              title="Dismiss"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        ))}
+      </div>
+
       <Toast toast={toast} onClose={() => setToast(null)} />
 
-      {/* Footer */}
+      {/* Integrated Enterprise Footer */}
       <footer className="border-t border-slate-800/80 px-6 py-4 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 max-w-7xl w-full mx-auto">
         <p>CAPSTONE FSE (Group 3) &bull; Core Retail Ledger &amp; Balance Mutation Engine</p>
-        <p className="font-mono text-[11px] mt-1 sm:mt-0 text-slate-400">
-          PostgreSQL :5432 &bull; Vite :3000 &bull; Notification :8083 &bull; BSP Cir. 808
-        </p>
+        <div className="flex items-center gap-3 font-mono text-[11px] mt-1 sm:mt-0 text-slate-400">
+          <span>Gateway :8080</span>
+          <span>&bull;</span>
+          <span>CME :8082</span>
+          <span>&bull;</span>
+          <span>Notification :8083</span>
+          <span>&bull;</span>
+          <span>PostgreSQL :5432</span>
+          <span>&bull;</span>
+          <span>Oracle :1521</span>
+          <span>&bull;</span>
+          <span>BSP Cir. 808</span>
+        </div>
       </footer>
     </div>
   );
@@ -170,4 +336,3 @@ export default function App() {
     </BrowserRouter>
   );
 }
-

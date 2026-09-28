@@ -3,6 +3,7 @@ package com.bank.ledger.engine.service;
 import com.bank.ledger.contracts.dto.CheckerActionRequest;
 import com.bank.ledger.contracts.dto.MutationRequest;
 import com.bank.ledger.contracts.dto.MutationResponse;
+import com.bank.ledger.contracts.dto.TransactionNotificationEvent;
 import com.bank.ledger.contracts.exception.InsufficientFundsException;
 import com.bank.ledger.contracts.exception.SegregationOfDutiesException;
 import com.bank.ledger.engine.dto.event.NotificationAlertEvent;
@@ -10,12 +11,16 @@ import com.bank.ledger.engine.dto.event.TransactionEvent;
 import com.bank.ledger.engine.entity.audit.LedgerMutationAudit;
 import com.bank.ledger.engine.entity.master.AccountMaster;
 import com.bank.ledger.engine.entity.master.BalanceMaster;
+import com.bank.ledger.engine.entity.master.OutboxEventMaster;
 import com.bank.ledger.engine.entity.master.TransactionMaster;
 import com.bank.ledger.engine.kafka.KafkaEventPublisher;
 import com.bank.ledger.engine.repository.audit.LedgerMutationAuditRepository;
 import com.bank.ledger.engine.repository.master.AccountMasterRepository;
 import com.bank.ledger.engine.repository.master.BalanceMasterRepository;
+import com.bank.ledger.engine.repository.master.OutboxEventMasterRepository;
 import com.bank.ledger.engine.repository.master.TransactionMasterRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,6 +42,8 @@ public class BalanceMutationService {
     private final AccountMasterRepository accountRepository;
     private final LedgerMutationAuditRepository auditRepository;
     private final KafkaEventPublisher kafkaPublisher;
+     private final OutboxEventMasterRepository outboxRepository; 
+    private final ObjectMapper objectMapper;
 
     @Value("${app.maker-checker.threshold:50000.0000}")
     private BigDecimal makerCheckerThreshold;
@@ -115,6 +122,55 @@ public class BalanceMutationService {
                     .build();
             transactionRepository.save(pendingTx);
 
+                        // Persist to Oracle Transactional Outbox (EVT-601)
+            try {
+                String outboxPayload = objectMapper.writeValueAsString(pendingTx);
+                outboxRepository.save(OutboxEventMaster.builder()
+                        .eventId("EVT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                        .aggregateType("MAKER_CHECKER")
+                        .aggregateId(request.getTransactionId())
+                        .eventType("MAKER_PENDING")
+                        .kafkaTopic("banking.makerchecker.pending")
+                        .payload(outboxPayload)
+                        .status("PENDING")
+                        .retryCount(0)
+                        .createdAt(Instant.now())
+                        .build());
+
+                // Notify notification-service consumer of pending dual control hold
+                TransactionNotificationEvent pendingNotif = TransactionNotificationEvent.builder()
+                        .transferId(request.getTransactionId())
+                        .sourceAccount(sourceId)
+                        .destinationAccount(targetId)
+                        .userId(request.getInitiatorUserId() != null ? request.getInitiatorUserId() : "U1001")
+                        .recipientEmail("juan.delacruz@retailbank.ph")
+                        .amount(amount)
+                        .currency("PHP")
+                        .beforeBalance(sender.getBalanceAmount())
+                        .afterBalance(sender.getBalanceAmount())
+                        .status("PENDING_APPROVAL")
+                        .eventType("TRANSFER_PENDING_APPROVAL")
+                        .requiresMakerChecker(true)
+                        .makerUserId(request.getInitiatorUserId() != null ? request.getInitiatorUserId() : "U1001")
+                        .timestamp(Instant.now())
+                        .description("Tier 2: Dual Control Transfer Pending Review")
+                        .build();
+
+                outboxRepository.save(OutboxEventMaster.builder()
+                        .eventId("EVT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                        .aggregateType("MAKER_CHECKER")
+                        .aggregateId(request.getTransactionId())
+                        .eventType("TRANSFER_PENDING_APPROVAL")
+                        .kafkaTopic("banking.transfers.events")
+                        .payload(objectMapper.writeValueAsString(pendingNotif))
+                        .status("PENDING")
+                        .retryCount(0)
+                        .createdAt(Instant.now())
+                        .build());
+            } catch (Exception e) {
+                log.error("[OUTBOX ERROR] Failed to serialize pending transaction for outbox", e);
+            }
+
             // Kafka Alert: Notify customer of pending dual control review
             kafkaPublisher.publishNotificationAlert(NotificationAlertEvent.builder()
                     .alertId("ALT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
@@ -189,6 +245,67 @@ public class BalanceMutationService {
                 .status("COMMITTED")
                 .createdAt(Instant.now())
                 .build());
+
+                // Persist to Oracle Transactional Outbox (EVT-601)
+        try {
+            TransactionEvent event = TransactionEvent.builder()
+                    .transactionId(request.getTransactionId())
+                    .sourceAccountId(sourceId)
+                    .destinationAccountId(targetId)
+                    .amount(amount)
+                    .currency("PHP")
+                    .mutationType("TRANSFER")
+                    .status("COMMITTED")
+                    .initiatorUserId(request.getInitiatorUserId())
+                    .timestamp(Instant.now())
+                    .build();
+
+            String outboxPayload = objectMapper.writeValueAsString(event);
+            outboxRepository.save(OutboxEventMaster.builder()
+                    .eventId("EVT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                    .aggregateType("TRANSACTION")
+                    .aggregateId(request.getTransactionId())
+                    .eventType("MUTATION_COMMITTED")
+                    .kafkaTopic("transaction-events")
+                    .payload(outboxPayload)
+                    .status("PENDING")
+                    .retryCount(0)
+                    .createdAt(Instant.now())
+                    .build());
+
+            // Notify notification-service consumer of executed transfer
+            TransactionNotificationEvent notifEvent = TransactionNotificationEvent.builder()
+                    .transferId(request.getTransactionId())
+                    .sourceAccount(sourceId)
+                    .destinationAccount(targetId)
+                    .userId(request.getInitiatorUserId() != null ? request.getInitiatorUserId() : "U1001")
+                    .recipientEmail("juan.delacruz@retailbank.ph")
+                    .amount(amount)
+                    .currency("PHP")
+                    .beforeBalance(senderBefore)
+                    .afterBalance(senderAfter)
+                    .status("COMMITTED")
+                    .eventType("TRANSFER_EXECUTED")
+                    .requiresMakerChecker(false)
+                    .makerUserId(request.getInitiatorUserId() != null ? request.getInitiatorUserId() : "U1001")
+                    .timestamp(Instant.now())
+                    .description("Retail Fund Transfer")
+                    .build();
+
+            outboxRepository.save(OutboxEventMaster.builder()
+                    .eventId("EVT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                    .aggregateType("TRANSACTION")
+                    .aggregateId(request.getTransactionId())
+                    .eventType("TRANSFER_EXECUTED")
+                    .kafkaTopic("banking.transfers.events")
+                    .payload(objectMapper.writeValueAsString(notifEvent))
+                    .status("PENDING")
+                    .retryCount(0)
+                    .createdAt(Instant.now())
+                    .build());
+        } catch (Exception e) {
+            log.error("[OUTBOX ERROR] Failed to serialize committed transaction for outbox", e);
+        }
 
         // Kafka Streaming
         kafkaPublisher.publishTransactionEvent(TransactionEvent.builder()
@@ -307,6 +424,67 @@ public class BalanceMutationService {
                 .createdAt(Instant.now())
                 .build());
 
+                // Persist to Oracle Transactional Outbox (EVT-601)
+        try {
+            TransactionEvent approvedEvent = TransactionEvent.builder()
+                    .transactionId(transactionId)
+                    .sourceAccountId(sourceId)
+                    .destinationAccountId(targetId)
+                    .amount(amount)
+                    .currency("PHP")
+                    .mutationType("TRANSFER")
+                    .status("COMMITTED")
+                    .initiatorUserId(sourceAccount.getUserId())
+                    .timestamp(Instant.now())
+                    .build();
+
+            String outboxPayload = objectMapper.writeValueAsString(approvedEvent);
+            outboxRepository.save(OutboxEventMaster.builder()
+                    .eventId("EVT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                    .aggregateType("TRANSACTION")
+                    .aggregateId(transactionId)
+                    .eventType("CHECKER_APPROVED")
+                    .kafkaTopic("transaction-events")
+                    .payload(outboxPayload)
+                    .status("PENDING")
+                    .retryCount(0)
+                    .createdAt(Instant.now())
+                    .build());
+
+            // Notify notification-service of checker approved transaction
+            TransactionNotificationEvent approvedNotif = TransactionNotificationEvent.builder()
+                    .transferId(transactionId)
+                    .sourceAccount(sourceId)
+                    .destinationAccount(targetId)
+                    .userId(sourceAccount.getUserId())
+                    .recipientEmail("juan.delacruz@retailbank.ph")
+                    .amount(amount)
+                    .currency("PHP")
+                    .beforeBalance(senderBefore)
+                    .afterBalance(senderAfter)
+                    .status("COMMITTED")
+                    .eventType("TRANSFER_EXECUTED")
+                    .requiresMakerChecker(false)
+                    .makerUserId(sourceAccount.getUserId())
+                    .timestamp(Instant.now())
+                    .description(checkerRequest.getRemarks() != null ? checkerRequest.getRemarks() : "Approved by Dual-Control Checker")
+                    .build();
+
+            outboxRepository.save(OutboxEventMaster.builder()
+                    .eventId("EVT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                    .aggregateType("TRANSACTION")
+                    .aggregateId(transactionId)
+                    .eventType("TRANSFER_EXECUTED")
+                    .kafkaTopic("banking.transfers.events")
+                    .payload(objectMapper.writeValueAsString(approvedNotif))
+                    .status("PENDING")
+                    .retryCount(0)
+                    .createdAt(Instant.now())
+                    .build());
+        } catch (Exception e) {
+            log.error("[OUTBOX ERROR] Failed to serialize approved transaction for outbox", e);
+        }
+
         // Kafka Event
         kafkaPublisher.publishTransactionEvent(TransactionEvent.builder()
                 .transactionId(transactionId)
@@ -362,6 +540,13 @@ public class BalanceMutationService {
 
         AccountMaster sourceAccount = accountRepository.findById(tx.getFromAccountId())
                 .orElseThrow(() -> new IllegalArgumentException("Account not found: " + tx.getFromAccountId()));
+
+        if (checkerRequest.getCheckerUserId().equals(sourceAccount.getUserId())) {
+            log.error("[SECURITY VIOLATION] Maker {} attempted to reject their own transfer {}",
+                    checkerRequest.getCheckerUserId(), transactionId);
+            throw new SegregationOfDutiesException(
+                    "Maker-Checker Violation: The initiator cannot reject their own transfer.");
+        }
 
         BalanceMaster sender = balanceRepository.findByAccountIdWithLock(tx.getFromAccountId()).orElseThrow();
         BigDecimal amount = tx.getAmount();

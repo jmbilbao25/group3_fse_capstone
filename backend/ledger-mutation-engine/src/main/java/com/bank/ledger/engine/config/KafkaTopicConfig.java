@@ -18,6 +18,9 @@ public class KafkaTopicConfig {
     @Value("${app.kafka.topics.audit-events:audit-events}")
     private String auditEventsTopic;
 
+    @Value("${app.kafka.topics.transfers-events:banking.transfers.events}")
+    private String transfersEventsTopic;
+
     // Banking Standard: 3 partitions allows parallel consumer scaling
     @Bean
     public NewTopic transactionEventsTopic() {
@@ -38,6 +41,14 @@ public class KafkaTopicConfig {
     @Bean
     public NewTopic auditEventsTopic() {
         return TopicBuilder.name(auditEventsTopic)
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic transfersEventsTopic() {
+        return TopicBuilder.name(transfersEventsTopic)
                 .partitions(3)
                 .replicas(1)
                 .build();

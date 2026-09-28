@@ -35,6 +35,17 @@ spring:
                 redis-rate-limiter.burstCapacity: 20
                 key-resolver: "#{@userKeyResolver}"
 
+        - id: notification-service
+          uri: ${NOTIFICATION_SERVICE_URI:http://localhost:8083}
+          predicates:
+            - Path=/api/notifications/**, /api/v1/notifications/**, /ws/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 20
+                redis-rate-limiter.burstCapacity: 40
+                key-resolver: "#{@userKeyResolver}"
+
 jwt:
   secret: ${JWT_SECRET:c3VwZXItc2VjcmV0LWtleS1mb3ItZnNlLWNhcHN0b25lLWJhbmtpbmctcGxhdGZvcm0tMjAyNi0xMjM0NTY3ODkwMTI=}
   issuer: ${JWT_ISSUER:fse-banking-account-service}

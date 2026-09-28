@@ -42,6 +42,8 @@ CREATE TABLE IF NOT EXISTS ledger_mutation_audit (
     CHECK (
               mutation_type IN (
               'TRANSFER',
+              'DEBIT',
+              'CREDIT',
               'HOLD',
               'RELEASE'
                                )

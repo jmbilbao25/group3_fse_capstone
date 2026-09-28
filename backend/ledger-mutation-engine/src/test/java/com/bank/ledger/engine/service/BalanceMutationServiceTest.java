@@ -16,6 +16,9 @@ import com.bank.ledger.engine.repository.audit.LedgerMutationAuditRepository;
 import com.bank.ledger.engine.repository.master.AccountMasterRepository;
 import com.bank.ledger.engine.repository.master.BalanceMasterRepository;
 import com.bank.ledger.engine.repository.master.TransactionMasterRepository;
+import com.bank.ledger.engine.entity.master.OutboxEventMaster;
+import com.bank.ledger.engine.repository.master.OutboxEventMasterRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -52,6 +55,12 @@ class BalanceMutationServiceTest {
 
     @Mock
     private KafkaEventPublisher kafkaPublisher;
+
+    @Mock
+    private OutboxEventMasterRepository outboxRepository;
+
+    @Mock
+    private ObjectMapper objectMapper;
 
     @InjectMocks
     private BalanceMutationService mutationService;

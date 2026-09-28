@@ -3,6 +3,7 @@ package com.bank.ledger.engine.service;
 import com.bank.ledger.contracts.dto.CheckerActionRequest;
 import com.bank.ledger.contracts.dto.MutationRequest;
 import com.bank.ledger.contracts.dto.MutationResponse;
+import com.bank.ledger.contracts.dto.TransactionNotificationEvent;
 import com.bank.ledger.contracts.exception.InsufficientFundsException;
 import com.bank.ledger.contracts.exception.SegregationOfDutiesException;
 import com.bank.ledger.engine.dto.event.NotificationAlertEvent;
@@ -135,6 +136,37 @@ public class BalanceMutationService {
                         .retryCount(0)
                         .createdAt(Instant.now())
                         .build());
+
+                // Notify notification-service consumer of pending dual control hold
+                TransactionNotificationEvent pendingNotif = TransactionNotificationEvent.builder()
+                        .transferId(request.getTransactionId())
+                        .sourceAccount(sourceId)
+                        .destinationAccount(targetId)
+                        .userId(request.getInitiatorUserId() != null ? request.getInitiatorUserId() : "U1001")
+                        .recipientEmail("juan.delacruz@retailbank.ph")
+                        .amount(amount)
+                        .currency("PHP")
+                        .beforeBalance(sender.getBalanceAmount())
+                        .afterBalance(sender.getBalanceAmount())
+                        .status("PENDING_APPROVAL")
+                        .eventType("TRANSFER_PENDING_APPROVAL")
+                        .requiresMakerChecker(true)
+                        .makerUserId(request.getInitiatorUserId() != null ? request.getInitiatorUserId() : "U1001")
+                        .timestamp(Instant.now())
+                        .description("Tier 2: Dual Control Transfer Pending Review")
+                        .build();
+
+                outboxRepository.save(OutboxEventMaster.builder()
+                        .eventId("EVT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                        .aggregateType("MAKER_CHECKER")
+                        .aggregateId(request.getTransactionId())
+                        .eventType("TRANSFER_PENDING_APPROVAL")
+                        .kafkaTopic("banking.transfers.events")
+                        .payload(objectMapper.writeValueAsString(pendingNotif))
+                        .status("PENDING")
+                        .retryCount(0)
+                        .createdAt(Instant.now())
+                        .build());
             } catch (Exception e) {
                 log.error("[OUTBOX ERROR] Failed to serialize pending transaction for outbox", e);
             }
@@ -236,6 +268,37 @@ public class BalanceMutationService {
                     .eventType("MUTATION_COMMITTED")
                     .kafkaTopic("transaction-events")
                     .payload(outboxPayload)
+                    .status("PENDING")
+                    .retryCount(0)
+                    .createdAt(Instant.now())
+                    .build());
+
+            // Notify notification-service consumer of executed transfer
+            TransactionNotificationEvent notifEvent = TransactionNotificationEvent.builder()
+                    .transferId(request.getTransactionId())
+                    .sourceAccount(sourceId)
+                    .destinationAccount(targetId)
+                    .userId(request.getInitiatorUserId() != null ? request.getInitiatorUserId() : "U1001")
+                    .recipientEmail("juan.delacruz@retailbank.ph")
+                    .amount(amount)
+                    .currency("PHP")
+                    .beforeBalance(senderBefore)
+                    .afterBalance(senderAfter)
+                    .status("COMMITTED")
+                    .eventType("TRANSFER_EXECUTED")
+                    .requiresMakerChecker(false)
+                    .makerUserId(request.getInitiatorUserId() != null ? request.getInitiatorUserId() : "U1001")
+                    .timestamp(Instant.now())
+                    .description("Retail Fund Transfer")
+                    .build();
+
+            outboxRepository.save(OutboxEventMaster.builder()
+                    .eventId("EVT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                    .aggregateType("TRANSACTION")
+                    .aggregateId(request.getTransactionId())
+                    .eventType("TRANSFER_EXECUTED")
+                    .kafkaTopic("banking.transfers.events")
+                    .payload(objectMapper.writeValueAsString(notifEvent))
                     .status("PENDING")
                     .retryCount(0)
                     .createdAt(Instant.now())
@@ -383,6 +446,37 @@ public class BalanceMutationService {
                     .eventType("CHECKER_APPROVED")
                     .kafkaTopic("transaction-events")
                     .payload(outboxPayload)
+                    .status("PENDING")
+                    .retryCount(0)
+                    .createdAt(Instant.now())
+                    .build());
+
+            // Notify notification-service of checker approved transaction
+            TransactionNotificationEvent approvedNotif = TransactionNotificationEvent.builder()
+                    .transferId(transactionId)
+                    .sourceAccount(sourceId)
+                    .destinationAccount(targetId)
+                    .userId(sourceAccount.getUserId())
+                    .recipientEmail("juan.delacruz@retailbank.ph")
+                    .amount(amount)
+                    .currency("PHP")
+                    .beforeBalance(senderBefore)
+                    .afterBalance(senderAfter)
+                    .status("COMMITTED")
+                    .eventType("TRANSFER_EXECUTED")
+                    .requiresMakerChecker(false)
+                    .makerUserId(sourceAccount.getUserId())
+                    .timestamp(Instant.now())
+                    .description(checkerRequest.getRemarks() != null ? checkerRequest.getRemarks() : "Approved by Dual-Control Checker")
+                    .build();
+
+            outboxRepository.save(OutboxEventMaster.builder()
+                    .eventId("EVT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                    .aggregateType("TRANSACTION")
+                    .aggregateId(transactionId)
+                    .eventType("TRANSFER_EXECUTED")
+                    .kafkaTopic("banking.transfers.events")
+                    .payload(objectMapper.writeValueAsString(approvedNotif))
                     .status("PENDING")
                     .retryCount(0)
                     .createdAt(Instant.now())

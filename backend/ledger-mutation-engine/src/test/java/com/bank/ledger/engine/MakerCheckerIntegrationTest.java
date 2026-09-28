@@ -47,6 +47,11 @@ class MakerCheckerIntegrationTest {
         } catch (Exception e) {
             org.junit.jupiter.api.Assumptions.abort("Oracle XE is not running on localhost:1521; skipping live Maker-Checker test.");
         }
+        try (java.net.Socket socket = new java.net.Socket()) {
+            socket.connect(new java.net.InetSocketAddress("localhost", 9092), 1000);
+        } catch (Exception e) {
+            org.junit.jupiter.api.Assumptions.abort("Kafka broker is not running on localhost:9092; skipping live Maker-Checker test.");
+        }
 
         // Reset Sender to PHP 500,000.00 with zero holds
         BalanceMaster sender = balanceRepository.findById(SENDER_ACCOUNT).orElseThrow();

@@ -31,6 +31,20 @@ class OutboxWorkerIntegrationTest {
     @Autowired
     private OutboxRelayScheduler outboxRelayScheduler;
 
+    @org.junit.jupiter.api.BeforeEach
+    void checkPrerequisites() {
+        try (java.net.Socket socket = new java.net.Socket()) {
+            socket.connect(new java.net.InetSocketAddress("localhost", 1521), 1000);
+        } catch (Exception e) {
+            org.junit.jupiter.api.Assumptions.abort("Oracle XE is not running on localhost:1521; skipping live outbox worker test.");
+        }
+        try (java.net.Socket socket = new java.net.Socket()) {
+            socket.connect(new java.net.InetSocketAddress("localhost", 9092), 1000);
+        } catch (Exception e) {
+            org.junit.jupiter.api.Assumptions.abort("Kafka broker is not running on localhost:9092; skipping live outbox worker test.");
+        }
+    }
+
     @Test
     @DisplayName("Verify Transactional Outbox Pattern & Background Relay Worker (EVT-601)")
     void testOutboxWorkerRelaysEventToKafka() throws Exception {

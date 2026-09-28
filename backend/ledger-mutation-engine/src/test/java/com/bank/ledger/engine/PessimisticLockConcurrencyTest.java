@@ -40,6 +40,11 @@ class PessimisticLockConcurrencyTest {
         } catch (Exception e) {
             org.junit.jupiter.api.Assumptions.abort("Oracle XE is not running on localhost:1521; skipping live concurrency test.");
         }
+        try (java.net.Socket socket = new java.net.Socket()) {
+            socket.connect(new java.net.InetSocketAddress("localhost", 9092), 1000);
+        } catch (Exception e) {
+            org.junit.jupiter.api.Assumptions.abort("Kafka broker is not running on localhost:9092; skipping live concurrency test.");
+        }
 
         // Reset Sender with exactly PHP 10,000.00
         BalanceMaster sender = balanceRepository.findById(SENDER_ID).orElseGet(() ->

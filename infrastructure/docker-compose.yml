@@ -170,20 +170,39 @@ services:
     ports:
       - "8083:8083"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:oracle:thin:@oracle-xe-master:1521/FREEPDB1
-      - SPRING_DATASOURCE_USERNAME=SYSTEM
-      - SPRING_DATASOURCE_PASSWORD=Password123#
+      - SPRING_DATASOURCE_URL=jdbc:oracle:thin:@oracle-xe-master:1521/XEPDB1
+      - SPRING_DATASOURCE_USERNAME=fse_user
+      - SPRING_DATASOURCE_PASSWORD=fse_password
       - SPRING_REDIS_HOST=redis-cache
       - SPRING_REDIS_PORT=6379
       - SPRING_MAIL_HOST=mailhog
       - SPRING_MAIL_PORT=1025
-      - SPRING_KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka-broker:29092
     networks:
       - banking-net
     depends_on:
       - oracle-xe-master
       - redis-cache
       - mailhog
+      - kafka-broker
+
+  # ============================================================================
+  # 7. Core Retail Banking Single Page Application (React / Vite / Nginx :3000)
+  # Container Name: banking-frontend
+  # Web Portal for Customers, Tellers, Branch Managers & SysAdmins
+  # ============================================================================
+  banking-frontend:
+    container_name: banking-frontend
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    networks:
+      - banking-net
+    depends_on:
+      - notification-service
 
 volumes:
   oracle_data:

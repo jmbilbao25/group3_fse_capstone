@@ -1,14 +1,16 @@
 package com.bank.ledger.engine.kafka;
 
 import com.bank.ledger.engine.dto.event.NotificationAlertEvent;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
 public class NotificationEventListener {
+
+    private static final Logger log = LoggerFactory.getLogger(NotificationEventListener.class);
 
     /**
      * Downstream Notification Consumer:

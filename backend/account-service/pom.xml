@@ -15,6 +15,10 @@
     <artifactId>account-service</artifactId>
     <packaging>jar</packaging>
 
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
     <name>Account Service</name>
     <description>User Lifecycle, KYC Onboarding, Account Provisioning, and Credit Assessments</description>
 

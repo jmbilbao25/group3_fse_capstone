@@ -2,8 +2,8 @@ package com.bank.ledger.engine.kafka;
 
 import com.bank.ledger.engine.dto.event.NotificationAlertEvent;
 import com.bank.ledger.engine.dto.event.TransactionEvent;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
@@ -11,12 +11,16 @@ import org.springframework.stereotype.Service;
 
 import java.util.concurrent.CompletableFuture;
 
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class KafkaEventPublisher {
 
+    private static final Logger log = LoggerFactory.getLogger(KafkaEventPublisher.class);
+
     private final KafkaTemplate<String, Object> kafkaTemplate;
+
+    public KafkaEventPublisher(KafkaTemplate<String, Object> kafkaTemplate) {
+        this.kafkaTemplate = kafkaTemplate;
+    }
 
     @Value("${app.kafka.topics.transaction-events:transaction-events}")
     private String transactionEventsTopic;

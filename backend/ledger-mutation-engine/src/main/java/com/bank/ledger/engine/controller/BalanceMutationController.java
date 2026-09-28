@@ -60,7 +60,7 @@ public class BalanceMutationController {
     /**
      * 2. Teller Approval of High-Value Transfer (TRX-502, TRX-503)
      */
-    @PostMapping("/transfers/{transactionId}/approve")
+    @PostMapping({"/transfers/{transactionId}/approve", "/transfers/{transactionId}/sign-l1", "/transfers/{transactionId}/sign-l2", "/transfers/{transactionId}/approve-first", "/transfers/{transactionId}/approve-second"})
     public ResponseEntity<MutationResponse> approveTransfer(
             @PathVariable String transactionId,
             @Valid @RequestBody CheckerActionRequest request) {

@@ -32,23 +32,31 @@ export default function Navbar({ onRefreshBalance, isLiveConnected }) {
     {
       role: 'ROLE_MANAGER',
       label: 'Beatriz Ocampo',
-      subtitle: 'Maker-Checker Supervisor (L1 Reviewer)',
-      id: 'U1002',
-      badge: 'L1 Checker',
+      subtitle: 'Maker-Checker Supervisor (Operations Reviewer)',
+      id: 'U3002',
+      badge: 'Operations Manager',
       badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
+    },
+    {
+      role: 'ROLE_MANAGER',
+      label: 'Carlos Mendoza',
+      subtitle: 'Maker-Checker Supervisor (Operations Reviewer)',
+      id: 'U3003',
+      badge: 'Operations Manager',
+      badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
     },
     {
       role: 'ROLE_ADMIN',
       label: 'Diana Admin',
       subtitle: 'Chief Compliance & SCN Auditor',
-      id: 'U1004',
+      id: 'U0001',
       badge: 'SCN Vault',
       badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     }
   ];
 
-  const handleSelectRole = (r) => {
-    switchRole(r);
+  const handleSelectRole = (r, managerId) => {
+    switchRole(r, managerId);
     setShowRoleMenu(false);
     onRefreshBalance?.();
   };
@@ -157,7 +165,7 @@ export default function Navbar({ onRefreshBalance, isLiveConnected }) {
                 <div className="divide-y divide-slate-100 text-xs py-1">
                   <div className="py-2">
                     <p className="font-semibold text-slate-800">Maker-Checker Dual Approval</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">Transfer TX-551029 (₱650k) pending L2 approval.</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">Transfer TX-551029 (₱650k) pending second manager approval.</p>
                   </div>
                   <div className="py-2">
                     <p className="font-semibold text-slate-800">Credit Facility Statement Ready</p>
@@ -191,8 +199,8 @@ export default function Navbar({ onRefreshBalance, isLiveConnected }) {
                   {user?.role === 'ROLE_CUSTOMER'
                     ? 'Private Client'
                     : user?.role === 'ROLE_MANAGER'
-                    ? 'Checker Manager'
-                    : 'Auditor Compliance'}
+                    ? 'Operations Manager'
+                    : 'System Auditor'}
                 </p>
               </div>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5" />
@@ -212,12 +220,12 @@ export default function Navbar({ onRefreshBalance, isLiveConnected }) {
                 </div>
                 <div className="space-y-1 mt-1">
                   {demoRoles.map((dr) => {
-                    const isCurrent = user?.role === dr.role;
+                    const isCurrent = user?.user_id === dr.id;
                     return (
                       <button
-                        key={dr.role}
+                        key={dr.id}
                         type="button"
-                        onClick={() => handleSelectRole(dr.role)}
+                        onClick={() => handleSelectRole(dr.role, dr.id)}
                         className={`w-full p-2.5 rounded-xl text-left transition-all flex items-start gap-2.5 cursor-pointer ${
                           isCurrent
                             ? 'bg-cyan-50/80 border border-cyan-200 text-cyan-950 font-semibold'

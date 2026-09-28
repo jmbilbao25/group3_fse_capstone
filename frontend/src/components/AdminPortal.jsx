@@ -188,6 +188,7 @@ export default function AdminPortal() {
   
   const dualControlApprovals = mockState.auditLogs.filter((log) => 
     log.event_type === 'MANAGER_CHECKER_AUTHORIZATION' || 
+    log.event_type === 'AMLA_TIER3_FIRST_APPROVAL_SIGNOFF' ||
     log.event_type === 'AMLA_TIER3_STAGE1_L1_SIGNOFF' ||
     log.event_type === 'AMLA_TIER3_STAGE2_FINAL_SETTLEMENT'
   ).length;
@@ -244,12 +245,12 @@ export default function AdminPortal() {
       );
     }
 
-    // 3. Stage 1 Signed (AMLA Level 1 Sign-Off complete, awaiting L2)
-    if (log.event_type === 'AMLA_TIER3_STAGE1_L1_SIGNOFF') {
+    // 3. First Approval Complete, awaiting second manager
+    if (log.event_type === 'AMLA_TIER3_FIRST_APPROVAL_SIGNOFF' || log.event_type === 'AMLA_TIER3_STAGE1_L1_SIGNOFF') {
       return (
         <span className={`${baseClass} bg-indigo-500/10 text-indigo-300 border-indigo-500/25`}>
           <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
-          <span>STAGE 1 SIGNED</span>
+          <span>1 OF 2 APPROVED</span>
         </span>
       );
     }
@@ -285,8 +286,8 @@ export default function AdminPortal() {
         lifecycleStatus = 'SETTLED';
       } else if (log.event_type.includes('DISAPPROVAL')) {
         lifecycleStatus = 'VOIDED';
-      } else if (log.event_type === 'AMLA_TIER3_STAGE1_L1_SIGNOFF') {
-        lifecycleStatus = 'STAGE_1_SIGNED';
+      } else if (log.event_type === 'AMLA_TIER3_FIRST_APPROVAL_SIGNOFF' || log.event_type === 'AMLA_TIER3_STAGE1_L1_SIGNOFF') {
+        lifecycleStatus = 'FIRST_APPROVAL_RECORDED';
       } else if (log.event_type.includes('HOLD')) {
         lifecycleStatus = 'PENDING_HELD';
       }
@@ -324,7 +325,7 @@ export default function AdminPortal() {
       `"${tx.recipient_name}"`,
       tx.amount,
       'CTR_MANDATORY',
-      tx.status === 'SETTLED' ? 'FULLY_SETTLED_L1_L2' : tx.approval_stage === 2 ? 'AWAITING_STAGE2_L2' : 'AWAITING_STAGE1_L1',
+      tx.status === 'SETTLED' ? 'FULLY_SETTLED_2_APPROVALS' : tx.approval_stage === 2 ? 'AWAITING_SECOND_APPROVAL' : 'AWAITING_FIRST_APPROVAL',
       `"${new Date(tx.created_at).toISOString()}"`
     ]);
 
@@ -761,7 +762,7 @@ export default function AdminPortal() {
                       <td className="py-3.5 whitespace-nowrap">
                         {isSettled ? (
                           <span className="w-[230px] py-1 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 inline-flex items-center justify-center gap-1.5 font-mono shadow-sm">
-                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> FULLY SETTLED (L1 &amp; L2)
+                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> FULLY SETTLED (2 APPROVALS)
                           </span>
                         ) : isRejected ? (
                           <span className="w-[230px] py-1 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/25 inline-flex items-center justify-center gap-1.5 font-mono shadow-sm">
@@ -769,11 +770,11 @@ export default function AdminPortal() {
                           </span>
                         ) : stage === 2 ? (
                           <span className="w-[230px] py-1 rounded-full text-[10px] font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/25 inline-flex items-center justify-center gap-1.5 font-mono shadow-sm">
-                            <Clock className="w-3.5 h-3.5 shrink-0" /> STAGE 2: AWAITING L2 MANAGER
+                            <Clock className="w-3.5 h-3.5 shrink-0" /> AWAITING SECOND APPROVAL
                           </span>
                         ) : (
                           <span className="w-[230px] py-1 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/25 inline-flex items-center justify-center gap-1.5 font-mono shadow-sm">
-                            <Clock className="w-3.5 h-3.5 shrink-0" /> STAGE 1: AWAITING L1 CHECKER
+                            <Clock className="w-3.5 h-3.5 shrink-0" /> AWAITING FIRST APPROVAL
                           </span>
                         )}
                       </td>
@@ -1096,18 +1097,18 @@ export default function AdminPortal() {
                       <span className="italic">{selectedTx.memo || 'Standard Retail Transfer'}</span>
                     </div>
                   </div>
-                  {(selectedLog.event_type === 'AMLA_TIER3_STAGE1_L1_SIGNOFF' 
-                    ? (selectedTx.l1_notes || selectedTx.approver_notes) 
+                  {(selectedLog.event_type === 'AMLA_TIER3_FIRST_APPROVAL_SIGNOFF' || selectedLog.event_type === 'AMLA_TIER3_STAGE1_L1_SIGNOFF'
+                    ? (selectedTx.first_approver_notes || selectedTx.l1_notes || selectedTx.approver_notes) 
                     : selectedLog.event_type === 'AMLA_TIER3_STAGE2_FINAL_SETTLEMENT' 
-                    ? (selectedTx.l2_notes || selectedTx.approver_notes) 
+                    ? (selectedTx.second_approver_notes || selectedTx.l2_notes || selectedTx.approver_notes) 
                     : selectedTx.approver_notes) && (
                     <div className="pt-1.5 border-t border-slate-800/60 text-[11px]">
                       <span className="text-emerald-400 font-semibold">Authorizer Notes: </span>
                       <span className="text-slate-300 italic">
-                        "{selectedLog.event_type === 'AMLA_TIER3_STAGE1_L1_SIGNOFF' 
-                          ? (selectedTx.l1_notes || selectedTx.approver_notes) 
+                        "{selectedLog.event_type === 'AMLA_TIER3_FIRST_APPROVAL_SIGNOFF' || selectedLog.event_type === 'AMLA_TIER3_STAGE1_L1_SIGNOFF' 
+                          ? (selectedTx.first_approver_notes || selectedTx.l1_notes || selectedTx.approver_notes) 
                           : selectedLog.event_type === 'AMLA_TIER3_STAGE2_FINAL_SETTLEMENT' 
-                          ? (selectedTx.l2_notes || selectedTx.approver_notes) 
+                          ? (selectedTx.second_approver_notes || selectedTx.l2_notes || selectedTx.approver_notes) 
                           : selectedTx.approver_notes}"
                       </span>
                     </div>
@@ -1195,7 +1196,7 @@ export default function AdminPortal() {
                   <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">Dual-Control Status</span>
                   {selectedAmlaTx.status === 'SETTLED' ? (
                     <span className="px-3 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 inline-flex items-center gap-1.5 font-mono shadow-sm">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> FULLY SETTLED (L1 &amp; L2)
+                      <CheckCircle2 className="w-3.5 h-3.5" /> FULLY SETTLED (2 APPROVALS)
                     </span>
                   ) : selectedAmlaTx.status === 'REJECTED' ? (
                     <span className="px-3 py-1 rounded-full text-[11px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/25 inline-flex items-center gap-1.5 font-mono shadow-sm">
@@ -1203,11 +1204,11 @@ export default function AdminPortal() {
                     </span>
                   ) : selectedAmlaTx.approval_stage === 2 ? (
                     <span className="px-3 py-1 rounded-full text-[11px] font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/25 inline-flex items-center gap-1.5 font-mono shadow-sm">
-                      <Clock className="w-3.5 h-3.5" /> STAGE 2: AWAITING L2
+                      <Clock className="w-3.5 h-3.5" /> AWAITING SECOND APPROVAL
                     </span>
                   ) : (
                     <span className="px-3 py-1 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/25 inline-flex items-center gap-1.5 font-mono shadow-sm">
-                      <Clock className="w-3.5 h-3.5" /> STAGE 1: AWAITING L1
+                      <Clock className="w-3.5 h-3.5" /> AWAITING FIRST APPROVAL
                     </span>
                   )}
                 </div>
@@ -1242,10 +1243,10 @@ export default function AdminPortal() {
                   <UserCheck className="w-3.5 h-3.5 text-indigo-400" /> Dual-Control Multi-Stage Signatures (Rule AMLA-204)
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Level 1 */}
+                  {/* First Manager Approval */}
                   <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-semibold text-slate-400 uppercase">Stage 1: Operations Checker</span>
+                      <span className="text-[10px] font-semibold text-slate-400 uppercase">First Manager Approval</span>
                       {selectedAmlaTx.l1_approver_id ? (
                         <span className="text-[10px] font-mono text-emerald-400 font-bold flex items-center gap-1">
                           <CheckCircle2 className="w-3 h-3" /> SIGNED
@@ -1257,8 +1258,8 @@ export default function AdminPortal() {
                       )}
                     </div>
                     <p className="font-semibold text-white text-xs">
-                      {selectedAmlaTx.l1_approver_name || 'Beatriz Ocampo'}{' '}
-                      <span className="font-mono text-slate-400 text-[10px]">({selectedAmlaTx.l1_approver_id || 'U3002'})</span>
+                      {selectedAmlaTx.l1_approver_name || 'Operations Manager'}{' '}
+                      <span className="font-mono text-slate-400 text-[10px]">({selectedAmlaTx.l1_approver_id || 'Manager 1'})</span>
                     </p>
                     {selectedAmlaTx.l1_notes && (
                       <p className="text-[10px] text-slate-400 italic bg-slate-950 p-2 rounded-lg border border-slate-800/60">
@@ -1272,10 +1273,10 @@ export default function AdminPortal() {
                     )}
                   </div>
 
-                  {/* Level 2 */}
+                  {/* Second Manager Approval */}
                   <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-semibold text-slate-400 uppercase">Stage 2: Senior Manager</span>
+                      <span className="text-[10px] font-semibold text-slate-400 uppercase">Second Manager Approval</span>
                       {selectedAmlaTx.status === 'SETTLED' ? (
                         <span className="text-[10px] font-mono text-emerald-400 font-bold flex items-center gap-1">
                           <CheckCircle2 className="w-3 h-3" /> SETTLED
@@ -1287,8 +1288,10 @@ export default function AdminPortal() {
                       )}
                     </div>
                     <p className="font-semibold text-white text-xs">
-                      {selectedAmlaTx.l2_approver_name || 'Carlos Mendoza'}{' '}
-                      <span className="font-mono text-slate-400 text-[10px]">({selectedAmlaTx.l2_approver_id || 'U3003'})</span>
+                      {selectedAmlaTx.l2_approver_name || 'Operations Manager (Distinct)'}{' '}
+                      {selectedAmlaTx.l2_approver_id && (
+                        <span className="font-mono text-slate-400 text-[10px]">({selectedAmlaTx.l2_approver_id})</span>
+                      )}
                     </p>
                     {selectedAmlaTx.l2_notes && (
                       <p className="text-[10px] text-slate-400 italic bg-slate-950 p-2 rounded-lg border border-slate-800/60">

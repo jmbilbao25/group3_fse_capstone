@@ -179,10 +179,10 @@ export default function TellerPortal({ pendingTransactions, setPendingTransactio
               className="bg-transparent text-white font-semibold text-xs focus:outline-none cursor-pointer"
             >
               <option value="U3002" className="bg-slate-900">
-                U3002 - Beatriz Ocampo (Branch Operations Officer) [Valid Checker]
+                U3002 - Beatriz Ocampo (Operations Manager) [Valid Checker]
               </option>
               <option value="U3003" className="bg-slate-900">
-                U3003 - Carlos Mendoza (Branch Head / Manager Level 2) [Valid Checker]
+                U3003 - Carlos Mendoza (Operations Manager) [Valid Checker]
               </option>
               <option value="U1001" className="bg-slate-900">
                 U1001 - Juan Dela Cruz (Initiator / Maker) [Will Trigger SOD Violation]

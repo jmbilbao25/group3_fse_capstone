@@ -10,12 +10,16 @@ import com.bank.ledger.engine.dto.event.TransactionEvent;
 import com.bank.ledger.engine.entity.audit.LedgerMutationAudit;
 import com.bank.ledger.engine.entity.master.AccountMaster;
 import com.bank.ledger.engine.entity.master.BalanceMaster;
+import com.bank.ledger.engine.entity.master.OutboxEventMaster;
 import com.bank.ledger.engine.entity.master.TransactionMaster;
 import com.bank.ledger.engine.kafka.KafkaEventPublisher;
 import com.bank.ledger.engine.repository.audit.LedgerMutationAuditRepository;
 import com.bank.ledger.engine.repository.master.AccountMasterRepository;
 import com.bank.ledger.engine.repository.master.BalanceMasterRepository;
+import com.bank.ledger.engine.repository.master.OutboxEventMasterRepository;
 import com.bank.ledger.engine.repository.master.TransactionMasterRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,6 +41,8 @@ public class BalanceMutationService {
     private final AccountMasterRepository accountRepository;
     private final LedgerMutationAuditRepository auditRepository;
     private final KafkaEventPublisher kafkaPublisher;
+     private final OutboxEventMasterRepository outboxRepository; 
+    private final ObjectMapper objectMapper;
 
     @Value("${app.maker-checker.threshold:50000.0000}")
     private BigDecimal makerCheckerThreshold;
@@ -115,6 +121,24 @@ public class BalanceMutationService {
                     .build();
             transactionRepository.save(pendingTx);
 
+                        // Persist to Oracle Transactional Outbox (EVT-601)
+            try {
+                String outboxPayload = objectMapper.writeValueAsString(pendingTx);
+                outboxRepository.save(OutboxEventMaster.builder()
+                        .eventId("EVT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                        .aggregateType("MAKER_CHECKER")
+                        .aggregateId(request.getTransactionId())
+                        .eventType("MAKER_PENDING")
+                        .kafkaTopic("banking.makerchecker.pending")
+                        .payload(outboxPayload)
+                        .status("PENDING")
+                        .retryCount(0)
+                        .createdAt(Instant.now())
+                        .build());
+            } catch (Exception e) {
+                log.error("[OUTBOX ERROR] Failed to serialize pending transaction for outbox", e);
+            }
+
             // Kafka Alert: Notify customer of pending dual control review
             kafkaPublisher.publishNotificationAlert(NotificationAlertEvent.builder()
                     .alertId("ALT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
@@ -189,6 +213,36 @@ public class BalanceMutationService {
                 .status("COMMITTED")
                 .createdAt(Instant.now())
                 .build());
+
+                // Persist to Oracle Transactional Outbox (EVT-601)
+        try {
+            TransactionEvent event = TransactionEvent.builder()
+                    .transactionId(request.getTransactionId())
+                    .sourceAccountId(sourceId)
+                    .destinationAccountId(targetId)
+                    .amount(amount)
+                    .currency("PHP")
+                    .mutationType("TRANSFER")
+                    .status("COMMITTED")
+                    .initiatorUserId(request.getInitiatorUserId())
+                    .timestamp(Instant.now())
+                    .build();
+
+            String outboxPayload = objectMapper.writeValueAsString(event);
+            outboxRepository.save(OutboxEventMaster.builder()
+                    .eventId("EVT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                    .aggregateType("TRANSACTION")
+                    .aggregateId(request.getTransactionId())
+                    .eventType("MUTATION_COMMITTED")
+                    .kafkaTopic("transaction-events")
+                    .payload(outboxPayload)
+                    .status("PENDING")
+                    .retryCount(0)
+                    .createdAt(Instant.now())
+                    .build());
+        } catch (Exception e) {
+            log.error("[OUTBOX ERROR] Failed to serialize committed transaction for outbox", e);
+        }
 
         // Kafka Streaming
         kafkaPublisher.publishTransactionEvent(TransactionEvent.builder()
@@ -306,6 +360,36 @@ public class BalanceMutationService {
                 .status("COMMITTED")
                 .createdAt(Instant.now())
                 .build());
+
+                // Persist to Oracle Transactional Outbox (EVT-601)
+        try {
+            TransactionEvent approvedEvent = TransactionEvent.builder()
+                    .transactionId(transactionId)
+                    .sourceAccountId(sourceId)
+                    .destinationAccountId(targetId)
+                    .amount(amount)
+                    .currency("PHP")
+                    .mutationType("TRANSFER")
+                    .status("COMMITTED")
+                    .initiatorUserId(sourceAccount.getUserId())
+                    .timestamp(Instant.now())
+                    .build();
+
+            String outboxPayload = objectMapper.writeValueAsString(approvedEvent);
+            outboxRepository.save(OutboxEventMaster.builder()
+                    .eventId("EVT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                    .aggregateType("TRANSACTION")
+                    .aggregateId(transactionId)
+                    .eventType("CHECKER_APPROVED")
+                    .kafkaTopic("transaction-events")
+                    .payload(outboxPayload)
+                    .status("PENDING")
+                    .retryCount(0)
+                    .createdAt(Instant.now())
+                    .build());
+        } catch (Exception e) {
+            log.error("[OUTBOX ERROR] Failed to serialize approved transaction for outbox", e);
+        }
 
         // Kafka Event
         kafkaPublisher.publishTransactionEvent(TransactionEvent.builder()

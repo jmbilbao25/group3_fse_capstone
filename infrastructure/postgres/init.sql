@@ -41,7 +41,9 @@ CREATE TABLE IF NOT EXISTS ledger_mutation_audit (
     CONSTRAINT ledger_mutation_audit_mutation_type_check
     CHECK (
               mutation_type IN (
-              'TRANSFER'
+              'TRANSFER',
+              'HOLD',
+              'RELEASE'
                                )
     ),
 

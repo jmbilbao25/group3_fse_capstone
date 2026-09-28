@@ -174,17 +174,17 @@ Host: `localhost:5432`, Database: `banking_audit`, User: `audit_user`, Password:
 
 ```sql
 CREATE TABLE ledger_mutation_audit (
-    audit_id            BIGSERIAL PRIMARY KEY,
-    transaction_id      VARCHAR(64) NOT NULL,
-    account_id          VARCHAR(64) NOT NULL,
-    mutation_type       VARCHAR(30) NOT NULL,
-    mutation_amount     NUMERIC(18, 4) NOT NULL,
-    before_balance      NUMERIC(18, 4) NOT NULL,
-    after_balance       NUMERIC(18, 4) NOT NULL,
-    initiator_user_id   VARCHAR(64) NOT NULL,
-    approved_by_user_id VARCHAR(64),
-    status              VARCHAR(30) NOT NULL,
-    created_at          TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
+    audit_id             BIGSERIAL PRIMARY KEY,
+    transaction_id       VARCHAR(64) UNIQUE NOT NULL,
+    account_id           VARCHAR(64) NOT NULL,
+    mutation_type        VARCHAR(20) NOT NULL CHECK (mutation_type IN ('TRANSFER', 'HOLD', 'RELEASE')),
+    mutation_amount      NUMERIC(18, 4) NOT NULL CHECK (mutation_amount > 0),
+    before_balance       NUMERIC(18, 4) NOT NULL CHECK (before_balance >= 0),
+    after_balance        NUMERIC(18, 4) NOT NULL CHECK (after_balance >= 0),
+    initiator_user_id    VARCHAR(64) NOT NULL,
+    approved_by_user_id  VARCHAR(64),
+    status               VARCHAR(20) DEFAULT 'COMMITTED' NOT NULL CHECK (status IN ('COMMITTED', 'FAILED', 'ROLLED_BACK')),
+    created_at           TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 -- Trigger: Rejects any UPDATE or DELETE operations

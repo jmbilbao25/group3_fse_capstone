@@ -89,6 +89,7 @@ services:
     restart: unless-stopped
     ports:
       - "9092:9092"
+      - "9999:9999"
     environment:
       # KRaft cluster configuration
       KAFKA_NODE_ID: 1
@@ -104,6 +105,13 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       CLUSTER_ID: '4L622nShTUiBenYhRZTyMP'
+      JMX_PORT: 9999
+      KAFKA_JMX_OPTS: '-Dcom.sun.management.jmxremote=true -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=kafka-broker'
+    labels:
+      com.datadoghq.ad.check_names: '["kafka_consumer"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: '[{"kafka_connect_str": "kafka-broker:29092", "monitor_unlisted_consumer_groups": true}]'
+      com.datadoghq.ad.logs: '[{"source": "kafka", "service": "kafka-broker"}]'
     networks:
       - banking-net
 

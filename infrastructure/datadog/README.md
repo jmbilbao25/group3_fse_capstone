@@ -12,13 +12,18 @@ The core retail banking platform uses **Datadog Agent 7** to unify distributed t
 
 2. **Redis Cache Metrics & Log Streaming**:
    - Container `redis-cache` runs on port `6379`.
-   - Automatically monitored via Datadog Autodiscovery labels for memory utilization, hit/miss ratios, connected clients, operations/sec, and container log tailing.
+   - Automatically monitored via Datadog Autodiscovery labels for memory utilization, hit/miss ratios, connected clients, operations/sec, and container log tailing (`redisdb` check).
 
-3. **Unified Container Log Tailing**:
+3. **Kafka Event Streaming & Consumer Lag Telemetry**:
+   - Container `kafka-broker` runs on ports `9092` (internal `29092`) and `9999` (JMX).
+   - Monitored via Datadog Autodiscovery labels for consumer lag, broker offsets, consumer group highwatermarks, and container log tailing (`kafka_consumer` check).
+   - JMX remote metrics enabled on port `9999` for broker throughput and partition replication metrics (`kafka` check).
+
+4. **Unified Container Log Tailing**:
    - Automatically streams container logs from all services into the Datadog Log Explorer (`https://app.datadoghq.com/logs`).
    - Correlates logs with traces via MDC tags (`traceId`, `spanId`).
 
-4. **Metrics & DogStatsD**:
+5. **Metrics & DogStatsD**:
    - Ingests host, container, and application metrics via DogStatsD on UDP port `8125`.
 
 ## How to Run Microservices with Datadog APM Java Agent

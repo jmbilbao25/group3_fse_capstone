@@ -31,8 +31,25 @@ public class BalanceMutationController {
      * - Immediate settlement if <= PHP 50,000.00
      * - Soft hold & Maker-Checker routed if > PHP 50,000.00
      */
-    @PostMapping("/transfer")
-    public ResponseEntity<MutationResponse> executeTransfer(@Valid @RequestBody MutationRequest request) {
+    @PostMapping({"/transfer", "/transfers"})
+    public ResponseEntity<MutationResponse> executeTransfer(
+            @RequestHeader(value = "X-Idempotency-Key", required = false) String idempotencyKey,
+            @Valid @RequestBody MutationRequest request) {
+        if (request.getTransactionId() == null || request.getTransactionId().isBlank()) {
+            request.setTransactionId(idempotencyKey != null && !idempotencyKey.isBlank()
+                    ? idempotencyKey
+                    : "TX-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        }
+        if (request.getEventType() == null) {
+            request.setEventType(com.bank.ledger.contracts.enums.EventType.TRANSFER);
+        }
+        if (request.getMutationType() == null) {
+            request.setMutationType(com.bank.ledger.contracts.enums.MutationType.TRANSFER);
+        }
+        if (request.getInitiatorUserId() == null || request.getInitiatorUserId().isBlank()) {
+            request.setInitiatorUserId("U1001");
+        }
+
         log.info("[HTTP REQUEST] POST /api/v1/ledger/transfer from account: {} to {}",
                 request.getAccountId(), request.getTargetAccountId());
 

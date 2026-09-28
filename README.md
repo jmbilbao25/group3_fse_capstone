@@ -83,8 +83,8 @@ The platform is a high-throughput, event-driven, dual-storage retail banking sys
 6. **Dual email advices and circuit resiliency**:
    Upon transfer settlement, debit advices are sent to the sender and credit advices (`inward-credit-advice.html`) are sent to the beneficiary. If the SMTP transport fails, messages enter an in-memory circuit spool buffer to protect against message loss until flushed.
 
-7. **Observability and distributed tracing**:
-   Every HTTP request carries W3C trace context headers (`traceparent`). Traces are exported over OTLP to Jaeger, and metrics are scraped by Prometheus to populate a Grafana operational dashboard.
+7. **Observability, APM request tracing, and logs (Datadog)**:
+   Every HTTP request carries W3C trace context headers (`traceparent`). Traces are exported over OTLP directly to the Datadog Agent container at `http://localhost:4318/v1/traces` (or port `8126` for native APM), feeding live request waterfall graphs, latency percentiles, and unified container logs in the Datadog dashboard.
 
 ---
 
@@ -106,16 +106,27 @@ Every container attaches to the bridge network `banking-net`. Host and internal 
 | **Kafka Broker** | `kafka-broker` | `9092` | `9092` | PLAINTEXT | Apache Kafka KRaft cluster event commit log |
 | **Kafka UI** | `kafka-ui` | `8085` | `8080` | HTTP | Web console for topics, consumer groups, and message inspection |
 | **Adminer Web GUI** | `db-adminer` | `8088` | `8080` | HTTP | Web database management console for Oracle and PostgreSQL |
-| **Jaeger Tracing** | `jaeger-tracing` | `16686` | `16686` | HTTP | Distributed trace visualization UI (OTLP receiver on `:4318`) |
-| **Prometheus** | `prometheus-engine` | `9090` | `9090` | HTTP | Time-series scraper collecting `/actuator/prometheus` metrics |
-| **Grafana** | `grafana-dashboard` | `3001` | `3000` | HTTP | Operational telemetry dashboards and KPI visualizations |
+| **Datadog Agent** | `dd-agent` | `8126` / `4318` / `8125` | `8126` / `4318` / `8125` | HTTP / UDP | Full-stack observability: APM trace waterfalls (`:8126`/`:4318`), DogStatsD metrics (`:8125`), and container logs |
 
 ---
 
 ## 3. Database schemas and data models
 
 ### A. Master operational database (Oracle Database XE 21c)
-Host: `localhost:1521`, Pluggable Database: `XEPDB1`, User: `fse_user`, Password: `fse_password`
+
+Operational state, accounts, balances, and transactional outbox events are stored in Oracle Database Express Edition 21c.
+
+| Parameter | Host Connection | Internal Docker Connection |
+| :--- | :--- | :--- |
+| Host | `localhost` | `oracle-xe-master` |
+| Port | `1521` | `1521` |
+| Service Name / PDB | `XEPDB1` | `XEPDB1` |
+| Application User | `fse_user` | `fse_user` |
+| Application Password | `fse_password` | `fse_password` |
+| System / DBA User | `system` (or `sys as sysdba`) | `system` |
+| System Password | `Password123#` | `Password123#` |
+| JDBC URL | `jdbc:oracle:thin:@localhost:1521/XEPDB1` | `jdbc:oracle:thin:@oracle-xe-master:1521/XEPDB1` |
+
 
 ```sql
 -- 1. Users Table
@@ -210,7 +221,18 @@ CREATE TABLE notifications (
 ```
 
 ### B. Immutable audit vault (PostgreSQL 16)
-Host: `localhost:5433` (container port `5432`), Database: `banking_audit`, User: `audit_user`, Password: `audit_password`
+
+The immutable audit log for balance mutations is housed in PostgreSQL 16 Alpine.
+
+| Parameter | Host Connection | Internal Docker Connection |
+| :--- | :--- | :--- |
+| Host | `localhost` | `postgres-audit-vault` |
+| Port | `5433` | `5432` |
+| Database | `banking_audit` | `banking_audit` |
+| Username | `audit_user` | `audit_user` |
+| Password | `audit_password` | `audit_password` |
+| Superuser | `postgres` (or `audit_user`) | `postgres` |
+| JDBC URL | `jdbc:postgresql://localhost:5433/banking_audit` | `jdbc:postgresql://postgres-audit-vault:5432/banking_audit` |
 
 ```sql
 CREATE TABLE ledger_mutation_audit (
@@ -239,6 +261,45 @@ CREATE TRIGGER trg_protect_audit_log
 BEFORE UPDATE OR DELETE ON ledger_mutation_audit
 FOR EACH ROW EXECUTE FUNCTION prevent_audit_tampering();
 ```
+
+### C. Database management with Adminer Web GUI
+
+Adminer provides a lightweight browser-based SQL console configured with both PostgreSQL drivers and Oracle Instant Client 21 (OCI8 extension).
+
+- Web UI URL: [http://localhost:8088](http://localhost:8088)
+- Container Name: `db-adminer`
+- Internal Port: `8080` (mapped to host port `8088`)
+
+Because Adminer runs inside the Docker bridge network `banking-net`, connection forms must use the internal container service names rather than `localhost`.
+
+#### Connecting to Oracle XE 21c via Adminer
+
+| Adminer Field | Value to Enter |
+| :--- | :--- |
+| System | `Oracle` |
+| Server | `oracle-xe-master:1521/XEPDB1` |
+| Username | `fse_user` (or `system` for administrative access) |
+| Password | `fse_password` (or `Password123#` for system) |
+| Database | `XEPDB1` (optional if included in Server) |
+
+#### Connecting to PostgreSQL 16 via Adminer
+
+| Adminer Field | Value to Enter |
+| :--- | :--- |
+| System | `PostgreSQL` |
+| Server | `postgres-audit-vault` |
+| Username | `audit_user` |
+| Password | `audit_password` |
+| Database | `banking_audit` |
+
+#### Quick credential reference table
+
+| Target Database | Adminer System | Server (within Adminer) | External Host:Port | Username | Password | Database / Service |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| Oracle XE (App) | `Oracle` | `oracle-xe-master:1521/XEPDB1` | `localhost:1521` | `fse_user` | `fse_password` | `XEPDB1` |
+| Oracle XE (DBA) | `Oracle` | `oracle-xe-master:1521/XEPDB1` | `localhost:1521` | `system` | `Password123#` | `XEPDB1` |
+| PostgreSQL Audit | `PostgreSQL` | `postgres-audit-vault` | `localhost:5433` | `audit_user` | `audit_password` | `banking_audit` |
+
 
 ---
 
@@ -401,29 +462,26 @@ The Single-Page Application (`frontend/`) provides an interactive interface for 
 
 ---
 
-## 8. Observability, metrics, and distributed tracing
+## 8. Observability, metrics, and APM request tracing (Datadog)
 
-### Distributed tracing (OpenTelemetry and Jaeger)
-- Every microservice imports `micrometer-tracing-bridge-otel` and `opentelemetry-exporter-otlp`.
-- Inbound and outbound requests propagate standard W3C `traceparent` headers.
-- Traces are exported to the Jaeger OTLP receiver at `http://localhost:4318/v1/traces`.
-- View trace graphs and latency spans in the Jaeger UI at **[http://localhost:16686](http://localhost:16686)**.
+The entire microservices ecosystem is unified under **Datadog Agent 7** for end-to-end distributed tracing, APM request waterfall graphs, DogStatsD metrics, and container logs.
 
-### Metrics collection (Prometheus)
-- Each service exposes metrics at `/actuator/prometheus`.
-- Prometheus scrapes metrics every 5 seconds.
-- Access the Prometheus console at **[http://localhost:9090](http://localhost:9090)**.
+### APM request tracing and waterfall graphs
+- Every Spring Boot microservice imports `micrometer-tracing-bridge-otel` and `opentelemetry-exporter-otlp`.
+- Inbound and outbound requests propagate standard W3C `traceparent` headers across the API Gateway, Account Service, Ledger Mutation Engine, and Notification Service.
+- OpenTelemetry traces are exported over HTTP directly to the Datadog Agent OTLP receiver at `http://localhost:4318/v1/traces` (or port `8126` for native Datadog trace clients).
+- In the Datadog APM dashboard (**[https://app.datadoghq.com/apm/traces](https://app.datadoghq.com/apm/traces)**), each API request produces a complete waterfall span breakdown:
+  - Gateway perimeter routing, JWT verification, and Redis rate-limiting latency.
+  - CME lock ordering, Oracle `SELECT ... FOR UPDATE` acquisition duration, and Postgres audit persistence.
+  - Transactional Outbox Kafka event emission and downstream notification worker consumption.
 
-### Operational dashboard (Grafana)
-Grafana automatically provisions Prometheus and Jaeger datasources on startup, loading the **FSE Core Retail Banking - Telemetry & Performance** dashboard.
-- URL: **[http://localhost:3001](http://localhost:3001)** (mapped from container port 3000 to prevent conflicts with the web frontend).
-- Panels include:
-  - System health status badges and global throughput (req/s).
-  - HTTP 5xx error percentage and P95 latency.
-  - Gateway ingress traffic by route and status code distribution.
-  - Account Service and Ledger Mutation Engine endpoint throughput.
-  - HikariCP active vs idle connections and connection acquire times.
-  - JVM heap memory usage, garbage collection pause times, CPU percentage, and active threads.
+### Log collection and correlation
+- The Datadog Agent container tails Docker container stdout/stderr streams (`DD_LOGS_ENABLED=true`, `DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true`).
+- Spring Boot log messages include MDC correlation tags (`traceId`, `spanId`, `applicationName`), enabling direct click-through from Datadog logs into the corresponding APM waterfall trace.
+
+### Infrastructure and JVM metrics
+- Live host and container CPU, memory, network I/O, and disk usage are tracked in real-time.
+- DogStatsD is exposed on UDP port `8125` for custom business metrics and counter submission.
 
 ---
 
@@ -450,9 +508,19 @@ This starts:
 - Kafka UI (`localhost:8085`)
 - MailHog Mock SMTP (`localhost:8025` UI, `localhost:1025` SMTP)
 - Adminer Database Console (`localhost:8088`)
-- Jaeger Distributed Tracing (`localhost:16686`)
-- Prometheus Scraper (`localhost:9090`)
-- Grafana Dashboard (`localhost:3001`)
+- Datadog Agent 7 (`localhost:8126` APM / `localhost:4318` OTLP / `localhost:8125` DogStatsD)
+
+#### Infrastructure and database credentials
+
+| Service | Host URL / Port | Adminer System | Adminer Server (Docker) | Username | Password | Database / Service |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Adminer Web GUI** | [http://localhost:8088](http://localhost:8088) | - | - | Use DB credentials below | - |
+| **Oracle XE 21c (App)** | `localhost:1521` | `Oracle` | `oracle-xe-master:1521/XEPDB1` | `fse_user` | `fse_password` | `XEPDB1` |
+| **Oracle XE 21c (DBA)** | `localhost:1521` | `Oracle` | `oracle-xe-master:1521/XEPDB1` | `system` | `Password123#` | `XEPDB1` |
+| **PostgreSQL 16 Audit** | `localhost:5433` | `PostgreSQL` | `postgres-audit-vault` | `audit_user` | `audit_password` | `banking_audit` |
+| **Kafka UI** | [http://localhost:8085](http://localhost:8085) | - | - | (No authentication required) | - |
+| **MailHog SMTP UI** | [http://localhost:8025](http://localhost:8025) | - | - | (No authentication required) | - |
+| **Redis Cache** | `localhost:6379` | - | - | (No authentication required) | - |
 
 ### Step 2: Build and test backend microservices
 Run from the `backend/` directory:
@@ -531,15 +599,7 @@ Access the application in your browser at **[http://localhost:3000](http://local
 │   │   └── init.sql                    # Oracle XE 21c DDL, outbox table, and seed data
 │   ├── postgres/
 │   │   └── init.sql                    # PostgreSQL audit DDL, trigger, and seed data
-│   ├── prometheus/
-│   │   ├── prometheus.yml              # Prometheus scraper configuration (5s interval)
-│   │   └── alert.rules.yml             # SLO alerting rules (5xx rate, latency, memory)
-│   └── grafana/
-│       ├── provisioning/
-│       │   ├── datasources/datasources.yml # Auto-provisioned Prometheus & Jaeger datasources
-│       │   └── dashboards/dashboards.yml   # Dashboard provider configuration
-│       └── dashboards/
-│           └── banking-core-observability.json # 20-panel telemetry dashboard
+│   └── datadog/                        # Datadog Agent 7 configuration (APM, OTLP traces, logs)
 ├── frontend/                           # React 18 + Vite Web SPA
 │   ├── package.json                    # Frontend dependencies & scripts
 │   ├── vite.config.js                  # Vite server & Gateway proxy configuration

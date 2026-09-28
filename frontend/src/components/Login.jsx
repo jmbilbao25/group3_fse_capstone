@@ -33,14 +33,14 @@ export default function Login({ onLoginSuccess }) {
     },
     {
       label: 'Beatriz Ocampo',
-      role: 'Manager L1 (Checker)',
+      role: 'Operations Manager',
       email: 'beatriz.ocampo@bank.com',
       password: 'password123',
       color: 'hover:border-amber-400 hover:bg-amber-50/50 text-slate-800'
     },
     {
       label: 'Carlos Mendoza',
-      role: 'Senior Manager L2',
+      role: 'Operations Manager',
       email: 'carlos.mendoza@bank.com',
       password: 'password123',
       color: 'hover:border-emerald-400 hover:bg-emerald-50/50 text-slate-800'

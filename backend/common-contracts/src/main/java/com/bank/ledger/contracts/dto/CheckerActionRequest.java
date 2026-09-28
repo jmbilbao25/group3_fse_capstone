@@ -1,5 +1,6 @@
 package com.bank.ledger.contracts.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
@@ -10,7 +11,9 @@ import lombok.*;
 public class CheckerActionRequest {
 
     @NotBlank(message = "Checker User ID is mandatory")
+    @JsonAlias({"checker_user_id", "checkerId", "approved_by_user_id", "checker"})
     private String checkerUserId;
 
+    @JsonAlias({"notes", "comment", "reason", "rejection_reason"})
     private String remarks;
 }

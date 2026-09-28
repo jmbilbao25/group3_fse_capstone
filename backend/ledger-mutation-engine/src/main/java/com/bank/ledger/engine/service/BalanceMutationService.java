@@ -387,6 +387,91 @@ public class BalanceMutationService {
         BalanceMaster receiver = targetId.equals(firstLockId) ? firstAccount : secondAccount;
 
         BigDecimal amount = tx.getAmount();
+        BigDecimal amlaThreshold = new BigDecimal("500000.0000");
+
+        // Dual-Control 2-Manager Approval Enforcement for transfers >= 500,000 PHP
+        if (amount.compareTo(amlaThreshold) >= 0) {
+            String priorApprover = tx.getApprovedByUserId();
+            if (priorApprover == null || priorApprover.isBlank()) {
+                // FIRST MANAGER APPROVAL
+                tx.setApprovedByUserId(checkerRequest.getCheckerUserId());
+                tx.setUpdatedAt(Instant.now());
+                transactionRepository.save(tx);
+
+                // Persist event to Oracle Transactional Outbox (EVT-601)
+                try {
+                    TransactionEvent firstApprovalEvent = TransactionEvent.builder()
+                            .transactionId(transactionId)
+                            .sourceAccountId(sourceId)
+                            .destinationAccountId(targetId)
+                            .amount(amount)
+                            .currency("PHP")
+                            .mutationType("TRANSFER")
+                            .status("PENDING_APPROVAL")
+                            .initiatorUserId(sourceAccount.getUserId())
+                            .timestamp(Instant.now())
+                            .build();
+
+                    outboxRepository.save(OutboxEventMaster.builder()
+                            .eventId("EVT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                            .aggregateType("MAKER_CHECKER")
+                            .aggregateId(transactionId)
+                            .eventType("MAKER_PENDING")
+                            .kafkaTopic("banking.transfers.events")
+                            .payload(objectMapper.writeValueAsString(firstApprovalEvent))
+                            .status("PENDING")
+                            .retryCount(0)
+                            .createdAt(Instant.now())
+                            .build());
+                } catch (Exception e) {
+                    log.error("[OUTBOX ERROR] Failed to serialize first approval event", e);
+                }
+
+                // Kafka Alert: Notify customer and operations team of first approval
+                try {
+                    kafkaPublisher.publishNotificationAlert(NotificationAlertEvent.builder()
+                            .alertId("ALT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                            .transactionId(transactionId)
+                            .recipientUserId(sourceAccount.getUserId())
+                            .recipientAccountId(sourceId)
+                            .alertType("MAKER_CHECKER_PENDING")
+                            .amount(amount)
+                            .balanceAfter(sender.getAvailableBalance())
+                            .title("First Manager Approval Recorded")
+                            .message(String.format("Transfer of PHP %s approved by %s (1 of 2). Awaiting second manager approval.",
+                                    amount, checkerRequest.getCheckerUserId()))
+                            .createdAt(Instant.now())
+                            .build());
+                } catch (Exception e) {
+                    log.error("[KAFKA ERROR] Failed to publish notification alert for first approval", e);
+                }
+
+                log.info("[DUAL CONTROL] Transfer {} ({} PHP) recorded 1st approval by {}. Awaiting 2nd manager.",
+                        transactionId, amount, checkerRequest.getCheckerUserId());
+
+                return MutationResponse.builder()
+                        .transactionId(transactionId)
+                        .accountId(sourceId)
+                        .status("PENDING_APPROVAL")
+                        .mutationAmount(amount)
+                        .balanceBefore(sender.getBalanceAmount())
+                        .balanceAfter(sender.getBalanceAmount())
+                        .availableBalance(sender.getAvailableBalance())
+                        .timestamp(Instant.now())
+                        .traceId(UUID.randomUUID().toString())
+                        .message("First manager approval recorded by " + checkerRequest.getCheckerUserId() + ". Awaiting second manager approval for final release.")
+                        .build();
+            } else {
+                // SECOND MANAGER APPROVAL: Ensure second approver is distinct from first approver!
+                if (checkerRequest.getCheckerUserId().equals(priorApprover)) {
+                    log.error("[SECURITY VIOLATION] Manager {} attempted to execute second approval for transfer {} which they already approved",
+                            checkerRequest.getCheckerUserId(), transactionId);
+                    throw new SegregationOfDutiesException(
+                            "Dual-Control Violation: The second approval must be performed by a different manager. Manager " + priorApprover + " already approved.");
+                }
+            }
+        }
+
         BigDecimal senderBefore = sender.getBalanceAmount();
         BigDecimal senderAfter = senderBefore.subtract(amount);
 

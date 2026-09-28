@@ -60,7 +60,7 @@ export const ROLES = {
     name: 'Beatriz Ocampo',
     role: 'MANAGER',
     badge: 'Branch Operations Officer (Checker)',
-    description: 'Authorized Dual-Control Approver (Level 1)',
+    description: 'Authorized Dual-Control Approver',
   },
   ADMIN: {
     id: 'U0001',

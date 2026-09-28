@@ -30,16 +30,53 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
   const [approvalNotes, setApprovalNotes] = useState('');
   const [rejectionReason, setRejectionReason] = useState('Disapproved: Inadequate documentation or regulatory mismatch.');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [activeModal, setActiveModal] = useState(null); // 'approve' | 'sign-l1' | 'reject' | null
+  const [activeModal, setActiveModal] = useState(null); // 'approve' | 'sign-first' | 'reject' | 'details' | null
   const [filterTier, setFilterTier] = useState('ALL'); // 'ALL' | 'TIER_2' | 'TIER_3'
   const [searchQuery, setSearchQuery] = useState('');
 
   const fetchPending = async () => {
     try {
       const res = await apiClient.get('/transfers/pending');
-      setPendingTransfers(res.data);
+      const mapped = (res.data || []).map((tx) => {
+        const id = tx.id || tx.transactionId;
+        const makerUserId = tx.maker_user_id || tx.makerUserId || 'U1001';
+        const amount = Number(tx.amount || 0);
+        const isTier3 = amount >= THRESHOLDS.AMLA_CTR_MIN;
+        const approvedBy = tx.approved_by_user_id || tx.approvedByUserId;
+        const firstApproverId = tx.first_approver_id || tx.l1_approver_id || (approvedBy ? approvedBy.split(',')[0].trim() : null);
+        const firstApproverName = tx.first_approver_name || tx.l1_approver_name || (firstApproverId === 'U3003' ? 'Carlos Mendoza' : firstApproverId === 'U3002' ? 'Beatriz Ocampo' : firstApproverId);
+        const stage = isTier3 ? (firstApproverId ? 2 : 1) : 1;
+
+        return {
+          ...tx,
+          id,
+          maker_user_id: makerUserId,
+          maker_name: tx.maker_name || (makerUserId === 'U1001' ? 'Juan Dela Cruz' : makerUserId),
+          from_account_id: tx.from_account_id || tx.fromAccountId,
+          to_account_id: tx.to_account_id || tx.toAccountId,
+          recipient_name: tx.recipient_name || tx.recipientName || ('Beneficiary Account (' + (tx.toAccountId || tx.to_account_id) + ')'),
+          amount,
+          memo: tx.memo || 'High-value fund transfer',
+          status: tx.status || 'PENDING_APPROVAL',
+          approval_stage: stage,
+          first_approver_id: firstApproverId,
+          first_approver_name: firstApproverName,
+          first_notes: tx.first_notes || tx.l1_notes,
+          first_approved_at: tx.first_approved_at || tx.l1_approved_at,
+          created_at: tx.created_at || tx.createdAt || new Date().toISOString(),
+        };
+      });
+      setPendingTransfers(mapped);
     } catch (_) {
-      setPendingTransfers(mockState.transfers.filter((t) => t.status === 'PENDING_APPROVAL'));
+      const mockMapped = (mockState.transfers || [])
+        .filter((t) => t.status === 'PENDING_APPROVAL')
+        .map((tx) => ({
+          ...tx,
+          first_approver_id: tx.first_approver_id || tx.l1_approver_id,
+          first_approver_name: tx.first_approver_name || tx.l1_approver_name,
+          first_notes: tx.first_notes || tx.l1_notes,
+        }));
+      setPendingTransfers(mockMapped);
     }
   };
 
@@ -76,15 +113,15 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
     return true;
   });
 
-  // Stage 1 Sign-Off (L1 Operations Manager: Beatriz Ocampo)
-  const handleSignL1 = async () => {
+  // First Approval Sign-Off (Any manager can execute for transfers >= 500k)
+  const handleFirstApproval = async () => {
     if (!selectedTx) return;
 
     if (user?.user_id === selectedTx.maker_user_id) {
       showToast({
         type: 'error',
         title: 'Segregation of Duties Violation',
-        detail: 'System policy strictly blocks self-approval. A distinct operations checker must authorize this mutation.',
+        detail: 'System policy strictly blocks self-approval. A distinct operations manager must authorize this mutation.',
         rfcInstance: `/api/v1/transfers/${selectedTx.id}/sign-l1`,
       });
       return;
@@ -93,15 +130,15 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
     setIsProcessing(true);
     try {
       const res = await apiClient.post(`/transfers/${selectedTx.id}/sign-l1`, {
-        notes: approvalNotes || 'AMLA CTR Level 1: Verified customer identity, source of funds, and compliance mandate.',
+        notes: approvalNotes || 'AMLA CTR First Approval: Verified customer identity, source of funds, and statutory mandate.',
         checker_user_id: user?.user_id || 'U3002',
-        checker_name: user?.name || 'Beatriz Ocampo',
+        checker_name: user?.name || 'Operations Manager',
       });
 
       showToast({
         type: 'success',
-        title: 'Stage 1 Sign-Off Recorded',
-        detail: res.data.message || `Level 1 signed by ${user?.name || 'Beatriz Ocampo'}. Forwarded to Level 2 (Carlos Mendoza) for final release.`,
+        title: 'First Approval Recorded',
+        detail: res.data?.message || `First approval recorded by ${user?.name || 'Operations Manager'}. Awaiting second manager approval for final release.`,
         rfcInstance: `/api/v1/transfers/${selectedTx.id}`,
       });
 
@@ -112,15 +149,15 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
     } catch (err) {
       showToast({
         type: 'error',
-        title: 'Level 1 Sign-Off Failed',
-        detail: err.response?.data?.detail || 'Could not record Level 1 sign-off.',
+        title: 'First Approval Failed',
+        detail: err.response?.data?.detail || err.response?.data?.message || 'Could not record first manager approval.',
       });
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // Final Approval / Settlement (Tier 2 Single Approver OR Tier 3 L2 Senior Manager)
+  // Final Approval / Settlement (Tier 2 Single Approver OR Tier 3 Second Manager)
   const handleApprove = async () => {
     if (!selectedTx) return;
 
@@ -129,19 +166,19 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
       showToast({
         type: 'error',
         title: 'Segregation of Duties Violation',
-        detail: 'System policy strictly blocks self-approval. A distinct operations checker must authorize this mutation.',
+        detail: 'System policy strictly blocks self-approval. A distinct operations manager must authorize this mutation.',
         rfcInstance: `/api/v1/transfers/${selectedTx.id}/approve`,
       });
       return;
     }
 
-    // Dual-Control Enforcement: L2 Approver must be distinct from L1 Checker
+    // Dual-Control Enforcement: Second Approver must be distinct from First Approver
     const isAmla = (selectedTx.amount || 0) >= THRESHOLDS.AMLA_CTR_MIN;
-    if (isAmla && selectedTx.l1_approver_id && user?.user_id === selectedTx.l1_approver_id) {
+    if (isAmla && selectedTx.first_approver_id && user?.user_id === selectedTx.first_approver_id) {
       showToast({
         type: 'error',
         title: 'Dual-Control Segregation Violation',
-        detail: 'Rule AMLA-204: Level 2 final release must be approved by a distinct Senior Manager (Carlos Mendoza U3003). You already signed Level 1.',
+        detail: `Rule AMLA-204: The second approval must be performed by a different manager. You already recorded the first approval.`,
         rfcInstance: `/api/v1/transfers/${selectedTx.id}/approve`,
       });
       return;
@@ -150,15 +187,15 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
     setIsProcessing(true);
     try {
       const res = await apiClient.post(`/transfers/${selectedTx.id}/approve`, {
-        notes: approvalNotes || (isAmla ? 'AMLA CTR Level 2: Senior Manager final clearance authorized. Releasing soft hold.' : 'Authorized following KYC mandate and dual-control operational review.'),
-        checker_user_id: user?.user_id || (isAmla ? 'U3003' : 'U3002'),
-        checker_name: user?.name || (isAmla ? 'Carlos Mendoza' : 'Beatriz Ocampo'),
+        notes: approvalNotes || (isAmla ? 'AMLA CTR Second Approval: Dual manager clearance authorized. Releasing soft hold.' : 'Authorized following KYC mandate and dual-control operational review.'),
+        checker_user_id: user?.user_id || 'U3002',
+        checker_name: user?.name || 'Operations Manager',
       });
 
       showToast({
         type: 'success',
-        title: isAmla ? 'AMLA Transfer Fully Settled' : 'Transfer Authorized & Released',
-        detail: res.data.message || `Transfer ${selectedTx.id} authorized. Soft hold released and funds settled.`,
+        title: isAmla ? 'Transfer Fully Authorized (2 of 2)' : 'Transfer Authorized & Released',
+        detail: res.data?.message || `Transfer ${selectedTx.id} authorized. Soft hold released and funds settled.`,
         rfcInstance: `/api/v1/transfers/${selectedTx.id}`,
       });
 
@@ -170,7 +207,7 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
       showToast({
         type: 'error',
         title: 'Approval Failed',
-        detail: err.response?.data?.detail || 'Could not authorize transfer.',
+        detail: err.response?.data?.detail || err.response?.data?.message || 'Could not authorize transfer.',
       });
     } finally {
       setIsProcessing(false);
@@ -186,13 +223,13 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
       const res = await apiClient.post(`/transfers/${selectedTx.id}/reject`, {
         reason: rejectionReason,
         checker_user_id: user?.user_id || 'U3002',
-        checker_name: user?.name || 'Beatriz Ocampo',
+        checker_name: user?.name || 'Operations Manager',
       });
 
       showToast({
         type: 'warning',
         title: 'Transfer Disapproved & Voided',
-        detail: res.data.message || `Transfer ${selectedTx.id} voided. Soft hold released back to sender.`,
+        detail: res.data?.message || `Transfer ${selectedTx.id} voided. Soft hold released back to sender.`,
         rfcInstance: `/api/v1/transfers/${selectedTx.id}`,
       });
 
@@ -204,7 +241,7 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
       showToast({
         type: 'error',
         title: 'Disapproval Failed',
-        detail: err.response?.data?.detail || 'Could not reject transfer.',
+        detail: err.response?.data?.detail || err.response?.data?.message || 'Could not reject transfer.',
       });
     } finally {
       setIsProcessing(false);
@@ -225,12 +262,12 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
             <span className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-indigo-300 border border-slate-700 font-semibold">
               {user?.user_id || 'U3002'}
             </span>
-            <span className="text-xs text-slate-400 hidden md:inline">&bull; {user?.title || (user?.user_id === 'U3003' ? 'Senior Manager (L2)' : 'Operations Manager (L1)')}</span>
+            <span className="text-xs text-slate-400 hidden md:inline">&bull; {user?.title || 'Operations Manager'}</span>
           </div>
         </div>
 
         <div className="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800/80 shrink-0">
-          <span className="text-[11px] text-slate-500 font-semibold px-2">Switch Approver:</span>
+          <span className="text-[11px] text-slate-500 font-semibold px-2">Switch Manager:</span>
           <button
             onClick={() => switchManager('U3002')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
@@ -239,7 +276,7 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
                 : 'text-slate-400 hover:text-white hover:bg-slate-900'
             }`}
           >
-            <User className="w-3.5 h-3.5" /> Beatriz Ocampo (L1)
+            <User className="w-3.5 h-3.5" /> Beatriz Ocampo
           </button>
           <button
             onClick={() => switchManager('U3003')}
@@ -249,7 +286,7 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
                 : 'text-slate-400 hover:text-white hover:bg-slate-900'
             }`}
           >
-            <ShieldCheck className="w-3.5 h-3.5" /> Carlos Mendoza (L2)
+            <ShieldCheck className="w-3.5 h-3.5" /> Carlos Mendoza
           </button>
         </div>
       </div>
@@ -306,7 +343,7 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
             {amlaCount} {amlaCount === 1 ? 'Transfer' : 'Transfers'}
           </p>
           <p className="text-[11px] text-slate-400 mt-1">
-            Mandatory RA 9160 dual manager sign-off (L1 + L2)
+            Mandatory RA 9160 two-manager sign-off (2 Approvals Required)
           </p>
         </div>
       </div>
@@ -338,7 +375,7 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
             </div>
 
             {/* Filter buttons */}
-            <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+            <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
               <button
                 onClick={() => setFilterTier('ALL')}
                 className={`px-3 py-1 rounded-lg transition-all ${
@@ -397,9 +434,8 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
                 {filteredTransfers.map((tx) => {
                   const isSelfMaker = user?.user_id === tx.maker_user_id;
                   const isAmla = (tx.amount || 0) >= THRESHOLDS.AMLA_CTR_MIN;
-                  const stage = tx.approval_stage || 1;
-                  const isL1Signed = isAmla && stage === 2;
-                  const isCurrentUserL1 = tx.l1_approver_id === user?.user_id || (user?.user_id === 'U3002' && isL1Signed);
+                  const hasFirstApproval = Boolean(tx.first_approver_id);
+                  const isCurrentUserFirstApprover = tx.first_approver_id === user?.user_id;
 
                   return (
                     <tr key={tx.id} className="hover:bg-slate-800/40 transition-colors">
@@ -440,7 +476,7 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
                         <p className="text-[10px] font-mono text-slate-400 mt-0.5">{tx.to_account_id}</p>
                       </td>
 
-                      {/* Amount: Clean token badge with whitespace-nowrap */}
+                      {/* Amount */}
                       <td className="py-4 px-4 whitespace-nowrap align-middle">
                         <span className="px-2.5 py-1 rounded-lg font-mono font-bold text-white text-xs bg-slate-950 border border-slate-800 shadow-inner inline-block">
                           {formatPHP(tx.amount)}
@@ -454,13 +490,13 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
                             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/25 inline-flex items-center gap-1.5 font-mono shadow-sm">
                               <span className="w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0" /> Tier 3 AMLA CTR
                             </span>
-                            {stage === 1 ? (
+                            {!hasFirstApproval ? (
                               <p className="text-[10px] text-amber-300 flex items-center gap-1 font-mono">
-                                <Clock className="w-3 h-3 text-amber-400 shrink-0" /> Stage 1: Awaiting L1
+                                <Clock className="w-3 h-3 text-amber-400 shrink-0" /> Stage 1: Awaiting 1st Approval
                               </p>
                             ) : (
                               <p className="text-[10px] text-emerald-400 flex items-center gap-1 font-mono">
-                                <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" /> L1 Signed &bull; Awaiting L2
+                                <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" /> 1 of 2 Approved &bull; Awaiting 2nd Approval
                               </p>
                             )}
                           </div>
@@ -470,7 +506,7 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
                               <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" /> Tier 2 Dual Control
                             </span>
                             <p className="text-[10px] text-slate-400 flex items-center gap-1 font-mono">
-                              <Clock className="w-3 h-3 text-slate-500 shrink-0" /> 1 Approver Required
+                              <Clock className="w-3 h-3 text-slate-500 shrink-0" /> 1 Manager Approval Required
                             </p>
                           </div>
                         )}
@@ -518,53 +554,41 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
                             >
                               <CheckCircle className="w-3.5 h-3.5" /> Authorize
                             </button>
-                          ) : stage === 1 ? (
-                            /* Tier 3 AMLA: Stage 1 Sign-Off (L1 Operations Checker) */
-                            user?.user_id === 'U3003' ? (
-                              /* Carlos Mendoza (L2 Approver) view: Awaiting Beatriz Ocampo */
-                              <div 
-                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-800/90 text-amber-300 border border-amber-500/30 shadow-inner"
-                                title="Rule AMLA-204: Beatriz Ocampo (U3002) must perform Level 1 Operations review before Level 2 final sign-off."
-                              >
-                                <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                                <span>Awaiting L1 Review</span>
-                              </div>
-                            ) : (
-                              /* Beatriz Ocampo (L1 Checker) view: Active Sign L1 button */
-                              <button
-                                onClick={() => {
-                                  setSelectedTx(tx);
-                                  setApprovalNotes('AMLA CTR Level 1: Verified customer identity, source of funds, and compliance mandate.');
-                                  setActiveModal('sign-l1');
-                                }}
-                                className="px-4 py-1.5 rounded-xl font-semibold text-xs bg-amber-600 hover:bg-amber-500 text-white shadow-md shadow-amber-600/20 transition-all inline-flex items-center gap-1.5 cursor-pointer"
-                              >
-                                <ShieldAlert className="w-3.5 h-3.5" />
-                                <span>Sign L1</span>
-                                <span className="text-[10px] bg-black/30 px-1.5 py-0.5 rounded font-mono font-bold">1/2</span>
-                              </button>
-                            )
-                          ) : isCurrentUserL1 ? (
-                            /* Tier 3 AMLA: Stage 2 - Current user already signed L1 */
-                            <div 
-                              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-amber-300 border border-amber-500/30 cursor-not-allowed shadow-inner"
-                              title="Dual-Control Segregation: A distinct Senior Manager (Carlos Mendoza U3003) must execute Stage 2 final release."
-                            >
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                              <span>Signed L1 &bull; Awaiting L2</span>
-                            </div>
-                          ) : (
-                            /* Tier 3 AMLA: Stage 2 Final Release (L2 Senior Manager: Carlos Mendoza) */
+                          ) : !hasFirstApproval ? (
+                            /* Tier 3 AMLA: First Manager Approval (any manager can sign) */
                             <button
                               onClick={() => {
                                 setSelectedTx(tx);
-                                setApprovalNotes('AMLA CTR Level 2: Senior Manager final clearance authorized. Releasing soft hold.');
+                                setApprovalNotes('AMLA CTR First Approval: Verified customer identity, source of funds, and statutory mandate.');
+                                setActiveModal('sign-first');
+                              }}
+                              className="px-4 py-1.5 rounded-xl font-semibold text-xs bg-amber-600 hover:bg-amber-500 text-white shadow-md shadow-amber-600/20 transition-all inline-flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <ShieldAlert className="w-3.5 h-3.5" />
+                              <span>First Approval</span>
+                              <span className="text-[10px] bg-black/30 px-1.5 py-0.5 rounded font-mono font-bold">1/2</span>
+                            </button>
+                          ) : isCurrentUserFirstApprover ? (
+                            /* Tier 3 AMLA: Current user already signed the first approval */
+                            <div 
+                              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-amber-300 border border-amber-500/30 cursor-not-allowed shadow-inner"
+                              title="Dual-Control Segregation: The second approval must be signed by a distinct manager."
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                              <span>Approved (1/2) &bull; Awaiting 2nd Manager</span>
+                            </div>
+                          ) : (
+                            /* Tier 3 AMLA: Second Manager Final Approval (any distinct manager) */
+                            <button
+                              onClick={() => {
+                                setSelectedTx(tx);
+                                setApprovalNotes('AMLA CTR Second Approval: Dual manager clearance authorized. Releasing soft hold.');
                                 setActiveModal('approve');
                               }}
                               className="px-4 py-1.5 rounded-xl font-semibold text-xs bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/30 transition-all inline-flex items-center gap-1.5 cursor-pointer"
                             >
                               <ShieldCheck className="w-3.5 h-3.5" />
-                              <span>Final Release (L2)</span>
+                              <span>Second Approval</span>
                               <span className="text-[10px] bg-black/30 px-1.5 py-0.5 rounded font-mono font-bold">2/2</span>
                             </button>
                           )}
@@ -589,7 +613,7 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
             {/* Top decorative gradient bar */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-indigo-500 to-emerald-500 z-10" />
 
-            {/* Header (Fixed Top with Exit Button) */}
+            {/* Header */}
             <div className="p-5 border-b border-slate-800 shrink-0 flex items-start justify-between bg-slate-900/95 backdrop-blur-md pt-6">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-400 shadow-inner shrink-0">
@@ -609,19 +633,17 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
                   </p>
                 </div>
               </div>
-              {/* Exit Button */}
               <button
                 type="button"
                 onClick={() => setActiveModal(null)}
                 aria-label="Exit Dossier"
                 className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
-                title="Exit dossier"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Scrollable Body (Strictly Necessary Banking Details) */}
+            {/* Scrollable Body */}
             <div className="p-5 overflow-y-auto space-y-4 flex-1 text-xs">
               {/* 1. Core Financial Banner */}
               <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -690,11 +712,11 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
 
                 {(selectedTx.amount || 0) >= THRESHOLDS.AMLA_CTR_MIN ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {/* Stage 1 */}
+                    {/* First Approval */}
                     <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-semibold text-slate-400 uppercase">Stage 1: Operations Checker</span>
-                        {selectedTx.l1_approver_id || (selectedTx.approval_stage || 1) === 2 ? (
+                        <span className="text-[10px] font-semibold text-slate-400 uppercase">First Manager Approval</span>
+                        {selectedTx.first_approver_id ? (
                           <span className="text-[10px] font-mono text-emerald-400 font-bold flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3" /> SIGNED
                           </span>
@@ -705,27 +727,28 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
                         )}
                       </div>
                       <p className="font-semibold text-white text-xs">
-                        {selectedTx.l1_approver_name || 'Beatriz Ocampo'}{' '}
-                        <span className="font-mono text-slate-400 text-[10px]">({selectedTx.l1_approver_id || 'U3002'})</span>
+                        {selectedTx.first_approver_name || 'Operations Manager'}{' '}
+                        {selectedTx.first_approver_id && (
+                          <span className="font-mono text-slate-400 text-[10px]">({selectedTx.first_approver_id})</span>
+                        )}
                       </p>
-                      {selectedTx.l1_notes && (
+                      {selectedTx.first_notes && (
                         <p className="text-[10px] text-slate-400 italic bg-slate-950 p-2 rounded-lg border border-slate-800/60">
-                          "{selectedTx.l1_notes}"
+                          "{selectedTx.first_notes}"
                         </p>
                       )}
                     </div>
 
-                    {/* Stage 2 */}
+                    {/* Second Approval */}
                     <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-semibold text-slate-400 uppercase">Stage 2: Senior Manager</span>
+                        <span className="text-[10px] font-semibold text-slate-400 uppercase">Second Manager Approval</span>
                         <span className="text-[10px] font-mono text-slate-400 font-bold flex items-center gap-1">
                           <Clock className="w-3 h-3" /> AWAITING RELEASE
                         </span>
                       </div>
                       <p className="font-semibold text-white text-xs">
-                        {selectedTx.l2_approver_name || 'Carlos Mendoza'}{' '}
-                        <span className="font-mono text-slate-400 text-[10px]">({selectedTx.l2_approver_id || 'U3003'})</span>
+                        {selectedTx.second_approver_name || 'Operations Manager (Distinct)'}
                       </p>
                     </div>
                   </div>
@@ -739,7 +762,7 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
                 )}
               </div>
 
-              {/* 4. Ledger Hold Status (PostgreSQL 15 Append-Only Vault) */}
+              {/* 4. Ledger Hold Status */}
               <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-center justify-between text-[11px] font-mono">
                 <span className="text-slate-400 flex items-center gap-1.5">
                   <Lock className="w-3.5 h-3.5 text-emerald-400" /> Core Vault Status:
@@ -750,13 +773,12 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
               </div>
             </div>
 
-            {/* Actions (Fixed Bottom with Exit Button) */}
+            {/* Actions */}
             <div className="p-4 border-t border-slate-800 shrink-0 flex items-center justify-between bg-slate-900/95 backdrop-blur-md">
               <span className="text-[11px] text-slate-500 font-mono">
                 BSP Cir. 808 &bull; Segregation of Duties Verified
               </span>
               <div className="flex items-center gap-2">
-                {/* Exit Button */}
                 <button
                   type="button"
                   onClick={() => setActiveModal(null)}
@@ -777,8 +799,8 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
         </div>
       )}
 
-      {/* MODAL 1: Level 1 AMLA Sign-Off Modal */}
-      {activeModal === 'sign-l1' && selectedTx && (
+      {/* MODAL 1: First Manager AMLA Sign-Off Modal */}
+      {activeModal === 'sign-first' && selectedTx && (
         <div 
           onClick={(e) => { if (e.target === e.currentTarget) setActiveModal(null); }}
           className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4"
@@ -788,10 +810,10 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
               <div className="flex items-center gap-2">
                 <ShieldAlert className="w-5 h-5 text-amber-400" />
                 <h4 className="text-base font-bold text-white">
-                  AMLA Tier 3 Sign-Off &bull; Stage 1 of 2
+                  AMLA Tier 3 Sign-Off &bull; First Approval (1 of 2)
                 </h4>
                 <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                  Operations Checker
+                  Operations Manager
                 </span>
               </div>
               <button
@@ -832,13 +854,13 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
                 <ShieldCheck className="w-4 h-4 text-amber-400" /> RA 9160 (AMLA) Statutory Review Mandate
               </div>
               <p className="text-[11px] text-slate-300 leading-relaxed">
-                Confirming Level 1 verifies KYC legitimacy and covered transaction profiling. <strong>Soft hold remains locked in Oracle XE</strong> until Level 2 Senior Manager (Carlos Mendoza) performs final settlement release.
+                Confirming the first approval verifies KYC legitimacy and covered transaction profiling. <strong>Soft hold remains locked in Oracle XE</strong> until a second distinct manager performs final settlement release.
               </p>
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Level 1 Verification Notes (Immutable Audit Entry)
+                First Manager Verification Notes (Immutable Audit Entry)
               </label>
               <textarea
                 rows={3}
@@ -856,18 +878,18 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
                 Cancel
               </button>
               <button
-                onClick={handleSignL1}
+                onClick={handleFirstApproval}
                 disabled={isProcessing}
                 className="px-5 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white shadow-lg shadow-amber-600/30 flex items-center gap-1.5"
               >
-                {isProcessing ? 'Recording Sign-Off...' : 'Confirm Level 1 Sign-Off (Advance to Stage 2)'}
+                {isProcessing ? 'Recording First Approval...' : 'Confirm First Approval (Advance to Stage 2)'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL 2: Final Release & Settlement Modal (Tier 2 OR Tier 3 Stage 2) */}
+      {/* MODAL 2: Final Release & Settlement Modal (Tier 2 OR Tier 3 Second Manager) */}
       {activeModal === 'approve' && selectedTx && (
         <div 
           onClick={(e) => { if (e.target === e.currentTarget) setActiveModal(null); }}
@@ -879,11 +901,11 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
                 <CheckCircle className="w-5 h-5 text-emerald-400" />
                 <h4 className="text-base font-bold text-white">
                   {(selectedTx.amount || 0) >= THRESHOLDS.AMLA_CTR_MIN 
-                    ? 'AMLA Tier 3 Final Settlement • Stage 2 of 2'
+                    ? 'AMLA Tier 3 Final Settlement • Second Approval (2 of 2)'
                     : `Authorize Balance Mutation (${selectedTx.id})`}
                 </h4>
                 <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  {(selectedTx.amount || 0) >= THRESHOLDS.AMLA_CTR_MIN ? 'Senior Manager L2' : 'Operations Checker'}
+                  Operations Manager
                 </span>
               </div>
               <button
@@ -915,19 +937,19 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
               </div>
             </div>
 
-            {/* If Tier 3 Stage 2: Highlight Level 1 Sign-Off verification */}
+            {/* If Tier 3: Highlight First Manager Sign-Off verification */}
             {(selectedTx.amount || 0) >= THRESHOLDS.AMLA_CTR_MIN && (
               <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs space-y-1 text-emerald-300">
                 <div className="flex items-center gap-1.5 font-bold">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  Level 1 Audit Sign-Off Verified
+                  First Manager Approval Verified
                 </div>
                 <p className="text-[11px] text-slate-300">
-                  Operations Checker: <span className="font-semibold text-white">{selectedTx.l1_approver_name || 'Beatriz Ocampo'}</span> ({selectedTx.l1_approver_id || 'U3002'})
+                  Operations Manager: <span className="font-semibold text-white">{selectedTx.first_approver_name || 'Operations Manager'}</span> ({selectedTx.first_approver_id || 'Manager 1'})
                 </p>
-                {selectedTx.l1_notes && (
+                {selectedTx.first_notes && (
                   <p className="text-[11px] text-slate-400 italic">
-                    "{selectedTx.l1_notes}"
+                    "{selectedTx.first_notes}"
                   </p>
                 )}
               </div>
@@ -938,7 +960,7 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
                 <CheckCircle2 className="w-3.5 h-3.5" /> Dual-Control Verification Passed
               </div>
               <p className="text-[11px] text-slate-400 leading-relaxed">
-                Confirming final authorization will release the soft hold, execute permanent debit in the Oracle XE core ledger, and dispatch receipt notification.
+                Confirming authorization will release the soft hold, execute permanent debit in the Oracle XE core ledger, and dispatch receipt notification.
               </p>
             </div>
 
@@ -979,12 +1001,12 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
           onClick={(e) => { if (e.target === e.currentTarget) setActiveModal(null); }}
           className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4"
         >
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative">
+          <div className="bg-slate-900 border border-rose-500/30 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h4 className="text-base font-bold text-white flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <XCircle className="w-5 h-5 text-rose-400" />
-                Disapprove &amp; Void Transfer ({selectedTx.id})
-              </h4>
+                <h4 className="text-base font-bold text-white">Disapprove &amp; Void Balance Mutation</h4>
+              </div>
               <button
                 type="button"
                 onClick={() => setActiveModal(null)}
@@ -994,13 +1016,25 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <p className="text-xs text-slate-400">
-              Disapproving this transfer will release the soft hold ({formatPHP(selectedTx.amount)}) back to the customer's liquid available balance.
-            </p>
+
+            <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-2 font-mono">
+              <div className="flex justify-between">
+                <span className="text-slate-400">Transfer Ref:</span>
+                <span className="font-bold text-rose-400">{selectedTx.id}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Voided Amount:</span>
+                <span className="font-bold text-white">{formatPHP(selectedTx.amount)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Reviewing Manager:</span>
+                <span className="text-indigo-400 font-semibold">{user?.name} ({user?.user_id})</span>
+              </div>
+            </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Mandatory Disapproval Reason (Audit Trail Log)
+                Disapproval Reason (Mandatory BSP Audit Notation)
               </label>
               <textarea
                 rows={3}
@@ -1022,7 +1056,7 @@ export default function ManagerPortal({ onActionComplete, showToast }) {
                 disabled={isProcessing}
                 className="px-5 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/30"
               >
-                {isProcessing ? 'Voiding Transaction...' : 'Confirm Disapproval'}
+                {isProcessing ? 'Voiding Transfer...' : 'Confirm Disapproval & Release Hold'}
               </button>
             </div>
           </div>

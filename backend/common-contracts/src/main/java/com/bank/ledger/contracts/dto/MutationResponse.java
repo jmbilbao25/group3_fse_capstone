@@ -41,4 +41,7 @@ public class MutationResponse {
 
     @JsonProperty("trace_id")
     private String traceId;
+
+    @JsonProperty("message")
+    private String message;
 }

@@ -1,14 +1,37 @@
 import axios from 'axios';
 import { generateUUID } from '../utils/currency';
 
-// Strictly volatile in-memory token storage (guard against XSS token exfiltration)
-let inMemoryAccessToken = null;
+const TOKEN_STORAGE_KEY = 'fse_auth_access_token';
+
+let inMemoryAccessToken = typeof window !== 'undefined' ? localStorage.getItem(TOKEN_STORAGE_KEY) : null;
+if (inMemoryAccessToken && (inMemoryAccessToken.startsWith('active_jwt_') || inMemoryAccessToken.startsWith('mock_jwt_'))) {
+  inMemoryAccessToken = null;
+  if (typeof window !== 'undefined') localStorage.removeItem(TOKEN_STORAGE_KEY);
+}
 
 export const setAccessToken = (token) => {
+  if (token && (token.startsWith('active_jwt_') || token.startsWith('mock_jwt_'))) {
+    inMemoryAccessToken = null;
+    if (typeof window !== 'undefined') localStorage.removeItem(TOKEN_STORAGE_KEY);
+    return;
+  }
   inMemoryAccessToken = token;
+  if (typeof window !== 'undefined') {
+    if (token) {
+      localStorage.setItem(TOKEN_STORAGE_KEY, token);
+    } else {
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+    }
+  }
 };
 
 export const getAccessToken = () => {
+  if (!inMemoryAccessToken && typeof window !== 'undefined') {
+    const saved = localStorage.getItem(TOKEN_STORAGE_KEY);
+    if (saved && !saved.startsWith('active_jwt_') && !saved.startsWith('mock_jwt_')) {
+      inMemoryAccessToken = saved;
+    }
+  }
   return inMemoryAccessToken;
 };
 
@@ -23,8 +46,9 @@ const apiClient = axios.create({
 
 // Request interceptor: attach bearer token and idempotency header
 apiClient.interceptors.request.use((config) => {
-  if (inMemoryAccessToken) {
-    config.headers['Authorization'] = `Bearer ${inMemoryAccessToken}`;
+  const token = getAccessToken();
+  if (token) {
+    config.headers['Authorization'] = `Bearer ${token}`;
   }
   if (['post', 'patch', 'put'].includes(config.method?.toLowerCase())) {
     if (!config.headers['X-Idempotency-Key']) {
@@ -183,7 +207,7 @@ const initialMockState = {
       memo: 'Commercial server farm procurement batch #3',
       maker_user_id: 'U1001',
       hold_active: true,
-      approval_stage: 1, // Stage 1 of 2: Awaiting L1 (Beatriz Ocampo)
+      approval_stage: 1, // Stage 1 of 2: Awaiting First Manager Approval
       required_stages: 2,
       l1_approver_id: null,
       l1_approver_name: null,
@@ -377,20 +401,15 @@ export const resetMockState = () => {
   return mockState;
 };
 
-// Response interceptor with Mock Simulation Fallback
+// Response interceptor with Mock Simulation Fallback only when network is completely offline
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
-    // If backend is unreachable or returns error on auth, route to mock ledger engine
     const isAuthRequest = (error.config?.url || '').includes('/auth/');
-    const isBackendUnavailable =
-      !error.response ||
-      error.code === 'ERR_NETWORK' ||
-      (isAuthRequest && error.response?.status === 401) ||
-      (error.response?.status === 404 && (!error.response.data || typeof error.response.data !== 'object' || !error.response.data.title)) ||
-      ([500, 502, 503, 504].includes(error.response?.status) && (!error.response.data || typeof error.response.data !== 'object' || !error.response.data.title));
-
-    if (isBackendUnavailable) {
+    
+    // Only route to mock fallback if network is completely unreachable (offline / connection refused)
+    const isNetworkDown = !error.response && error.code === 'ERR_NETWORK';
+    if (isNetworkDown) {
       return handleMockFallback(error.config);
     }
 
@@ -405,8 +424,12 @@ apiClient.interceptors.response.use(
         originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
         return apiClient(originalRequest);
       } catch (refreshErr) {
-        // In local/dev standalone mock mode, route to mock handler
-        return handleMockFallback(originalRequest);
+        // Session expired, clear token and notify app to re-authenticate
+        setAccessToken(null);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('auth:expired'));
+        }
+        return Promise.reject(error);
       }
     }
 
@@ -454,7 +477,7 @@ function handleMockFallback(config) {
         user_name = `${userRecord.first_name} ${userRecord.middle_name ? userRecord.middle_name + ' ' : ''}${userRecord.last_name}`;
         if (userRecord.role === 'MANAGER') {
           role = 'ROLE_MANAGER';
-          user_title = user_id === 'U3003' ? 'Senior Manager / Branch Head (Approver L2)' : 'Operations Manager (Checker L1)';
+          user_title = 'Operations Manager';
         } else if (userRecord.role === 'ADMIN') {
           role = 'ROLE_ADMIN';
           user_title = 'System Auditor & Compliance';
@@ -620,7 +643,7 @@ function handleMockFallback(config) {
           tier = 'TIER_3_AMLA_CTR';
           tierLabel = 'Tier 3: AMLA CTR + Dual Control';
           status = 'PENDING_APPROVAL';
-          responseMsg = 'AMLA Covered Transaction (CTR) threshold reached (≥ ₱500k). Soft hold placed. Requires 2-Stage Manager Approval (L1 Operations Checker + L2 Senior Manager).';
+          responseMsg = 'AMLA Covered Transaction (CTR) threshold reached (≥ ₱500k). Soft hold placed. Requires 2 distinct Operations Manager approvals.';
         } else if (isTier2) {
           tier = 'TIER_2_DUAL_CONTROL';
           tierLabel = 'Tier 2: Maker-Checker Dual Control';
@@ -744,9 +767,9 @@ function handleMockFallback(config) {
         return resolve({ data: pending });
       }
 
-      // 5b. Stage 1 Sign-Off for Tier 3 AMLA Transfers (L1 Operations Manager: Beatriz Ocampo U3002)
-      if (url.includes('/transfers/') && url.endsWith('/sign-l1') && method === 'post') {
-        const id = url.split('/transfers/')[1].split('/sign-l1')[0];
+      // 5b. First Approval for Tier 3 AMLA Transfers (Any Operations Manager)
+      if (url.includes('/transfers/') && (url.endsWith('/sign-l1') || url.endsWith('/approve-first')) && method === 'post') {
+        const id = url.split('/transfers/')[1].split('/')[0];
         const tx = mockState.transfers.find((t) => t.id === id);
 
         if (!tx || tx.status !== 'PENDING_APPROVAL') {
@@ -754,9 +777,9 @@ function handleMockFallback(config) {
         }
 
         const checkerId = payload.checker_user_id || 'U3002';
-        const checkerName = payload.checker_name || (checkerId === 'U3002' ? 'Beatriz Ocampo' : 'Operations Manager');
+        const checkerName = payload.checker_name || 'Operations Manager';
 
-        // Segregation of Duties: Maker cannot sign L1
+        // Segregation of Duties: Maker cannot sign
         if (checkerId === tx.maker_user_id) {
           return reject({
             response: {
@@ -775,18 +798,22 @@ function handleMockFallback(config) {
               status: 400,
               data: {
                 title: 'Invalid Workflow Stage',
-                detail: `Transfer is currently in Stage ${tx.approval_stage}. Level 1 sign-off is already completed.`,
+                detail: `Transfer is currently in Stage ${tx.approval_stage}. First approval is already completed.`,
               }
             }
           });
         }
 
-        // Advance to Stage 2 (Awaiting Level 2 Senior Manager)
+        // Advance to Stage 2 (Awaiting Second Manager Approval)
         tx.approval_stage = 2;
+        tx.first_approver_id = checkerId;
         tx.l1_approver_id = checkerId;
+        tx.first_approver_name = checkerName;
         tx.l1_approver_name = checkerName;
-        tx.l1_approved_at = new Date().toISOString();
-        tx.l1_notes = payload.notes || 'Verified customer identity, KYC profile, and AMLA covered transaction mandate.';
+        tx.first_approved_at = new Date().toISOString();
+        tx.l1_approved_at = tx.first_approved_at;
+        tx.first_notes = payload.notes || 'Verified customer identity, KYC profile, and AMLA covered transaction mandate.';
+        tx.l1_notes = tx.first_notes;
 
         // Soft hold remains intact in Oracle XE (no balance debit yet)
         saveMockState();
@@ -799,41 +826,29 @@ function handleMockFallback(config) {
         mockState.auditLogs.push({
           scn: nextScn,
           tx_id: tx.id,
-          event_type: 'AMLA_TIER3_STAGE1_L1_SIGNOFF',
+          event_type: 'AMLA_TIER3_FIRST_APPROVAL_SIGNOFF',
           actor_id: checkerId,
           actor_role: 'MANAGER',
           account_id: tx.from_account_id,
           delta_amount: 0,
           balance_after: mockState.account.available_balance,
           digest_hash: Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2),
-          timestamp: tx.l1_approved_at,
+          timestamp: tx.first_approved_at,
           status: 'VERIFIED',
         });
         saveMockState();
-
-        // Notification dispatched to Carlos Mendoza (Senior Manager / L2 Approver)
-        try {
-          axios.post('http://localhost:8083/api/v1/notifications/simulate-tier3-amla', {
-            transfer_id: tx.id,
-            amount: tx.amount,
-            from_account_id: tx.from_account_id,
-            to_account_id: tx.to_account_id,
-            recipient_email: 'carlos.mendoza@retailbank.ph',
-            memo: `AMLA L1 Sign-off Complete by ${checkerName}. Awaiting Level 2 Senior Manager final authorization.`
-          }).catch(() => {});
-        } catch (_) {}
 
         return resolve({
           data: {
             transfer_id: tx.id,
             status: 'PENDING_APPROVAL',
             approval_stage: 2,
-            message: `Stage 1 sign-off recorded by ${checkerName}. Forwarded to Level 2 Senior Manager (Carlos Mendoza) for final settlement release.`
+            message: `First manager approval recorded by ${checkerName}. Awaiting second manager review for final settlement release.`
           }
         });
       }
 
-      // 6. Approve Transfer (Manager Action: Tier 2 single approval or Tier 3 Stage 2 final release)
+      // 6. Approve Transfer (Manager Action: Tier 2 single approval or Tier 3 second manager final release)
       if (url.includes('/transfers/') && url.endsWith('/approve') && method === 'post') {
         const id = url.split('/transfers/')[1].split('/approve')[0];
         const tx = mockState.transfers.find((t) => t.id === id);
@@ -843,7 +858,7 @@ function handleMockFallback(config) {
         }
 
         const checkerId = payload.checker_user_id || 'U3002';
-        const checkerName = payload.checker_name || (checkerId === 'U3003' ? 'Carlos Mendoza' : 'Beatriz Ocampo');
+        const checkerName = payload.checker_name || 'Operations Manager';
 
         // Segregation of Duties Check: Maker cannot approve
         if (checkerId === tx.maker_user_id) {
@@ -858,7 +873,7 @@ function handleMockFallback(config) {
           });
         }
 
-        // Dual-Control Multi-Level Enforcement for Tier 3 AMLA
+        // Dual-Control Multi-Manager Enforcement for Tier 3 AMLA
         const isTier3 = tx.regulatory_tier === 'TIER_3_AMLA_CTR' || (tx.amount >= THRESHOLDS.AMLA_CTR_MIN);
         if (isTier3) {
           if (tx.approval_stage === 1) {
@@ -866,30 +881,35 @@ function handleMockFallback(config) {
               response: {
                 status: 400,
                 data: {
-                  title: 'Multi-Level Approval Required',
-                  detail: 'Tier 3 AMLA transfers (≥ ₱500k) require Stage 1 (L1 Operations Manager) sign-off before Stage 2 release.',
+                  title: 'Two Manager Approvals Required',
+                  detail: 'Tier 3 AMLA transfers (≥ ₱500k) require two manager approvals before final release.',
                 }
               }
             });
           }
 
-          // Segregation of Duties: Level 2 approver cannot be the same individual who signed Level 1!
-          if (tx.l1_approver_id && checkerId === tx.l1_approver_id) {
+          // Segregation of Duties: Second approver cannot be the same manager who signed the first approval!
+          const firstApprover = tx.first_approver_id || tx.l1_approver_id;
+          if (firstApprover && checkerId === firstApprover) {
             return reject({
               response: {
                 status: 403,
                 data: {
                   title: 'Dual-Control Segregation Violation',
-                  detail: `Rule AMLA-204: Level 2 final release must be approved by a distinct Senior Manager (Carlos Mendoza U3003). Manager ${checkerName} already executed Level 1 sign-off.`,
+                  detail: `Rule AMLA-204: The second approval must be signed by a different manager. You already recorded the first approval.`,
                 }
               }
             });
           }
 
+          tx.second_approver_id = checkerId;
           tx.l2_approver_id = checkerId;
+          tx.second_approver_name = checkerName;
           tx.l2_approver_name = checkerName;
-          tx.l2_approved_at = new Date().toISOString();
-          tx.l2_notes = payload.notes || 'Senior Manager AMLA Covered Transaction CTR clearance verified.';
+          tx.second_approved_at = new Date().toISOString();
+          tx.l2_approved_at = tx.second_approved_at;
+          tx.second_notes = payload.notes || 'Second Manager AMLA Covered Transaction CTR clearance verified.';
+          tx.l2_notes = tx.second_notes;
         }
 
         tx.status = 'SETTLED';

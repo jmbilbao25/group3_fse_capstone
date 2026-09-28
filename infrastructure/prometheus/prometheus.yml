@@ -43,3 +43,14 @@ scrape_configs:
         labels:
           application: "ledger-mutation-engine"
           tier: "ledger-domain"
+
+  - job_name: "notification-service"
+    metrics_path: "/actuator/prometheus"
+    scrape_interval: 5s
+    static_configs:
+      - targets:
+          - "host.docker.internal:8083"
+          - "notification-service:8083"
+        labels:
+          application: "notification-service"
+          tier: "notification-domain"

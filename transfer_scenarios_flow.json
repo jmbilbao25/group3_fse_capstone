@@ -42,7 +42,6 @@
     "gateway",
     "cme_router",
     "oracle_master",
-    "postgres_audit",
     "outbox_worker",
     "kafka_broker",
     "notif_service",
@@ -56,7 +55,7 @@
     { "id": "mailhog_smtp", "lane": "verification", "col": 4, "type": "cloud", "label": "MailHog SMTP", "sublabel": "OTP email inbox", "tag": ":8025 inbox", "width": 132 },
     { "id": "cme_router", "lane": "engine", "col": 2, "type": "backend", "label": "Mutation Router", "sublabel": "threshold check", "tag": "checks 50k", "width": 132 },
     { "id": "outbox_worker", "lane": "engine", "col": 3, "type": "backend", "label": "Outbox Relay", "sublabel": "polls outbox_events", "tag": "2s interval", "width": 132 },
-    { "id": "oracle_master", "lane": "storage", "col": 2, "type": "database", "label": "Oracle XE Master", "sublabel": "balance_master", "tag": "lock & hold", "width": 132 },
+    { "id": "oracle_master", "lane": "storage", "col": 2, "type": "database", "label": "Oracle XE Master", "sublabel": "balance_master", "tag": "lock & outbox", "width": 132 },
     { "id": "postgres_audit", "lane": "storage", "col": 3, "type": "database", "label": "Postgres Vault", "sublabel": "immutable audit log", "brand": "postgresql", "tag": "append-only", "width": 132 },
     { "id": "kafka_broker", "lane": "storage", "col": 4, "type": "messagebus", "label": "Kafka Broker", "sublabel": "customer.otp & events", "brand": "apache-kafka", "tag": "KRaft :9092", "width": 132 },
     { "id": "notif_service", "lane": "storage", "col": 5, "type": "cloud", "label": "Notif Service", "sublabel": "email advice dispatcher", "tag": ":8083 worker", "width": 132 }
@@ -64,9 +63,9 @@
   "edges": [
     { "id": "e-submit", "from": "customer_app", "to": "gateway", "label": "submit transfer", "variant": "default" },
     { "id": "e-proxy", "from": "gateway", "to": "cme_router", "label": "forward :8082", "variant": "emphasis" },
-    { "id": "e-lock", "from": "cme_router", "to": "oracle_master", "label": "lock or hold", "variant": "emphasis" },
+    { "id": "e-lock", "from": "cme_router", "to": "oracle_master", "label": "lock & outbox", "variant": "emphasis" },
     { "id": "e-audit", "from": "oracle_master", "to": "postgres_audit", "label": "audit write", "variant": "emphasis" },
-    { "id": "e-poll", "from": "postgres_audit", "to": "outbox_worker", "label": "outbox ready", "variant": "default" },
+    { "id": "e-poll", "from": "oracle_master", "to": "outbox_worker", "label": "poll Oracle", "variant": "default" },
     { "id": "e-publish", "from": "outbox_worker", "to": "kafka_broker", "label": "publish events", "variant": "default" },
     { "id": "e-notif", "from": "kafka_broker", "to": "notif_service", "label": "events topic", "variant": "dashed" },
     { "id": "e-receipt", "from": "notif_service", "to": "final_receipt", "label": "SSE receipt", "variant": "emphasis", "role": "return" },

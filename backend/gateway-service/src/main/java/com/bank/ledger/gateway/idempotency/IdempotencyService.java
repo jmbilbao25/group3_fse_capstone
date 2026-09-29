@@ -11,13 +11,19 @@ import java.time.Duration;
 public class IdempotencyService {
 
     private final StringRedisTemplate redisTemplate;
+    private static final String PREFIX = "idempotency:";
 
     public boolean isDuplicate(String key) {
-        return Boolean.TRUE.equals(redisTemplate.hasKey(key));
+        return Boolean.TRUE.equals(redisTemplate.hasKey(PREFIX + key));
     }
 
     public void save(String key) {
         redisTemplate.opsForValue()
-                .set(key, "PROCESSED", Duration.ofMinutes(10));
+                .set(PREFIX + key, "PROCESSED", Duration.ofMinutes(10));
+    }
+
+    public boolean saveIfAbsent(String key) {
+        return Boolean.TRUE.equals(redisTemplate.opsForValue()
+                .setIfAbsent(PREFIX + key, "PROCESSED", Duration.ofMinutes(10)));
     }
 }

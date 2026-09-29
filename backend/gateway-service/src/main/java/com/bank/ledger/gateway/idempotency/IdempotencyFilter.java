@@ -23,13 +23,20 @@ public class IdempotencyFilter implements GlobalFilter {
                         .getHeaders()
                         .getFirst("Idempotency-Key");
 
+        if (key == null || key.isBlank()) {
+            key = exchange.getRequest()
+                    .getHeaders()
+                    .getFirst("X-Idempotency-Key");
+        }
+
         if (key != null && !key.isBlank()) {
 
             System.out.println("IDEMPOTENCY KEY = " + key);
 
-            System.out.println("IS DUPLICATE = " + idempotencyService.isDuplicate(key));
+            boolean duplicate = idempotencyService.isDuplicate(key);
+            System.out.println("IS DUPLICATE = " + duplicate);
 
-            if (idempotencyService.isDuplicate(key)) {
+            if (duplicate) {
 
                 exchange.getResponse()
                         .setStatusCode(HttpStatus.CONFLICT);
@@ -41,6 +48,14 @@ public class IdempotencyFilter implements GlobalFilter {
             System.out.println("SAVING KEY = " + key);
             idempotencyService.save(key);
             System.out.println("KEY SAVED = " + key);
+
+            if (exchange.getRequest().getHeaders().getFirst("X-Idempotency-Key") == null) {
+                final String finalKey = key;
+                ServerWebExchange mutatedExchange = exchange.mutate()
+                        .request(builder -> builder.header("X-Idempotency-Key", finalKey))
+                        .build();
+                return chain.filter(mutatedExchange);
+            }
         }
 
         return chain.filter(exchange);

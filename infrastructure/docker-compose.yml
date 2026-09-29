@@ -424,6 +424,26 @@ services:
     networks:
       - banking-net
 
+  # ============================================================================
+  # 17. Datadog Synthetics Private Location Worker
+  # Container Name: datadog-synthetics-worker
+  # Executes Synthetic API tests inside the internal banking-net container network
+  # ============================================================================
+  datadog-synthetics-worker:
+    container_name: datadog-synthetics-worker
+    image: registry.datadoghq.com/synthetics-private-location-worker:latest
+    restart: unless-stopped
+    environment:
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
+      - NODE_EXTRA_CA_CERTS=/etc/datadog/certs/ca-bundle.pem
+    volumes:
+      - ./datadog/synthetics-location-config.json:/etc/datadog/synthetics-check-runner.json:ro
+      - ./datadog/certs:/etc/datadog/certs:ro
+    networks:
+      - banking-net
+    depends_on:
+      - gateway-service
+
 volumes:
   oracle_data:
   postgres_data:

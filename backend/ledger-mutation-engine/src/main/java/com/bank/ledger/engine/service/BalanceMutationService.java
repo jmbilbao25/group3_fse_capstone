@@ -812,4 +812,12 @@ public class BalanceMutationService {
                 "message", "Transfer verified successfully via Customer 2FA OTP. Funds settled."
         );
     }
+
+    /**
+     * Retrieves all immutable mutation audit records directly from PostgreSQL ledger_mutation_audit table.
+     */
+    @Transactional(transactionManager = "postgresTransactionManager", readOnly = true)
+    public List<LedgerMutationAudit> getAuditRecords() {
+        return auditRepository.findAllByOrderByAuditIdDesc();
+    }
 }

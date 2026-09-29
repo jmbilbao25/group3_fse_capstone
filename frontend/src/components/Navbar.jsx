@@ -29,7 +29,7 @@ import { cn } from '../ui';
 const ROLE_LABELS = {
   ROLE_CUSTOMER: 'Customer',
   ROLE_MANAGER: 'Manager',
-  ROLE_ADMIN: 'Compliance',
+  ROLE_ADMIN: 'Compliance Auditor',
 };
 
 /* The three personas this build ships for demonstration. */
@@ -49,7 +49,7 @@ const PERSONAS = [
   {
     role: 'ROLE_ADMIN',
     name: 'Diana Vance',
-    title: 'Compliance officer',
+    title: 'Compliance Auditor',
     id: 'U0001',
   },
 ];

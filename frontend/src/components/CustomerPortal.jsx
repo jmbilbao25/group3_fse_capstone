@@ -70,7 +70,7 @@ export default function CustomerPortal({ balance, onTransactionComplete, onSwitc
 
   // Search & Filter State for Activity Tab
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' | 'SETTLED' | 'PENDING_APPROVAL'
+  const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' | 'SETTLED'
   const [dateFilter, setDateFilter] = useState('ALL');     // 'ALL' | 'TODAY' | 'MONTH'
 
   // Bento Donut Chart State Filter
@@ -123,9 +123,9 @@ export default function CustomerPortal({ balance, onTransactionComplete, onSwitc
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
 
   const numericAmount = parseFloat(amountInput) || 0;
-  const sourceAvailable = mockState.account?.available_balance || balance?.available_balance || 14275000;
-  const sourceCurrent = mockState.account?.current_balance || balance?.current_balance || 15000000;
-  const sourceHeld = mockState.account?.held_balance || balance?.held_balance || 725000;
+  const sourceAvailable = mockState.account?.available_balance ?? balance?.available_balance ?? 15000000;
+  const sourceCurrent = mockState.account?.current_balance ?? balance?.current_balance ?? 15000000;
+  const sourceHeld = mockState.account?.held_balance ?? balance?.held_balance ?? 0;
 
   const handleAmountChange = (e) => {
     const masked = parseMaskedInput(e.target.value, 2);
@@ -389,8 +389,6 @@ export default function CustomerPortal({ balance, onTransactionComplete, onSwitc
     // Status filter
     if (statusFilter === 'SETTLED') {
       list = list.filter((t) => t.status === 'SETTLED');
-    } else if (statusFilter === 'PENDING_APPROVAL') {
-      list = list.filter((t) => t.status === 'PENDING_APPROVAL');
     }
 
     // Date filter
@@ -492,7 +490,7 @@ export default function CustomerPortal({ balance, onTransactionComplete, onSwitc
           </div>
 
           {/* Right: Focused Balance Metrics (Deposit Portfolio Only) */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:gap-8 divide-y sm:divide-y-0 sm:divide-x divide-line pt-2 lg:pt-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-8 divide-y sm:divide-y-0 sm:divide-x divide-line pt-2 lg:pt-0">
             {/* Metric 1: Available Liquid Balance */}
             <div className="sm:px-4 first:pl-0 pt-2 sm:pt-0">
               <span className="text-2xs font-medium uppercase tracking-wider text-fg-subtle flex items-center gap-1.5">
@@ -513,17 +511,6 @@ export default function CustomerPortal({ balance, onTransactionComplete, onSwitc
                 {formatVisiblePHP(sourceCurrent)}
               </p>
               <span className="text-2xs text-fg-subtle font-mono">Gross deposit position</span>
-            </div>
-
-            {/* Metric 3: Active Soft Holds / Pending */}
-            <div className="sm:px-4 pt-2 sm:pt-0">
-              <span className="text-2xs font-medium uppercase tracking-wider text-fg-subtle flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-held-600 dark:text-held-400" /> In Escrow / Transit
-              </span>
-              <p className="text-base font-semibold font-mono text-held-700 dark:text-held-400 mt-1">
-                {formatVisiblePHP(sourceHeld)}
-              </p>
-              <span className="text-2xs text-held-600/80 dark:text-held-400/80 font-mono">Held pending settlement</span>
             </div>
           </div>
         </div>
@@ -785,7 +772,7 @@ export default function CustomerPortal({ balance, onTransactionComplete, onSwitc
                   <div className="p-3 bg-sunken border border-line flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2.5">
                       <div className="w-2.5 h-2.5 bg-accent shrink-0" />
-                      <span className="font-medium text-fg">Commercial Real Estate Escrow</span>
+                      <span className="font-medium text-fg">Commercial Real Estate Acquisition</span>
                     </div>
                     <div className="text-right">
                       <span className="font-mono font-medium text-fg">{formatVisiblePHP(650000)}</span>
@@ -858,8 +845,8 @@ export default function CustomerPortal({ balance, onTransactionComplete, onSwitc
                   <p className="text-2xl font-semibold font-mono text-fg mt-1">
                     {formatVisiblePHP(sourceCurrent)}
                   </p>
-                  <p className="text-2xs text-held-600 dark:text-held-400 mt-1 font-mono">
-                    Held in transit: {formatVisiblePHP(sourceHeld)}
+                  <p className="text-2xs text-fg-subtle mt-1 font-mono">
+                    Direct on-demand book balance
                   </p>
                 </div>
               </div>
@@ -938,9 +925,9 @@ export default function CustomerPortal({ balance, onTransactionComplete, onSwitc
                           'text-[10px] font-mono uppercase px-1.5 py-0.2 border',
                           isSettled 
                             ? 'bg-settled-50 dark:bg-settled-900/30 text-settled-700 dark:text-settled-400 border-settled-200 dark:border-settled-800'
-                            : 'bg-held-50 dark:bg-held-900/30 text-held-700 dark:text-held-400 border-held-200 dark:border-held-800'
+                            : 'bg-sunken text-fg-subtle border-line'
                         )}>
-                          {isSettled ? 'Settled' : 'In Review'}
+                          {isSettled ? 'Settled' : (tx.status || 'Settled')}
                         </span>
                       </div>
                     </div>
@@ -1176,7 +1163,6 @@ export default function CustomerPortal({ balance, onTransactionComplete, onSwitc
                 >
                   <option value="ALL">All Statuses</option>
                   <option value="SETTLED">Settled Only</option>
-                  <option value="PENDING_APPROVAL">In Review Only</option>
                 </select>
               </div>
 
@@ -1246,9 +1232,9 @@ export default function CustomerPortal({ balance, onTransactionComplete, onSwitc
                             'text-2xs font-mono uppercase px-2 py-0.5 border',
                             isSettled
                               ? 'bg-settled-50 dark:bg-settled-900/30 text-settled-700 dark:text-settled-400 border-settled-200 dark:border-settled-800'
-                              : 'bg-held-50 dark:bg-held-900/30 text-held-700 dark:text-held-400 border-held-200 dark:border-held-800'
+                              : 'bg-sunken text-fg-subtle border-line'
                           )}>
-                            {isSettled ? 'Settled' : 'In Review'}
+                            {isSettled ? 'Settled' : (tx.status || 'Settled')}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-right whitespace-nowrap">

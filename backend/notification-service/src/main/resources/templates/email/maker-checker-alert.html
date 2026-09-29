@@ -3,188 +3,203 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customer Security Verification OTP</title>
+    <title th:text="${verificationCode != null or isOtp == true ? 'Security Verification Code' : (alertHeader != null ? alertHeader : 'Aura Bank Notice')}">Security Verification Code</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: #0f172a;
-            color: #f8fafc;
+            background-color: #f8fafc;
+            color: #0f172a;
             margin: 0;
-            padding: 24px;
+            padding: 36px 16px;
+            -webkit-font-smoothing: antialiased;
         }
-        .container {
-            max-width: 560px;
+        .wrapper {
+            max-width: 480px;
             margin: 0 auto;
-            background: #1e293b;
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid #0284c7;
-            box-shadow: 0 10px 25px -5px rgba(2, 132, 199, 0.25);
         }
-        .header {
-            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-            padding: 24px;
-            text-align: center;
+        .card {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 32px 28px;
+            box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04);
         }
-        .header h1 {
-            margin: 0;
-            font-size: 18px;
+        .brand {
+            font-size: 11px;
             font-weight: 700;
-            letter-spacing: 0.5px;
-            color: #ffffff;
+            letter-spacing: 0.12em;
             text-transform: uppercase;
+            color: #0f172a;
+            margin-bottom: 24px;
         }
-        .body-content {
-            padding: 24px;
-        }
-        .badge-warning {
-            display: inline-block;
-            background-color: rgba(6, 182, 212, 0.15);
-            color: #22d3ee;
-            border: 1px solid #0891b2;
-            padding: 4px 12px;
-            border-radius: 9999px;
-            font-size: 12px;
+        h1 {
+            font-size: 20px;
             font-weight: 600;
-            text-transform: uppercase;
-            margin-bottom: 12px;
+            color: #0f172a;
+            margin: 0 0 8px;
+            letter-spacing: -0.02em;
         }
-        .amount-box {
-            text-align: center;
-            padding: 16px 0 20px;
-            border-bottom: 1px solid #334155;
-        }
-        .amount-value {
-            font-size: 32px;
-            font-weight: 800;
-            color: #38bdf8;
-            margin: 6px 0 0;
+        p {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #475569;
+            margin: 0 0 20px;
         }
         .otp-container {
-            margin: 22px 0;
-            padding: 22px 16px;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            border: 2px dashed #06b6d4;
-            border-radius: 14px;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 24px 16px;
             text-align: center;
-            box-shadow: 0 8px 20px -4px rgba(6, 182, 212, 0.25);
-        }
-        .otp-title {
-            display: inline-block;
-            padding: 4px 12px;
-            background: rgba(6, 182, 212, 0.15);
-            border: 1px solid #0891b2;
-            border-radius: 9999px;
-            font-size: 11px;
-            font-weight: 700;
-            color: #22d3ee;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 8px;
+            margin: 20px 0;
         }
         .otp-code {
-            font-size: 42px;
-            font-weight: 900;
-            letter-spacing: 12px;
-            color: #38bdf8;
-            font-family: 'Courier New', Courier, monospace;
-            text-shadow: 0 0 16px rgba(56, 189, 248, 0.4);
-            padding: 8px 0;
+            font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+            font-size: 34px;
+            font-weight: 700;
+            letter-spacing: 8px;
+            color: #0f172a;
+            line-height: 1;
+            padding-left: 8px;
         }
-        .receipt-table {
+        .otp-caption {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 10px;
+        }
+        .details-table {
             width: 100%;
-            margin-top: 20px;
             border-collapse: collapse;
+            margin-top: 24px;
         }
-        .receipt-table tr {
-            border-bottom: 1px solid #334155;
+        .details-table tr {
+            border-bottom: 1px solid #f1f5f9;
         }
-        .receipt-table td {
-            padding: 10px 4px;
+        .details-table tr:last-child {
+            border-bottom: none;
+        }
+        .details-table td {
+            padding: 10px 0;
             font-size: 13px;
         }
-        .label-col { color: #94a3b8; width: 45%; }
-        .value-col { color: #f1f5f9; text-align: right; font-weight: 600; }
-        .footer {
-            background-color: #0f172a;
-            padding: 16px 24px;
-            text-align: center;
-            border-top: 1px solid #334155;
-            font-size: 11px;
+        .label {
             color: #64748b;
+            width: 40%;
+        }
+        .value {
+            color: #0f172a;
+            text-align: right;
+            font-weight: 500;
+        }
+        .mono {
+            font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+            font-size: 12px;
+        }
+        .security-notice {
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid #f1f5f9;
+            font-size: 12px;
+            line-height: 1.5;
+            color: #64748b;
+        }
+        .footer {
+            margin-top: 24px;
+            text-align: center;
+            font-size: 12px;
+            color: #94a3b8;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1 th:text="${alertHeader != null ? alertHeader : 'CUSTOMER SECURITY VERIFICATION: 2FA OTP REQUIRED'}">CUSTOMER SECURITY VERIFICATION: 2FA OTP REQUIRED</h1>
-            <p style="margin: 4px 0 0; font-size: 12px; color: #e0f2fe;" th:text="${tierSubtitle != null ? tierSubtitle : 'Aura Bank High-Value Transfer Protection (Amount > ₱50,000.00)'}">Aura Bank High-Value Transfer Protection</p>
-        </div>
-        <div class="body-content">
-            <div style="text-align: center;">
-                <span class="badge-warning" th:text="${tierBadge != null ? tierBadge : 'CUSTOMER OTP VERIFICATION REQUIRED'}">CUSTOMER OTP VERIFICATION REQUIRED</span>
-            </div>
-            <div class="amount-box">
-                <div style="font-size: 12px; color: #94a3b8;" th:text="${thresholdNotice != null ? thresholdNotice : 'TRANSACTION AMOUNT (REQUIRING VERIFICATION)'}">TRANSACTION AMOUNT (REQUIRING VERIFICATION)</div>
-                <div class="amount-value" th:text="${formattedAmount}">PHP 90,000.00</div>
-            </div>
+    <div class="wrapper">
+        <div class="card">
+            <div class="brand">Aura Bank</div>
 
-            <!-- Prominent Customer 2FA OTP Verification Box -->
-            <div class="otp-container">
-                <div class="otp-title">Customer 2FA Email Verification</div>
-                <div style="font-size: 12px; color: #94a3b8; margin-bottom: 4px;">Your One-Time Security Authorization Code:</div>
-                <div class="otp-code" th:text="${verificationCode != null ? verificationCode : '849201'}">849201</div>
-                <div style="font-size: 12px; color: #cbd5e1; margin-top: 8px; line-height: 1.4;">
-                    Enter this 6-digit code in your Aura Banking Portal to authorize and immediately settle your transfer of <strong style="color: #ffffff;" th:text="${formattedAmount}">₱90,000.00</strong>.
+            <!-- OTP Verification View -->
+            <div th:if="${verificationCode != null or isOtp == true}">
+                <h1>Security Verification Code</h1>
+                <p>
+                    Enter this one-time code to authorize your transfer of <strong th:text="${formattedAmount != null ? formattedAmount : 'PHP 90,000.00'}">PHP 90,000.00</strong>.
+                </p>
+
+                <div class="otp-container">
+                    <div class="otp-code" th:text="${verificationCode != null ? verificationCode : '849201'}">849201</div>
+                    <div class="otp-caption">Expires in 10 minutes &bull; Do not share with anyone</div>
                 </div>
-                <div style="font-size: 11px; color: #64748b; margin-top: 10px;">
-                    🔒 Security Notice: Valid for 10 minutes. Never disclose this verification code to anyone.
+
+                <table class="details-table">
+                    <tr th:if="${transferId != null}">
+                        <td class="label">Reference</td>
+                        <td class="value mono" th:text="${transferId}">TRX-4491-0021</td>
+                    </tr>
+                    <tr th:if="${formattedAmount != null}">
+                        <td class="label">Amount</td>
+                        <td class="value" th:text="${formattedAmount}">PHP 90,000.00</td>
+                    </tr>
+                    <tr th:if="${recipientName != null}">
+                        <td class="label">Recipient</td>
+                        <td class="value" th:text="${recipientName}">Maria Clara Santos</td>
+                    </tr>
+                    <tr th:if="${destinationAccount != null}">
+                        <td class="label">To Account</td>
+                        <td class="value mono" th:text="${destinationAccount}">1000-2000-3002</td>
+                    </tr>
+                    <tr th:if="${formattedDate != null}">
+                        <td class="label">Timestamp</td>
+                        <td class="value" th:text="${formattedDate}">2026-09-29 08:45:00 PST</td>
+                    </tr>
+                </table>
+
+                <div class="security-notice">
+                    Aura Bank will never contact you asking for this code. If you did not make this request, lock your account immediately in the banking portal.
                 </div>
             </div>
 
-            <table class="receipt-table">
-                <tr>
-                    <td class="label-col">Verification Method</td>
-                    <td class="value-col" style="color: #22d3ee;">Email OTP via MailHog (2FA)</td>
-                </tr>
-                <tr>
-                    <td class="label-col">Regulatory Tier</td>
-                    <td class="value-col" th:text="${regulatoryTier != null ? regulatoryTier : 'Tier 2: Customer Email Verification'}">Tier 2: Customer Email Verification</td>
-                </tr>
-                <tr>
-                    <td class="label-col">Required Authorization</td>
-                    <td class="value-col" th:text="${requiredRoles != null ? requiredRoles : 'Customer 2FA Verification (Maker-Checker Superseded)'}">Customer 2FA Verification (Maker-Checker Superseded)</td>
-                </tr>
-                <tr>
-                    <td class="label-col">Transfer ID</td>
-                    <td class="value-col" th:text="${transferId}">TRX-4491-0021</td>
-                </tr>
-                <tr>
-                    <td class="label-col">Sender User ID</td>
-                    <td class="value-col" th:text="${makerUserId}">U1001 (Juan Dela Cruz)</td>
-                </tr>
-                <tr>
-                    <td class="label-col">Source Account</td>
-                    <td class="value-col" th:text="${sourceAccount}">1000-2000-3001</td>
-                </tr>
-                <tr>
-                    <td class="label-col">Destination Account</td>
-                    <td class="value-col" th:text="${destinationAccount}">1000-2000-3002</td>
-                </tr>
-                <tr>
-                    <td class="label-col">Logged Time</td>
-                    <td class="value-col" th:text="${formattedDate}">2026-09-29 06:20:00 PST</td>
-                </tr>
-            </table>
+            <!-- Manager / AMLA Compliance Alert View -->
+            <div th:unless="${verificationCode != null or isOtp == true}">
+                <h1 th:text="${alertHeader != null ? alertHeader : 'Compliance Review Required'}">Compliance Review Required</h1>
+                <p th:text="${tierSubtitle != null ? tierSubtitle : 'High-Value Transfer Review'}">A high-value transaction requires authorization.</p>
 
-            <div style="margin-top: 20px; padding: 14px; background-color: #0f172a; border-radius: 8px; border-left: 4px solid #06b6d4;">
-                <div style="font-size: 11px; text-transform: uppercase; color: #22d3ee; font-weight: 700; margin-bottom: 4px;">Security Verification Policy</div>
-                <p style="margin: 0; font-size: 12px; color: #cbd5e1; line-height: 1.4;">Customer initiated transfer exceeding ₱50,000.00 threshold. In accordance with updated guidelines, dual-control maker-checker has been superseded by direct Customer Email 2FA Verification via MailHog. Enter the OTP code above in your portal to settle.</p>
+                <table class="details-table">
+                    <tr>
+                        <td class="label">Transfer ID</td>
+                        <td class="value mono" th:text="${transferId}">TRX-4491-0021</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Amount</td>
+                        <td class="value" th:text="${formattedAmount}">PHP 500,000.00</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Initiator</td>
+                        <td class="value" th:text="${makerUserId}">U1001</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Source Account</td>
+                        <td class="value mono" th:text="${sourceAccount}">1000-2000-3001</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Destination Account</td>
+                        <td class="value mono" th:text="${destinationAccount}">1000-2000-3002</td>
+                    </tr>
+                    <tr th:if="${regulatoryTier != null}">
+                        <td class="label">Tier</td>
+                        <td class="value" th:text="${regulatoryTier}">Tier 3: High-Value / AMLA Covered</td>
+                    </tr>
+                    <tr th:if="${formattedDate != null}">
+                        <td class="label">Logged Time</td>
+                        <td class="value" th:text="${formattedDate}">2026-09-29 08:45:00 PST</td>
+                    </tr>
+                </table>
+
+                <div class="security-notice" th:text="${workflowInstruction != null ? workflowInstruction : 'Review and authorize in the Manager Console.'}">
+                    Review and authorize in the Manager Console.
+                </div>
             </div>
         </div>
+
         <div class="footer">
-            <p>Aura Bank &bull; Regulated under Bangko Sentral ng Pilipinas (BSP) &bull; 256-bit Secure SCN</p>
+            Aura Bank &bull; Regulated by Bangko Sentral ng Pilipinas (BSP)
         </div>
     </div>
 </body>

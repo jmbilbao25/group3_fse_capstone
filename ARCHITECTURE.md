@@ -14,30 +14,30 @@ Every containerized service in the Docker Compose bridge network (`banking-net`)
 
 | Service ID | Container Name | Host Port | Internal Port | Protocol | Access Scope | Primary Purpose |
 | :--- | :--- | :---: | :---: | :--- | :--- | :--- |
-| `client` | `banking-frontend` | `3000` | `80` / `3000` | HTTP | Public Browser | React SPA: Customer, Teller & Admin portals |
+| `client` | `banking-frontend` | `3000` | `80` / `3000` | HTTP | Public Browser | React 18 SPA: Customer (email 2FA) & Admin telemetry portals |
 | `gateway` | `gateway-service` | `8080` | `8080` | HTTP / REST | Public API Entry | Perimeter Security, JWT validation, rate limiting |
 | `acc_svc` | `account-service` | `8081` | `8081` | HTTP / REST | Internal Network | Customer KYC, user onboarding, account provisioning |
-| `tx_engine`| `ledger-mutation-engine`| `8082` | `8082` | HTTP / REST | Internal Network | Concurrency locking, balance mutation, outbox publisher |
-| `notif_svc`| `notification-service` | `8083` | `8083` | HTTP / REST | Internal Network | Asynchronous alert consumer & receipt generation |
-| `auth_cache`| `redis-cache` | `6379` | `6379` | RESP / TCP | Internal Network | Token blacklist, idempotency locks, balance read-cache |
+| `tx_engine`| `ledger-mutation-engine`| `8082` | `8082` | HTTP / REST | Internal Network | Concurrency locking, balance mutation, email 2FA OTP verification, outbox publisher |
+| `notif_svc`| `notification-service` | `8083` | `8083` | HTTP / REST | Internal Network | Kafka listener, receipt generation, email 2FA OTP delivery |
+| `mailhog`  | `mailhog-smtp`         | `8025` / `1025` | `8025` / `1025` | HTTP / SMTP | Web Inbox / Host | Mock email inbox UI (:8025) and SMTP receiver (:1025) for OTP codes |
+| `auth_cache`| `redis-cache` | `6379` | `6379` | RESP / TCP | Internal Network | Token blacklist, 2FA OTP cache (300s TTL), rate limiting |
 | `master_db`| `oracle-xe-master` | `1521` | `1521` | Oracle TNS | Internal Network | Master relational state (users, accounts, balances, outbox) |
 | `audit_db` | `postgres-audit-vault`| `5432` | `5432` | PostgreSQL | Internal Network | Append-only audit vault (`ledger_mutation_audit`) |
 | `broker` | `kafka-broker` | `9092` | `9092` | PLAINTEXT | Internal Network | Apache Kafka commit log in KRaft mode |
 | `broker_ui`| `kafka-ui` | `8085` | `8080` | HTTP | Host Browser | Kafka Web Management Dashboard for topics and consumer lag |
-| `telemetry`| `prometheus` | `9090` | `9090` | HTTP | Host Browser | Metrics scraper (TPS, latency, pool saturation) |
-| `dashboard`| `grafana` | `3001` | `3000` | HTTP | Host Browser | Observability dashboards & live visual traces |
+| `telemetry`| `dd-agent` | `8126` / `8125` | `8126` / `8125` | APM / StatsD | Host / Internal | Datadog Agent 7: APM traces, DogStatsD metrics, live container logs |
+| `jaeger`   | `jaeger-tracing` | `16686` / `4317` | `16686` / `4317` | HTTP / gRPC | Host Browser | OpenTelemetry distributed trace visualizer (:16686) & OTLP receiver |
 
 ---
 
 ## 2. Comprehensive Service & Functional Breakdown
 
 ### A. Presentation Layer (`banking-frontend` :3000)
-- **Runtime**: React 19, TypeScript, Vite, Tailwind CSS (Nginx container).
+- **Runtime**: React 18, Vite, Tailwind CSS (Nginx container).
 - **Core Functions**:
-  1. `CustomerPortal`: Real-time balance card, funds transfer initiation form with instant 4-decimal validation, transaction history ledger, bills payment dialog.
-  2. `TellerPortal` (Ledger): Maker-Checker review console displaying pending transactions (`> 10,000,000.0000 PHP`), balance hold status, and one-click Approve / Reject modal with mandatory reason inputs.
-  3. `AdminPortal`: KYC profile verification queue, account provisioning (Savings, Checking, Credit), system limit configurations.
-  4. `AuthContext`: In-memory JWT token storage, automatic Bearer header attachment via Axios interceptors, route protection based on decoded role claims.
+  1. `CustomerPortal`: Real-time balance cards, quick preset transfer amounts, funds transfer initiation with 4-decimal validation, transaction history ledger, and email OTP verification modal for transfers > PHP 50,000.00.
+  2. `AdminPortal`: System telemetry grid, 16-container health status, circuit spool buffer controls, database connection inspector, and audit log viewer. (Admins do not approve transfers; transfers are authorized directly by customers via email).
+  3. `AuthContext`: In-memory JWT token storage, automatic Bearer header attachment via Axios interceptors, route protection based on decoded role claims.
 
 ---
 
@@ -92,27 +92,25 @@ Every containerized service in the Docker Compose bridge network (`banking-net`)
   5. `TransferSagaConsumer`:
      - Listens to `banking.transfers.commands` with consumer group `ledger-mutation-workers`.
      - Executes `@Lock(LockModeType.PESSIMISTIC_WRITE)` (`SELECT ... FOR UPDATE`) on target rows in `balance_master`.
-     - Low-value (`<= 10M PHP`): Debits source account, credits destination account, updates status to `COMMITTED`.
-     - High-value (`> 10M PHP`): Applies hold (`hold_amount += amount`), transitions status to `PENDING_APPROVAL`, emits `TransferPendingApproval` event.
-     - Checker Approval: Verifies segregation of duties (`maker_id != checker_id`), releases hold, debits source, credits destination, updates status to `COMMITTED`.
-     - Checker Rejection: Releases hold, decrements `hold_amount`, transitions status to `FAILED`.
+     - Low-value (`<= 50,000.00 PHP`): Debits source account, credits destination account, updates status to `COMMITTED`.
+     - High-value (`> 50,000.00 PHP`): Applies soft hold (`hold_amount += amount`), transitions status to `PENDING_VERIFICATION`, stores 6-digit OTP in Redis (`2fa:otp:{userId}`, 300s TTL), and dispatches OTP email via MailHog.
+     - Customer OTP Verification: Endpoint `POST /api/v1/transfers/verify-otp` validates the customer-provided OTP against Redis. On match, releases hold, debits source account, credits destination account, and transitions status to `COMMITTED`. On failure or 3 invalid attempts, hold is released and status transitions to `FAILED`.
   6. `TransferEventProducer`:
-     - Publishes state change events to `banking.transfers.events` (`TransferExecuted`, `TransferRejected`, `TransferFailed`).
+     - Publishes state change events to `banking.transfers.events` (`TransferExecuted`, `TransferPendingVerification`, `TransferFailed`).
 
 ---
 
 ### E. Notification & Alert Microservice (`notification-service` :8083)
 - **Runtime**: Spring Boot 3, Spring Kafka Client, Thymeleaf Template Engine.
 - **BSP MORB & AMLA Regulatory Compliance Matrix**:
-  - **Tier 1: Normal Transaction (₱0.01 – ₱50,000.00)**: Handled directly by 1 person (Teller only). Automatically dispatches customer HTML email receipt with before/after balances, masked accounts, and SHA-256 verification hash.
-  - **Tier 2: Dual Control Maker-Checker (₱50,000.01 – ₱499,999.99)**: Maker (Teller / Clerk) encodes transfer; transaction held in `PENDING_APPROVAL`. Dispatches dual-control alert to Branch Operations Officer (BOO) / Branch Cashier terminal & email for Customer ID and signature card verification.
-  - **Tier 3: High-Value / AMLA Covered (₱500,000.00 and above)**: Mandatory Covered Transaction Report (CTR) filing under Anti-Money Laundering Act (AMLA); requires dual manager approval (BOO + Branch Head / Operations Manager) before balance mutation.
+  - **Tier 1: Normal Transaction (₱0.01 – ₱50,000.00)**: Direct STP execution. Automatically dispatches customer HTML email receipt with before/after balances, masked accounts, and SHA-256 verification hash.
+  - **Tier 2: Customer 2FA Verification (₱50,000.01 – ₱499,999.99)**: Customer initiated transfer exceeding ₱50k threshold. Triggers 6-digit OTP code dispatched to customer email inbox via MailHog (SMTP `:1025`, web UI `:8025`). Funds held until verified.
+  - **Tier 3: High-Value / AMLA Covered (₱500,000.00 and above)**: Mandatory Covered Transaction Report (CTR) filing under Anti-Money Laundering Act (AMLA); requires Customer 2FA OTP verification plus automated AMLA CTR compliance filing.
 - **Core Functions**:
   1. `TransactionEventConsumer`: Listens to `banking.transfers.events` under consumer group `notification-workers` (4 concurrent threads).
-  2. `ReceiptFormatter`: Formats debit/credit receipts via Thymeleaf including timestamps, balances, masked account numbers, and cryptographic SHA-256 hashes.
-  3. `EmailAlertDispatcher`: Dispatches rich HTML email receipts to customer inboxes and SSE toasts to the web portal.
-  4. `TellerAlertDispatcher`: Dispatches WebSocket alerts to `/topic/teller-alerts` for Tier 2 (BOO) and Tier 3 (Branch Head) review consoles.
-  5. `Deduplication & Resilience`: Redis idempotency caching (`SET notif:seen:<id> 1 NX EX 3600`) and in-memory retry spooling for circuit buffering during SMTP outages.
+  2. `ReceiptFormatter`: Formats debit/credit receipts and 2FA OTP security verification messages via Thymeleaf templates.
+  3. `EmailAlertDispatcher`: Dispatches rich HTML email receipts and OTP authorization codes via MailHog SMTP (:1025) and SSE toasts to the web portal.
+  4. `Deduplication & Resilience`: Redis idempotency caching (`SET notif:seen:<id> 1 NX EX 3600`) and in-memory retry spooling for circuit buffering during SMTP outages.
 
 ---
 
@@ -132,7 +130,7 @@ Every containerized service in the Docker Compose bridge network (`banking-net`)
 ### G. Master State Storage (`oracle-xe-master` :1521)
 - **Runtime**: Oracle Database Express Edition 21c.
 - **Core Functions**:
-  1. Master relational persistence: `users`, `accounts`, `balance_master`, `credit_assessments`, `transactions`, `outbox_events`, `notifications`.
+  1. Master relational persistence: `users`, `accounts`, `balance_master`, `transactions`, `outbox_events`, `notifications`.
   2. Row-level lock acquisition kernel: serializes concurrent transactions on `balance_master` via `FOR UPDATE`.
   3. Strict database check constraints: `CHECK (balance_amount >= hold_amount)`, `CHECK (balance_amount >= 0)`.
 
@@ -159,13 +157,13 @@ Every containerized service in the Docker Compose bridge network (`banking-net`)
 
 ---
 
-### J. Observability Stack (`prometheus` :9090 & `grafana` :3001)
-- **Runtime**: Prometheus v2.45 + Grafana v10.
+### J. Observability Stack (`dd-agent` :8126 & :8125)
+- **Runtime**: Datadog Agent 7 (Containerized).
 - **Core Functions**:
-  1. Scrapes `/actuator/prometheus` across all Spring Boot microservices every 5 seconds.
-  2. Tracks live Transactions Per Second (TPS) against the 200 TPS benchmark.
-  3. Tracks p50, p95, and p99 latency percentiles against the 150ms SLA.
-  4. Monitors HikariCP connection pool saturation and Kafka consumer lag metrics.
+  1. Ingests distributed APM traces on port `8126` and OTLP spans on ports `4317`/`4318`.
+  2. Aggregates DogStatsD metrics on UDP port `8125` (TPS throughput against 200 TPS benchmark, p50/p95/p99 latencies against 150ms SLA).
+  3. Monitors HikariCP connection pool saturation across Oracle XE and PostgreSQL and tracks Kafka consumer lag metrics.
+  4. Tail-scrapes container logs across all microservices for unified log correlation.
 
 ---
 
@@ -234,10 +232,18 @@ sequenceDiagram
     Engine->>Kafka: Produce to banking.transfers.commands (Key: source_account_id)
     Kafka->>Engine: Deliver command to partition consumer
 
-    alt Amount > 10,000,000.0000 PHP (High-Value Maker-Checker)
-        Engine->>Oracle: Apply soft hold (held_balance += amount, status: PENDING_APPROVAL)
-        Engine->>Kafka: Produce TransferPendingApproval to banking.transfers.events
-    else Amount <= 10,000,000.0000 PHP (Direct Settlement)
+    alt Amount > 50,000.0000 PHP (Customer 2FA Email OTP)
+        Engine->>Redis: Cache 6-digit OTP (2fa:otp:{userId}, TTL 300s)
+        Engine->>Oracle: Apply soft hold (held_balance += amount, status: PENDING_VERIFICATION)
+        Engine->>Kafka: Produce TransferPendingVerification to banking.transfers.events
+        Kafka->>Notif: Notification Consumer dispatches 2FA OTP Email via MailHog (:8025)
+        Customer->>Gateway: POST /api/v1/transfers/verify-otp { transfer_id, otp }
+        Gateway->>Engine: Forward OTP verification
+        Engine->>Redis: Validate OTP & consume token
+        Engine->>Oracle: Release hold, debit source, credit destination, status: EXECUTED
+        Oracle-->>Engine: DB Commit OK
+        Engine->>Kafka: Commit Offset & Produce TransferExecuted to banking.transfers.events
+    else Amount <= 50,000.0000 PHP (Direct STP Settlement)
         Engine->>Oracle: SELECT FOR UPDATE on source & destination accounts
         Engine->>Oracle: UPDATE balances & SET transfer status = EXECUTED
         Oracle-->>Engine: DB Commit OK

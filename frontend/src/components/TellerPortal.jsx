@@ -1,32 +1,99 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  ShieldCheck, 
-  CheckCircle2, 
-  XCircle, 
-  AlertTriangle, 
-  Clock, 
-  RefreshCw, 
-  UserCheck, 
-  Send,
-  Mail,
-  Zap,
-  FileText
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  ExternalLink,
+  Inbox,
+  RefreshCw,
+  XCircle,
 } from 'lucide-react';
 import { LedgerService, NotificationService } from '../api/client';
+import {
+  Badge,
+  Button,
+  Callout,
+  EmptyState,
+  Money,
+  Panel,
+  PanelHeader,
+  Select,
+  Table,
+  TableScroll,
+  Td,
+  Th,
+  Tr,
+  tierOf,
+} from '../ui';
 
-export default function TellerPortal({ pendingTransactions, setPendingTransactions, onApprovalComplete }) {
-  const [activeCheckerId, setActiveCheckerId] = useState('U3002'); // Default to Beatriz Ocampo (BOO Checker)
+/*
+ * Teller station: the dual-control queue.
+ *
+ * Behaviour is unchanged. What changed is that the page now states the rule it
+ * enforces in one place, at the top, instead of scattering "BSP Circular 808"
+ * and "Segregation of Duties strictly verified" citations across six tinted
+ * boxes. A teller needs to know the threshold and who may sign; the circular
+ * number belongs in the audit trail, not on the work surface.
+ *
+ * The four notification scenarios were a wall of four near-identical cards, each
+ * with its own accent colour, each ending in a button reading "Simulate ...".
+ * They are now one labelled group of actions, which is what they are.
+ */
+
+const SCENARIOS = [
+  {
+    key: 'TIER_1',
+    tier: 'Tier 1',
+    title: 'Straight-through transfer',
+    detail: 'Sends the payer receipt and the payee credit advice. No hold.',
+  },
+  {
+    key: 'TIER_2_HOLD',
+    tier: 'Tier 2',
+    title: 'Manager approval hold',
+    detail: 'Raises the manager review alert and holds the funds.',
+  },
+  {
+    key: 'TIER_2_APPROVAL',
+    tier: 'Tier 2',
+    title: 'Approval confirmation',
+    detail: 'Confirms release to the originator and credits the payee.',
+  },
+  {
+    key: 'TIER_3_AMLA',
+    tier: 'Tier 3',
+    title: 'AMLA covered transaction',
+    detail: 'Escalates to the compliance officer for CTR filing.',
+  },
+];
+
+/* Officers who may act as checker. The maker is listed so the segregation rule
+   can be demonstrated, and it says plainly what selecting them will do. */
+const CHECKERS = [
+  { id: 'U3002', label: 'Beatriz Ocampo, operations officer' },
+  { id: 'U3003', label: 'Carlos Mendoza, branch head' },
+  { id: 'U1001', label: 'Juan Dela Cruz, originator (blocked as checker)' },
+];
+
+export default function TellerPortal({
+  pendingTransactions,
+  setPendingTransactions,
+  onApprovalComplete,
+}) {
+  const [activeCheckerId, setActiveCheckerId] = useState('U3002');
   const [actionLoadingId, setActionLoadingId] = useState(null);
-  const [feedbackMsg, setFeedbackMsg] = useState(null);
-  const [simulationResult, setSimulationResult] = useState(null);
+  const [feedback, setFeedback] = useState(null);
+  const [simulation, setSimulation] = useState(null);
   const [isSimulating, setIsSimulating] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Fetch or refresh pending transactions
   const fetchPending = async () => {
+    setIsRefreshing(true);
     const res = await LedgerService.getPendingTransactions();
     if (res.success && res.data.length > 0) {
       setPendingTransactions(res.data);
     }
+    setIsRefreshing(false);
   };
 
   useEffect(() => {
@@ -34,424 +101,342 @@ export default function TellerPortal({ pendingTransactions, setPendingTransactio
   }, []);
 
   const handleApprove = async (tx) => {
-    // Check Segregation of Duties in frontend
+    // Segregation of duties. Checked here as well as server-side so the teller
+    // gets the answer immediately rather than after a round trip.
     if (tx.initiatorUserId === activeCheckerId) {
-      setFeedbackMsg({
-        type: 'error',
-        text: `Compliance Violation: Segregation of Duties strictly forbids Maker (${activeCheckerId}) from approving their own transaction. Switch checker to U3002.`,
+      setFeedback({
+        tone: 'voided',
+        title: 'You cannot approve your own transfer',
+        detail:
+          'The officer who started a transfer may not approve it. Select a different officer as checker.',
       });
       return;
     }
 
     setActionLoadingId(tx.transactionId);
-    setFeedbackMsg(null);
+    setFeedback(null);
 
-    const payload = {
+    const res = await LedgerService.approveTransfer({
       transactionId: tx.transactionId,
       checkerUserId: activeCheckerId,
       remarks: 'Approved by Branch Operations Officer in dual-control terminal',
-    };
+    });
 
-    const res = await LedgerService.approveTransfer(payload);
     setActionLoadingId(null);
+    setPendingTransactions((prev) => prev.filter((p) => p.transactionId !== tx.transactionId));
 
-    if (res.success) {
-      setFeedbackMsg({
-        type: 'success',
-        text: `Transaction ${tx.transactionId} successfully approved and committed. Inward/Outward email advices dispatched.`,
-      });
-      // Remove from pending list
-      setPendingTransactions((prev) => prev.filter((p) => p.transactionId !== tx.transactionId));
-      if (onApprovalComplete) {
-        onApprovalComplete(res.data, 'APPROVED');
-      }
-    } else {
-      // Local simulated approval
-      setFeedbackMsg({
-        type: 'success',
-        text: `[Simulator] Transaction ${tx.transactionId} approved by Checker ${activeCheckerId}. Balance settled.`,
-      });
-      setPendingTransactions((prev) => prev.filter((p) => p.transactionId !== tx.transactionId));
-      if (onApprovalComplete) {
-        onApprovalComplete({ ...tx, status: 'COMMITTED' }, 'APPROVED');
-      }
-    }
+    setFeedback({
+      tone: 'settled',
+      title: `${tx.transactionId} approved`,
+      detail: res.success
+        ? 'Funds settled. Receipt and credit advice have been sent.'
+        : 'Funds settled locally. The ledger service was unreachable, so this was recorded by the simulator.',
+    });
+
+    onApprovalComplete?.(res.success ? res.data : { ...tx, status: 'COMMITTED' }, 'APPROVED');
   };
 
   const handleReject = async (tx) => {
-    // Check Segregation of Duties in frontend
     if (tx.initiatorUserId === activeCheckerId) {
-      setFeedbackMsg({
-        type: 'error',
-        text: `Compliance Violation: Maker (${activeCheckerId}) cannot self-reject or manipulate their own pending review.`,
+      setFeedback({
+        tone: 'voided',
+        title: 'You cannot decline your own transfer',
+        detail:
+          'The officer who started a transfer may not act on it. Select a different officer as checker.',
       });
       return;
     }
 
     setActionLoadingId(tx.transactionId);
-    setFeedbackMsg(null);
+    setFeedback(null);
 
-    const payload = {
+    const res = await LedgerService.rejectTransfer({
       transactionId: tx.transactionId,
       checkerUserId: activeCheckerId,
       remarks: 'Rejected by Branch Operations Officer',
-    };
+    });
 
-    const res = await LedgerService.rejectTransfer(payload);
     setActionLoadingId(null);
+    setPendingTransactions((prev) => prev.filter((p) => p.transactionId !== tx.transactionId));
 
-    if (res.success) {
-      setFeedbackMsg({
-        type: 'warning',
-        text: `Transaction ${tx.transactionId} rejected. Soft hold released back to sender.`,
-      });
-      setPendingTransactions((prev) => prev.filter((p) => p.transactionId !== tx.transactionId));
-      if (onApprovalComplete) {
-        onApprovalComplete(res.data, 'REJECTED');
-      }
-    } else {
-      setFeedbackMsg({
-        type: 'warning',
-        text: `[Simulator] Transaction ${tx.transactionId} rejected. Hold released.`,
-      });
-      setPendingTransactions((prev) => prev.filter((p) => p.transactionId !== tx.transactionId));
-      if (onApprovalComplete) {
-        onApprovalComplete({ ...tx, status: 'REJECTED' }, 'REJECTED');
-      }
-    }
+    setFeedback({
+      tone: 'held',
+      title: `${tx.transactionId} declined`,
+      detail: 'The hold has been released and the funds are available to the sender again.',
+    });
+
+    onApprovalComplete?.(res.success ? res.data : { ...tx, status: 'REJECTED' }, 'REJECTED');
   };
 
-  // Trigger Notification Simulation Scenarios
-  const runSimulation = async (scenarioType) => {
+  const runSimulation = async (key) => {
     setIsSimulating(true);
-    setSimulationResult(null);
+    setSimulation(null);
 
-    let res;
-    if (scenarioType === 'TIER_1') {
-      res = await NotificationService.simulateTier1Transfer();
-    } else if (scenarioType === 'TIER_2_HOLD') {
-      res = await NotificationService.simulateTier2MakerChecker();
-    } else if (scenarioType === 'TIER_2_APPROVAL') {
-      res = await NotificationService.simulateTier2Approval();
-    } else if (scenarioType === 'TIER_3_AMLA') {
-      res = await NotificationService.simulateTier3Amla();
-    }
+    const calls = {
+      TIER_1: NotificationService.simulateTier1Transfer,
+      TIER_2_HOLD: NotificationService.simulateTier2MakerChecker,
+      TIER_2_APPROVAL: NotificationService.simulateTier2Approval,
+      TIER_3_AMLA: NotificationService.simulateTier3Amla,
+    };
 
+    const res = await calls[key]?.();
     setIsSimulating(false);
-    if (res?.success) {
-      setSimulationResult(res.data);
-    } else {
-      setSimulationResult({
-        status: 'SIMULATED',
-        tier: scenarioType,
-        message: 'Dispatched event to Notification Service. Check MailHog (:8025) for received email advice.',
-      });
-    }
+
+    setSimulation(
+      res?.success
+        ? res.data
+        : {
+            status: 'SIMULATED',
+            tier: key,
+            message: 'Event dispatched. Open the mail sandbox to read the advice that was sent.',
+          }
+    );
   };
 
   return (
-    <div className="space-y-6">
-      {/* Banner & Checker Identity Selector */}
-      <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-slate-800 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-              Maker-Checker Dual Control Station
-            </span>
-            <span className="text-xs text-slate-400">&bull; BSP Circular 808 Compliance</span>
-          </div>
-          <h2 className="text-xl font-bold text-white mt-1">Pending Authorizations Console</h2>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Transactions exceeding ₱50,000.00 require secondary approval before permanent balance debit.
+          <h1 className="text-xl font-semibold tracking-tight text-fg">Approvals</h1>
+          <p className="mt-1 max-w-prose text-sm text-fg-muted">
+            Transfers above PHP 50,000 are held here until an officer other than the one who
+            started them approves the release.
           </p>
         </div>
 
-        {/* Checker Switcher */}
-        <div className="flex items-center gap-3 bg-slate-950/80 border border-slate-800 p-3 rounded-xl">
-          <UserCheck className="w-5 h-5 text-indigo-400 flex-shrink-0" />
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Simulate Current Officer (Checker)
-            </label>
-            <select
-              value={activeCheckerId}
-              onChange={(e) => setActiveCheckerId(e.target.value)}
-              className="bg-transparent text-white font-semibold text-xs focus:outline-none cursor-pointer"
-            >
-              <option value="U3002" className="bg-slate-900">
-                U3002 - Beatriz Ocampo (Operations Manager) [Valid Checker]
+        {/* Checker identity. A real labelled select rather than a bare
+            <select> floating inside a dark pill with no accessible name. */}
+        <div className="shrink-0">
+          <label
+            htmlFor="checker"
+            className="mb-1 block text-2xs font-medium uppercase tracking-wider text-fg-subtle"
+          >
+            Acting as
+          </label>
+          <Select
+            id="checker"
+            value={activeCheckerId}
+            onChange={(e) => setActiveCheckerId(e.target.value)}
+            className="sm:w-80"
+          >
+            {CHECKERS.map((checker) => (
+              <option key={checker.id} value={checker.id}>
+                {checker.label}
               </option>
-              <option value="U3003" className="bg-slate-900">
-                U3003 - Carlos Mendoza (Operations Manager) [Valid Checker]
-              </option>
-              <option value="U1001" className="bg-slate-900">
-                U1001 - Juan Dela Cruz (Initiator / Maker) [Will Trigger SOD Violation]
-              </option>
-            </select>
-          </div>
+            ))}
+          </Select>
         </div>
       </div>
 
-      {/* Feedback Message */}
-      {feedbackMsg && (
-        <div
-          className={`p-4 rounded-xl border flex items-center justify-between text-xs ${
-            feedbackMsg.type === 'error'
-              ? 'bg-rose-500/10 border-rose-500/20 text-rose-300'
-              : feedbackMsg.type === 'warning'
-              ? 'bg-amber-500/10 border-amber-500/20 text-amber-300'
-              : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
-          }`}
+      {feedback && (
+        <Callout
+          tone={feedback.tone}
+          role={feedback.tone === 'voided' ? 'alert' : 'status'}
+          icon={
+            feedback.tone === 'voided'
+              ? AlertTriangle
+              : feedback.tone === 'held'
+                ? XCircle
+                : CheckCircle2
+          }
+          title={feedback.title}
+          action={
+            <Button variant="ghost" size="sm" onClick={() => setFeedback(null)}>
+              Dismiss
+            </Button>
+          }
         >
-          <div className="flex items-center gap-2">
-            {feedbackMsg.type === 'error' ? (
-              <AlertTriangle className="w-4 h-4 text-rose-400" />
-            ) : feedbackMsg.type === 'warning' ? (
-              <XCircle className="w-4 h-4 text-amber-400" />
-            ) : (
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            )}
-            <span>{feedbackMsg.text}</span>
-          </div>
-          <button onClick={() => setFeedbackMsg(null)} className="text-slate-400 hover:text-white text-xs">
-            Dismiss
-          </button>
-        </div>
+          {feedback.detail}
+        </Callout>
       )}
 
-      {/* Pending Transactions Table */}
-      <div className="p-6 rounded-2xl bg-slate-950/70 border border-slate-800 shadow-xl space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-          <div className="flex items-center gap-2">
-            <Clock className="w-5 h-5 text-amber-400" />
-            <h3 className="font-bold text-white text-sm">
-              Queued Transactions Awaiting Dual-Control Verification ({pendingTransactions.length})
-            </h3>
-          </div>
-
-          <button
+      <Panel flush>
+        <div className="flex items-center justify-between gap-4 px-4 py-3">
+          <h2 className="text-md font-semibold text-fg">
+            Waiting for approval
+            {pendingTransactions.length > 0 && (
+              <span className="ml-2 font-mono text-sm font-normal text-fg-subtle">
+                {pendingTransactions.length}
+              </span>
+            )}
+          </h2>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={RefreshCw}
             onClick={fetchPending}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 text-xs transition"
+            loading={isRefreshing}
           >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>Refresh Queue</span>
-          </button>
+            Refresh
+          </Button>
         </div>
 
         {pendingTransactions.length === 0 ? (
-          <div className="py-12 text-center space-y-2">
-            <CheckCircle2 className="w-10 h-10 text-emerald-500/60 mx-auto" />
-            <p className="text-sm font-semibold text-white">Queue is clear</p>
-            <p className="text-xs text-slate-500">
-              No high-value transactions are currently held in PENDING_APPROVAL.
-            </p>
+          <div className="border-t border-line">
+            <EmptyState
+              icon={Inbox}
+              title="Nothing waiting"
+              description="Transfers above PHP 50,000 will appear here for approval as customers submit them."
+            />
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-900/60 text-slate-400 font-semibold border-b border-slate-800">
+          <TableScroll label="Transfers waiting for approval" className="mx-0">
+            <Table>
+              <thead>
                 <tr>
-                  <th className="py-3 px-4">Transaction Ref</th>
-                  <th className="py-3 px-4">Accounts (Source &rarr; Target)</th>
-                  <th className="py-3 px-4">Transfer Amount</th>
-                  <th className="py-3 px-4">Initiator (Maker)</th>
-                  <th className="py-3 px-4">Regulatory Tier</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
+                  <Th>Reference</Th>
+                  <Th>From and to</Th>
+                  <Th align="right">Amount</Th>
+                  <Th>Started by</Th>
+                  <Th>Category</Th>
+                  <Th align="right">Decision</Th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/80 font-mono">
-                {pendingTransactions.map((tx) => {
-                  const amt = parseFloat(tx.mutationAmount || tx.amount || 0);
-                  const isAmla = amt >= 500000;
-                  const isSelfMaker = tx.initiatorUserId === activeCheckerId;
-
-                  return (
-                    <tr key={tx.transactionId} className="hover:bg-slate-900/30 transition">
-                      <td className="py-4 px-4 font-bold text-white">
-                        {tx.transactionId}
-                      </td>
-                      <td className="py-4 px-4 text-slate-300">
-                        <span>{tx.sourceAccountId || tx.sourceAccount}</span>
-                        <span className="text-slate-500 mx-2">&rarr;</span>
-                        <span>{tx.destinationAccountId || tx.targetAccountId || tx.destinationAccount}</span>
-                      </td>
-                      <td className="py-4 px-4 text-emerald-400 font-bold text-sm">
-                        ₱ {amt.toLocaleString('en-US', { minimumFractionDigits: 4 })}
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className={`px-2 py-0.5 rounded text-[11px] font-medium ${isSelfMaker ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-slate-800 text-slate-300'}`}>
-                          {tx.initiatorUserId || 'U1001'} {isSelfMaker && '(YOU)'}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4 font-sans">
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                            isAmla
-                              ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-                              : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                          }`}
-                        >
-                          {isAmla ? 'Tier 3 (AMLA CTR)' : 'Tier 2 (Dual Control)'}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4 text-right space-x-2 font-sans">
-                        <button
-                          onClick={() => handleApprove(tx)}
-                          disabled={actionLoadingId === tx.transactionId}
-                          className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition disabled:opacity-50 inline-flex items-center gap-1 shadow-sm"
-                        >
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Approve</span>
-                        </button>
-                        <button
-                          onClick={() => handleReject(tx)}
-                          disabled={actionLoadingId === tx.transactionId}
-                          className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white font-semibold text-xs transition disabled:opacity-50 inline-flex items-center gap-1"
-                        >
-                          <XCircle className="w-3.5 h-3.5" />
-                          <span>Reject</span>
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
+              <tbody>
+                {pendingTransactions.map((tx) => (
+                  <QueueRow
+                    key={tx.transactionId}
+                    tx={tx}
+                    activeCheckerId={activeCheckerId}
+                    busy={actionLoadingId === tx.transactionId}
+                    onApprove={handleApprove}
+                    onReject={handleReject}
+                  />
+                ))}
               </tbody>
-            </table>
-          </div>
+            </Table>
+          </TableScroll>
         )}
-      </div>
+      </Panel>
 
-      {/* Maye's 4-Tier Notification Simulation Testing Center */}
-      <div className="p-6 rounded-2xl bg-slate-950/70 border border-slate-800 shadow-xl space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-          <div className="flex items-center gap-2">
-            <Zap className="w-5 h-5 text-indigo-400" />
-            <div>
-              <h3 className="font-bold text-white text-sm">Notification Service Demonstration Center (:8083)</h3>
-              <p className="text-xs text-slate-400">
-                Trigger mock regulatory email advices directly into MailHog (:8025) and evaluate BSP/AMLA compliance logic.
-              </p>
+      {/* Notification test harness. Grouped and labelled as a test tool, so it
+          is not mistaken for part of the approval workflow. */}
+      <Panel>
+        <PanelHeader
+          title="Notification tests"
+          description="Send a sample advice through the notification service to check the templates and routing."
+          actions={
+            <Button
+              as="a"
+              href="http://localhost:8025"
+              target="_blank"
+              rel="noreferrer"
+              variant="secondary"
+              size="sm"
+              icon={ExternalLink}
+            >
+              Mail sandbox
+            </Button>
+          }
+        />
+
+        <div className="mt-4 grid gap-px border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
+          {SCENARIOS.map((scenario) => (
+            <div key={scenario.key} className="flex flex-col bg-surface p-3">
+              <Badge tone="neutral" size="sm" className="self-start">
+                {scenario.tier}
+              </Badge>
+              <p className="mt-2 text-sm font-medium text-fg">{scenario.title}</p>
+              <p className="mt-0.5 flex-1 text-xs leading-snug text-fg-muted">{scenario.detail}</p>
+              <Button
+                variant="secondary"
+                size="sm"
+                fullWidth
+                className="mt-3"
+                disabled={isSimulating}
+                onClick={() => runSimulation(scenario.key)}
+              >
+                Send
+              </Button>
             </div>
-          </div>
-          <a
-            href="http://localhost:8025"
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-600 hover:text-white text-xs font-semibold transition"
-          >
-            <Mail className="w-3.5 h-3.5" />
-            <span>Open MailHog Inbox</span>
-          </a>
+          ))}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
-          {/* Scenario 1 */}
-          <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                Tier 1 (&le; ₱50k)
+        {simulation && (
+          <Callout tone="accent" className="mt-3" title="Advice dispatched">
+            {simulation.message}
+            {simulation.transferId && (
+              <span className="mt-1 block font-mono text-xs">
+                {simulation.transferId}
+                {simulation.recipientEmail ? ` to ${simulation.recipientEmail}` : ''}
               </span>
-              <FileText className="w-4 h-4 text-slate-500" />
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-white">Normal Fund Transfer</h4>
-              <p className="text-[11px] text-slate-400 mt-1">
-                Dispatches customer digital receipt and inward credit advice without hold.
-              </p>
-            </div>
-            <button
-              onClick={() => runSimulation('TIER_1')}
-              disabled={isSimulating}
-              className="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold transition flex items-center justify-center gap-1.5"
-            >
-              <span>Simulate Tier 1 Receipt</span>
-            </button>
-          </div>
-
-          {/* Scenario 2 */}
-          <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                Tier 2 (&gt; ₱50k)
-              </span>
-              <Clock className="w-4 h-4 text-amber-400" />
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-white">Dual Control Hold Alert</h4>
-              <p className="text-[11px] text-slate-400 mt-1">
-                Triggers Manager compliance email &amp; WebSocket /topic/teller-alerts broadcast.
-              </p>
-            </div>
-            <button
-              onClick={() => runSimulation('TIER_2_HOLD')}
-              disabled={isSimulating}
-              className="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold transition flex items-center justify-center gap-1.5"
-            >
-              <span>Simulate Tier 2 Hold</span>
-            </button>
-          </div>
-
-          {/* Scenario 3 */}
-          <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                Tier 2 Approved
-              </span>
-              <CheckCircle2 className="w-4 h-4 text-indigo-400" />
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-white">Checker Approval Advice</h4>
-              <p className="text-[11px] text-slate-400 mt-1">
-                Sends approval advice to maker and credit notification to beneficiary.
-              </p>
-            </div>
-            <button
-              onClick={() => runSimulation('TIER_2_APPROVAL')}
-              disabled={isSimulating}
-              className="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold transition flex items-center justify-center gap-1.5"
-            >
-              <span>Simulate Approval Advice</span>
-            </button>
-          </div>
-
-          {/* Scenario 4 */}
-          <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                Tier 3 (&ge; ₱500k)
-              </span>
-              <AlertTriangle className="w-4 h-4 text-rose-400" />
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-white">AMLA Covered CTR Alert</h4>
-              <p className="text-[11px] text-slate-400 mt-1">
-                Dispatches urgent alert to Compliance Officer for AMLA Covered Transaction Report.
-              </p>
-            </div>
-            <button
-              onClick={() => runSimulation('TIER_3_AMLA')}
-              disabled={isSimulating}
-              className="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold transition flex items-center justify-center gap-1.5"
-            >
-              <span>Simulate AMLA CTR</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Simulation Output Card */}
-        {simulationResult && (
-          <div className="mt-4 p-4 rounded-xl bg-slate-900 border border-slate-700/80 text-xs font-mono space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-indigo-300">Simulation Dispatched:</span>
-              <span className="text-slate-400">{simulationResult.status}</span>
-            </div>
-            <p className="text-slate-300">{simulationResult.message}</p>
-            {simulationResult.transferId && (
-              <p className="text-slate-400">Ref: {simulationResult.transferId} &bull; Recipient: {simulationResult.recipientEmail || 'MailHog Sandbox'}</p>
             )}
-          </div>
+          </Callout>
         )}
-      </div>
+      </Panel>
     </div>
+  );
+}
+
+/*
+ * One row of the approval queue.
+ *
+ * The blocked state is the interesting case. Previously the maker's own row
+ * still showed live Approve and Reject buttons, and the refusal only arrived
+ * after clicking. Now the row disables the decision and says why, so the rule is
+ * visible before the teller reaches for it.
+ */
+function QueueRow({ tx, activeCheckerId, busy, onApprove, onReject }) {
+  const amount = parseFloat(tx.mutationAmount || tx.amount || 0);
+  const tier = tierOf(amount);
+  const isOwnTransfer = tx.initiatorUserId === activeCheckerId;
+
+  return (
+    <Tr>
+      <Td className="font-mono font-medium">{tx.transactionId}</Td>
+
+      <Td>
+        <span className="flex items-center gap-1.5 font-mono text-xs text-fg-muted">
+          <span className="text-fg">{tx.sourceAccountId || tx.sourceAccount}</span>
+          <span aria-hidden="true">&rarr;</span>
+          <span className="text-fg">
+            {tx.destinationAccountId || tx.targetAccountId || tx.destinationAccount}
+          </span>
+        </span>
+      </Td>
+
+      <Td align="right">
+        <Money value={amount} size="sm" />
+      </Td>
+
+      <Td>
+        <span className="font-mono text-xs text-fg-muted">{tx.initiatorUserId || 'U1001'}</span>
+        {isOwnTransfer && (
+          <Badge tone="voided" size="sm" className="ml-1.5">
+            You
+          </Badge>
+        )}
+      </Td>
+
+      <Td>
+        <Badge tone={tier.tone} size="sm">
+          {tier.label}
+        </Badge>
+      </Td>
+
+      <Td align="right">
+        {isOwnTransfer ? (
+          <span className="inline-flex items-center gap-1.5 text-xs text-fg-subtle">
+            <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+            Needs another officer
+          </span>
+        ) : (
+          <span className="inline-flex items-center justify-end gap-2">
+            <Button variant="danger" size="sm" disabled={busy} onClick={() => onReject(tx)}>
+              Decline
+            </Button>
+            <Button
+              variant="approve"
+              size="sm"
+              icon={CheckCircle2}
+              loading={busy}
+              onClick={() => onApprove(tx)}
+            >
+              Approve
+            </Button>
+          </span>
+        )}
+      </Td>
+    </Tr>
   );
 }

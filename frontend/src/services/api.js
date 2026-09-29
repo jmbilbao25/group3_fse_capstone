@@ -527,8 +527,8 @@ function handleMockFallback(config) {
 
       // 4. Initiating Funds Transfer
       if (url.includes('/transfers') && !url.includes('/verify-otp') && !url.includes('/pending') && !url.includes('/approve') && !url.includes('/reject') && !url.includes('/sign-l1') && method === 'post') {
-        const toAccountId = (payload.to_account_id || '').trim();
-        const fromAccountId = (payload.from_account_id || mockState.account.account_id || '1000-2000-3001').trim();
+        const toAccountId = (payload.to_account_id || payload.destination_account_id || payload.target_account_id || payload.targetAccountId || '').trim();
+        const fromAccountId = (payload.from_account_id || payload.source_account_id || payload.account_id || payload.accountId || mockState.account.account_id || '1000-2000-3001').trim();
 
         // 1. Beneficiary Account Required
         if (!toAccountId) {
@@ -743,12 +743,26 @@ function handleMockFallback(config) {
             to_account_id: newTransfer.to_account_id,
             recipient_name: newTransfer.recipient_name,
             recipient_email: 'juan.dc@email.com',
+            verification_code: verificationOtp,
             memo: verificationOtp 
               ? `Customer Security Verification OTP: [ ${verificationOtp} ] for Transfer ${newTransfer.id}`
               : newTransfer.memo,
           };
 
-          axios.post('http://localhost:8083/api/v1/notifications/simulate-transfer', notifPayload).catch(() => {});
+          if (isHeld) {
+            axios.post('/api/v1/notifications/send-otp', notifPayload)
+              .catch(() => {
+                axios.post('http://localhost:8083/api/v1/notifications/send-otp', notifPayload)
+                  .catch(() => {
+                    axios.post('http://localhost:8083/api/v1/notifications/simulate-transfer', notifPayload).catch(() => {});
+                  });
+              });
+          } else {
+            axios.post('/api/v1/notifications/simulate-transfer', notifPayload)
+              .catch(() => {
+                axios.post('http://localhost:8083/api/v1/notifications/simulate-transfer', notifPayload).catch(() => {});
+              });
+          }
         } catch (_) {}
 
         return resolve({

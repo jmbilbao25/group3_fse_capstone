@@ -25,10 +25,63 @@ public class NotificationController {
     private final TransactionEventConsumer transactionEventConsumer;
     private final NotificationRepository notificationRepository;
 
+    @PostMapping("/send-otp")
+    public ResponseEntity<Map<String, Object>> sendOtpNotification(
+            @RequestBody(required = false) Map<String, Object> request) {
+
+        String transferId = "TRX-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        String recipientEmail = "juan.dc@email.com";
+        BigDecimal amount = new BigDecimal("90000.0000");
+        String verificationCode = "849201";
+        String sourceAccount = "ACC-1002938471";
+        String destinationAccount = "ACC-2009847192";
+        String recipientName = "Maria Clara Santos";
+
+        if (request != null) {
+            if (request.get("transfer_id") != null) transferId = request.get("transfer_id").toString();
+            if (request.get("transferId") != null) transferId = request.get("transferId").toString();
+            if (request.get("recipient_email") != null) recipientEmail = request.get("recipient_email").toString();
+            if (request.get("recipientEmail") != null) recipientEmail = request.get("recipientEmail").toString();
+            if (request.get("amount") != null) amount = new BigDecimal(request.get("amount").toString());
+            if (request.get("verification_code") != null) verificationCode = request.get("verification_code").toString();
+            if (request.get("verificationCode") != null) verificationCode = request.get("verificationCode").toString();
+            if (request.get("otp") != null) verificationCode = request.get("otp").toString();
+            if (request.get("from_account_id") != null) sourceAccount = request.get("from_account_id").toString();
+            if (request.get("source_account_id") != null) sourceAccount = request.get("source_account_id").toString();
+            if (request.get("sourceAccount") != null) sourceAccount = request.get("sourceAccount").toString();
+            if (request.get("to_account_id") != null) destinationAccount = request.get("to_account_id").toString();
+            if (request.get("destination_account_id") != null) destinationAccount = request.get("destination_account_id").toString();
+            if (request.get("destinationAccount") != null) destinationAccount = request.get("destinationAccount").toString();
+            if (request.get("recipient_name") != null) recipientName = request.get("recipient_name").toString();
+            if (request.get("recipientName") != null) recipientName = request.get("recipientName").toString();
+        }
+
+        log.info("Sending OTP verification email for transferId={}, recipient={}, code={}", transferId, recipientEmail, verificationCode);
+        boolean dispatched = emailService.sendOtpVerification(
+                transferId, recipientEmail, amount, verificationCode, sourceAccount, destinationAccount, recipientName);
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("status", dispatched ? "DISPATCHED" : "BUFFERED");
+        response.put("transferId", transferId);
+        response.put("recipientEmail", recipientEmail);
+        response.put("verificationCode", verificationCode);
+        response.put("amount", amount);
+        response.put("message", "Customer 2FA Verification OTP email dispatched to " + recipientEmail + " via MailHog.");
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/simulate-transfer")
     public ResponseEntity<Map<String, Object>> simulateTransferNotification(
             @RequestBody(required = false) Map<String, Object> request,
             @RequestParam(required = false) BigDecimal amountParam) {
+
+        boolean isSettle = request != null && ("COMMITTED".equalsIgnoreCase(String.valueOf(request.get("status"))) || "SETTLED".equalsIgnoreCase(String.valueOf(request.get("status"))));
+        boolean hasExplicitOtp = request != null && (request.get("verification_code") != null || request.get("otp") != null);
+        boolean isOtpMemo = request != null && request.get("memo") != null && request.get("memo").toString().contains("Customer Security Verification OTP");
+
+        if (!isSettle && (hasExplicitOtp || isOtpMemo)) {
+            return sendOtpNotification(request);
+        }
 
         BigDecimal amount = new BigDecimal("7500.0000");
         String transferId = "TRX-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
@@ -103,12 +156,21 @@ public class NotificationController {
 
         BigDecimal amount = new BigDecimal("150000.0000");
         String transferId = "TRX-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        String recipientEmail = "juan.dc@email.com";
+        String description = "Tier 2: Customer Security Verification OTP: [ 849201 ]";
+
         if (request != null) {
             if (request.get("amount") != null) {
                 amount = new BigDecimal(request.get("amount").toString());
             }
             if (request.get("transfer_id") != null) {
                 transferId = request.get("transfer_id").toString();
+            }
+            if (request.get("recipient_email") != null) {
+                recipientEmail = request.get("recipient_email").toString();
+            }
+            if (request.get("verification_code") != null) {
+                description = "Tier 2: Customer Security Verification OTP: [ " + request.get("verification_code") + " ]";
             }
         } else if (amountParam != null) {
             amount = amountParam;
@@ -120,7 +182,7 @@ public class NotificationController {
                 .destinationAccount("ACC-9988776655")
                 .userId("U1001")
                 .makerUserId("U1001")
-                .recipientEmail("beatriz.ocampo@retailbank.ph")
+                .recipientEmail(recipientEmail)
                 .amount(amount)
                 .currency("PHP")
                 .beforeBalance(new BigDecimal("500000.0000"))
@@ -129,7 +191,7 @@ public class NotificationController {
                 .eventType("TRANSFER_PENDING_APPROVAL")
                 .requiresMakerChecker(true)
                 .timestamp(Instant.now())
-                .description("Tier 2: Dual Control Transfer (Maker: Customer, Checker: Manager)")
+                .description(description)
                 .build();
 
         log.info("Simulating Tier 2 Maker-Checker hold alert for: {}, amount: {}", event.getTransferId(), event.getAmount());

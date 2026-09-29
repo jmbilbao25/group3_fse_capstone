@@ -1,274 +1,203 @@
-import React, { useState } from 'react';
-import { 
-  Landmark, 
-  User, 
-  ShieldCheck, 
-  FileCheck2, 
-  LogOut, 
-  Bell, 
-  Mail, 
-  ChevronDown, 
-  Radio, 
-  Sparkles,
-  CheckCircle2
-} from 'lucide-react';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Check, ChevronDown, LogOut, UserCog } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import Brand from './Brand';
+import ThemeToggle from './ThemeToggle';
+import Button from '../ui/Button';
+import { cn } from '../ui';
+
+/*
+ * Application header.
+ *
+ * Removed from the previous version, all of it decoration presented as fact:
+ *   - "Ledger :3000" and "SCN 982144" pills. Invented telemetry. A port number
+ *     is not information a banking customer can act on, and the SCN was a
+ *     hardcoded string dressed up as a live sequence number.
+ *   - "PREMIER VAULT" badge beside the wordmark.
+ *   - A mail menu badged "5" that rendered two items, and a bell badged "2"
+ *     with two hardcoded notices. Counts that disagree with their own contents
+ *     teach users to distrust every other number on the screen. The real
+ *     notification stream already arrives as toasts from the SSE connection in
+ *     App.jsx, so these menus were duplicating a feature that works.
+ *   - A pulsing green dot, animating forever, meaning nothing.
+ *
+ * What remains: identity, the genuine connection state, the role switcher this
+ * demo needs, theme, and sign out.
+ */
+
+const ROLE_LABELS = {
+  ROLE_CUSTOMER: 'Customer',
+  ROLE_MANAGER: 'Manager',
+  ROLE_ADMIN: 'Compliance',
+};
+
+/* The three personas this build ships for demonstration. */
+const PERSONAS = [
+  {
+    role: 'ROLE_CUSTOMER',
+    name: 'Juan Dela Cruz',
+    title: 'Account holder',
+    id: 'U1001',
+  },
+  {
+    role: 'ROLE_MANAGER',
+    name: 'Beatriz Ocampo',
+    title: 'Operations manager',
+    id: 'U3002',
+  },
+  {
+    role: 'ROLE_ADMIN',
+    name: 'Diana Vance',
+    title: 'Compliance officer',
+    id: 'U0001',
+  },
+];
+
+const ROLE_HOME = {
+  ROLE_CUSTOMER: '/customer',
+  ROLE_MANAGER: '/manager',
+  ROLE_ADMIN: '/admin',
+};
 
 export default function Navbar({ onRefreshBalance, isLiveConnected }) {
+  const navigate = useNavigate();
   const { user, switchRole, logout } = useAuth();
-  const [showRoleMenu, setShowRoleMenu] = useState(false);
-  const [showNotifMenu, setShowNotifMenu] = useState(false);
-  const [showMsgMenu, setShowMsgMenu] = useState(false);
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const menuRef = React.useRef(null);
 
-  const demoRoles = [
-    {
-      role: 'ROLE_CUSTOMER',
-      label: 'Juan Dela Cruz',
-      subtitle: 'Verified Account Holder',
-      id: 'U1001',
-      badge: 'Private Client',
-      badgeColor: 'bg-cyan-50 text-cyan-700 border-cyan-200',
-    },
-    {
-      role: 'ROLE_MANAGER',
-      label: 'Beatriz Ocampo',
-      subtitle: 'Operations Manager',
-      id: 'U3002',
-      badge: 'Operations Manager',
-      badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
-    },
-    {
-      role: 'ROLE_MANAGER',
-      label: 'Carlos Mendoza',
-      subtitle: 'Operations Manager',
-      id: 'U3003',
-      badge: 'Operations Manager',
-      badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-    },
-    {
-      role: 'ROLE_ADMIN',
-      label: 'Diana Admin',
-      subtitle: 'Chief Compliance & SCN Auditor',
-      id: 'U0001',
-      badge: 'SCN Vault',
-      badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    }
-  ];
+  // Close on outside click and on Escape. The previous menus stayed open until
+  // another menu was clicked, so they could be left hanging over the content.
+  React.useEffect(() => {
+    if (!menuOpen) return;
 
-  const handleSelectRole = (r, managerId) => {
-    switchRole(r, managerId);
-    setShowRoleMenu(false);
+    const onPointerDown = (event) => {
+      if (!menuRef.current?.contains(event.target)) setMenuOpen(false);
+    };
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setMenuOpen(false);
+    };
+
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [menuOpen]);
+
+  const handleSelect = async (role) => {
+    setMenuOpen(false);
+    await switchRole(role);
     onRefreshBalance?.();
+    const dest = ROLE_HOME[role] || '/customer';
+    navigate(dest);
   };
 
+  const initials = user?.name
+    ? user.name.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]).join('')
+    : 'JD';
+
   return (
-    <header className="border-b border-slate-200/80 bg-white/95 backdrop-blur-xl px-4 sm:px-6 py-2.5 sticky top-0 z-40 shadow-sm">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
-        {/* Brand & Wordmark */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-600 via-cyan-700 to-slate-900 text-white flex items-center justify-center shadow-md shadow-cyan-600/20 ring-1 ring-cyan-500/30">
-            <Landmark className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-extrabold text-lg text-slate-900 tracking-tight flex items-center">
-                aura<span className="text-cyan-600">.</span>bank
-              </span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wider bg-slate-100 text-slate-700 border border-slate-200">
-                PREMIER VAULT
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-500 hidden sm:block">
-              {user?.role === 'ROLE_CUSTOMER' 
-                ? 'Private Wealth & Corporate Treasury • Oracle XE 21c SCN' 
-                : 'Core Ledger Mutation & Dual-Control Engine'}
-            </p>
-          </div>
-        </div>
+    <header className="sticky top-0 z-40 border-b border-line bg-surface">
+      <div className="mx-auto flex h-14 max-w-shell items-center justify-between gap-4 px-4 sm:px-6">
+        <Brand />
 
-        {/* Center / Right Header Controls */}
-        <div className="flex items-center gap-2 sm:gap-3.5">
-          {/* Live Engine Status Pill */}
-          <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200 text-[11px] text-slate-600 font-mono">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Ledger :3000</span>
-            <span className="text-slate-300">|</span>
-            <span className="text-emerald-700 font-medium">SCN 982144</span>
-            {isLiveConnected && (
-              <span className="text-[10px] font-semibold text-cyan-600 bg-cyan-50 px-1.5 py-0.2 rounded border border-cyan-200">
-                SSE LIVE
-              </span>
-            )}
-          </div>
+        <div className="flex items-center gap-2">
+          <ThemeToggle className="hidden sm:inline-flex" />
 
-          {/* Quick Notification Badges */}
-          <div className="relative">
+          <div className="relative" ref={menuRef}>
             <button
               type="button"
-              onClick={() => {
-                setShowMsgMenu(!showMsgMenu);
-                setShowNotifMenu(false);
-                setShowRoleMenu(false);
-              }}
-              title="5 Unread Corporate Notices"
-              className="p-2 rounded-xl text-slate-600 hover:text-cyan-700 hover:bg-slate-100 transition-all relative cursor-pointer"
+              onClick={() => setMenuOpen((open) => !open)}
+              aria-expanded={menuOpen}
+              aria-haspopup="menu"
+              className={cn(
+                'flex items-center gap-2 border border-line py-1 pl-1 pr-2 text-left',
+                'transition-colors duration-[120ms] hover:bg-sunken',
+                menuOpen && 'bg-sunken'
+              )}
             >
-              <Mail className="w-4 h-4" />
-              <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-cyan-600 text-white text-[9px] font-bold flex items-center justify-center ring-2 ring-white">
-                5
+              {/* Square avatar, matching the shape lock. Initials rather than a
+                  generic person icon, so the active identity is unambiguous
+                  when switching between four personas. */}
+              <span className="flex h-7 w-7 items-center justify-center bg-accent text-2xs font-semibold uppercase text-fg-inverse">
+                {initials}
               </span>
-            </button>
-
-            {showMsgMenu && (
-              <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl border border-slate-200 shadow-xl p-3 z-50 animate-in fade-in zoom-in-95">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                  <span className="text-xs font-bold text-slate-900">Corporate Messages</span>
-                  <span className="text-[10px] font-semibold text-cyan-600">5 New</span>
-                </div>
-                <div className="divide-y divide-slate-100 text-xs py-1">
-                  <div className="py-2">
-                    <p className="font-semibold text-slate-800">Payroll ACH Batch Cleared</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">Executive Payroll Deposit of ₱15.0M successfully posted.</p>
-                  </div>
-                  <div className="py-2">
-                    <p className="font-semibold text-slate-800">AMLA Statutory Advisory</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">Threshold updates applied pursuant to BSP Cir. 1033.</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => {
-                setShowNotifMenu(!showNotifMenu);
-                setShowMsgMenu(false);
-                setShowRoleMenu(false);
-              }}
-              title="2 Pending Alerts"
-              className="p-2 rounded-xl text-slate-600 hover:text-cyan-700 hover:bg-slate-100 transition-all relative cursor-pointer"
-            >
-              <Bell className="w-4 h-4" />
-              <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-bold flex items-center justify-center ring-2 ring-white">
-                2
+              <span className="hidden min-w-0 leading-tight md:block">
+                <span className="block truncate text-sm font-medium text-fg">
+                  {user?.name || 'Juan Dela Cruz'}
+                </span>
+                <span className="block text-2xs text-fg-subtle">
+                  {ROLE_LABELS[user?.role] || 'Customer'}
+                </span>
               </span>
+              <ChevronDown className="h-3.5 w-3.5 shrink-0 text-fg-subtle" aria-hidden="true" />
             </button>
 
-            {showNotifMenu && (
-              <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl border border-slate-200 shadow-xl p-3 z-50 animate-in fade-in zoom-in-95">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                  <span className="text-xs font-bold text-slate-900">System Notifications</span>
-                  <span className="text-[10px] font-semibold text-amber-600">2 Alerts</span>
-                </div>
-                <div className="divide-y divide-slate-100 text-xs py-1">
-                  <div className="py-2">
-                    <p className="font-semibold text-slate-800">Customer Security Verification</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">High-value transfer requires customer email verification via MailHog.</p>
-                  </div>
-                  <div className="py-2">
-                    <p className="font-semibold text-slate-800">Savings Account Statement Ready</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">Monthly e-statement generated for account 1000-2000-3001.</p>
-                  </div>
-                </div>
-              </div>
-            )}
+            {menuOpen && <PersonaMenu currentRole={user?.role} onSelect={handleSelect} />}
           </div>
 
-          {/* User Profile Pill & Quick Role Switcher */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => {
-                setShowRoleMenu(!showRoleMenu);
-                setShowNotifMenu(false);
-                setShowMsgMenu(false);
-              }}
-              className="flex items-center gap-2 pl-2 pr-2.5 py-1 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-all cursor-pointer"
-            >
-              <div className="relative">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-cyan-600 to-slate-800 text-white font-bold text-xs flex items-center justify-center shadow-inner">
-                  {user?.first_name ? user.first_name[0] : 'J'}
-                </div>
-                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
-              </div>
-              <div className="text-left hidden md:block">
-                <p className="text-xs font-bold text-slate-900 leading-tight">{user?.name || 'Juan Dela Cruz'}</p>
-                <p className="text-[10px] text-slate-500 font-medium">
-                  {user?.role === 'ROLE_CUSTOMER'
-                    ? 'Private Client'
-                    : user?.role === 'ROLE_MANAGER'
-                    ? 'Operations Manager'
-                    : 'System Auditor'}
-                </p>
-              </div>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5" />
-            </button>
-
-            {/* Role Switcher Dropdown */}
-            {showRoleMenu && (
-              <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl border border-slate-200 shadow-xl p-2 z-50 animate-in fade-in zoom-in-95">
-                <div className="px-3 py-2 border-b border-slate-100">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-slate-900 uppercase tracking-wider">Switch Workstation</span>
-                    <span className="text-[10px] text-cyan-700 bg-cyan-50 px-2 py-0.5 rounded-full font-mono font-medium">
-                      RBAC Gateway
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Select a designated banking role persona:</p>
-                </div>
-                <div className="space-y-1 mt-1">
-                  {demoRoles.map((dr) => {
-                    const isCurrent = user?.user_id === dr.id;
-                    return (
-                      <button
-                        key={dr.id}
-                        type="button"
-                        onClick={() => handleSelectRole(dr.role, dr.id)}
-                        className={`w-full p-2.5 rounded-xl text-left transition-all flex items-start gap-2.5 cursor-pointer ${
-                          isCurrent
-                            ? 'bg-cyan-50/80 border border-cyan-200 text-cyan-950 font-semibold'
-                            : 'hover:bg-slate-50 text-slate-700 hover:text-slate-900'
-                        }`}
-                      >
-                        <div className="w-6 h-6 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 mt-0.5 shrink-0">
-                          {dr.role === 'ROLE_CUSTOMER' ? (
-                            <User className="w-3.5 h-3.5 text-cyan-600" />
-                          ) : dr.role === 'ROLE_MANAGER' ? (
-                            <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
-                          ) : (
-                            <FileCheck2 className="w-3.5 h-3.5 text-emerald-600" />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-slate-900">{dr.label}</span>
-                            <span className={`text-[9px] font-semibold px-1.5 py-0.2 rounded border ${dr.badgeColor}`}>
-                              {dr.badge}
-                            </span>
-                          </div>
-                          <p className="text-[10px] text-slate-500 leading-snug">{dr.subtitle}</p>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Secure Log Out Button */}
-          <button
-            onClick={logout}
-            className="p-2 sm:px-3 sm:py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-slate-200 hover:border-rose-200 transition-all flex items-center gap-1.5 cursor-pointer"
-            title="Log out and return to secure gateway"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Exit</span>
-          </button>
+          <Button variant="ghost" size="md" icon={LogOut} onClick={logout} className="shrink-0">
+            <span className="hidden sm:inline">Sign out</span>
+          </Button>
         </div>
       </div>
     </header>
+  );
+}
+
+
+/*
+ * Persona menu.
+ *
+ * This is a demonstration affordance, so it says so plainly rather than dressing
+ * itself up as an "RBAC Gateway" with a monospace badge. Being honest about what
+ * a control is costs nothing and stops the UI from overclaiming.
+ */
+function PersonaMenu({ currentRole, onSelect }) {
+  return (
+    <div
+      role="menu"
+      className="absolute right-0 top-full z-50 mt-1 w-72 animate-fade-up border border-line bg-surface shadow-lg"
+    >
+      <div className="flex items-center gap-2 border-b border-line bg-sunken px-3 py-2">
+        <UserCog className="h-3.5 w-3.5 text-fg-subtle" aria-hidden="true" />
+        <p className="text-2xs font-medium uppercase tracking-wider text-fg-subtle">
+          Switch demo persona
+        </p>
+      </div>
+
+      <div className="p-1">
+        {PERSONAS.map((persona) => {
+          const active = currentRole === persona.role;
+
+          return (
+            <button
+              key={persona.role}
+              type="button"
+              role="menuitem"
+              onClick={() => onSelect(persona.role)}
+              className={cn(
+                'flex w-full items-center gap-3 px-2 py-2 text-left',
+                'transition-colors duration-[120ms] hover:bg-sunken',
+                active && 'bg-accent-soft'
+              )}
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium text-fg">{persona.name}</span>
+                <span className="block text-xs text-fg-muted">
+                  {persona.title}
+                  <span className="ml-1.5 font-mono text-fg-subtle">{persona.id}</span>
+                </span>
+              </span>
+              {active && (
+                <Check className="h-3.5 w-3.5 shrink-0 text-accent-text" aria-hidden="true" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }

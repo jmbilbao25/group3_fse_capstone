@@ -1,0 +1,96 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Complete Transfer Lifecycle: Dual-Write & Email OTP Flow",
+    "animation": "trace",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "sync-settle",
+        "label": "Standard Transfer (<= 50k PHP)",
+        "focus": ["customer_app", "gateway", "cme_router", "oracle_master", "postgres_audit", "outbox_worker", "kafka_broker", "notif_service", "final_receipt"],
+        "note": "Immediate straight-through processing; CME settles Oracle & Postgres synchronously and streams customer receipts."
+      },
+      {
+        "id": "email-otp-verification",
+        "label": "Customer Email OTP Flow (> 50k PHP)",
+        "focus": ["cme_router", "oracle_master", "outbox_worker", "kafka_broker", "mailhog_smtp", "otp_modal"],
+        "note": "CME applies soft hold; Kafka dispatches OTP event to MailHog; customer validates code via OTP modal to release funds."
+      }
+    ],
+    "output": "transfer_scenarios_flow.html"
+  },
+  "lanes": [
+    { "id": "ui", "label": "Customer Banking Portal" },
+    { "id": "verification", "label": "Email 2FA & Verification Policy", "variant": "exception" },
+    { "id": "engine", "label": "Core Mutation Engine (:8082)" },
+    { "id": "storage", "label": "Dual-Storage & Event Streaming" }
+  ],
+  "phases": [
+    { "id": "intake", "label": "Intake & Routing", "fromCol": 0, "toCol": 1 },
+    { "id": "mutation_storage", "label": "Mutation & Dual Storage", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "events_delivery", "label": "Streaming, 2FA & Advice", "fromCol": 4, "toCol": 5, "variant": "dashed" }
+  ],
+  "groups": [
+    { "id": "cme_processing", "label": "Ledger engine processing", "lane": "engine", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "otp_policy", "label": "Customer 2FA challenge", "lane": "verification", "fromCol": 3, "toCol": 4, "variant": "security" },
+    { "id": "dual_storage_group", "label": "Dual-storage persistence", "lane": "storage", "fromCol": 2, "toCol": 3, "variant": "emphasis" }
+  ],
+  "mainPath": [
+    "customer_app",
+    "gateway",
+    "cme_router",
+    "oracle_master",
+    "postgres_audit",
+    "outbox_worker",
+    "kafka_broker",
+    "notif_service",
+    "final_receipt"
+  ],
+  "nodes": [
+    { "id": "customer_app", "lane": "ui", "col": 0, "type": "frontend", "label": "Customer App", "sublabel": "initiates transfer", "width": 132 },
+    { "id": "gateway", "lane": "ui", "col": 1, "type": "security", "label": "API Gateway", "sublabel": "JWT & rate limit", "tag": ":8080 proxy", "width": 132 },
+    { "id": "final_receipt", "lane": "ui", "col": 5, "type": "frontend", "label": "Customer Portal", "sublabel": "transfer receipt", "tag": "settled", "width": 132 },
+    { "id": "otp_modal", "lane": "verification", "col": 3, "type": "security", "label": "Email OTP Modal", "sublabel": "verify 6-digit code", "tag": "customer 2FA", "width": 132 },
+    { "id": "mailhog_smtp", "lane": "verification", "col": 4, "type": "cloud", "label": "MailHog SMTP", "sublabel": "OTP email inbox", "tag": ":8025 inbox", "width": 132 },
+    { "id": "cme_router", "lane": "engine", "col": 2, "type": "backend", "label": "Mutation Router", "sublabel": "threshold check", "tag": "checks 50k", "width": 132 },
+    { "id": "outbox_worker", "lane": "engine", "col": 3, "type": "backend", "label": "Outbox Relay", "sublabel": "polls outbox_events", "tag": "2s interval", "width": 132 },
+    { "id": "oracle_master", "lane": "storage", "col": 2, "type": "database", "label": "Oracle XE Master", "sublabel": "balance_master", "tag": "lock & hold", "width": 132 },
+    { "id": "postgres_audit", "lane": "storage", "col": 3, "type": "database", "label": "Postgres Vault", "sublabel": "immutable audit log", "brand": "postgresql", "tag": "append-only", "width": 132 },
+    { "id": "kafka_broker", "lane": "storage", "col": 4, "type": "messagebus", "label": "Kafka Broker", "sublabel": "customer.otp & events", "brand": "apache-kafka", "tag": "KRaft :9092", "width": 132 },
+    { "id": "notif_service", "lane": "storage", "col": 5, "type": "cloud", "label": "Notif Service", "sublabel": "email advice dispatcher", "tag": ":8083 worker", "width": 132 }
+  ],
+  "edges": [
+    { "id": "e-submit", "from": "customer_app", "to": "gateway", "label": "submit transfer", "variant": "default" },
+    { "id": "e-proxy", "from": "gateway", "to": "cme_router", "label": "forward :8082", "variant": "emphasis" },
+    { "id": "e-lock", "from": "cme_router", "to": "oracle_master", "label": "lock or hold", "variant": "emphasis" },
+    { "id": "e-audit", "from": "oracle_master", "to": "postgres_audit", "label": "audit write", "variant": "emphasis" },
+    { "id": "e-poll", "from": "postgres_audit", "to": "outbox_worker", "label": "outbox ready", "variant": "default" },
+    { "id": "e-publish", "from": "outbox_worker", "to": "kafka_broker", "label": "publish events", "variant": "default" },
+    { "id": "e-notif", "from": "kafka_broker", "to": "notif_service", "label": "events topic", "variant": "dashed" },
+    { "id": "e-receipt", "from": "notif_service", "to": "final_receipt", "label": "SSE receipt", "variant": "emphasis", "role": "return" },
+    { "id": "e-otp-event", "from": "kafka_broker", "to": "mailhog_smtp", "label": "customer.otp", "variant": "security" },
+    { "id": "e-otp-input", "from": "mailhog_smtp", "to": "otp_modal", "label": "reads OTP", "variant": "dashed" },
+    { "id": "e-otp-submit", "from": "otp_modal", "to": "cme_router", "label": "POST /verify-otp", "variant": "security", "role": "return" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Standard Flow (<= 50k PHP)",
+      "items": [
+        "CME settles balances synchronously in Oracle XE and PostgreSQL with pessimistic row locking",
+        "Client receives 200 OK immediately; Outbox Relay publishes event to Kafka for customer email advice"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Customer Email OTP Flow (> 50k PHP)",
+      "items": [
+        "CME applies soft hold; transaction enters PENDING_VERIFICATION; 6-digit OTP cached in Redis",
+        "Kafka streams OTP event to Notification Service; email dispatched to MailHog inbox (:8025)",
+        "Customer enters OTP in modal; POST /verify-otp releases hold and commits ledger settlement"
+      ]
+    }
+  ]
+}

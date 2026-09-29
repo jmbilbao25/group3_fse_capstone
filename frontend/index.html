@@ -2,11 +2,47 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Retail Banking Portal | Core Ledger &amp; Mutation Engine</title>
+
+    <title>AuraBank</title>
+    <meta name="description" content="Retail banking portal for account balances, transfers, and dual-control transaction approval." />
+
+    <!-- Match the browser chrome to the app canvas in each theme, so the
+         address bar does not sit as a bright strip above a dark UI. -->
+    <meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#101215" media="(prefers-color-scheme: dark)" />
+
+    <link rel="icon" type="image/svg+xml" href="/mark.svg" />
+
+    <script>
+      /*
+       * Resolve the theme before first paint. Without this the document renders
+       * one frame in the default theme and then repaints, which is the flash of
+       * wrong theme you see on most sites that support dark mode.
+       */
+      (function () {
+        try {
+          var saved = localStorage.getItem('aurabank.theme');
+          var dark =
+            saved === 'dark' ||
+            ((!saved || saved === 'system') &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches);
+          var theme = dark ? 'dark' : 'light';
+          document.documentElement.dataset.theme = theme;
+          document.documentElement.style.colorScheme = theme;
+          if (dark) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {
+          document.documentElement.dataset.theme = 'light';
+          document.documentElement.classList.remove('dark');
+        }
+      })();
+    </script>
   </head>
-  <body class="bg-slate-50 text-slate-900 antialiased font-sans">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

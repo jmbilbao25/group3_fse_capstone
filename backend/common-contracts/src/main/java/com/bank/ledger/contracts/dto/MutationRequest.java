@@ -30,11 +30,11 @@ public class MutationRequest {
 
     @NotBlank(message = "account_id is mandatory")
     @JsonProperty("account_id")
-    @JsonAlias({"account_id", "accountId", "from_account_id", "fromAccountId", "fromAccount"})
+    @JsonAlias({"account_id", "accountId", "from_account_id", "fromAccountId", "fromAccount", "source_account_id", "sourceAccountId"})
     private String accountId;
 
     @JsonProperty("target_account_id")
-    @JsonAlias({"target_account_id", "targetAccountId", "to_account_id", "toAccountId", "toAccount"})
+    @JsonAlias({"target_account_id", "targetAccountId", "to_account_id", "toAccountId", "toAccount", "destination_account_id", "destinationAccountId"})
     private String targetAccountId;
 
     @JsonProperty("event_type")

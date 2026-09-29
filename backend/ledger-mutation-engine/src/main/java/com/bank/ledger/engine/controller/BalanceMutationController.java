@@ -93,6 +93,16 @@ public class BalanceMutationController {
         return ResponseEntity.ok(mutationService.getPendingTransfers());
     }
 
+    /**
+     * 5. Customer 2FA Email OTP Verification & Settlement (UI-704 / TRX-504)
+     */
+    @PostMapping("/transfers/verify-otp")
+    public ResponseEntity<Map<String, Object>> verifyOtp(@RequestBody Map<String, Object> request) {
+        log.info("[HTTP REQUEST] POST /api/v1/ledger/transfers/verify-otp payload: {}", request);
+        Map<String, Object> response = mutationService.verifyOtp(request);
+        return ResponseEntity.ok(response);
+    }
+
     // =========================================================================
     // RFC-7807 FINANCIAL & SECURITY EXCEPTION HANDLERS
     // =========================================================================

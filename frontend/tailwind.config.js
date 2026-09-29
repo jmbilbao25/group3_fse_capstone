@@ -122,18 +122,28 @@ export default {
       },
 
       /* ---------------- shape lock ---------------- */
-      // Four steps, crisp rather than pillowy. The oversized pillow radius is
-      // the loudest tell in generated UI, so the large steps stay restrained.
-      // `full` is reserved for genuinely circular things: avatars, dots.
+      //
+      // Zero radius, everywhere. Every step of the scale collapses to 0, which
+      // means a stray `rounded-3xl` left anywhere in the codebase renders square
+      // instead of quietly reintroducing the pillow look. The system cannot
+      // drift back.
+      //
+      // Square edges are also the right call on merit: ledger tables, statement
+      // rows, and figure columns all align on a strict grid, and rounded
+      // containers fight that grid at every corner. Institutional financial
+      // software is square because the data is rectangular.
+      //
+      // `full` survives for the two things that are genuinely circular: the
+      // connection-state dot and the button spinner arc.
       borderRadius: {
         none: '0',
-        sm: '3px',
-        DEFAULT: '5px',
-        md: '5px',
-        lg: '7px',
-        xl: '9px',
-        '2xl': '11px',
-        '3xl': '11px',
+        sm: '0',
+        DEFAULT: '0',
+        md: '0',
+        lg: '0',
+        xl: '0',
+        '2xl': '0',
+        '3xl': '0',
         full: '9999px',
       },
 
@@ -172,14 +182,65 @@ export default {
         none: 'none',
       },
 
+      /* ---------------- gradients ---------------- */
+      //
+      // Every gradient is built from the SINGLE accent plus the neutral ramp, and
+      // resolves through the theme tokens, so nothing here breaks when the theme
+      // flips and no second hue is ever introduced. That constraint is what
+      // separates a gradient system from a gradient pile.
+      //
+      // Ranges are deliberately tight. A gradient that travels a long way in
+      // hue reads as decoration; one that travels a short way in lightness reads
+      // as a light source, which is the effect worth having.
+      backgroundImage: {
+        // Elevated panel. ~2% lightness lift at the top edge, as if lit from
+        // above. Invisible on its own, but it stops large panels reading flat.
+        'surface-raised':
+          'linear-gradient(180deg, rgb(var(--grad-lift) / 0.55) 0%, transparent 42%)',
+
+        // Primary action. Short travel within one hue, so it still reads as a
+        // solid button rather than a decorative pill.
+        'accent-fill':
+          'linear-gradient(180deg, rgb(var(--accent-lift)) 0%, rgb(var(--accent)) 58%, rgb(var(--accent-sink)) 100%)',
+
+        // Hairline that fades out toward the edges, for the top rule of a
+        // feature panel. Reads as a highlight catching an edge.
+        'line-fade':
+          'linear-gradient(90deg, transparent, rgb(var(--accent) / 0.55) 22%, rgb(var(--accent) / 0.55) 78%, transparent)',
+
+        // Ambient field behind the balance hero and the sign-in page. Three
+        // low-opacity radial stops from the accent, offset so the falloff is
+        // asymmetric and it does not read as a centred spotlight.
+        aurora: [
+          'radial-gradient(ellipse 80% 60% at 12% 0%, rgb(var(--accent) / 0.16), transparent 60%)',
+          'radial-gradient(ellipse 60% 50% at 88% 12%, rgb(var(--accent) / 0.10), transparent 58%)',
+          'radial-gradient(ellipse 90% 70% at 50% 108%, rgb(var(--accent) / 0.07), transparent 62%)',
+        ].join(','),
+
+        // Sheen that sweeps a surface once on mount, and on the skeletons.
+        sheen:
+          'linear-gradient(105deg, transparent 38%, rgb(var(--grad-lift) / 0.85) 50%, transparent 62%)',
+      },
+
       /* ---------------- motion ---------------- */
-      // MOTION_INTENSITY 3: feedback and state transitions only. No ambient
-      // loops, no scroll theatre. Every keyframe answers a user action or
-      // announces that data arrived, and all of it collapses under
-      // prefers-reduced-motion (see src/index.css).
+      //
+      // MOTION_INTENSITY 6. Motion is used for four jobs and no others:
+      //   1. Orientation   - staged entrances that establish reading order.
+      //   2. Continuity    - tab and route changes that show where content came from.
+      //   3. Value change  - figures counting to their target, meters filling.
+      //   4. Confirmation  - a one-shot pulse when money actually moves.
+      //
+      // What is still refused: infinite ambient loops on idle content, parallax,
+      // scroll-jacking, and anything that delays a user from reading a number.
+      // Durations stay under 500ms because this is a task surface. All of it
+      // collapses under prefers-reduced-motion (see src/index.css).
       transitionTimingFunction: {
         DEFAULT: 'cubic-bezier(0.32, 0.72, 0, 1)',
         entrance: 'cubic-bezier(0.16, 1, 0.3, 1)',
+        exit: 'cubic-bezier(0.4, 0, 1, 1)',
+        // Overshoots ~3%. Reserved for confirmation only, where a little
+        // physicality reads as the system reacting.
+        spring: 'cubic-bezier(0.34, 1.46, 0.64, 1)',
       },
       keyframes: {
         'fade-in': { from: { opacity: '0' }, to: { opacity: '1' } },

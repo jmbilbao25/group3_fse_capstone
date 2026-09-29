@@ -1,0 +1,1739 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Core Retail Banking — Complete Technology Stack & Architecture</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #090d16;
+      --surface: #111726;
+      --surface-elevated: #161f33;
+      --surface-card: rgba(17, 23, 38, 0.75);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-hover: rgba(255, 255, 255, 0.18);
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-sub: #64748b;
+      --accent-cyan: #06b6d4;
+      --accent-emerald: #10b981;
+      --accent-purple: #8b5cf6;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --accent-blue: #3b82f6;
+      --glow-cyan: rgba(6, 182, 212, 0.15);
+      --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+    }
+
+    html.light {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-elevated: #f1f5f9;
+      --surface-card: rgba(255, 255, 255, 0.85);
+      --border: rgba(0, 0, 0, 0.08);
+      --border-hover: rgba(0, 0, 0, 0.18);
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --text-sub: #64748b;
+      --accent-cyan: #0891b2;
+      --accent-emerald: #059669;
+      --accent-purple: #7c3aed;
+      --accent-amber: #d97706;
+      --accent-rose: #e11d48;
+      --accent-blue: #2563eb;
+      --glow-cyan: rgba(8, 145, 178, 0.1);
+      --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.06);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      background-image: 
+        radial-gradient(circle at 15% 10%, rgba(6, 182, 212, 0.06) 0%, transparent 40%),
+        radial-gradient(circle at 85% 20%, rgba(139, 92, 246, 0.05) 0%, transparent 45%),
+        radial-gradient(circle at 50% 80%, rgba(16, 185, 129, 0.04) 0%, transparent 50%);
+      background-attachment: fixed;
+    }
+
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Top Bar Header */
+    .header-container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 2.5rem 2rem 1.5rem 2rem;
+    }
+
+    .badge-top {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      background: rgba(6, 182, 212, 0.12);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      color: var(--accent-cyan);
+      margin-bottom: 1rem;
+    }
+
+    .header-title-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .header-title {
+      font-size: 2.25rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+    }
+
+    .header-desc {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      max-width: 820px;
+      line-height: 1.6;
+    }
+
+    .theme-toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1.1rem;
+      border-radius: 0.6rem;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .theme-toggle-btn:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-1px);
+    }
+
+    /* Key Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin: 2rem 0;
+    }
+
+    .metric-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 0.85rem;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      box-shadow: var(--card-shadow);
+      transition: border-color 0.2s;
+    }
+
+    .metric-card:hover {
+      border-color: var(--border-hover);
+    }
+
+    .metric-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-sub);
+    }
+
+    .metric-value {
+      font-size: 1.85rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .metric-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* Controls Bar: Search & Category Filter */
+    .controls-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 1.25rem;
+      margin-bottom: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      box-shadow: var(--card-shadow);
+    }
+
+    .controls-top-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .search-box-wrapper {
+      position: relative;
+      flex: 1;
+      min-width: 280px;
+      max-width: 480px;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 18px;
+      color: var(--text-sub);
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: 0.6rem;
+      padding: 0.65rem 1rem 0.65rem 2.6rem;
+      font-size: 0.9rem;
+      color: var(--text-main);
+      font-family: inherit;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .search-input:focus {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 0 3px var(--glow-cyan);
+    }
+
+    .view-modes {
+      display: flex;
+      align-items: center;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: 0.6rem;
+      padding: 0.25rem;
+      gap: 0.25rem;
+    }
+
+    .view-mode-btn {
+      padding: 0.4rem 0.85rem;
+      border-radius: 0.45rem;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.825rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .view-mode-btn.active {
+      background: var(--surface);
+      color: var(--text-main);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    /* Category Pill Selector */
+    .category-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      overflow-x: auto;
+      padding-bottom: 0.25rem;
+    }
+
+    .category-pill {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: 9999px;
+      padding: 0.4rem 0.9rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .category-pill:hover {
+      border-color: var(--border-hover);
+      color: var(--text-main);
+    }
+
+    .category-pill.active {
+      background: var(--accent-cyan);
+      color: #041019;
+      border-color: var(--accent-cyan);
+      font-weight: 700;
+    }
+
+    .category-pill .pill-count {
+      font-size: 0.72rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.15);
+    }
+
+    .category-pill.active .pill-count {
+      background: rgba(0,0,0,0.25);
+      color: #041019;
+    }
+
+    /* Main Tech Grid */
+    .tech-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 3.5rem;
+    }
+
+    .tech-card {
+      background: var(--surface-card);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      box-shadow: var(--card-shadow);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .tech-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--card-accent, var(--accent-cyan));
+      opacity: 0.8;
+      transition: height 0.2s;
+    }
+
+    .tech-card:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.4);
+    }
+
+    .tech-card:hover::before {
+      height: 4px;
+      opacity: 1;
+    }
+
+    .tech-card-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .logo-container {
+      width: 54px;
+      height: 54px;
+      min-width: 54px;
+      border-radius: 0.75rem;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.65rem;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      transition: transform 0.2s;
+    }
+
+    .tech-card:hover .logo-container {
+      transform: scale(1.05);
+    }
+
+    .logo-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+    }
+
+    .tech-title-block {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .tech-name-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 0.2rem;
+    }
+
+    .tech-name {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tech-version-pill {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 9999px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      color: var(--text-sub);
+      font-family: 'JetBrains Mono', monospace;
+      white-space: nowrap;
+    }
+
+    .tech-category-pill {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--card-accent, var(--accent-cyan));
+    }
+
+    .tech-desc {
+      font-size: 0.885rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .tech-metadata-box {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: 0.65rem;
+      padding: 0.75rem 0.9rem;
+      font-size: 0.78rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .meta-key {
+      color: var(--text-sub);
+      font-weight: 500;
+    }
+
+    .meta-val {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-main);
+      font-weight: 600;
+      text-align: right;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .tech-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: auto;
+      padding-top: 0.5rem;
+    }
+
+    .tech-tag {
+      font-size: 0.72rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 0.4rem;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    html.light .tech-tag {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    /* Modal Details View */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .modal-backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-window {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 1.25rem;
+      max-width: 640px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 2rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+      transform: translateY(15px);
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+
+    .modal-backdrop.open .modal-window {
+      transform: translateY(0);
+    }
+
+    .modal-close-btn {
+      position: absolute;
+      top: 1.25rem;
+      right: 1.25rem;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.2rem;
+      line-height: 1;
+      transition: all 0.15s;
+    }
+
+    .modal-close-btn:hover {
+      color: var(--text-main);
+      border-color: var(--border-hover);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .modal-logo {
+      width: 64px;
+      height: 64px;
+      border-radius: 0.85rem;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      padding: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .modal-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+    }
+
+    .modal-category {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .modal-section-title {
+      font-size: 0.825rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-sub);
+      margin: 1.5rem 0 0.5rem 0;
+    }
+
+    .modal-desc {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .code-snippet-box {
+      background: #030712;
+      border: 1px solid var(--border);
+      border-radius: 0.65rem;
+      padding: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: #38bdf8;
+      overflow-x: auto;
+      margin-top: 0.5rem;
+    }
+
+    /* Table View Mode */
+    .table-container {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      overflow-x: auto;
+      box-shadow: var(--card-shadow);
+      margin-bottom: 3rem;
+      display: none;
+    }
+
+    .tech-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      text-align: left;
+    }
+
+    .tech-table th {
+      background: var(--surface-elevated);
+      padding: 0.85rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-sub);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tech-table td {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    .tech-table tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    html.light .tech-table tr:hover td {
+      background: rgba(0, 0, 0, 0.02);
+    }
+
+    .table-tech-cell {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 600;
+    }
+
+    .table-tech-logo {
+      width: 28px;
+      height: 28px;
+      border-radius: 0.35rem;
+      padding: 0.25rem;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+    }
+
+    /* Architecture Layer View */
+    .layer-view-container {
+      display: none;
+      flex-direction: column;
+      gap: 2rem;
+      margin-bottom: 3.5rem;
+    }
+
+    .arch-layer-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      box-shadow: var(--card-shadow);
+    }
+
+    .layer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .layer-title-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .layer-number-badge {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .layer-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    .layer-role-pill {
+      font-size: 0.75rem;
+      color: var(--text-sub);
+    }
+
+    .layer-items-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    /* Footer */
+    .page-footer {
+      border-top: 1px solid var(--border);
+      padding: 2.5rem 0;
+      text-align: center;
+      color: var(--text-sub);
+      font-size: 0.85rem;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 4rem 1rem;
+      color: var(--text-sub);
+      font-size: 1.1rem;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header-container">
+    <!-- Top Badge -->
+    <div class="badge-top">
+      <span>●</span> Capstone Architecture Directory
+    </div>
+
+    <!-- Header Title Row -->
+    <div class="header-title-row">
+      <div>
+        <h1 class="header-title">Enterprise Technology Stack</h1>
+        <p class="header-desc">
+          Comprehensive inventory of the 35+ frameworks, container runtimes, observability engines, distributed data stores, and event buses powering the Core Retail Banking &amp; Balance Mutation Engine.
+        </p>
+      </div>
+      <div>
+        <button id="themeToggle" class="theme-toggle-btn" title="Toggle Dark/Light Mode">
+          <span id="themeIcon">☀️</span> <span id="themeText">Light Mode</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Live Architecture Highlights -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <span class="metric-label">Containerized Mesh</span>
+        <span class="metric-value" style="color: var(--accent-cyan);">16</span>
+        <span class="metric-sub">Docker Compose microservices</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Data &amp; Persistence</span>
+        <span class="metric-value" style="color: var(--accent-emerald);">3</span>
+        <span class="metric-sub">Oracle 21c, Postgres 16, Redis 7</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">APM &amp; Observability</span>
+        <span class="metric-value" style="color: var(--accent-purple);">4</span>
+        <span class="metric-sub">Datadog, Prometheus, Grafana, Jaeger</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Security &amp; Auth</span>
+        <span class="metric-value" style="color: var(--accent-amber);">2FA</span>
+        <span class="metric-sub">MailHog OTP + RTR Token Families</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Performance SLA</span>
+        <span class="metric-value" style="color: var(--accent-rose);">200 TPS</span>
+        <span class="metric-sub">&lt; 150ms p99 latency target</span>
+      </div>
+    </div>
+
+    <!-- Controls Panel -->
+    <div class="controls-panel">
+      <div class="controls-top-row">
+        <div class="search-box-wrapper">
+          <svg class="search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input type="text" id="searchInput" class="search-input" placeholder="Search technologies, containers, ports, layers..." />
+        </div>
+
+        <div class="view-modes">
+          <button id="viewGridBtn" class="view-mode-btn active" onclick="switchView('grid')">Cards Grid</button>
+          <button id="viewLayersBtn" class="view-mode-btn" onclick="switchView('layers')">Layer Stack</button>
+          <button id="viewTableBtn" class="view-mode-btn" onclick="switchView('table')">Matrix Table</button>
+        </div>
+      </div>
+
+      <!-- Category Filter Pills -->
+      <div class="category-pills" id="categoryPills">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- Cards Grid View -->
+    <div id="techGrid" class="tech-grid">
+      <!-- Injected via JavaScript -->
+    </div>
+
+    <!-- Architecture Layer View -->
+    <div id="layerView" class="layer-view-container">
+      <!-- Injected via JavaScript -->
+    </div>
+
+    <!-- Matrix Table View -->
+    <div id="tableView" class="table-container">
+      <table class="tech-table">
+        <thead>
+          <tr>
+            <th>Technology</th>
+            <th>Category</th>
+            <th>Container / Location</th>
+            <th>Ports / Protocol</th>
+            <th>Version</th>
+            <th>Primary Function</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <!-- Injected via JavaScript -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="empty-state">
+      No matching technologies found for your search criteria.
+    </div>
+
+    <!-- Footer -->
+    <footer class="page-footer">
+      <p>Core Retail Banking System &copy; 2026. Microservices &amp; Ledger Engine Architecture Reference.</p>
+      <p style="margin-top: 0.35rem; font-size: 0.78rem;">Designed for enterprise high-throughput auditability, row-level pessimistic concurrency, and customer email 2FA verification.</p>
+    </footer>
+  </div>
+
+  <!-- Detailed Modal Popup -->
+  <div id="techModal" class="modal-backdrop" onclick="closeModal(event)">
+    <div class="modal-window" onclick="event.stopPropagation()">
+      <button class="modal-close-btn" onclick="closeModalDirect()">&times;</button>
+      <div class="modal-header">
+        <div class="modal-logo">
+          <img id="modalLogo" src="" alt="logo" />
+        </div>
+        <div>
+          <div id="modalCategory" class="modal-category"></div>
+          <h2 id="modalTitle" class="modal-title"></h2>
+          <div id="modalVersion" class="tech-version-pill" style="display: inline-block; margin-top: 0.25rem;"></div>
+        </div>
+      </div>
+
+      <div class="modal-section-title">Architectural Role &amp; Capabilities</div>
+      <p id="modalDesc" class="modal-desc"></p>
+
+      <div class="modal-section-title">Deployment &amp; Runtime Specs</div>
+      <div id="modalSpecs" class="tech-metadata-box" style="margin-top: 0.5rem;"></div>
+
+      <div class="modal-section-title">Codebase Integration Snippet</div>
+      <div id="modalSnippet" class="code-snippet-box"></div>
+    </div>
+  </div>
+
+  <script>
+    // Complete Technology Inventory
+    const TECH_STACK = [
+      // 1. Observability & APM
+      {
+        id: "datadog",
+        name: "Datadog Agent",
+        version: "7.x",
+        category: "Observability & APM",
+        accent: "#632CA6",
+        logo: "https://cdn.simpleicons.org/datadog/632CA6",
+        container: "dd-agent",
+        ports: "8126 (APM) / 8125 (DogStatsD)",
+        protocol: "HTTP / UDP / OTLP",
+        layer: "Tier 5: Telemetry & Tracing",
+        desc: "Enterprise observability agent capturing APM distributed request traces, latency waterfall spans, DogStatsD system metrics, and live container logs across all 16 Docker containers.",
+        tags: ["APM", "Distributed Tracing", "DogStatsD", "Metrics", "Container Logs"],
+        snippet: `services:\n  dd-agent:\n    image: registry.datadoghq.com/agent:7\n    environment:\n      - DD_APM_ENABLED=true\n      - DD_LOGS_ENABLED=true\n      - DD_OTLP_CONFIG_RECEIVER_PROTOCOLS_HTTP_ENDPOINT=0.0.0.0:4318`
+      },
+      {
+        id: "prometheus",
+        name: "Prometheus",
+        version: "v2.53.0",
+        category: "Observability & APM",
+        accent: "#E6522C",
+        logo: "https://cdn.simpleicons.org/prometheus/E6522C",
+        container: "prometheus-engine",
+        ports: "9090",
+        protocol: "HTTP / PromQL",
+        layer: "Tier 5: Telemetry & Tracing",
+        desc: "Time-series database engine polling /actuator/prometheus endpoints every 5 seconds. Evaluates SLA rules against the 200 TPS benchmark and sub-150ms latency target.",
+        tags: ["PromQL", "TSDB", "Metrics Scraping", "SLA Alerts", "Spring Actuator"],
+        snippet: `scrape_configs:\n  - job_name: 'spring-microservices'\n    metrics_path: '/actuator/prometheus'\n    scrape_interval: 5s\n    static_configs:\n      - targets: ['account-service:8081', 'ledger-mutation-engine:8082', 'notification-service:8083']`
+      },
+      {
+        id: "grafana",
+        name: "Grafana",
+        version: "11.1.0",
+        category: "Observability & APM",
+        accent: "#F46800",
+        logo: "https://cdn.simpleicons.org/grafana/F46800",
+        container: "grafana-dashboard",
+        ports: "3001",
+        protocol: "HTTP Web UI",
+        layer: "Tier 5: Telemetry & Tracing",
+        desc: "Operational visualization dashboard pre-provisioned with banking telemetry dashboards, real-time TPS rate counters, p50/p95/p99 latency graphs, and HikariCP connection metrics.",
+        tags: ["Dashboards", "TPS Gauges", "Latency Heatmaps", "HikariCP Telemetry", "Prometheus Datasource"],
+        snippet: `services:\n  grafana:\n    image: grafana/grafana:11.1.0\n    ports:\n      - "3001:3000"\n    volumes:\n      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro`
+      },
+      {
+        id: "jaeger",
+        name: "Jaeger Tracing",
+        version: "1.57+",
+        category: "Observability & APM",
+        accent: "#60D0E4",
+        logo: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/jaegertracing/jaegertracing-original.svg",
+        container: "jaeger-tracing",
+        ports: "16686 (UI) / 4317 (gRPC) / 4318 (HTTP)",
+        protocol: "OTLP / gRPC / HTTP",
+        layer: "Tier 5: Telemetry & Tracing",
+        desc: "OpenTelemetry distributed tracing collector and query UI. Ingests OTLP spans across HTTP gateway calls, Oracle lock transactions, and asynchronous Kafka consumers.",
+        tags: ["Distributed Spans", "OTLP Receiver", "Request Waterfalls", "Latency Bottlenecks"],
+        snippet: `services:\n  jaeger-tracing:\n    image: jaegertracing/all-in-one:latest\n    ports:\n      - "16686:16686"\n      - "4317:4317"\n      - "4318:4318"\n    environment:\n      - COLLECTOR_OTLP_ENABLED=true`
+      },
+      {
+        id: "opentelemetry",
+        name: "OpenTelemetry (OTel)",
+        version: "1.38+",
+        category: "Observability & APM",
+        accent: "#425CC7",
+        logo: "https://cdn.simpleicons.org/opentelemetry/425CC7",
+        container: "Embedded in Backend",
+        ports: "4317 / 4318 Exporter",
+        protocol: "OTLP / W3C TraceContext",
+        layer: "Tier 5: Telemetry & Tracing",
+        desc: "Vendor-agnostic telemetry standard providing distributed span generation, W3C traceparent context propagation across HTTP headers and Kafka event records.",
+        tags: ["W3C TraceContext", "traceparent", "Baggage", "OTel Bridge"],
+        snippet: `<dependency>\n    <groupId>io.micrometer</groupId>\n    <artifactId>micrometer-tracing-bridge-otel</artifactId>\n</dependency>\n<dependency>\n    <groupId>io.opentelemetry</groupId>\n    <artifactId>opentelemetry-exporter-otlp</artifactId>\n</dependency>`
+      },
+      {
+        id: "micrometer",
+        name: "Micrometer",
+        version: "1.13.5",
+        category: "Observability & APM",
+        accent: "#6DB33F",
+        logo: "https://cdn.simpleicons.org/spring/6DB33F",
+        container: "Embedded in Backend",
+        ports: "/actuator/prometheus",
+        protocol: "JVM Metrics Facade",
+        layer: "Tier 5: Telemetry & Tracing",
+        desc: "Application metrics facade instrumenting JVM heap, GC pauses, HikariCP database pool saturation, Kafka consumer lag, and HTTP transaction latency histograms.",
+        tags: ["JVM Metrics", "Connection Pool Scrape", "Histogram Timers", "Actuator"],
+        snippet: `management:\n  endpoints:\n    web:\n      exposure:\n        include: "health,info,prometheus,metrics"\n  metrics:\n    distribution:\n      percentiles-histogram:\n        http.server.requests: true`
+      },
+
+      // 2. Data & Caching
+      {
+        id: "redis",
+        name: "Redis",
+        version: "7.2 Alpine",
+        category: "Data & Caching",
+        accent: "#FF4438",
+        logo: "https://cdn.simpleicons.org/redis/FF4438",
+        container: "redis-cache",
+        ports: "6379",
+        protocol: "RESP / TCP",
+        layer: "Tier 3: In-Memory & Caching",
+        desc: "Ultra-low-latency in-memory data store managing customer 2FA OTP codes (300s TTL), JWT blacklist (jti), Refresh Token Rotation session families, and idempotency locks.",
+        tags: ["2FA OTP Cache", "Token Blacklist", "RTR Families", "SET NX EX 60", "Idempotency"],
+        snippet: `// Customer 2FA OTP Storage with 300-second TTL\nredisTemplate.opsForValue().set("2fa:otp:" + userId, otpCode, Duration.ofSeconds(300));\n\n// Idempotency lock preventing duplicate concurrent clicks\nBoolean locked = redisTemplate.opsForValue().setIfAbsent("tx:" + idempotencyKey, "PROCESSING", Duration.ofSeconds(60));`
+      },
+      {
+        id: "oracle",
+        name: "Oracle Database XE",
+        version: "21c Express Edition",
+        category: "Data & Caching",
+        accent: "#F80000",
+        logo: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/oracle/oracle-original.svg",
+        container: "oracle-xe-master",
+        ports: "1521",
+        protocol: "Oracle TNS / SQL",
+        layer: "Tier 4: Relational Persistence",
+        desc: "Primary ACID relational operational state store. Enforces strict row-level pessimistic locking (SELECT ... FOR UPDATE) on balance_master, manages outbox_events, and maintains user ledgers.",
+        tags: ["ACID Master", "Pessimistic Locking", "FOR UPDATE", "Transactional Outbox", "Check Constraints"],
+        snippet: `@Lock(LockModeType.PESSIMISTIC_WRITE)\n@Query("SELECT b FROM BalanceMaster b WHERE b.accountId = :accountId")\nOptional<BalanceMaster> lockBalanceForUpdate(@Param("accountId") String accountId);`
+      },
+      {
+        id: "postgresql",
+        name: "PostgreSQL",
+        version: "16 Alpine",
+        category: "Data & Caching",
+        accent: "#4169E1",
+        logo: "https://cdn.simpleicons.org/postgresql/4169E1",
+        container: "postgres-audit-vault",
+        ports: "5433 -> 5432",
+        protocol: "PostgreSQL Wire / SQL",
+        layer: "Tier 4: Relational Persistence",
+        desc: "Dedicated immutable audit journal vault (banking_audit). Uses custom PostgreSQL compliance triggers that abort and reject any UPDATE or DELETE commands on ledger_mutation_audit.",
+        tags: ["Immutable Audit", "Write-Only Trigger", "Compliance Vault", "Audit Trail", "Event Projection"],
+        snippet: `CREATE OR REPLACE FUNCTION reject_audit_mutation()\nRETURNS TRIGGER AS $$\nBEGIN\n    RAISE EXCEPTION 'COMPLIANCE VIOLATION: ledger_mutation_audit is immutable. UPDATE and DELETE are prohibited.';\nEND;\n$$ LANGUAGE plpgsql;\n\nCREATE TRIGGER trg_no_update_delete_mutation_audit\nBEFORE UPDATE OR DELETE ON ledger_mutation_audit\nFOR EACH ROW EXECUTE FUNCTION reject_audit_mutation();`
+      },
+      {
+        id: "adminer",
+        name: "Adminer",
+        version: "4.8+ (Custom)",
+        category: "Data & Caching",
+        accent: "#777BB4",
+        logo: "https://cdn.simpleicons.org/php/777BB4",
+        container: "db-adminer",
+        ports: "8088",
+        protocol: "HTTP Web Console",
+        layer: "Tier 4: Relational Persistence",
+        desc: "Lightweight administrative database web management console custom-built with PHP 8, Oracle OCI8 drivers, and PostgreSQL PDO extensions for rapid DBA inspections.",
+        tags: ["Database GUI", "Oracle OCI8", "PostgreSQL Admin", "SQL Query Tool"],
+        snippet: `services:\n  adminer:\n    container_name: db-adminer\n    build:\n      context: ./adminer\n      dockerfile: Dockerfile\n    ports:\n      - "8088:8080"`
+      },
+
+      // 3. Streaming & Messaging
+      {
+        id: "kafka",
+        name: "Apache Kafka",
+        version: "3.7.0 (KRaft)",
+        category: "Streaming & Messaging",
+        accent: "#231F20",
+        logo: "https://cdn.simpleicons.org/apachekafka/231F20",
+        container: "kafka-broker",
+        ports: "9092 / 29092",
+        protocol: "Kafka Protocol / TCP",
+        layer: "Tier 2: Event Streaming & Sagas",
+        desc: "High-throughput distributed commit log operating in KRaft mode (no ZooKeeper). Guarantees strictly ordered partition processing by source_account_id for transfer commands and event projection.",
+        tags: ["KRaft Mode", "Ordered Partitions", "Event Sourcing", "Saga Orchestration", "Consumer Groups"],
+        snippet: `kafka-topics.sh --create --topic banking.transfers.commands \\\n  --partitions 12 --replication-factor 1 \\\n  --bootstrap-server localhost:9092`
+      },
+      {
+        id: "kafkaui",
+        name: "Kafka UI",
+        version: "Latest (Provectus)",
+        category: "Streaming & Messaging",
+        accent: "#231F20",
+        logo: "https://cdn.simpleicons.org/apachekafka/231F20",
+        container: "kafka-ui",
+        ports: "8085",
+        protocol: "HTTP Web Dashboard",
+        layer: "Tier 2: Event Streaming & Sagas",
+        desc: "Intuitive web management dashboard for inspecting Kafka topics, consumer lag across ledger and notification workers, message payloads, and cluster health.",
+        tags: ["Topic Browser", "Consumer Lag", "Message Inspector", "Partition Topology"],
+        snippet: `services:\n  kafka-ui:\n    image: provectuslabs/kafka-ui:latest\n    ports:\n      - "8085:8080"\n    environment:\n      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: 'kafka-broker:29092'`
+      },
+      {
+        id: "mailhog",
+        name: "MailHog",
+        version: "Latest",
+        category: "Streaming & Messaging",
+        accent: "#e53935",
+        logo: "https://cdn.simpleicons.org/maildotru",
+        container: "mailhog-smtp",
+        ports: "1025 (SMTP) / 8025 (Web UI)",
+        protocol: "SMTP / HTTP Webmail",
+        layer: "Tier 2: Event Streaming & Sagas",
+        desc: "Mock SMTP server and webmail client catching customer 2FA OTP verification emails for transfers exceeding ₱50k, debit/credit advice receipts, and compliance alerts without external mail delays.",
+        tags: ["Mock SMTP", "2FA OTP Inbox", "Email Advices", "Webmail UI", "Zero Outbound Risk"],
+        snippet: `spring:\n  mail:\n    host: mailhog\n    port: 1025\n    properties:\n      mail.smtp.auth: false\n      mail.smtp.starttls.enable: false`
+      },
+
+      // 4. Backend & Microservices
+      {
+        id: "java",
+        name: "Java 21 LTS",
+        version: "21.0.x (Temurin)",
+        category: "Backend & Microservices",
+        accent: "#ED8B00",
+        logo: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg",
+        container: "Base Microservice Runtime",
+        ports: "N/A",
+        protocol: "JVM 21",
+        layer: "Tier 1: Core Microservices",
+        desc: "Primary backend language runtime powering all 4 banking services, utilizing records for immutable DTOs, pattern matching, sealed exception types, and virtual-thread compatibility.",
+        tags: ["Records", "Pattern Matching", "Virtual Threads", "Sealed Classes", "JDK 21"],
+        snippet: `public record TransferInitiationRequest(\n    @NotBlank String sourceAccountId,\n    @NotBlank String destinationAccountId,\n    @Positive @Digits(integer = 14, fraction = 4) BigDecimal amount,\n    @NotBlank String idempotencyKey\n) {}`
+      },
+      {
+        id: "springboot",
+        name: "Spring Boot 3",
+        version: "3.3.5",
+        category: "Backend & Microservices",
+        accent: "#6DB33F",
+        logo: "https://cdn.simpleicons.org/springboot/6DB33F",
+        container: "account-service, ledger-engine, notification-svc",
+        ports: "8081, 8082, 8083",
+        protocol: "REST / HTTP JSON",
+        layer: "Tier 1: Core Microservices",
+        desc: "Modern enterprise application framework providing dependency injection, Actuator telemetry endpoints, Spring Data repositories, and Kafka integration across all domain microservices.",
+        tags: ["Microservices", "Spring Web", "Actuator", "Auto-Configuration", "Spring Kafka"],
+        snippet: `@SpringBootApplication\n@EnableScheduling\n@EnableAsync\npublic class LedgerMutationEngineApplication {\n    public static void main(String[] args) {\n        SpringApplication.run(LedgerMutationEngineApplication.class, args);\n    }\n}`
+      },
+      {
+        id: "springgateway",
+        name: "Spring Cloud Gateway",
+        version: "2023.0.3 (SR3)",
+        category: "Backend & Microservices",
+        accent: "#6DB33F",
+        logo: "https://cdn.simpleicons.org/spring/6DB33F",
+        container: "gateway-service",
+        ports: "8080",
+        protocol: "HTTP / WebFlux Reactive Netty",
+        layer: "Tier 0: Perimeter & Security",
+        desc: "Non-blocking reactive perimeter gateway built on Project Reactor. Enforces JWT authentication, Redis rate-limiting filters (token bucket), CORS policies, and path routing to internal services.",
+        tags: ["Perimeter Routing", "Rate Limiting", "WebFlux Netty", "JWT Filter", "Edge Security"],
+        snippet: `spring:\n  cloud:\n    gateway:\n      routes:\n        - id: ledger-engine\n          uri: http://ledger-mutation-engine:8082\n          predicates:\n            - Path=/api/v1/transfers/**\n          filters:\n            - JwtAuthenticationFilter\n            - RequestRateLimiter=redis-rate-limiter`
+      },
+      {
+        id: "jwt",
+        name: "Nimbus JOSE JWT & Spring Security",
+        version: "9.37.3",
+        category: "Backend & Microservices",
+        accent: "#000000",
+        logo: "https://cdn.simpleicons.org/jsonwebtokens/000000",
+        container: "gateway-service & account-service",
+        ports: "Internal Auth",
+        protocol: "RFC 7519 / HMAC-SHA256",
+        layer: "Tier 0: Perimeter & Security",
+        desc: "Stateless security architecture implementing 15-minute access tokens, Refresh Token Rotation (RTR), sliding session families in Redis, and instant token family breach revocation.",
+        tags: ["RTR Rotation", "Token Family", "Breach Revocation", "Stateless Auth", "RBAC Claims"],
+        snippet: `// Refresh Token Rotation with Replay Attack Detection\nif ("REVOKED".equals(storedToken.getStatus())) {\n    redisTemplate.delete(tokenFamilyKey);\n    throw new SecurityBreachException("Compromised refresh token reused. All sessions terminated.");\n}`
+      },
+      {
+        id: "hibernate",
+        name: "Hibernate 6 & Spring Data JPA",
+        version: "6.5+",
+        category: "Backend & Microservices",
+        accent: "#59666C",
+        logo: "https://cdn.simpleicons.org/hibernate/59666C",
+        container: "ledger-mutation-engine, account-service",
+        ports: "Internal",
+        protocol: "JPA / JDBC",
+        layer: "Tier 1: Core Microservices",
+        desc: "Enterprise ORM managing multi-datasource database connections, optimistic and pessimistic row-level lock lifecycles, and transaction boundary rollbacks on failure.",
+        tags: ["ORM", "Row-Level Locking", "Multi-Datasource", "Entity Mapping", "Transaction Management"],
+        snippet: `@Transactional(transactionManager = "oracleTransactionManager", isolation = Isolation.READ_COMMITTED)\npublic TransferResult executeSettlement(TransferCommand cmd) {\n    // Row lock acquired within transaction\n}`
+      },
+      {
+        id: "thymeleaf",
+        name: "Thymeleaf",
+        version: "3.1+",
+        category: "Backend & Microservices",
+        accent: "#005F0F",
+        logo: "https://cdn.simpleicons.org/thymeleaf/005F0F",
+        container: "notification-service",
+        ports: "Internal",
+        protocol: "HTML5 Template Engine",
+        layer: "Tier 1: Core Microservices",
+        desc: "Modern server-side HTML email templating engine rendering branded customer 2FA OTP verification codes, transfer receipts with masked account numbers, and SHA-256 verification hashes.",
+        tags: ["Email Templating", "OTP Layouts", "Receipt Generation", "Masked Account Display"],
+        snippet: `<div class="otp-container">\n    <div class="otp-title">Customer 2FA Email Verification</div>\n    <div class="otp-code" th:text="\${verificationCode}">849201</div>\n</div>`
+      },
+      {
+        id: "hikaricp",
+        name: "HikariCP",
+        version: "5.1.0",
+        category: "Backend & Microservices",
+        accent: "#4A90E2",
+        logo: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/spring/spring-original.svg",
+        container: "All Spring Services",
+        ports: "Internal Connection Pool",
+        protocol: "JDBC Connection Pool",
+        layer: "Tier 1: Core Microservices",
+        desc: "Ultra-fast zero-overhead JDBC connection pool configured with minimum idle connections, connection timeout bounds, leak detection thresholds, and Prometheus metric exporters.",
+        tags: ["Connection Pooling", "Zero Overhead", "Leak Detection", "High Concurrency"],
+        snippet: `spring.datasource.hikari:\n  maximum-pool-size: 25\n  minimum-idle: 10\n  idle-timeout: 300000\n  connection-timeout: 20000\n  leak-detection-threshold: 2000`
+      },
+      {
+        id: "lombok",
+        name: "Project Lombok",
+        version: "1.18.34",
+        category: "Backend & Microservices",
+        accent: "#C0392B",
+        logo: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg",
+        container: "Compile Plugin",
+        ports: "Build-Time",
+        protocol: "Annotation Processor",
+        layer: "Tier 1: Core Microservices",
+        desc: "Java compile-time annotation processor eliminating verbose boilerplate code for domain getters, setters, equals/hashCode, builders, and SLF4J logging instances.",
+        tags: ["Boilerplate Reduction", "@Builder", "@Slf4j", "@RequiredArgsConstructor"],
+        snippet: `@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class TransferEvent {\n    private String transferId;\n    private BigDecimal amount;\n}`
+      },
+
+      // 5. Frontend & Web UI
+      {
+        id: "react",
+        name: "React 18",
+        version: "18.3.1",
+        category: "Frontend & Web UI",
+        accent: "#61DAFB",
+        logo: "https://cdn.simpleicons.org/react/61DAFB",
+        container: "banking-frontend",
+        ports: "3000",
+        protocol: "SPA DOM",
+        layer: "Tier 0: Presentation Layer",
+        desc: "Component-based single page application powering the interactive Customer Portal (real-time balance cards, quick preset amounts, email 2FA OTP modal) and the Admin Telemetry & Health Dashboard.",
+        tags: ["SPA", "Hooks", "2FA OTP Modal", "Customer Portal", "Admin Telemetry"],
+        snippet: `const handleVerifyOtp = async (code) => {\n  const res = await apiClient.post('/transfers/verify-otp', {\n    transfer_id: activePendingTx.id,\n    otp: code\n  });\n  // Instant optimistic settlement update\n};`
+      },
+      {
+        id: "vite",
+        name: "Vite 5",
+        version: "5.4.2",
+        category: "Frontend & Web UI",
+        accent: "#646CFF",
+        logo: "https://cdn.simpleicons.org/vite/646CFF",
+        container: "banking-frontend (Build)",
+        ports: "3000 (Dev)",
+        protocol: "ES Modules / HMR",
+        layer: "Tier 0: Presentation Layer",
+        desc: "Next-generation frontend dev server and production asset bundler providing sub-millisecond Hot Module Replacement (HMR) and Rollup-optimized code chunking.",
+        tags: ["Bundler", "HMR", "Rollup", "ES Modules", "Asset Optimizer"],
+        snippet: `export default defineConfig({\n  plugins: [react()],\n  server: {\n    port: 3000,\n    proxy: {\n      '/api': 'http://localhost:8080'\n    }\n  }\n});`
+      },
+      {
+        id: "tailwind",
+        name: "Tailwind CSS 3",
+        version: "3.4.11",
+        category: "Frontend & Web UI",
+        accent: "#06B6D4",
+        logo: "https://cdn.simpleicons.org/tailwindcss/06B6D4",
+        container: "banking-frontend",
+        ports: "CSS Engine",
+        protocol: "PostCSS Utility",
+        layer: "Tier 0: Presentation Layer",
+        desc: "Utility-first CSS framework configured with custom banking tokens, dark/light theme switching, custom glassmorphism panels, and responsive breakpoints.",
+        tags: ["Design System", "Dark Mode", "Utility CSS", "Responsive Design", "Tokens"],
+        snippet: `tailwind.config.js:\nmodule.exports = {\n  darkMode: 'class',\n  theme: {\n    extend: {\n      colors: {\n        navy: { 900: '#0b1120', 800: '#0f172a' },\n        bankcyan: '#06b6d4'\n      }\n    }\n  }\n};`
+      },
+      {
+        id: "lucide",
+        name: "Lucide React",
+        version: "0.441.0",
+        category: "Frontend & Web UI",
+        accent: "#F56565",
+        logo: "https://cdn.simpleicons.org/lucide/F56565",
+        container: "banking-frontend",
+        ports: "SVG Icons",
+        protocol: "React Components",
+        layer: "Tier 0: Presentation Layer",
+        desc: "Comprehensive pixel-perfect vector icon system used across customer transaction forms, 2FA security status chips, copy buttons, and admin telemetry panels.",
+        tags: ["Vector Icons", "SVG", "Clean UI", "Micro-Interactions"],
+        snippet: `import { ShieldCheck, Mail, ArrowRight, CheckCircle2, AlertTriangle } from 'lucide-react';`
+      },
+      {
+        id: "axios",
+        name: "Axios",
+        version: "1.7.7",
+        category: "Frontend & Web UI",
+        accent: "#5A29E4",
+        logo: "https://cdn.simpleicons.org/axios/5A29E4",
+        container: "banking-frontend",
+        ports: "HTTP Client",
+        protocol: "Promise HTTP",
+        layer: "Tier 0: Presentation Layer",
+        desc: "Feature-rich HTTP client with interceptors for automatic JWT Bearer token attachment, automatic token refresh retries on 401 Unauthorized, and graceful mock fallback drivers.",
+        tags: ["HTTP Interceptors", "Bearer Token", "Token Refresh", "Mock Fallback"],
+        snippet: `apiClient.interceptors.response.use(\n  response => response,\n  async error => {\n    if (error.response?.status === 401 && !error.config._retry) {\n      // Execute Refresh Token Rotation\n    }\n  }\n);`
+      },
+      {
+        id: "reactrouter",
+        name: "React Router DOM",
+        version: "6.26.2",
+        category: "Frontend & Web UI",
+        accent: "#CA4245",
+        logo: "https://cdn.simpleicons.org/reactrouter/CA4245",
+        container: "banking-frontend",
+        ports: "Client Routing",
+        protocol: "Browser History API",
+        layer: "Tier 0: Presentation Layer",
+        desc: "Declarative client-side routing library managing navigation across Customer Portal, Admin Telemetry, Profile settings, and role-guarded route boundaries.",
+        tags: ["Client Routing", "Protected Routes", "Role Guards", "History API"],
+        snippet: `<Routes>\n  <Route path="/" element={<CustomerPortal />} />\n  <Route path="/admin" element={<ProtectedRoute requiredRole="ADMIN"><AdminPortal /></ProtectedRoute>} />\n</Routes>`
+      },
+
+      // 6. DevOps & Infrastructure
+      {
+        id: "docker",
+        name: "Docker & Multi-Stage Builds",
+        version: "Engine 26+",
+        category: "DevOps & Infrastructure",
+        accent: "#2496ED",
+        logo: "https://cdn.simpleicons.org/docker/2496ED",
+        container: "All Services",
+        ports: "Container Engine",
+        protocol: "OCI Containers",
+        layer: "Tier 6: Infrastructure & Tooling",
+        desc: "Containerization runtime leveraging multi-stage Dockerfiles with unprivileged users, minimal Alpine/Temurin base images, and strict layer caching for rapid reproducible builds.",
+        tags: ["Containers", "Multi-Stage Dockerfiles", "Minimal Alpine", "OCI Images"],
+        snippet: `FROM maven:3.9.8-eclipse-temurin-21-alpine AS builder\nWORKDIR /app\nRUN mvn clean package -DskipTests\n\nFROM eclipse-temurin:21-jre-alpine\nWORKDIR /app\nCOPY --from=builder /app/target/*.jar app.jar\nENTRYPOINT ["java", "-jar", "app.jar"]`
+      },
+      {
+        id: "dockercompose",
+        name: "Docker Compose",
+        version: "v2.29+",
+        category: "DevOps & Infrastructure",
+        accent: "#2496ED",
+        logo: "https://cdn.simpleicons.org/docker/2496ED",
+        container: "banking-net Bridge",
+        ports: "16 Services Mesh",
+        protocol: "Compose Spec",
+        layer: "Tier 6: Infrastructure & Tooling",
+        desc: "Declarative multi-container orchestrator connecting all 16 microservices on the isolated bridge network banking-net with automated health checks and startup dependency graphs.",
+        tags: ["16 Services", "Bridge Network", "Health Checks", "Depends On", "Orchestration"],
+        snippet: `networks:\n  banking-net:\n    name: banking-net\n    driver: bridge`
+      },
+      {
+        id: "nginx",
+        name: "Nginx",
+        version: "1.27 Alpine",
+        category: "DevOps & Infrastructure",
+        accent: "#009639",
+        logo: "https://cdn.simpleicons.org/nginx/009639",
+        container: "banking-frontend",
+        ports: "80 (Host 3000)",
+        protocol: "HTTP / Static Serving",
+        layer: "Tier 0: Presentation Layer",
+        desc: "High-performance web server and reverse proxy serving compiled React production assets, handling client-side SPA routing fallbacks (try_files), and gzip compression.",
+        tags: ["Web Server", "Reverse Proxy", "SPA Fallback", "Gzip", "Alpine"],
+        snippet: `server {\n    listen 80;\n    location / {\n        root /usr/share/nginx/html;\n        index index.html;\n        try_files $uri $uri/ /index.html;\n    }\n}`
+      },
+      {
+        id: "maven",
+        name: "Apache Maven",
+        version: "3.9+ / Compiler 3.13",
+        category: "DevOps & Infrastructure",
+        accent: "#C71A36",
+        logo: "https://cdn.simpleicons.org/apachemaven/C71A36",
+        container: "Build System",
+        ports: "Build Tool",
+        protocol: "Project Object Model (POM)",
+        layer: "Tier 6: Infrastructure & Tooling",
+        desc: "Enterprise multi-module build manager enforcing dependency convergence, shared contract versions, compiler flags for Java 21, and test automation lifecycles.",
+        tags: ["Multi-Module", "Parent POM", "Dependency Convergence", "Java 21 Compiler"],
+        snippet: `<modules>\n    <module>common-contracts</module>\n    <module>notification-service</module>\n    <module>ledger-mutation-engine</module>\n    <module>account-service</module>\n    <module>gateway-service</module>\n</modules>`
+      },
+
+      // 7. Testing & Quality
+      {
+        id: "junit5",
+        name: "JUnit 5 (Jupiter)",
+        version: "5.10.3",
+        category: "Testing & Quality",
+        accent: "#25A162",
+        logo: "https://cdn.simpleicons.org/junit5/25A162",
+        container: "Test Runner",
+        ports: "Test Lifecycle",
+        protocol: "Java Testing API",
+        layer: "Tier 6: Infrastructure & Tooling",
+        desc: "Modern testing framework executing unit tests, parameterized test matrices, concurrent race condition verifications, and pessimistic locking assertions.",
+        tags: ["Unit Testing", "Parameterized Tests", "Concurrency Validation", "Assertions"],
+        snippet: `@ParameterizedTest\n@ValueSource(strings = {"50000.0000", "100000.0000"})\nvoid shouldRequireEmailOtpForTransfersAboveThreshold(String amount) {\n    // Assert transfer status transitions to PENDING_VERIFICATION\n}`
+      },
+      {
+        id: "mockito",
+        name: "Mockito",
+        version: "5.11+",
+        category: "Testing & Quality",
+        accent: "#C59B27",
+        logo: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg",
+        container: "Test Framework",
+        ports: "Test Lifecycle",
+        protocol: "Mocking Engine",
+        layer: "Tier 6: Infrastructure & Tooling",
+        desc: "Mocking framework enabling isolated testing of saga consumers, event producers, and outbox workers without spinning up external database connections.",
+        tags: ["Mocking", "Stubbing", "Verification", "Isolated Tests"],
+        snippet: `when(balanceRepository.findById(accountId)).thenReturn(Optional.of(mockBalance));\nverify(kafkaTemplate, times(1)).send(eq("banking.transfers.events"), any());`
+      },
+      {
+        id: "testcontainers",
+        name: "Testcontainers",
+        version: "1.20+",
+        category: "Testing & Quality",
+        accent: "#2A73EE",
+        logo: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/docker/docker-original.svg",
+        container: "Ephemeral Integration Containers",
+        ports: "Docker Socket",
+        protocol: "Docker API",
+        layer: "Tier 6: Infrastructure & Tooling",
+        desc: "Container-driven integration testing framework spinning up real, throwaway Docker containers for Oracle XE, PostgreSQL, and Kafka during CI/CD test runs.",
+        tags: ["Real Databases", "Ephemeral Containers", "Integration Tests", "Throwaway DB"],
+        snippet: `@Container\nstatic PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");`
+      },
+      {
+        id: "playwright",
+        name: "Playwright",
+        version: "1.46+",
+        category: "Testing & Quality",
+        accent: "#2EAD33",
+        logo: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/playwright/playwright-original.svg",
+        container: "Headless Browser Automation",
+        ports: "CDP / Browser Testing",
+        protocol: "DevTools Protocol",
+        layer: "Tier 6: Infrastructure & Tooling",
+        desc: "End-to-end browser automation framework used for headless visual regression verification, transfer scenario validation, and email 2FA OTP modal settling flows.",
+        tags: ["E2E Automation", "Visual Checks", "Multi-Tab Parallel", "Fast DOM Automation"],
+        snippet: `await page.goto('http://localhost:3000');\nawait page.fill('#transferAmount', '75000');\nawait page.click('button:has-text("Submit")');\nawait expect(page.locator('.otp-container')).toBeVisible();`
+      }
+    ];
+
+    // State
+    let currentCategory = "All";
+    let searchQuery = "";
+    let currentView = "grid";
+
+    // Category List
+    const CATEGORIES = [
+      "All",
+      "Observability & APM",
+      "Data & Caching",
+      "Streaming & Messaging",
+      "Backend & Microservices",
+      "Frontend & Web UI",
+      "DevOps & Infrastructure",
+      "Testing & Quality"
+    ];
+
+    // Initialize
+    document.addEventListener("DOMContentLoaded", () => {
+      renderCategoryPills();
+      renderAllViews();
+      setupSearch();
+      setupTheme();
+    });
+
+    function setupTheme() {
+      const btn = document.getElementById("themeToggle");
+      const icon = document.getElementById("themeIcon");
+      const text = document.getElementById("themeText");
+      
+      const saved = localStorage.getItem("banking_tech_theme");
+      if (saved === "light") {
+        document.documentElement.classList.remove("dark");
+        document.documentElement.classList.add("light");
+        icon.textContent = "🌙";
+        text.textContent = "Dark Mode";
+      }
+
+      btn.addEventListener("click", () => {
+        const isDark = document.documentElement.classList.contains("dark");
+        if (isDark) {
+          document.documentElement.classList.remove("dark");
+          document.documentElement.classList.add("light");
+          localStorage.setItem("banking_tech_theme", "light");
+          icon.textContent = "🌙";
+          text.textContent = "Dark Mode";
+        } else {
+          document.documentElement.classList.remove("light");
+          document.documentElement.classList.add("dark");
+          localStorage.setItem("banking_tech_theme", "dark");
+          icon.textContent = "☀️";
+          text.textContent = "Light Mode";
+        }
+      });
+    }
+
+    function renderCategoryPills() {
+      const container = document.getElementById("categoryPills");
+      container.innerHTML = CATEGORIES.map(cat => {
+        const count = cat === "All" 
+          ? TECH_STACK.length 
+          : TECH_STACK.filter(t => t.category === cat).length;
+        const activeClass = cat === currentCategory ? "active" : "";
+        return `
+          <button class="category-pill ${activeClass}" onclick="setCategory('${cat}')">
+            ${cat} <span class="pill-count">${count}</span>
+          </button>
+        `;
+      }).join("");
+    }
+
+    function setCategory(cat) {
+      currentCategory = cat;
+      renderCategoryPills();
+      renderAllViews();
+    }
+
+    function setupSearch() {
+      const input = document.getElementById("searchInput");
+      input.addEventListener("input", (e) => {
+        searchQuery = e.target.value.toLowerCase().trim();
+        renderAllViews();
+      });
+    }
+
+    function getFilteredItems() {
+      return TECH_STACK.filter(item => {
+        const matchCat = currentCategory === "All" || item.category === currentCategory;
+        const matchQuery = !searchQuery || 
+          item.name.toLowerCase().includes(searchQuery) ||
+          item.desc.toLowerCase().includes(searchQuery) ||
+          item.category.toLowerCase().includes(searchQuery) ||
+          item.container.toLowerCase().includes(searchQuery) ||
+          item.ports.toLowerCase().includes(searchQuery) ||
+          item.tags.some(t => t.toLowerCase().includes(searchQuery));
+        return matchCat && matchQuery;
+      });
+    }
+
+    function renderAllViews() {
+      const items = getFilteredItems();
+      const empty = document.getElementById("emptyState");
+      
+      if (items.length === 0) {
+        empty.style.display = "block";
+      } else {
+        empty.style.display = "none";
+      }
+
+      renderGrid(items);
+      renderLayers(items);
+      renderTable(items);
+    }
+
+    function renderGrid(items) {
+      const grid = document.getElementById("techGrid");
+      grid.innerHTML = items.map(tech => `
+        <div class="tech-card" style="--card-accent: ${tech.accent};" onclick="openModal('${tech.id}')">
+          <div class="tech-card-header">
+            <div class="logo-container">
+              <img class="logo-img" src="${tech.logo}" alt="${tech.name} logo" onerror="this.onerror=null; this.src='https://cdn.simpleicons.org/codeigniter';" />
+            </div>
+            <div class="tech-title-block">
+              <div class="tech-name-row">
+                <h3 class="tech-name" title="${tech.name}">${tech.name}</h3>
+                <span class="tech-version-pill">${tech.version}</span>
+              </div>
+              <div class="tech-category-pill">${tech.category}</div>
+            </div>
+          </div>
+
+          <p class="tech-desc">${tech.desc}</p>
+
+          <div class="tech-metadata-box">
+            <div class="meta-row">
+              <span class="meta-key">Container / Runtime</span>
+              <span class="meta-val" title="${tech.container}">${tech.container}</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-key">Ports &amp; Protocol</span>
+              <span class="meta-val" title="${tech.ports}">${tech.ports} • ${tech.protocol.split('/')[0]}</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-key">Layer Tier</span>
+              <span class="meta-val" style="color: ${tech.accent};">${tech.layer.split(':')[0]}</span>
+            </div>
+          </div>
+
+          <div class="tech-tags">
+            ${tech.tags.map(t => `<span class="tech-tag">${t}</span>`).join("")}
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function renderLayers(items) {
+      const container = document.getElementById("layerView");
+      const layers = [
+        "Tier 0: Presentation Layer",
+        "Tier 0: Perimeter & Security",
+        "Tier 1: Core Microservices",
+        "Tier 2: Event Streaming & Sagas",
+        "Tier 3: In-Memory & Caching",
+        "Tier 4: Relational Persistence",
+        "Tier 5: Telemetry & Tracing",
+        "Tier 6: Infrastructure & Tooling"
+      ];
+
+      container.innerHTML = layers.map((layerName, idx) => {
+        const layerItems = items.filter(t => t.layer.startsWith(layerName.split(':')[0]));
+        if (layerItems.length === 0) return "";
+
+        return `
+          <div class="arch-layer-card">
+            <div class="layer-header">
+              <div class="layer-title-group">
+                <span class="layer-number-badge">${idx}</span>
+                <div>
+                  <h3 class="layer-title">${layerName}</h3>
+                  <span class="layer-role-pill">${layerItems.length} components assigned</span>
+                </div>
+              </div>
+            </div>
+            <div class="layer-items-grid">
+              ${layerItems.map(tech => `
+                <div class="tech-card" style="--card-accent: ${tech.accent}; padding: 1.15rem;" onclick="openModal('${tech.id}')">
+                  <div class="tech-card-header" style="margin-bottom: 0;">
+                    <div class="logo-container" style="width: 42px; height: 42px; min-width: 42px; padding: 0.5rem;">
+                      <img class="logo-img" src="${tech.logo}" alt="${tech.name}" onerror="this.onerror=null; this.src='https://cdn.simpleicons.org/codeigniter';" />
+                    </div>
+                    <div class="tech-title-block">
+                      <div class="tech-name" style="font-size: 1rem;">${tech.name}</div>
+                      <div class="tech-version-pill" style="margin-top: 0.2rem;">${tech.container} • ${tech.ports}</div>
+                    </div>
+                  </div>
+                </div>
+              `).join("")}
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderTable(items) {
+      const tbody = document.getElementById("tableBody");
+      tbody.innerHTML = items.map(tech => `
+        <tr onclick="openModal('${tech.id}')" style="cursor: pointer;">
+          <td>
+            <div class="table-tech-cell">
+              <img class="table-tech-logo" src="${tech.logo}" alt="${tech.name}" onerror="this.onerror=null; this.src='https://cdn.simpleicons.org/codeigniter';" />
+              <span>${tech.name}</span>
+            </div>
+          </td>
+          <td><span class="tech-category-pill" style="color: ${tech.accent};">${tech.category}</span></td>
+          <td class="font-mono" style="font-size: 0.8rem;">${tech.container}</td>
+          <td class="font-mono" style="font-size: 0.8rem;">${tech.ports} (${tech.protocol})</td>
+          <td><span class="tech-version-pill">${tech.version}</span></td>
+          <td style="color: var(--text-muted); font-size: 0.825rem; max-width: 380px;">${tech.desc}</td>
+        </tr>
+      `).join("");
+    }
+
+    function switchView(mode) {
+      currentView = mode;
+      document.getElementById("viewGridBtn").classList.toggle("active", mode === "grid");
+      document.getElementById("viewLayersBtn").classList.toggle("active", mode === "layers");
+      document.getElementById("viewTableBtn").classList.toggle("active", mode === "table");
+
+      document.getElementById("techGrid").style.display = mode === "grid" ? "grid" : "none";
+      document.getElementById("layerView").style.display = mode === "layers" ? "flex" : "none";
+      document.getElementById("tableView").style.display = mode === "table" ? "block" : "none";
+    }
+
+    function openModal(id) {
+      const item = TECH_STACK.find(t => t.id === id);
+      if (!item) return;
+
+      document.getElementById("modalLogo").src = item.logo;
+      document.getElementById("modalTitle").textContent = item.name;
+      document.getElementById("modalVersion").textContent = `v${item.version} • ${item.layer}`;
+      document.getElementById("modalCategory").textContent = item.category;
+      document.getElementById("modalCategory").style.color = item.accent;
+      document.getElementById("modalDesc").textContent = item.desc;
+
+      document.getElementById("modalSpecs").innerHTML = `
+        <div class="meta-row">
+          <span class="meta-key">Container Runtime:</span>
+          <span class="meta-val">${item.container}</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-key">Listening Ports:</span>
+          <span class="meta-val">${item.ports}</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-key">Communication Protocol:</span>
+          <span class="meta-val">${item.protocol}</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-key">Architectural Tier:</span>
+          <span class="meta-val">${item.layer}</span>
+        </div>
+      `;
+
+      document.getElementById("modalSnippet").textContent = item.snippet;
+
+      document.getElementById("techModal").classList.add("open");
+    }
+
+    function closeModal(event) {
+      if (event.target.id === "techModal") {
+        document.getElementById("techModal").classList.remove("open");
+      }
+    }
+
+    function closeModalDirect() {
+      document.getElementById("techModal").classList.remove("open");
+    }
+
+    // Keyboard ESC listener
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        closeModalDirect();
+      }
+    });
+  </script>
+</body>
+</html>

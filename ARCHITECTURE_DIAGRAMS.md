@@ -70,9 +70,8 @@ flowchart TD
         KafkaUI["kafka-ui<br/>Kafka Web Console<br/>Host: :8085 | Container: :8080"]
     end
 
-    subgraph ObservabilityTier["Telemetry & Monitoring Tier"]
-        Prometheus["prometheus<br/>Prometheus v2.45<br/>Host: :9090 | Container: :9090"]
-        Grafana["grafana<br/>Grafana v10<br/>Host: :3001 | Container: :3000"]
+    subgraph ObservabilityTier["Telemetry & Observability Tier"]
+        Datadog["dd-agent<br/>Datadog Agent 7<br/>Host: :8126 (APM) | :8125 (StatsD)"]
     end
 
     ClientSPA -->|"HTTPS / REST<br/>Bearer JWT"| Gateway
@@ -94,12 +93,10 @@ flowchart TD
 
     KafkaUI -->|"Topic & partition monitoring"| Kafka
 
-    Prometheus -->|"Scrape /actuator/prometheus (5s)"| AccountSvc
-    Prometheus -->|"Scrape /actuator/prometheus (5s)"| LedgerEngine
-    Prometheus -->|"Scrape /actuator/prometheus (5s)"| Gateway
-    Prometheus -->|"Scrape /actuator/prometheus (5s)"| NotifSvc
-
-    Grafana -->|"Query time-series metrics"| Prometheus
+    AccountSvc -->|"APM traces & DogStatsD metrics"| Datadog
+    LedgerEngine -->|"APM traces & DogStatsD metrics"| Datadog
+    Gateway -->|"APM traces & DogStatsD metrics"| Datadog
+    NotifSvc -->|"APM traces & DogStatsD metrics"| Datadog
 ```
 
 ---
@@ -400,5 +397,6 @@ sequenceDiagram
 | `postgres-audit-vault` | `5432` | `5432` | PostgreSQL | Internal | Append-only immutable regulatory audit vault |
 | `kafka-broker` | `9092` | `9092` | PLAINTEXT | Internal | Event streaming commit log (KRaft mode) |
 | `kafka-ui` | `8085` | `8080` | HTTP / Web | Host Browser | Kafka partition, message, and consumer management |
-| `prometheus` | `9090` | `9090` | HTTP / REST | Host Browser | Time-series metrics collection from `/actuator/prometheus` |
-| `grafana` | `3001` | `3000` | HTTP / Web | Host Browser | Observability dashboards for TPS, latency, and JVM health |
+| `dd-agent` | `8126` / `8125` | `8126` / `8125` | APM / StatsD | Host / Internal | Enterprise Observability: APM traces, DogStatsD metrics, container logs |
+| `jaeger-tracing` | `16686` / `4317` | `16686` / `4317` | HTTP / gRPC | Host Browser | OpenTelemetry distributed trace visualizer (:16686) & OTLP receiver |
+

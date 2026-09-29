@@ -185,6 +185,14 @@ public class EmailNotificationServiceImpl implements EmailNotificationService {
         String transferId = event.getTransferId();
         String makerId = event.getMakerUserId() != null ? event.getMakerUserId() : (event.getUserId() != null ? event.getUserId() : "USR-CUSTOMER");
 
+        String code = "849201";
+        if (event.getDescription() != null) {
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\[\\s*(\\d{6})\\s*\\]").matcher(event.getDescription());
+            if (m.find()) {
+                code = m.group(1);
+            }
+        }
+
         Context context = new Context();
         context.setVariable("transferId", transferId);
         context.setVariable("makerUserId", makerId);
@@ -192,28 +200,72 @@ public class EmailNotificationServiceImpl implements EmailNotificationService {
         context.setVariable("formattedDate", receiptGenerator.formatTimestamp(event.getTimestamp()));
         context.setVariable("sourceAccount", event.getSourceAccount());
         context.setVariable("destinationAccount", event.getDestinationAccount());
+        context.setVariable("verificationCode", code);
+        context.setVariable("isOtp", true);
 
-        context.setVariable("alertHeader", "DUAL CONTROL HOLD: Maker-Checker Review");
-        context.setVariable("tierSubtitle", "BSP MORB Internal Controls (₱50,000.01 – ₱499,999.99)");
-        context.setVariable("tierBadge", "TIER 2: DUAL CONTROL REQUIRED");
-        context.setVariable("thresholdNotice", "AMOUNT EXCEEDS RETAIL LIMIT (₱50,000.01 – ₱499,999.99)");
-        context.setVariable("regulatoryTier", "Tier 2: Dual Control (Maker-Checker)");
-        context.setVariable("requiredRoles", "Maker: Customer | Checker: Bank Operations Manager (Level 1)");
+        context.setVariable("alertHeader", "CUSTOMER SECURITY VERIFICATION: 2FA OTP REQUIRED");
+        context.setVariable("tierSubtitle", "Aura Bank High-Value Transfer Protection (Amount > ₱50,000.00)");
+        context.setVariable("tierBadge", "CUSTOMER OTP VERIFICATION REQUIRED");
+        context.setVariable("thresholdNotice", "TRANSACTION AMOUNT (REQUIRING VERIFICATION)");
+        context.setVariable("regulatoryTier", "Tier 2: Customer Email Verification");
+        context.setVariable("requiredRoles", "Customer 2FA Verification");
         context.setVariable("amlaStatus", "Exempt (Below PHP 500,000.00 Threshold)");
         context.setVariable("workflowInstruction",
-                "Customer initiated transfer online; transaction is held in PENDING_APPROVAL. A Bank Manager must review and authorize in the Manager Console before release.");
+                "Customer initiated transfer exceeding ₱50,000.00 threshold. In accordance with updated guidelines, dual-control maker-checker has been superseded by direct Customer Email 2FA Verification via MailHog. Enter the OTP code above in your portal to settle.");
 
         String htmlContent = templateEngine.process("email/maker-checker-alert.html", context);
-        String subject = String.format("SECURITY VERIFICATION: Transfer %s OTP Code: [849201] [%s]",
-                receiptGenerator.formatCurrencyPhp(event.getAmount()), transferId);
+        String subject = String.format("Aura Bank: %s is your verification code for transfer [%s]",
+                code, transferId);
 
-        boolean dispatched = dispatchEmail(complianceEmail, subject, htmlContent, transferId);
+        String targetRecipient = event.getRecipientEmail() != null && !event.getRecipientEmail().isBlank()
+                ? event.getRecipientEmail()
+                : "juan.dc@email.com";
+
+        boolean dispatched = dispatchEmail(targetRecipient, subject, htmlContent, transferId);
 
         persistNotificationRecord(
                 makerId,
                 "MAKER_CHECKER_ALERT",
-                String.format("Tier 2 transfer %s for %s held for Manager Maker-Checker authorization.",
-                        transferId, receiptGenerator.formatCurrencyPhp(event.getAmount()))
+                String.format("Tier 2 transfer %s for %s OTP verification sent to %s.",
+                        transferId, receiptGenerator.formatCurrencyPhp(event.getAmount()), targetRecipient)
+        );
+
+        return dispatched;
+    }
+
+    @Override
+    public boolean sendOtpVerification(String transferId, String recipientEmail, java.math.BigDecimal amount,
+                                       String verificationCode, String sourceAccount, String destinationAccount,
+                                       String recipientName) {
+        String targetRecipient = recipientEmail != null && !recipientEmail.isBlank()
+                ? recipientEmail
+                : "juan.dc@email.com";
+        String code = verificationCode != null && !verificationCode.isBlank()
+                ? verificationCode
+                : "849201";
+
+        Context context = new Context();
+        context.setVariable("transferId", transferId);
+        context.setVariable("recipientEmail", targetRecipient);
+        context.setVariable("formattedAmount", receiptGenerator.formatCurrencyPhp(amount != null ? amount : java.math.BigDecimal.ZERO));
+        context.setVariable("formattedDate", receiptGenerator.formatTimestamp(Instant.now()));
+        context.setVariable("sourceAccount", sourceAccount);
+        context.setVariable("destinationAccount", destinationAccount);
+        context.setVariable("recipientName", recipientName);
+        context.setVariable("verificationCode", code);
+        context.setVariable("isOtp", true);
+
+        String htmlContent = templateEngine.process("email/maker-checker-alert.html", context);
+        String subject = String.format("Aura Bank: %s is your verification code for transfer [%s]",
+                code, transferId);
+
+        boolean dispatched = dispatchEmail(targetRecipient, subject, htmlContent, transferId + "-OTP");
+
+        persistNotificationRecord(
+                "U1001",
+                "SECURITY_OTP",
+                String.format("Security verification OTP %s dispatched for transfer %s (%s) to %s",
+                        code, transferId, receiptGenerator.formatCurrencyPhp(amount != null ? amount : java.math.BigDecimal.ZERO), targetRecipient)
         );
 
         return dispatched;

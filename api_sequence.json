@@ -30,7 +30,7 @@
     ]
   },
   "participants": [
-    { "id": "client", "type": "external", "label": "Client SPA", "sublabel": "Customer / Teller" },
+    { "id": "client", "type": "external", "label": "Client SPA", "sublabel": "Customer Portal" },
     { "id": "gateway", "type": "security", "label": "API Gateway", "sublabel": "Spring Cloud :8080" },
     { "id": "redis", "type": "database", "label": "Redis Cache", "sublabel": "Token & Idempotency" },
     { "id": "core", "type": "backend", "label": "Core Engine", "sublabel": "Ledger Service" },
@@ -60,7 +60,7 @@
     { "id": "publish-event", "from": "core", "to": "kafka", "y": 605, "label": "publish TransferExecuted", "variant": "dashed" },
     { "id": "audit-stream", "from": "kafka", "to": "postgres", "y": 660, "label": "audit worker: INSERT audit", "variant": "dashed" },
     { "id": "audit-offset", "from": "postgres", "to": "kafka", "y": 695, "label": "commit audit offset", "variant": "return" },
-    { "id": "push-notification", "from": "kafka", "to": "client", "y": 725, "label": "push SMS & receipt alert", "variant": "dashed" }
+    { "id": "push-notification", "from": "kafka", "to": "client", "y": 725, "label": "push email advice & receipt", "variant": "dashed" }
   ],
   "activations": [
     { "participant": "gateway", "from": 170, "to": 275, "type": "security" },
@@ -99,7 +99,7 @@
       "items": [
         "PostgreSQL audit consumer reads event stream and inserts immutable journal records",
         "Audit consumer lag or database maintenance never impedes balance settlement",
-        "Notification service delivers real-time SMS receipts to customer devices"
+        "Notification service delivers real-time email advices and receipts to customer inboxes"
       ]
     }
   ]

@@ -13,6 +13,12 @@
         "note": "Decouples transfer ingestion from execution via Transactional Outbox and Kafka command partitions."
       },
       {
+        "id": "email-otp-verification",
+        "label": "Email 2FA OTP verification (> 50k PHP)",
+        "focus": ["client", "gateway", "tx_engine", "broker", "notif_svc", "mailhog"],
+        "note": "Transfers exceeding 50k PHP trigger soft hold; 6-digit OTP dispatched to customer email via MailHog for self-service verification."
+      },
+      {
         "id": "perimeter-auth",
         "label": "Perimeter security & caching",
         "focus": ["client", "gateway", "auth_cache", "acc_svc"],
@@ -21,8 +27,8 @@
       {
         "id": "audit-and-alert",
         "label": "Asynchronous audit & alerts",
-        "focus": ["broker", "audit_db", "notif_svc"],
-        "note": "Kafka event fan-out streaming immutable audit entries to PostgreSQL and receipts to notifications."
+        "focus": ["broker", "audit_db", "notif_svc", "mailhog"],
+        "note": "Kafka event fan-out streaming immutable audit entries to PostgreSQL and receipts to notifications and MailHog."
       }
     ]
   },
@@ -34,7 +40,8 @@
       "sublabel": "React + Vite :3000",
       "brand": "react",
       "pos": [50, 280],
-      "size": [150, 64]
+      "size": [150, 64],
+      "tag": "Customer & Admin"
     },
     {
       "id": "gateway",
@@ -50,10 +57,11 @@
       "id": "auth_cache",
       "type": "database",
       "label": "Redis Cache",
-      "sublabel": "Tokens & Locks :6379",
+      "sublabel": "Tokens & 2FA OTP :6379",
       "brand": "redis",
       "pos": [300, 100],
-      "size": [150, 64]
+      "size": [150, 64],
+      "tag": "5-Min OTP TTL"
     },
     {
       "id": "acc_svc",
@@ -101,7 +109,7 @@
       "brand": "apache-kafka",
       "pos": [560, 460],
       "size": [160, 64],
-      "tag": "Ordered Topics"
+      "tag": "customer.otp stream"
     },
     {
       "id": "notif_svc",
@@ -110,13 +118,23 @@
       "sublabel": "Spring Boot :8083",
       "brand": "spring",
       "pos": [300, 460],
-      "size": [150, 64]
+      "size": [150, 64],
+      "tag": "Email 2FA & Advices"
+    },
+    {
+      "id": "mailhog",
+      "type": "cloud",
+      "label": "MailHog Mock SMTP",
+      "sublabel": "UI :8025 | SMTP :1025",
+      "pos": [50, 460],
+      "size": [150, 64],
+      "tag": "Customer OTP Inbox"
     },
     {
       "id": "telemetry",
       "type": "cloud",
-      "label": "Observability Stack",
-      "sublabel": "Prom :9090 | Graf :3001",
+      "label": "Datadog Agent",
+      "sublabel": "APM :8126 | StatsD :8125",
       "pos": [830, 100],
       "size": [160, 64]
     }
@@ -134,6 +152,7 @@
         "audit_db",
         "broker",
         "notif_svc",
+        "mailhog",
         "telemetry"
       ]
     },
@@ -222,8 +241,17 @@
       "id": "broker-to-notif",
       "from": "broker",
       "to": "notif_svc",
-      "label": "alert events",
+      "label": "customer.otp",
       "variant": "dashed",
+      "fromSide": "left",
+      "toSide": "right"
+    },
+    {
+      "id": "notif-to-mailhog",
+      "from": "notif_svc",
+      "to": "mailhog",
+      "label": "dispatch OTP",
+      "variant": "security",
       "fromSide": "left",
       "toSide": "right"
     },
@@ -241,9 +269,9 @@
       "dot": "cyan",
       "title": "Perimeter & Client Ports",
       "items": [
-        "React SPA running on port 3000 with role-specific customer, teller, and admin portals",
+        "React SPA running on port 3000 with Customer (email 2FA OTP modal) and Admin telemetry portals",
         "Spring Cloud Gateway on port 8080 handling stateless JWT verification and rate limiting",
-        "Redis on port 6379 for token rotation families, blacklist, and idempotency locks"
+        "Redis on port 6379 for token rotation, blacklist, and 2FA OTP cache (5-minute TTL)"
       ]
     },
     {
@@ -251,17 +279,17 @@
       "title": "Backend Microservice Ports",
       "items": [
         "Account Service running on port 8081 (KYC, provisioning, user lifecycle)",
-        "Core Mutation Engine on port 8082 executing pessimistic row locks and outbox events",
-        "Notification Service on port 8083 consuming Kafka transaction event topics"
+        "Core Mutation Engine on port 8082 executing pessimistic locks, 50k soft hold, and outbox events",
+        "Notification Service on port 8083 consuming Kafka transaction event and customer OTP topics"
       ]
     },
     {
       "dot": "rose",
-      "title": "Storage & Event Streaming Ports",
+      "title": "Storage, Mail & Event Streaming",
       "items": [
+        "MailHog Mock SMTP on :8025 (Web UI) and :1025 (SMTP) for OTP and receipt delivery",
         "Oracle XE 21c on port 1521 holding mutable account balance master records and outbox log",
-        "PostgreSQL 15+ on port 5432 storing immutable ledger_mutation_audit projection",
-        "Apache Kafka KRaft on port 9092 with Kafka UI on :8085, Prometheus on :9090, Grafana on :3001"
+        "PostgreSQL 16 on port 5432 storing immutable ledger_mutation_audit projection"
       ]
     }
   ]

@@ -13,17 +13,17 @@ import {
   CheckCircle2, 
   AlertCircle, 
   Clock,
-  Sparkles,
   Smartphone,
   Eye,
   EyeOff,
-  CreditCard,
   Landmark,
   Wallet
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { cn } from '../ui';
+import Button from '../ui/Button';
 
-export default function CustomerProfile({ showToast, activeAccountId = '1000-2000-3001', onSwitchAccount }) {
+export default function CustomerProfile({ showToast, activeAccountId = '1000-2000-3001' }) {
   const { user, updateUserProfile, isLoading } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -92,26 +92,42 @@ export default function CustomerProfile({ showToast, activeAccountId = '1000-200
   };
 
   const handleSave = async (e) => {
-    e?.preventDefault();
+    e.preventDefault();
+    setErrorMsg('');
+    setSuccessMsg('');
+
     if (!formData.first_name.trim() || !formData.last_name.trim()) {
-      setErrorMsg('Please enter your legal first and last name.');
+      setErrorMsg('First name and last name are required.');
       return;
     }
-    if (!formData.email.trim()) {
-      setErrorMsg('Please enter your valid email address for banking alerts.');
+    if (!formData.email.trim() || !formData.email.includes('@')) {
+      setErrorMsg('A valid email address is required.');
       return;
     }
     if (!formData.phone_number.trim()) {
-      setErrorMsg('Please enter your mobile phone number for OTP verification.');
+      setErrorMsg('Phone number is required.');
       return;
     }
 
+    if (showPasswordChange && formData.new_password) {
+      if (formData.new_password.length < 8) {
+        setErrorMsg('Password must be at least 8 characters long.');
+        return;
+      }
+    }
+
+    if (showPinChange && formData.new_pin) {
+      if (!/^\d{6}$/.test(formData.new_pin)) {
+        setErrorMsg('Transaction PIN must be exactly 6 numeric digits.');
+        return;
+      }
+    }
+
     setIsSaving(true);
-    setErrorMsg('');
     try {
       const payload = {
         first_name: formData.first_name.trim(),
-        middle_name: formData.middle_name ? formData.middle_name.trim() : null,
+        middle_name: formData.middle_name.trim(),
         last_name: formData.last_name.trim(),
         email: formData.email.trim(),
         phone_number: formData.phone_number.trim(),
@@ -119,30 +135,32 @@ export default function CustomerProfile({ showToast, activeAccountId = '1000-200
         government_id: formData.government_id.trim(),
       };
 
-      if (formData.new_password) {
-        payload.new_password = formData.new_password;
+      if (showPasswordChange && formData.new_password) {
+        payload.password = formData.new_password;
       }
-      if (formData.new_pin) {
-        payload.new_pin = formData.new_pin;
+      if (showPinChange && formData.new_pin) {
+        payload.pin = formData.new_pin;
       }
 
-      const res = await updateUserProfile(payload);
-      if (res?.success) {
-        setIsEditing(false);
-        setShowPasswordChange(false);
-        setShowPinChange(false);
-        setSuccessMsg('Your profile information was updated successfully.');
-        setTimeout(() => setSuccessMsg(''), 5000);
-        showToast?.({
-          type: 'success',
-          title: 'Profile Updated',
-          detail: 'Your personal details have been securely updated in your banking account.',
-        });
-      } else {
-        setErrorMsg(res?.error || 'Unable to save profile changes. Please try again.');
-      }
-    } catch (_) {
-      setErrorMsg('Network error while saving profile. Please check your connection.');
+      await updateUserProfile(payload);
+      setIsEditing(false);
+      setShowPasswordChange(false);
+      setShowPinChange(false);
+      setFormData((prev) => ({ ...prev, new_password: '', new_pin: '' }));
+      setSuccessMsg('KYC records and profile particulars updated successfully.');
+      showToast?.({
+        type: 'success',
+        title: 'Profile Updated',
+        detail: 'Your legal particulars and contact info were persisted to the ledger.',
+      });
+    } catch (err) {
+      const detail = err.response?.data?.detail || err.response?.data?.message || err.message;
+      setErrorMsg(detail || 'Failed to update profile. Please verify your inputs.');
+      showToast?.({
+        type: 'error',
+        title: 'Update Failed',
+        detail: detail || 'Could not save profile changes.',
+      });
     } finally {
       setIsSaving(false);
     }
@@ -158,90 +176,73 @@ export default function CustomerProfile({ showToast, activeAccountId = '1000-200
     }
   };
 
-  const formatFriendlyDateTime = (dateString) => {
-    if (!dateString) return 'Recently';
-    try {
-      const d = new Date(dateString);
-      return d.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric', 
-        year: 'numeric', 
-        hour: 'numeric', 
-        minute: '2-digit', 
-        hour12: true 
-      });
-    } catch (_) {
-      return dateString;
-    }
-  };
-
   return (
-    <div className="max-w-4xl mx-auto space-y-5 animate-in fade-in duration-200">
+    <div className="max-w-4xl mx-auto space-y-5 animate-enter">
       {/* 1. Header Banner */}
-      <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="p-5 bg-surface border border-line card-highlight flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-base font-extrabold text-slate-900 tracking-tight">
-              Personal KYC &amp; Account Security
+            <h2 className="text-base font-semibold text-fg tracking-tight">
+              Customer Identity &amp; Account Security
             </h2>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-cyan-50 text-cyan-800 border border-cyan-200 flex items-center gap-1 font-mono">
-              <ShieldCheck className="w-3 h-3 text-cyan-600" />
+            <span className="px-2 py-0.5 text-2xs font-mono font-medium bg-settled-50 text-settled-700 dark:bg-settled-900/40 dark:text-settled-400 border border-settled-200 dark:border-settled-800 flex items-center gap-1">
+              <ShieldCheck className="w-3 h-3 text-settled-600" />
               ID: {user?.user_id || 'U1001'} &bull; Verified
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Registered customer account &bull; Member since {formatFriendlyDate(user?.created_at || '2024-01-10')}
+          <p className="text-xs text-fg-muted mt-1">
+            Verified primary retail account &bull; Registered since {formatFriendlyDate(user?.created_at || '2024-01-10')}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           {!isEditing ? (
-            <button
-              type="button"
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={Edit3}
               onClick={() => setIsEditing(true)}
-              className="px-4 py-2 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-700 text-white shadow-sm transition-all flex items-center gap-2 cursor-pointer"
             >
-              <Edit3 className="w-3.5 h-3.5" />
-              <span>Edit Details</span>
-            </button>
+              Edit Details
+            </Button>
           ) : (
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={X}
               onClick={handleCancel}
               disabled={isSaving}
-              className="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all flex items-center gap-2 cursor-pointer"
             >
-              <X className="w-3.5 h-3.5" />
-              <span>Cancel</span>
-            </button>
+              Cancel
+            </Button>
           )}
         </div>
       </div>
 
       {/* Feedback Banners */}
       {errorMsg && (
-        <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2">
-          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
+        <div className="p-3 bg-voided-50 dark:bg-voided-900/30 border border-voided-200 dark:border-voided-800 text-voided-700 dark:text-voided-400 text-xs flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
           <span>{errorMsg}</span>
         </div>
       )}
       {successMsg && (
-        <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-start gap-2">
-          <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-600" />
+        <div className="p-3 bg-settled-50 dark:bg-settled-900/30 border border-settled-200 dark:border-settled-800 text-settled-700 dark:text-settled-400 text-xs flex items-start gap-2">
+          <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
           <span>{successMsg}</span>
         </div>
       )}
 
       <form onSubmit={handleSave} className="space-y-5">
         {/* 2. Personal Information */}
-        <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-              <User className="w-4 h-4 text-cyan-600" />
+        <div className="p-5 bg-surface border border-line card-highlight space-y-4">
+          <div className="flex items-center justify-between border-b border-line pb-3">
+            <h3 className="text-xs font-semibold text-fg uppercase tracking-wider flex items-center gap-2">
+              <User className="w-4 h-4 text-accent" />
               Legal Identity Particulars
             </h3>
             {isEditing && (
-              <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+              <span className="text-2xs font-medium text-held-700 dark:text-held-400 bg-held-50 dark:bg-held-900/30 px-2 py-0.5 border border-held-200 dark:border-held-800">
                 Editing Mode
               </span>
             )}
@@ -249,27 +250,27 @@ export default function CustomerProfile({ showToast, activeAccountId = '1000-200
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                First Name {isEditing && <span className="text-rose-500">*</span>}
+              <label className="block text-xs font-medium text-fg mb-1.5">
+                First Name {isEditing && <span className="text-voided-600">*</span>}
               </label>
               {isEditing ? (
                 <input
                   type="text"
                   value={formData.first_name}
                   onChange={(e) => handleInputChange('first_name', e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-cyan-600 focus:bg-white"
+                  className="w-full bg-surface border border-line px-3 py-2 text-xs text-fg focus:outline-none focus:border-accent"
                   placeholder="First Name"
                   required
                 />
               ) : (
-                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900">
+                <div className="p-2.5 bg-sunken border border-line text-xs font-medium text-fg">
                   {user?.first_name || '—'}
                 </div>
               )}
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              <label className="block text-xs font-medium text-fg mb-1.5">
                 Middle Name
               </label>
               {isEditing ? (
@@ -277,39 +278,40 @@ export default function CustomerProfile({ showToast, activeAccountId = '1000-200
                   type="text"
                   value={formData.middle_name}
                   onChange={(e) => handleInputChange('middle_name', e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-cyan-600 focus:bg-white"
+                  className="w-full bg-surface border border-line px-3 py-2 text-xs text-fg focus:outline-none focus:border-accent"
                   placeholder="Middle Name"
                 />
               ) : (
-                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900">
+                <div className="p-2.5 bg-sunken border border-line text-xs font-medium text-fg">
                   {user?.middle_name || '—'}
                 </div>
               )}
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                Last Name {isEditing && <span className="text-rose-500">*</span>}
+              <label className="block text-xs font-medium text-fg mb-1.5">
+                Last Name {isEditing && <span className="text-voided-600">*</span>}
               </label>
               {isEditing ? (
                 <input
                   type="text"
                   value={formData.last_name}
                   onChange={(e) => handleInputChange('last_name', e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-cyan-600 focus:bg-white"
+                  className="w-full bg-surface border border-line px-3 py-2 text-xs text-fg focus:outline-none focus:border-accent"
                   placeholder="Last Name"
                   required
                 />
               ) : (
-                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900">
+                <div className="p-2.5 bg-sunken border border-line text-xs font-medium text-fg">
                   {user?.last_name || '—'}
                 </div>
               )}
             </div>
+          </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+              <label className="block text-xs font-medium text-fg mb-1.5">
                 Date of Birth
               </label>
               {isEditing ? (
@@ -317,122 +319,109 @@ export default function CustomerProfile({ showToast, activeAccountId = '1000-200
                   type="date"
                   value={formData.dob}
                   onChange={(e) => handleInputChange('dob', e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-cyan-600 focus:bg-white"
+                  className="w-full bg-surface border border-line px-3 py-2 text-xs text-fg focus:outline-none focus:border-accent"
                 />
               ) : (
-                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800">
-                  {formatFriendlyDate(user?.dob)}
+                <div className="p-2.5 bg-sunken border border-line text-xs font-medium text-fg flex items-center gap-2">
+                  <Calendar className="w-3.5 h-3.5 text-fg-subtle" />
+                  <span>{formatFriendlyDate(user?.dob || '1990-05-14')}</span>
                 </div>
               )}
             </div>
 
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                Government Issued ID
+            <div>
+              <label className="block text-xs font-medium text-fg mb-1.5">
+                Government Identity Reference
               </label>
               {isEditing ? (
                 <input
                   type="text"
                   value={formData.government_id}
                   onChange={(e) => handleInputChange('government_id', e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-cyan-600 focus:bg-white font-mono"
-                  placeholder="e.g. PSA-1234-5678, UMID, Passport"
+                  className="w-full bg-surface border border-line px-3 py-2 text-xs text-fg focus:outline-none focus:border-accent font-mono"
+                  placeholder="e.g. PSA-1234-5678"
                 />
               ) : (
-                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-center justify-between">
-                  <span className="font-mono text-slate-900 font-bold">
-                    {user?.government_id || 'PSA-1234-5678'}
-                  </span>
-                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                    Verified ID
-                  </span>
+                <div className="p-2.5 bg-sunken border border-line text-xs font-mono font-medium text-fg">
+                  {user?.government_id || 'PSA-1234-5678'}
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        {/* 3. Contact Information */}
-        <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-4">
-          <div className="border-b border-slate-100 pb-3">
-            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-              <Mail className="w-4 h-4 text-cyan-600" />
-              Contact Information &amp; OTP Channels
+        {/* 3. Contact & Communication */}
+        <div className="p-5 bg-surface border border-line card-highlight space-y-4">
+          <div className="flex items-center justify-between border-b border-line pb-3">
+            <h3 className="text-xs font-semibold text-fg uppercase tracking-wider flex items-center gap-2">
+              <Mail className="w-4 h-4 text-accent" />
+              Verified Contact Channels
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Channels where transaction receipts and OTP authorization codes are delivered.
-            </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5 text-slate-400" />
-                Email Address {isEditing && <span className="text-rose-500">*</span>}
+              <label className="block text-xs font-medium text-fg mb-1.5">
+                Email Address {isEditing && <span className="text-voided-600">*</span>}
               </label>
               {isEditing ? (
                 <input
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-cyan-600 focus:bg-white"
-                  placeholder="your.email@address.com"
+                  className="w-full bg-surface border border-line px-3 py-2 text-xs text-fg focus:outline-none focus:border-accent font-mono"
+                  placeholder="juan.dc@email.com"
                   required
                 />
               ) : (
-                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-cyan-800">
-                  {user?.email || 'juan.dc@email.com'}
+                <div className="p-2.5 bg-sunken border border-line text-xs font-mono font-medium text-fg flex items-center gap-2">
+                  <Mail className="w-3.5 h-3.5 text-fg-subtle" />
+                  <span>{user?.email || 'juan.dc@email.com'}</span>
                 </div>
               )}
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
-                <Phone className="w-3.5 h-3.5 text-slate-400" />
-                Mobile Phone Number {isEditing && <span className="text-rose-500">*</span>}
+              <label className="block text-xs font-medium text-fg mb-1.5">
+                Mobile Number {isEditing && <span className="text-voided-600">*</span>}
               </label>
               {isEditing ? (
                 <input
-                  type="text"
+                  type="tel"
                   value={formData.phone_number}
                   onChange={(e) => handleInputChange('phone_number', e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-cyan-600 focus:bg-white font-mono"
-                  placeholder="09XXXXXXXXX"
+                  className="w-full bg-surface border border-line px-3 py-2 text-xs text-fg focus:outline-none focus:border-accent font-mono"
+                  placeholder="09171234567"
                   required
                 />
               ) : (
-                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-900">
-                  {user?.phone_number || '09171234567'}
+                <div className="p-2.5 bg-sunken border border-line text-xs font-mono font-medium text-fg flex items-center gap-2">
+                  <Smartphone className="w-3.5 h-3.5 text-fg-subtle" />
+                  <span>{user?.phone_number || '09171234567'}</span>
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        {/* 4. Credentials & PIN */}
-        <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-4">
-          <div className="border-b border-slate-100 pb-3">
-            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-              <Lock className="w-4 h-4 text-cyan-600" />
-              Credentials &amp; Security PIN
+        {/* 4. Security Credentials & Authorization PIN */}
+        <div className="p-5 bg-surface border border-line card-highlight space-y-4">
+          <div className="flex items-center justify-between border-b border-line pb-3">
+            <h3 className="text-xs font-semibold text-fg uppercase tracking-wider flex items-center gap-2">
+              <Lock className="w-4 h-4 text-accent" />
+              Security Credentials &amp; Transaction PIN
             </h3>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                  <KeyRound className="w-3.5 h-3.5 text-cyan-600" /> Sign-in Password
-                </span>
+            <div className="p-3.5 bg-sunken border border-line space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-medium text-fg">Account Password</span>
                 {!showPasswordChange ? (
                   <button
                     type="button"
-                    onClick={() => {
-                      setIsEditing(true);
-                      setShowPasswordChange(true);
-                    }}
-                    className="text-xs text-cyan-700 hover:underline font-bold cursor-pointer"
+                    onClick={() => setShowPasswordChange(true)}
+                    className="text-xs text-accent hover:underline font-medium cursor-pointer"
                   >
                     Change
                   </button>
@@ -443,40 +432,44 @@ export default function CustomerProfile({ showToast, activeAccountId = '1000-200
                       setShowPasswordChange(false);
                       setFormData((p) => ({ ...p, new_password: '' }));
                     }}
-                    className="text-xs text-slate-500 cursor-pointer"
+                    className="text-xs text-fg-muted cursor-pointer"
                   >
                     Cancel
                   </button>
                 )}
               </div>
               {!showPasswordChange ? (
-                <div className="text-xs font-mono text-slate-400 tracking-widest">
+                <div className="text-xs font-mono text-fg-subtle tracking-widest">
                   &bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;
                 </div>
               ) : (
-                <input
-                  type="password"
-                  value={formData.new_password}
-                  onChange={(e) => handleInputChange('new_password', e.target.value)}
-                  placeholder="Enter new password"
-                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-cyan-600"
-                />
+                <div className="relative">
+                  <input
+                    type={showNewPassword ? 'text' : 'password'}
+                    value={formData.new_password}
+                    onChange={(e) => handleInputChange('new_password', e.target.value)}
+                    placeholder="New password (min 8 chars)"
+                    className="w-full bg-surface border border-line px-3 py-1.5 text-xs text-fg focus:outline-none focus:border-accent font-mono pr-8"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-2 top-2 text-fg-subtle"
+                  >
+                    {showNewPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
               )}
             </div>
 
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                  <Smartphone className="w-3.5 h-3.5 text-emerald-600" /> 6-Digit Transfer PIN
-                </span>
+            <div className="p-3.5 bg-sunken border border-line space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-medium text-fg">6-Digit Transaction PIN</span>
                 {!showPinChange ? (
                   <button
                     type="button"
-                    onClick={() => {
-                      setIsEditing(true);
-                      setShowPinChange(true);
-                    }}
-                    className="text-xs text-cyan-700 hover:underline font-bold cursor-pointer"
+                    onClick={() => setShowPinChange(true)}
+                    className="text-xs text-accent hover:underline font-medium cursor-pointer"
                   >
                     Change
                   </button>
@@ -487,14 +480,14 @@ export default function CustomerProfile({ showToast, activeAccountId = '1000-200
                       setShowPinChange(false);
                       setFormData((p) => ({ ...p, new_pin: '' }));
                     }}
-                    className="text-xs text-slate-500 cursor-pointer"
+                    className="text-xs text-fg-muted cursor-pointer"
                   >
                     Cancel
                   </button>
                 )}
               </div>
               {!showPinChange ? (
-                <div className="text-xs font-mono text-slate-400 tracking-widest">
+                <div className="text-xs font-mono text-fg-subtle tracking-widest">
                   &bull;&bull;&bull;&bull;&bull;&bull;
                 </div>
               ) : (
@@ -504,51 +497,37 @@ export default function CustomerProfile({ showToast, activeAccountId = '1000-200
                   value={formData.new_pin}
                   onChange={(e) => handleInputChange('new_pin', e.target.value.replace(/\D/g, ''))}
                   placeholder="Enter 6-digit PIN"
-                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-cyan-600 font-mono"
+                  className="w-full bg-surface border border-line px-3 py-1.5 text-xs text-fg focus:outline-none focus:border-accent font-mono"
                 />
               )}
             </div>
           </div>
         </div>
 
-        {/* 5. Linked Accounts */}
-        <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-              <CreditCard className="w-4 h-4 text-cyan-600" />
+        {/* 5. Registered Deposit Accounts */}
+        <div className="p-5 bg-surface border border-line card-highlight space-y-3">
+          <div className="flex items-center justify-between border-b border-line pb-2.5">
+            <h3 className="text-xs font-semibold text-fg uppercase tracking-wider flex items-center gap-2">
+              <Landmark className="w-4 h-4 text-accent" />
               Registered Accounts in Ledger
             </h3>
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-              2 Accounts Linked
+            <span className="text-2xs font-mono font-medium px-2 py-0.5 bg-sunken border border-line text-fg-muted">
+              1 Deposit Account Active
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+          <div className="pt-1">
+            <div className="p-3.5 bg-sunken border border-line space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-slate-900">Primary Savings Deposit</span>
-                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.2 rounded border border-emerald-200">
-                  SAVINGS
+                <span className="text-xs font-semibold text-fg">Primary Savings Deposit</span>
+                <span className="text-2xs font-mono font-medium text-settled-700 dark:text-settled-400 bg-settled-50 dark:bg-settled-900/30 px-2 py-0.5 border border-settled-200 dark:border-settled-800">
+                  DEPOSIT
                 </span>
               </div>
-              <p className="text-xs font-mono font-bold text-cyan-800">1000-2000-3001</p>
-              <div className="flex justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-200/60">
-                <span>Status: Prime Active</span>
-                <span className="text-emerald-700 font-bold">1.25% p.a.</span>
-              </div>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-slate-900">Revolving Credit Facility</span>
-                <span className="text-[10px] font-bold text-purple-800 bg-purple-50 px-2 py-0.2 rounded border border-purple-200">
-                  CREDIT
-                </span>
-              </div>
-              <p className="text-xs font-mono font-bold text-purple-800">1000-2000-3003</p>
-              <div className="flex justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-200/60">
-                <span>Limit: ₱300,000.00</span>
-                <span className="text-purple-700 font-bold">24% APR</span>
+              <p className="text-xs font-mono font-medium text-accent">1000-2000-3001</p>
+              <div className="flex justify-between text-2xs text-fg-muted pt-1 border-t border-line">
+                <span>Status: Active &bull; Tier 1 Regular</span>
+                <span className="text-settled-600 dark:text-settled-400 font-medium font-mono">1.25% p.a.</span>
               </div>
             </div>
           </div>
@@ -556,27 +535,28 @@ export default function CustomerProfile({ showToast, activeAccountId = '1000-200
 
         {/* Action Save Bar */}
         {isEditing && (
-          <div className="p-4 rounded-2xl bg-cyan-50 border border-cyan-200 flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in">
-            <p className="text-xs text-cyan-900 font-medium">
-              Review your details carefully before saving to the bank ledger.
+          <div className="p-4 bg-accent-soft/40 border border-accent-line flex flex-col sm:flex-row items-center justify-between gap-3 animate-enter">
+            <p className="text-xs text-fg font-medium">
+              Review your details carefully before committing changes to the bank ledger.
             </p>
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <button
-                type="button"
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={handleCancel}
                 disabled={isSaving}
-                className="flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 transition cursor-pointer"
               >
                 Discard
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                icon={Save}
                 type="submit"
                 disabled={isSaving || isLoading}
-                className="flex-1 sm:flex-none px-5 py-2 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-700 text-white shadow-sm transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
-                <Save className="w-3.5 h-3.5" />
-                <span>{isSaving ? 'Updating...' : 'Save Profile Changes'}</span>
-              </button>
+                {isSaving ? 'Updating...' : 'Save Profile Changes'}
+              </Button>
             </div>
           </div>
         )}

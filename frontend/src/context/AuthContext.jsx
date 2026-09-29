@@ -64,7 +64,8 @@ export function AuthProvider({ children }) {
       localStorage.setItem(TOKEN_STORAGE_KEY, access_token);
       
       const targetUserId = user_id || dbUser?.user_id || (email.includes('carlos') ? 'U3003' : email.includes('manager') || email.includes('beatriz') ? 'U3002' : email.includes('admin') ? 'U0001' : 'U1001');
-      const targetRole = role || (dbUser?.role === 'MANAGER' ? 'ROLE_MANAGER' : dbUser?.role === 'ADMIN' ? 'ROLE_ADMIN' : 'ROLE_CUSTOMER');
+      const rawRole = role || dbUser?.role || (email.includes('carlos') || email.includes('manager') || email.includes('beatriz') ? 'ROLE_MANAGER' : email.includes('admin') ? 'ROLE_ADMIN' : 'ROLE_CUSTOMER');
+      const targetRole = rawRole.startsWith('ROLE_') ? rawRole : `ROLE_${rawRole}`;
 
       const authenticatedUser = {
         // Core DB 16 Columns (Oracle XE USERS table)

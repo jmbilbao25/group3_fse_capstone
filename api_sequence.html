@@ -5196,11 +5196,11 @@
         </g>
         </g>
 
-        <g data-edge-from="kafka" data-edge-to="client" data-edge-label="push SMS &amp; receipt alert" data-edge-key="16" data-edge-id="push-notification">
+        <g data-edge-from="kafka" data-edge-to="client" data-edge-label="push email advice &amp; receipt" data-edge-key="16" data-edge-id="push-notification">
           <path data-composition-edge-from="kafka" data-composition-edge-to="client" data-composition-edge-id="push-notification" data-composition-points="674.6666666666666,725;112,725" d="M 674.6666666666666 725 L 112 725" class="a-dashed" data-animate="edge" style="--step:12" stroke-width="1.4" marker-end="url(#arrowhead-dashed)"/>
         <g data-detail="context">
-          <rect x="324.9333333333333" y="705" width="136.8" height="16" rx="3" class="c-mask"/>
-          <text x="393.33333333333326" y="715" class="t-messagebus" font-size="9" text-anchor="middle">push SMS &amp; receipt alert</text>
+          <rect x="317.1333333333333" y="705" width="152.4" height="16" rx="3" class="c-mask"/>
+          <text x="393.3333333333333" y="715" class="t-messagebus" font-size="9" text-anchor="middle">push email advice &amp; receipt</text>
         </g>
         </g>
 
@@ -5219,8 +5219,8 @@
         </g>
 
         <!-- Participants -->
-        <g id="node-client" data-node-id="client" data-node-label="Client SPA" tabindex="0" role="button" aria-label="Focus Client SPA, Customer / Teller, Sequence participant" aria-pressed="false" data-node-kind="external" data-node-sublabel="Customer / Teller" data-node-context="Sequence participant">
-          <title>Client SPA · Customer / Teller · Sequence participant</title>
+        <g id="node-client" data-node-id="client" data-node-label="Client SPA" tabindex="0" role="button" aria-label="Focus Client SPA, Customer Portal, Sequence participant" aria-pressed="false" data-node-kind="external" data-node-sublabel="Customer Portal" data-node-context="Sequence participant">
+          <title>Client SPA · Customer Portal · Sequence participant</title>
           <rect x="62" y="72" width="86" height="54" rx="6" class="c-mask"/>
           <rect x="62" y="72" width="86" height="54" rx="6" class="c-external" data-animate="node" style="--step:0" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(68 78) scale(0.6875)">
@@ -5228,7 +5228,7 @@
             <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
           </g>
           <text data-node-label="" data-detail-anchor="" x="105" y="94" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Client SPA</text>
-          <text data-detail="context" x="105" y="111" class="t-muted" font-size="7" text-anchor="middle">Customer / Teller</text>
+          <text data-detail="context" x="105" y="111" class="t-muted" font-size="7" text-anchor="middle">Customer Portal</text>
         </g>
 
         <g id="node-gateway" data-node-id="gateway" data-node-label="API Gateway" tabindex="0" role="button" aria-label="Focus API Gateway, Spring Cloud :8080, Sequence participant" aria-pressed="false" data-node-kind="security" data-node-sublabel="Spring Cloud :8080" data-node-context="Sequence participant">
@@ -5546,7 +5546,7 @@
         <ul>
           <li>&bull; PostgreSQL audit consumer reads event stream and inserts immutable journal records</li>
           <li>&bull; Audit consumer lag or database maintenance never impedes balance settlement</li>
-          <li>&bull; Notification service delivers real-time SMS receipts to customer devices</li>
+          <li>&bull; Notification service delivers real-time email advices and receipts to customer inboxes</li>
         </ul>
       </div>
     </div>

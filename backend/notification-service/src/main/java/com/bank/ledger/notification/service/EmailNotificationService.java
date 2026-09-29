@@ -23,6 +23,13 @@ public interface EmailNotificationService {
     boolean sendAmlaHighValueAlert(TransactionNotificationEvent event);
 
     /**
+     * Dispatches Customer 2FA OTP verification code email to customer inbox.
+     */
+    boolean sendOtpVerification(String transferId, String recipientEmail, java.math.BigDecimal amount,
+                                String verificationCode, String sourceAccount, String destinationAccount,
+                                String recipientName);
+
+    /**
      * Returns the current status of the retry buffer spool.
      */
     Map<String, Object> getSpoolStatus();

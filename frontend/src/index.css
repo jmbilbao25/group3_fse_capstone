@@ -50,6 +50,7 @@
   color-scheme: light;
 }
 
+.dark,
 [data-theme='dark'] {
   /* Dark is a genuine peer of light, not an inversion. Elevation still rises
      toward the viewer, hierarchy holds, and the accent stays recognisable
@@ -233,6 +234,56 @@
       rgb(var(--fg) / 0.045),
       transparent
     );
+  }
+
+  /* Production-grade precision card highlight & subtle depth gradients */
+  .card-highlight {
+    position: relative;
+  }
+  .card-highlight::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(var(--accent) / 0.45) 0%, rgba(var(--line) / 0.8) 45%, rgba(var(--line) / 0.15) 100%);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .surface-gradient {
+    background: linear-gradient(180deg, rgb(var(--surface)) 0%, rgb(var(--sunken) / 0.5) 100%);
+  }
+
+  .hairline-gradient {
+    background: linear-gradient(90deg, rgba(var(--accent) / 0.5) 0%, rgba(var(--accent) / 0.15) 60%, transparent 100%);
+  }
+}
+
+@keyframes enterUp {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-enter {
+  animation: enterUp 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.stagger-1 { animation-delay: 40ms; }
+.stagger-2 { animation-delay: 80ms; }
+.stagger-3 { animation-delay: 120ms; }
+.stagger-4 { animation-delay: 160ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-enter {
+    animation: none !important;
   }
 }
 

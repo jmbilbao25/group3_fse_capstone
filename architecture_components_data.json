@@ -951,7 +951,7 @@
     "type": "backend",
     "brand": "spring",
     "tag": "Pessimistic Lock",
-    "overview": "Serves as the central mission-critical transaction and balance processing kernel of the retail banking platform. Operating on Spring Boot 3 with high-performance HikariCP connection pools and Apache Kafka clients, it enforces absolute double-entry bookkeeping guarantees and zero-tolerance balance integrity. The engine processes funds transfers, bills payments, and balance adjustments using the Transactional Outbox Pattern to decouple HTTP request ingestion from distributed Kafka execution. For mutations, it executes database-level pessimistic row locking (`SELECT ... FOR UPDATE`) on customer_balance_master to serialize concurrent access and prevent double-spending. It automatically routes transactions exceeding 10,000,000.0000 PHP into a Maker-Checker review state with balance holds, enforcing strict segregation of duties (maker_id != checker_id) while maintaining continuous metrics emission to Prometheus.",
+    "overview": "Serves as the central mission-critical transaction and balance processing kernel of the retail banking platform. Operating on Spring Boot 3 with high-performance HikariCP connection pools and Apache Kafka clients, it enforces absolute double-entry bookkeeping guarantees and zero-tolerance balance integrity. The engine processes funds transfers, bills payments, and balance adjustments using the Transactional Outbox Pattern to decouple HTTP request ingestion from distributed Kafka execution. For mutations, it executes database-level pessimistic row locking (`SELECT ... FOR UPDATE`) on customer_balance_master to serialize concurrent access and prevent double-spending. It automatically routes transactions exceeding 10,000,000.0000 PHP into a Maker-Checker review state with balance holds, enforcing strict segregation of duties (maker_id != checker_id) while maintaining continuous metrics and APM trace emission to Datadog.",
     "specs": {
       "runtime": "Spring Boot 3.3.x, OpenJDK 21 LTS, Spring Data JPA, Spring Kafka 3.2, HikariCP (max-pool-size: 30, min-idle: 5)",
       "ports": {
@@ -1216,7 +1216,7 @@
             "actor": "tx_engine",
             "action": "Consumer partition resumes processing subsequent healthy transfer commands",
             "payload_or_query": "Consumes next record: TRX-8922-OK",
-            "result": "Partition pipeline continues without interruption; alert metric emitted to Prometheus"
+            "result": "Partition pipeline continues without interruption; alert metric emitted to Datadog"
           }
         ],
         "outcome": "Poison pill isolated in DLT; consumer group never hangs; operational resilience preserved."
@@ -2045,80 +2045,80 @@
   },
   "telemetry": {
     "id": "telemetry",
-    "label": "Observability Stack",
-    "sublabel": "Prom :9090 | Graf :3001",
+    "label": "Datadog Agent",
+    "sublabel": "APM :8126 | StatsD :8125",
     "type": "cloud",
-    "brand": "prometheus",
-    "tag": "Prom :9090 | Graf :3001",
-    "overview": "Provides real-time end-to-end performance monitoring, SLA compliance tracking, distributed metrics scraping, and visualization for the entire banking platform. Combining Prometheus v2.45 and Grafana v10, this stack scrapes Micrometer Actuator metrics (/actuator/prometheus) across all Spring Boot microservices every 5 seconds. It measures live Transactions Per Second (TPS) against the project's 200 TPS benchmark, tracks p50, p95, and p99 latency percentiles against the 150ms SLA target, monitors HikariCP connection pool saturation (active vs idle connections), and tracks Kafka consumer lag across all topics. Pre-configured Grafana dashboards display live operational health, alerting operators to database lock contention, memory leaks, or message pileups in real time.",
+    "brand": "datadog",
+    "tag": "APM :8126 | StatsD :8125",
+    "overview": "Provides enterprise-grade APM tracing, real-time metrics aggregation, and unified log analysis for the entire banking platform. Operating as Datadog Agent 7 (dd-agent), it ingests distributed trace spans on port 8126 (APM) and OTLP ports (4317/4318), while aggregating high-frequency DogStatsD metrics on UDP port 8125. It tracks real-time Transactions Per Second (TPS) against the project's 200 TPS benchmark, measures p50, p95, and p99 latency percentiles against the 150ms SLA target, monitors HikariCP connection pool saturation across Oracle XE and PostgreSQL, and tracks Kafka consumer lag across all topics. Live dashboards and trace waterfall graphs provide immediate visibility into distributed transactions, lock contention, and system bottlenecks.",
     "specs": {
-      "runtime": "Prometheus v2.45.0 TSDB & Grafana v10.4.0 Container on Alpine Linux",
+      "runtime": "Datadog Agent v7 Container on Alpine Linux",
       "ports": {
-        "host": 9090,
-        "internal": 9090
+        "host": 8126,
+        "internal": 8126
       },
-      "protocol": "HTTP/1.1 REST metrics scraping (Prometheus OpenMetrics format) and HTTP Web UI",
-      "concurrency_model": "Prometheus multi-threaded pull architecture with TSDB block compaction; Grafana Go-based asynchronous dashboard query engine",
-      "persistence_tier": "Prometheus Time Series Database (TSDB) with on-disk chunk storage (15-day retention); Grafana SQLite internal database for dashboard provisioning",
-      "sla_target": "Scrape duration < 200ms per endpoint; PromQL query execution < 50ms; Dashboard refresh interval 5s"
+      "protocol": "Datadog APM Trace Protocol, DogStatsD UDP :8125, and OTLP (:4317/:4318)",
+      "concurrency_model": "Asynchronous streaming trace collector with batch aggregation and non-blocking DogStatsD UDP ingest",
+      "persistence_tier": "Datadog Cloud SaaS backend with local ring-buffer spooling",
+      "sla_target": "Trace ingestion latency < 5ms; DogStatsD UDP latency < 1ms; Real-time dashboard refresh < 2s"
     },
     "core_mechanisms": [
       {
-        "name": "Automated Actuator Pull-Scraping via OpenMetrics Protocol",
-        "description": "Pulls runtime telemetry from `/actuator/prometheus` on all registered microservices every 5 seconds, capturing JVM garbage collection, thread counts, HTTP request rates, and custom financial gauges.",
-        "technical_details": "Configured in `prometheus.yml` under jobs `gateway-service`, `account-service`, `ledger-mutation-engine`, and `notification-service` with `scrape_interval: 5s`."
+        "name": "Automated APM Trace Ingestion & Distributed Waterfall Spans",
+        "description": "Collects distributed execution traces from all microservices via the Datadog Java Tracer, linking perimeter HTTP ingress at Gateway to Oracle row-lock transactions, Kafka outbox publishers, and downstream notification consumers.",
+        "technical_details": "Ingests traces on `dd-agent:8126/v0.4/traces` with dd-trace-java agent attached to microservice JVM runtimes; captures end-to-end request propagation headers."
       },
       {
-        "name": "Real-Time Throughput (TPS) Calculation against 200 TPS SLA",
-        "description": "Computes instantaneous transaction throughput using rate calculations over rolling 1-minute windows, allowing operators to visually confirm that the system meets the capstone requirement of 200+ sustained TPS.",
-        "technical_details": "PromQL gauge: `sum(rate(http_server_requests_seconds_count{uri=~\"/api/v1/transfers.*\"}[1m]))`; rendered as live gauge on Grafana dashboard."
+        "name": "Real-Time Throughput (TPS) Calculation via DogStatsD against 200 TPS SLA",
+        "description": "Aggregates non-blocking UDP metrics for transaction counts and rates, providing real-time verification that the platform sustains 200+ TPS under peak concurrency.",
+        "technical_details": "DogStatsD counter metric: `banking.transfers.count` and rate gauge `banking.transfers.tps` aggregated over 1-second intervals."
       },
       {
-        "name": "Latency Percentile Calculation (p50, p95, p99) via Histogram Quantiles",
-        "description": "Calculates exact latency distributions using client request duration histograms, certifying whether 99% of transactions complete within the required 150ms SLA limit under peak concurrency.",
-        "technical_details": "PromQL: `histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket[1m])) by (le)) * 1000`; thresholds set to green (<100ms), amber (100-150ms), red (>150ms)."
+        "name": "Latency Percentile Calculation (p50, p95, p99) via Trace Spans & Distributions",
+        "description": "Calculates exact latency distributions across distributed spans, certifying that 99% of transactions complete within the mandatory 150ms SLA limit.",
+        "technical_details": "Datadog APM Distribution metric: `trace.servlet.request.duration` broken down by p50, p95, and p99 percentiles; alerts trigger if p99 exceeds 150ms."
       },
       {
         "name": "HikariCP Database Connection Pool Saturation Monitoring",
-        "description": "Monitors the health and availability of database connections to Oracle XE and PostgreSQL, tracking active, idle, and pending threads to detect connection starvation or deadlock risks before failure occurs.",
-        "technical_details": "PromQL metrics: `hikaricp_connections_active`, `hikaricp_connections_idle`, `hikaricp_connections_pending`; triggers alert if active connections exceed 85% of pool max."
+        "description": "Monitors connection pool states across Oracle XE and PostgreSQL in real time, detecting active connection spikes, idle pool depletion, and pending lock waits.",
+        "technical_details": "Metrics: `jvm.hikaricp.connections.active`, `jvm.hikaricp.connections.idle`, and `jvm.hikaricp.connections.pending`; triggers warning monitor when active > 85%."
       },
       {
-        "name": "Kafka Consumer Lag & Broker Throughput Telemetry",
-        "description": "Tracks the real-time difference between log end offsets and current consumer group offsets across all partitions, alerting platform engineers if downstream audit or notification consumers fall behind.",
-        "technical_details": "Scrapes Kafka JMX / Kafka exporter metric `kafka_consumer_records_lag{group=~\"audit-vault-workers|notification-workers\"}`; alerts if lag > 500 records."
+        "name": "Kafka Consumer Lag & Broker Telemetry",
+        "description": "Monitors partition offsets and consumer group lag across audit and notification worker groups, alerting before lag accumulates in the commit log.",
+        "technical_details": "Datadog Kafka check evaluates consumer lag for consumer groups `audit-vault-workers` and `notification-workers`; triggers alert if lag > 500 records."
       }
     ],
     "apis_and_contracts": [
       {
-        "type": "REST_ENDPOINT",
-        "identifier": "Prometheus Scrape: gateway-service:8080/actuator/prometheus",
+        "type": "TRACE_INGRESS",
+        "identifier": "Datadog APM Trace Endpoint (:8126)",
         "direction": "INGRESS",
-        "contract_details": "Scrapes gateway metrics: request rates, route match times, Redis rate limiter token drops."
+        "contract_details": "Ingests distributed APM traces from gateway-service, account-service, ledger-mutation-engine, and notification-service via HTTP /v0.4/traces."
       },
       {
-        "type": "REST_ENDPOINT",
-        "identifier": "Prometheus Scrape: account-service:8081/actuator/prometheus",
+        "type": "METRIC_INGRESS",
+        "identifier": "DogStatsD UDP Port (:8125)",
         "direction": "INGRESS",
-        "contract_details": "Scrapes account service metrics: auth login latency, BCrypt duration, Hikari pool stats."
+        "contract_details": "Non-blocking UDP metric ingest for TPS counters, timer histograms, and gauges."
       },
       {
-        "type": "REST_ENDPOINT",
-        "identifier": "Prometheus Scrape: ledger-mutation-engine:8082/actuator/prometheus",
+        "type": "OTLP_INGRESS",
+        "identifier": "OpenTelemetry Receiver (:4317 gRPC / :4318 HTTP)",
         "direction": "INGRESS",
-        "contract_details": "Scrapes mutation engine metrics: transfer TPS, pessimistic lock durations, outbox drain rates."
+        "contract_details": "OpenTelemetry Protocol receiver supporting vendor-neutral telemetry ingestion into Datadog Agent."
       },
       {
-        "type": "REST_ENDPOINT",
-        "identifier": "Prometheus Scrape: notification-service:8083/actuator/prometheus",
+        "type": "LOG_STREAM",
+        "identifier": "Docker Log Socket (/var/run/docker.sock)",
         "direction": "INGRESS",
-        "contract_details": "Scrapes notification service metrics: Kafka consume rates, receipt formatting times, email dispatch counts."
+        "contract_details": "Collects structured container logs across all 16 compose services with auto-discovered service tags."
       },
       {
-        "type": "METRIC_GAUGE",
-        "identifier": "Grafana Dashboard UI (:3001)",
+        "type": "DASHBOARD_UI",
+        "identifier": "Datadog Banking Operations Dashboard",
         "direction": "INGRESS",
-        "contract_details": "Pre-provisioned dashboard displaying TPS gauges, p99 latency heatmaps, Hikari pool saturation, and Kafka lag."
+        "contract_details": "Live operational dashboard displaying real-time TPS, p99 latency heatmaps, HikariCP saturation, and APM flamegraphs."
       }
     ],
     "scenarios": [
@@ -2126,7 +2126,7 @@
         "id": "SCEN-TELEM-01",
         "title": "Sustained 200+ TPS Throughput Benchmark Verification",
         "category": "Performance Benchmark",
-        "summary": "During a capstone stress test, 50 concurrent JMeter threads execute continuous transfers. Prometheus records request rates and Grafana visualizes a sustained throughput of 214 TPS, proving compliance with performance requirements.",
+        "summary": "During a capstone stress test, 50 concurrent JMeter threads execute continuous transfers. Datadog APM and DogStatsD record request rates and visualize a sustained throughput of 214 TPS, proving compliance with performance requirements.",
         "steps": [
           {
             "step": 1,
@@ -2137,22 +2137,22 @@
           },
           {
             "step": 2,
-            "actor": "telemetry (Prometheus)",
-            "action": "Scrapes /actuator/prometheus across all microservice instances every 5s",
-            "payload_or_query": "GET http://ledger-mutation-engine:8082/actuator/prometheus",
-            "result": "Scrape duration 42ms; ingests 480 time series samples"
+            "actor": "telemetry (Datadog Agent)",
+            "action": "Ingests DogStatsD metric packets and APM trace spans from ledger engine on ports 8125/8126",
+            "payload_or_query": "POST http://dd-agent:8126/v0.4/traces & UDP :8125",
+            "result": "Ingests 480 trace spans per second with zero drop"
           },
           {
             "step": 3,
-            "actor": "telemetry (Grafana)",
-            "action": "Queries Prometheus TSDB for current transaction throughput",
-            "payload_or_query": "sum(rate(http_server_requests_seconds_count{uri=~\"/api/v1/transfers.*\"}[1m]))",
-            "result": "PromQL evaluation returns 214.6 TPS"
+            "actor": "telemetry (Datadog Agent)",
+            "action": "Computes instantaneous transaction throughput across rolling 1-minute window",
+            "payload_or_query": "sum:banking.transfers.count{service:ledger-mutation-engine}.as_rate()",
+            "result": "Metric evaluation confirms 214.6 TPS"
           },
           {
             "step": 4,
-            "actor": "telemetry (Grafana)",
-            "action": "Renders real-time TPS speedometer and time-series graph in emerald green",
+            "actor": "telemetry (Datadog Dashboard)",
+            "action": "Renders real-time TPS gauge and timeseries stream in institutional cobalt",
             "payload_or_query": "Gauge value: 214 TPS (Threshold: > 200 TPS = PASS)",
             "result": "Visual proof that system fulfills the 200 TPS capstone benchmark"
           }
@@ -2163,27 +2163,27 @@
         "id": "SCEN-TELEM-02",
         "title": "HikariCP Connection Pool Saturation & Contention Warning",
         "category": "Resource Observability",
-        "summary": "Under intense concurrent mutations, database connection pool utilization approaches capacity. Prometheus evaluates connection metrics and triggers a warning panel on the Grafana dashboard before pool exhaustion occurs.",
+        "summary": "Under intense concurrent mutations, database connection pool utilization approaches capacity. Datadog evaluates connection metrics and triggers a warning panel on the operations dashboard before pool exhaustion occurs.",
         "steps": [
           {
             "step": 1,
             "actor": "tx_engine",
             "action": "High concurrent transfer volume utilizes 27 of 30 maximum HikariCP connections",
             "payload_or_query": "HikariPool-1: Active: 27, Idle: 3, Total: 30, Waiting: 2",
-            "result": "Micrometer registers metric hikaricp_connections_active = 27"
+            "result": "DogStatsD emits metric jvm.hikaricp.connections.active = 27"
           },
           {
             "step": 2,
-            "actor": "telemetry (Prometheus)",
-            "action": "Evaluates alert rule HikariPoolNearExhaustion",
-            "payload_or_query": "hikaricp_connections_active / hikaricp_connections_max > 0.85 for 15s",
-            "result": "Rule triggers; condition true (27/30 = 90% utilization)"
+            "actor": "telemetry (Datadog Agent)",
+            "action": "Evaluates alert monitor HikariPoolNearExhaustion",
+            "payload_or_query": "jvm.hikaricp.connections.active / jvm.hikaricp.connections.max > 0.85 for 15s",
+            "result": "Monitor triggers; condition true (27/30 = 90% utilization)"
           },
           {
             "step": 3,
-            "actor": "telemetry (Grafana)",
-            "action": "Highlights Database Pool panel in amber warning state",
-            "payload_or_query": "Panel: 'HikariCP Pool Utilization: 90% (27/30 Active)'",
+            "actor": "telemetry (Datadog Dashboard)",
+            "action": "Highlights Database Pool widget in amber warning state",
+            "payload_or_query": "Widget: 'HikariCP Pool Utilization: 90% (27/30 Active)'",
             "result": "Operator immediately identifies need to tune pool max or optimize lock durations"
           }
         ],
@@ -2193,7 +2193,7 @@
         "id": "SCEN-TELEM-03",
         "title": "Kafka Consumer Lag Spike Detection & Alerting",
         "category": "Event Stream Telemetry",
-        "summary": "An external reporting batch query temporarily slows PostgreSQL, causing consumer lag for `audit-vault-workers` to surge. Prometheus detects the lag spike and alerts operators to prevent commit log accumulation.",
+        "summary": "An external reporting batch query temporarily slows PostgreSQL, causing consumer lag for `audit-vault-workers` to surge. Datadog detects the lag spike and alerts operators to prevent commit log accumulation.",
         "steps": [
           {
             "step": 1,
@@ -2204,15 +2204,15 @@
           },
           {
             "step": 2,
-            "actor": "telemetry (Prometheus)",
-            "action": "Prometheus scrapes Kafka consumer lag metrics",
-            "payload_or_query": "kafka_consumer_records_lag{group=\"audit-vault-workers\"}",
-            "result": "Evaluates value = 800; triggers HighConsumerLag threshold (> 500)"
+            "actor": "telemetry (Datadog Agent)",
+            "action": "Datadog Agent Kafka check collects consumer lag metrics",
+            "payload_or_query": "kafka.consumer_lag{consumergroup:audit-vault-workers}",
+            "result": "Evaluates value = 800; triggers HighConsumerLag monitor (> 500)"
           },
           {
             "step": 3,
-            "actor": "telemetry (Grafana)",
-            "action": "Grafana Kafka Operations dashboard flashes red indicator on Audit Consumer Lag",
+            "actor": "telemetry (Datadog Dashboard)",
+            "action": "Datadog Kafka Operations dashboard flashes red indicator on Audit Consumer Lag",
             "payload_or_query": "Stat panel displays: 'Audit Consumer Lag: 800 msgs (WARNING)'",
             "result": "Operations team alerted; scales audit worker container to drain backlog"
           }
@@ -2223,25 +2223,25 @@
         "id": "SCEN-TELEM-04",
         "title": "Sub-150ms p99 Latency Percentile Compliance Certification",
         "category": "SLA Compliance",
-        "summary": "During evaluation review, auditors inspect the 99th percentile request latency. Prometheus calculates the histogram quantile across 50,000 requests, confirming a p99 latency of 92ms, well within the 150ms requirement.",
+        "summary": "During evaluation review, auditors inspect the 99th percentile request latency. Datadog APM calculates the distribution across 50,000 requests, confirming a p99 latency of 92ms, well within the 150ms requirement.",
         "steps": [
           {
             "step": 1,
             "actor": "Auditor / Evaluator",
-            "action": "Opens Grafana SLA Compliance Dashboard at http://localhost:3001",
+            "action": "Opens Datadog APM Service Dashboard for ledger-mutation-engine",
             "payload_or_query": "Selects time window: 'Last 1 hour' during sustained load benchmark",
-            "result": "Grafana executes PromQL percentile calculation query"
+            "result": "Datadog aggregates trace span durations"
           },
           {
             "step": 2,
-            "actor": "telemetry (Prometheus)",
-            "action": "Computes 99th percentile from http_server_requests_seconds_bucket",
-            "payload_or_query": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{uri=\"/api/v1/transfers\"}[1h])) by (le)) * 1000",
+            "actor": "telemetry (Datadog Agent)",
+            "action": "Computes 99th percentile from trace distribution metrics",
+            "payload_or_query": "p99:trace.servlet.request{service:ledger-mutation-engine,resource:POST /api/v1/transfers}",
             "result": "Returns scalar value: 92.4ms"
           },
           {
             "step": 3,
-            "actor": "telemetry (Grafana)",
+            "actor": "telemetry (Datadog Dashboard)",
             "action": "Displays latency metrics table: p50: 28ms, p95: 64ms, p99: 92ms",
             "payload_or_query": "Status: SLA COMPLIANT (p99 < 150ms target)",
             "result": "Visual dashboard demonstrates formal compliance with banking SLA guarantees"

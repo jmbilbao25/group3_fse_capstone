@@ -31,6 +31,7 @@ public class JwtAuthenticationFilter implements GlobalFilter {
                 || path.startsWith("/api/auth")
                 || path.startsWith("/api/v1/notifications/stream")
                 || path.startsWith("/api/v1/notifications/simulate")
+                || path.startsWith("/api/v1/notifications/send-otp")
                 || path.startsWith("/ws")) {
             return chain.filter(exchange);
         }

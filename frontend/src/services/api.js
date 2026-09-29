@@ -407,12 +407,10 @@ apiClient.interceptors.response.use(
   async (error) => {
     const isAuthRequest = (error.config?.url || '').includes('/auth/');
     
-    // Route to mock fallback if network is completely unreachable OR for OTP verification / unhandled transfer errors
-    const isNetworkDown = !error.response && error.code === 'ERR_NETWORK';
-    const isOtpVerification = (error.config?.url || '').includes('/transfers/verify-otp');
-    const isBackendTransferFallback = (error.config?.url || '').includes('/transfers') && error.response && (error.response.status === 404 || error.response.status === 400 || error.response.status === 500);
+    // Route to mock fallback only if backend is completely unreachable (offline)
+    const isNetworkDown = !error.response && (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error'));
 
-    if (isNetworkDown || isOtpVerification || isBackendTransferFallback) {
+    if (isNetworkDown) {
       return handleMockFallback(error.config);
     }
 
@@ -807,7 +805,7 @@ function handleMockFallback(config) {
             }
           });
         }
-        if (expected && cleanEntered !== expected && cleanEntered !== '849201') {
+        if (expected && cleanEntered !== expected) {
           return reject({
             response: {
               status: 422,

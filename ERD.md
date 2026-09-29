@@ -64,7 +64,7 @@ erDiagram
         DECIMAL before_balance "NUMBER(18, 4)"
         DECIMAL after_balance "NUMBER(18, 4)"
         VARCHAR status "PENDING_APPROVAL, COMMITTED, FAILED"
-        BOOLEAN requires_maker_checker "Flag for Email OTP > PHP 50k"
+        INTEGER requires_2fa_otp "Flag for Customer 2FA Email OTP > PHP 50k (0 or 1)"
         VARCHAR approved_by_user_id FK
         TIMESTAMP created_at
         TIMESTAMP updated_at
@@ -156,7 +156,7 @@ CREATE TABLE transactions (
     before_balance         NUMBER(18, 4) NOT NULL,
     after_balance          NUMBER(18, 4) NOT NULL,
     status                 VARCHAR2(30) NOT NULL CHECK (status IN ('PENDING_APPROVAL', 'COMMITTED', 'FAILED')),
-    requires_maker_checker NUMBER(1) DEFAULT 0 NOT NULL CHECK (requires_maker_checker IN (0, 1)),
+    requires_2fa_otp       NUMBER(1) DEFAULT 0 NOT NULL CHECK (requires_2fa_otp IN (0, 1)),
     approved_by_user_id    VARCHAR2(64),
     created_at             TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at             TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,

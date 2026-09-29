@@ -105,7 +105,7 @@ CREATE TABLE transactions (
     before_balance         NUMBER(18, 4) NOT NULL,
     after_balance          NUMBER(18, 4) NOT NULL,
     status                 VARCHAR2(30) NOT NULL,
-    requires_maker_checker NUMBER(1) DEFAULT 0 NOT NULL,
+    requires_2fa_otp       NUMBER(1) DEFAULT 0 NOT NULL,
     approved_by_user_id    VARCHAR2(64),
     created_at             TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at             TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -114,7 +114,7 @@ CREATE TABLE transactions (
     CONSTRAINT fk_tx_approved_by FOREIGN KEY (approved_by_user_id) REFERENCES users(user_id),
     CONSTRAINT chk_tx_type CHECK (type IN ('DEPOSIT', 'WITHDRAWAL', 'TRANSFER')),
     CONSTRAINT chk_tx_status CHECK (status IN ('PENDING_APPROVAL', 'COMMITTED', 'FAILED')),
-    CONSTRAINT chk_tx_maker_checker CHECK (requires_maker_checker IN (0, 1)),
+    CONSTRAINT chk_tx_2fa_otp CHECK (requires_2fa_otp IN (0, 1)),
     CONSTRAINT chk_tx_amount CHECK (amount > 0)
 );
 
@@ -176,7 +176,7 @@ INSERT INTO users (
 ) VALUES (
     'usr-1001-cst-001', 'Juan', 'Santos', 'Dela Cruz', 'juan.dc@email.com', '+639171234567',
     TO_DATE('1990-05-15', 'YYYY-MM-DD'), 'PASSPORT-P9876543A', 'CUSTOMER',
-    '$2a$10$XtoonpzB4WcFGIZspyrBJ.o5Dan.YDUBcOwbfHXHttbmEuf9ctBRi', '$2a$10$e8V9m5gQ4F9oY9o8O8V7eeY9o8O8V7ee', 3, 0, 'ACTIVE'
+    '$2a$10$4gw7WpRKwOnwNP5i8AQR2e9raJhzryXNsf7Qu.LxSt7alkeeN9nAS', '$2a$10$e8V9m5gQ4F9oY9o8O8V7eeY9o8O8V7ee', 3, 0, 'ACTIVE'
 );
 
 INSERT INTO users (
@@ -185,7 +185,7 @@ INSERT INTO users (
 ) VALUES (
     'usr-1002-cst-002', 'Maria', 'Clara', 'Reyes', 'maria.reyes@eastwestbanker.com', '+639189876543',
     TO_DATE('1992-08-20', 'YYYY-MM-DD'), 'UMID-0111-2233445-6', 'CUSTOMER',
-    '$2a$10$XtoonpzB4WcFGIZspyrBJ.o5Dan.YDUBcOwbfHXHttbmEuf9ctBRi', '$2a$10$e8V9m5gQ4F9oY9o8O8V7eeY9o8O8V7ee', 3, 0, 'ACTIVE'
+    '$2a$10$4gw7WpRKwOnwNP5i8AQR2e9raJhzryXNsf7Qu.LxSt7alkeeN9nAS', '$2a$10$e8V9m5gQ4F9oY9o8O8V7eeY9o8O8V7ee', 3, 0, 'ACTIVE'
 );
 
 INSERT INTO users (
@@ -194,7 +194,7 @@ INSERT INTO users (
 ) VALUES (
     'usr-1003-tel-001', 'Crisostomo', 'Alfonso', 'Ibarra', 'crisostomo.ibarra@eastwestbanker.com', '+639201112233',
     TO_DATE('1985-01-10', 'YYYY-MM-DD'), 'DRIVERS-LIC-N01-90-123456', 'TELLER',
-    '$2a$10$XtoonpzB4WcFGIZspyrBJ.o5Dan.YDUBcOwbfHXHttbmEuf9ctBRi', '$2a$10$e8V9m5gQ4F9oY9o8O8V7eeY9o8O8V7ee', 5, 0, 'ACTIVE'
+    '$2a$10$4gw7WpRKwOnwNP5i8AQR2e9raJhzryXNsf7Qu.LxSt7alkeeN9nAS', '$2a$10$e8V9m5gQ4F9oY9o8O8V7eeY9o8O8V7ee', 5, 0, 'ACTIVE'
 );
 
 INSERT INTO users (
@@ -203,7 +203,7 @@ INSERT INTO users (
 ) VALUES (
     'usr-1005-boo-001', 'Beatriz', 'Santos', 'Ocampo', 'beatriz.ocampo@bank.com', '+639204445566',
     TO_DATE('1984-07-19', 'YYYY-MM-DD'), 'PRC-9988-7711', 'ADMIN',
-    '$2a$10$XtoonpzB4WcFGIZspyrBJ.o5Dan.YDUBcOwbfHXHttbmEuf9ctBRi', '$2a$10$e8V9m5gQ4F9oY9o8O8V7eeY9o8O8V7ee', 5, 0, 'ACTIVE'
+    '$2a$10$4gw7WpRKwOnwNP5i8AQR2e9raJhzryXNsf7Qu.LxSt7alkeeN9nAS', '$2a$10$e8V9m5gQ4F9oY9o8O8V7eeY9o8O8V7ee', 5, 0, 'ACTIVE'
 );
 
 INSERT INTO users (
@@ -212,7 +212,7 @@ INSERT INTO users (
 ) VALUES (
     'usr-1006-mgr-002', 'Carlos', 'Eduardo', 'Mendoza', 'carlos.mendoza@bank.com', '+639171122334',
     TO_DATE('1982-11-05', 'YYYY-MM-DD'), 'PRC-5544-3322', 'ADMIN',
-    '$2a$10$XtoonpzB4WcFGIZspyrBJ.o5Dan.YDUBcOwbfHXHttbmEuf9ctBRi', '$2a$10$e8V9m5gQ4F9oY9o8O8V7eeY9o8O8V7ee', 5, 0, 'ACTIVE'
+    '$2a$10$4gw7WpRKwOnwNP5i8AQR2e9raJhzryXNsf7Qu.LxSt7alkeeN9nAS', '$2a$10$e8V9m5gQ4F9oY9o8O8V7eeY9o8O8V7ee', 5, 0, 'ACTIVE'
 );
 
 INSERT INTO users (
@@ -221,10 +221,19 @@ INSERT INTO users (
 ) VALUES (
     'usr-1004-adm-001', 'Diana', 'Core', 'Administrator', 'diana.admin@bank.com', '+639000000000',
     TO_DATE('1980-01-01', 'YYYY-MM-DD'), 'COMPANY-ID-EMP-001', 'ADMIN',
-    '$2a$10$XtoonpzB4WcFGIZspyrBJ.o5Dan.YDUBcOwbfHXHttbmEuf9ctBRi', NULL, 10, 0, 'ACTIVE'
+    '$2a$10$4gw7WpRKwOnwNP5i8AQR2e9raJhzryXNsf7Qu.LxSt7alkeeN9nAS', NULL, 10, 0, 'ACTIVE'
 );
 
 -- 2. Accounts
+INSERT INTO accounts (account_id, user_id, account_number, account_type, status, credit_limit)
+VALUES ('1000-2000-3001', 'usr-1001-cst-001', '1000-2000-3001', 'SAVINGS', 'ACTIVE', 0.0000);
+
+INSERT INTO accounts (account_id, user_id, account_number, account_type, status, credit_limit)
+VALUES ('1000-2000-3002', 'usr-1002-cst-002', '1000-2000-3002', 'SAVINGS', 'ACTIVE', 0.0000);
+
+INSERT INTO accounts (account_id, user_id, account_number, account_type, status, credit_limit)
+VALUES ('1000-2000-3003', 'usr-1001-cst-001', '1000-2000-3003', 'CHECKING', 'ACTIVE', 0.0000);
+
 INSERT INTO accounts (account_id, user_id, account_number, account_type, status, credit_limit)
 VALUES ('acc-2001-sav-001', 'usr-1001-cst-001', '100100001234', 'SAVINGS', 'ACTIVE', 0.0000);
 
@@ -235,6 +244,15 @@ INSERT INTO accounts (account_id, user_id, account_number, account_type, status,
 VALUES ('acc-2003-sav-002', 'usr-1002-cst-002', '100200009999', 'SAVINGS', 'ACTIVE', 0.0000);
 
 -- 3. Balance Master (Exact 4-decimal precision)
+INSERT INTO balance_master (account_id, balance_amount, hold_amount, available_balance)
+VALUES ('1000-2000-3001', 25000000.0000, 0.0000, 25000000.0000);
+
+INSERT INTO balance_master (account_id, balance_amount, hold_amount, available_balance)
+VALUES ('1000-2000-3002', 5000000.0000, 0.0000, 5000000.0000);
+
+INSERT INTO balance_master (account_id, balance_amount, hold_amount, available_balance)
+VALUES ('1000-2000-3003', 10000000.0000, 0.0000, 10000000.0000);
+
 INSERT INTO balance_master (account_id, balance_amount, hold_amount, available_balance)
 VALUES ('acc-2001-sav-001', 25000000.0000, 5000000.0000, 20000000.0000);
 
@@ -248,7 +266,7 @@ VALUES ('acc-2003-sav-002', 12345678.1250, 0.0000, 12345678.1250);
 -- Tx 1: High-value transfer pending Customer Email Verification (> 50k PHP hold applied)
 INSERT INTO transactions (
     transaction_id, from_account_id, to_account_id, type, amount,
-    before_balance, after_balance, status, requires_maker_checker, approved_by_user_id
+    before_balance, after_balance, status, requires_2fa_otp, approved_by_user_id
 ) VALUES (
     'tx-4001-hld-001', 'acc-2001-sav-001', 'acc-2003-sav-002', 'TRANSFER', 5000000.0000,
     25000000.0000, 20000000.0000, 'PENDING_APPROVAL', 1, NULL
@@ -257,7 +275,7 @@ INSERT INTO transactions (
 -- Tx 2: Committed standard transfer
 INSERT INTO transactions (
     transaction_id, from_account_id, to_account_id, type, amount,
-    before_balance, after_balance, status, requires_maker_checker, approved_by_user_id
+    before_balance, after_balance, status, requires_2fa_otp, approved_by_user_id
 ) VALUES (
     'tx-4002-cmt-002', 'acc-2002-chk-001', 'acc-2003-sav-002', 'TRANSFER', 150000.0000,
     8650000.0000, 8500000.0000, 'COMMITTED', 0, 'usr-1003-tel-001'
@@ -266,7 +284,7 @@ INSERT INTO transactions (
 -- Tx 3: OTC Cash withdrawal
 INSERT INTO transactions (
     transaction_id, from_account_id, to_account_id, type, amount,
-    before_balance, after_balance, status, requires_maker_checker, approved_by_user_id
+    before_balance, after_balance, status, requires_2fa_otp, approved_by_user_id
 ) VALUES (
     'tx-4003-otc-003', 'acc-2001-sav-001', NULL, 'WITHDRAWAL', 50000.0000,
     25050000.0000, 25000000.0000, 'COMMITTED', 0, 'usr-1003-tel-001'

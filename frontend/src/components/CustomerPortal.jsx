@@ -237,7 +237,6 @@ export default function CustomerPortal({ balance, onTransactionComplete, onSwitc
 
       if (isHighValue) {
         setIsConfirmModalOpen(false);
-        const code = res?.data?.verification_code || '849201';
         const transferId = res?.data?.transfer_id || res?.data?.transaction_id || generatedRef;
         setActivePendingTx({
           transferId: transferId,
@@ -246,9 +245,7 @@ export default function CustomerPortal({ balance, onTransactionComplete, onSwitc
           toAccount: toAcc,
           fromAccount: fromAcc,
           memo: memo.trim() || 'Fund Transfer',
-          code: code,
         });
-        setDispatchedOtpCode(code);
         setOtpInput('');
         setIsOtpModalOpen(true);
 
@@ -260,8 +257,6 @@ export default function CustomerPortal({ balance, onTransactionComplete, onSwitc
           to_account_id: toAcc,
           recipient_name: recipientName.trim(),
           recipient_email: user?.email || 'juan.dc@email.com',
-          verification_code: code,
-          memo: `Customer Security Verification OTP: [ ${code} ] for Transfer ${transferId}`,
         }).catch(() => {
           axios.post('http://localhost:8083/api/v1/notifications/send-otp', {
             transfer_id: transferId,
@@ -270,8 +265,6 @@ export default function CustomerPortal({ balance, onTransactionComplete, onSwitc
             to_account_id: toAcc,
             recipient_name: recipientName.trim(),
             recipient_email: user?.email || 'juan.dc@email.com',
-            verification_code: code,
-            memo: `Customer Security Verification OTP: [ ${code} ] for Transfer ${transferId}`,
           }).catch(() => {});
         });
 
@@ -374,8 +367,8 @@ export default function CustomerPortal({ balance, onTransactionComplete, onSwitc
       const problem = err.response?.data;
       showToast?.({
         type: 'error',
-        title: problem?.title || 'Verification Failed',
-        detail: problem?.detail || 'Incorrect verification code. Please check MailHog (:8025) and try again.',
+        title: problem?.error_code || problem?.title || 'Verification Failed',
+        detail: problem?.message || problem?.detail || 'Incorrect verification code. Please check MailHog (:8025) and try again.',
       });
     } finally {
       setIsVerifyingOtp(false);

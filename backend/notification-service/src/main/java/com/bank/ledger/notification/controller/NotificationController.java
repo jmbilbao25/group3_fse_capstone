@@ -24,6 +24,8 @@ public class NotificationController {
     private final EmailNotificationService emailService;
     private final TransactionEventConsumer transactionEventConsumer;
     private final NotificationRepository notificationRepository;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
 
     @PostMapping("/send-otp")
     public ResponseEntity<Map<String, Object>> sendOtpNotification(
@@ -32,7 +34,7 @@ public class NotificationController {
         String transferId = "TRX-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         String recipientEmail = "juan.dc@email.com";
         BigDecimal amount = new BigDecimal("90000.0000");
-        String verificationCode = "849201";
+        String verificationCode = null;
         String sourceAccount = "ACC-1002938471";
         String destinationAccount = "ACC-2009847192";
         String recipientName = "Maria Clara Santos";
@@ -56,7 +58,26 @@ public class NotificationController {
             if (request.get("recipientName") != null) recipientName = request.get("recipientName").toString();
         }
 
-        log.info("Sending OTP verification email for transferId={}, recipient={}, code={}", transferId, recipientEmail, verificationCode);
+        // If no valid verificationCode provided, check Redis or generate a secure random 6-digit OTP
+        if (verificationCode == null || verificationCode.isBlank() || "849201".equals(verificationCode)) {
+            String redisKey = "otp:transfer:" + transferId;
+            if (redisTemplate != null) {
+                String existing = redisTemplate.opsForValue().get(redisKey);
+                if (existing != null && !existing.isBlank()) {
+                    verificationCode = existing;
+                }
+            }
+            if (verificationCode == null || verificationCode.isBlank() || "849201".equals(verificationCode)) {
+                verificationCode = String.format("%06d", new java.security.SecureRandom().nextInt(1000000));
+            }
+        }
+
+        // Synchronize in Redis with 5-minute TTL
+        if (redisTemplate != null) {
+            redisTemplate.opsForValue().set("otp:transfer:" + transferId, verificationCode, java.time.Duration.ofMinutes(5));
+        }
+
+        log.info("Sending OTP verification email for transferId={}, recipient={}", transferId, recipientEmail);
         boolean dispatched = emailService.sendOtpVerification(
                 transferId, recipientEmail, amount, verificationCode, sourceAccount, destinationAccount, recipientName);
 
@@ -64,7 +85,6 @@ public class NotificationController {
         response.put("status", dispatched ? "DISPATCHED" : "BUFFERED");
         response.put("transferId", transferId);
         response.put("recipientEmail", recipientEmail);
-        response.put("verificationCode", verificationCode);
         response.put("amount", amount);
         response.put("message", "Customer 2FA Verification OTP email dispatched to " + recipientEmail + " via MailHog.");
         return ResponseEntity.ok(response);

@@ -46,6 +46,8 @@ public class BalanceMutationService {
     private final KafkaEventPublisher kafkaPublisher;
      private final OutboxEventMasterRepository outboxRepository; 
     private final ObjectMapper objectMapper;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
 
     @Value("${app.maker-checker.threshold:50000.0000}")
     private BigDecimal makerCheckerThreshold;
@@ -118,49 +120,43 @@ public class BalanceMutationService {
                     .beforeBalance(senderBefore)
                     .afterBalance(senderBefore)
                     .status("PENDING_APPROVAL")
-                    .requiresMakerChecker(1)
+                    .requires2FaOtp(1)
                     .createdAt(Instant.now())
                     .updatedAt(Instant.now())
                     .build();
             transactionRepository.save(pendingTx);
 
-                        // Persist to Oracle Transactional Outbox (EVT-601)
-            try {
-                String outboxPayload = objectMapper.writeValueAsString(pendingTx);
-                outboxRepository.save(OutboxEventMaster.builder()
-                        .eventId("EVT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
-                        .aggregateType("MAKER_CHECKER")
-                        .aggregateId(request.getTransactionId())
-                        .eventType("MAKER_PENDING")
-                        .kafkaTopic("banking.makerchecker.pending")
-                        .payload(outboxPayload)
-                        .status("PENDING")
-                        .retryCount(0)
-                        .createdAt(Instant.now())
-                        .build());
+            // Generate cryptographically secure 6-digit OTP and store in Redis (5-min TTL)
+            String generatedOtp = String.format("%06d", new java.security.SecureRandom().nextInt(1000000));
+            if (redisTemplate != null) {
+                redisTemplate.opsForValue().set("otp:transfer:" + request.getTransactionId(), generatedOtp, java.time.Duration.ofMinutes(5));
+                log.info("[OTP GENERATED] Stored OTP for transferId={}", request.getTransactionId());
+            }
 
-                // Notify notification-service consumer of pending dual control hold
+            // Persist to Oracle Transactional Outbox (EVT-601)
+            try {
+                // Notify notification-service consumer of Customer 2FA OTP requirement
                 TransactionNotificationEvent pendingNotif = TransactionNotificationEvent.builder()
                         .transferId(request.getTransactionId())
                         .sourceAccount(sourceId)
                         .destinationAccount(targetId)
                         .userId(request.getInitiatorUserId() != null ? request.getInitiatorUserId() : "U1001")
-                        .recipientEmail("juan.delacruz@retailbank.ph")
+                        .recipientEmail("juan.dc@email.com")
                         .amount(amount)
                         .currency("PHP")
                         .beforeBalance(sender.getBalanceAmount())
                         .afterBalance(sender.getBalanceAmount())
                         .status("PENDING_APPROVAL")
                         .eventType("TRANSFER_PENDING_APPROVAL")
-                        .requiresMakerChecker(true)
-                        .makerUserId(request.getInitiatorUserId() != null ? request.getInitiatorUserId() : "U1001")
+                        .requires2FaOtp(true)
+                        .initiatorUserId(request.getInitiatorUserId() != null ? request.getInitiatorUserId() : "U1001")
                         .timestamp(Instant.now())
-                        .description("Tier 2: Dual Control Transfer Pending Review")
+                        .description("Customer 2FA Email OTP Verification Required (> PHP 50,000)")
                         .build();
 
                 outboxRepository.save(OutboxEventMaster.builder()
                         .eventId("EVT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
-                        .aggregateType("MAKER_CHECKER")
+                        .aggregateType("TRANSACTION")
                         .aggregateId(request.getTransactionId())
                         .eventType("TRANSFER_PENDING_APPROVAL")
                         .kafkaTopic("banking.transfers.events")
@@ -173,17 +169,17 @@ public class BalanceMutationService {
                 log.error("[OUTBOX ERROR] Failed to serialize pending transaction for outbox", e);
             }
 
-            // Kafka Alert: Notify customer of pending dual control review
+            // Kafka Alert: Notify customer of pending 2FA Email OTP requirement
             kafkaPublisher.publishNotificationAlert(NotificationAlertEvent.builder()
                     .alertId("ALT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
                     .transactionId(request.getTransactionId())
                     .recipientUserId(request.getInitiatorUserId())
                     .recipientAccountId(sourceId)
-                    .alertType("MAKER_CHECKER_PENDING")
+                    .alertType("CUSTOMER_OTP_REQUIRED")
                     .amount(amount)
                     .balanceAfter(sender.getAvailableBalance())
-                    .title("Transfer Pending Approval")
-                    .message(String.format("Transfer of PHP %s to %s exceeds ₱%s threshold and is awaiting Teller approval.",
+                    .title("Transfer Pending 2FA Verification")
+                    .message(String.format("Transfer of PHP %s to %s exceeds ₱%s threshold and requires Customer 2FA Email OTP verification.",
                             amount, targetId, makerCheckerThreshold))
                     .createdAt(Instant.now())
                     .build());
@@ -228,14 +224,14 @@ public class BalanceMutationService {
                 .beforeBalance(senderBefore)
                 .afterBalance(senderAfter)
                 .status("COMMITTED")
-                .requiresMakerChecker(0)
+                .requires2FaOtp(0)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
         transactionRepository.save(committedTx);
 
-        // Immutable Postgres Audit
-        auditRepository.save(LedgerMutationAudit.builder()
+        // Immutable Postgres Audit & Kafka Audit Stream
+        LedgerMutationAudit audit = LedgerMutationAudit.builder()
                 .transactionId(request.getTransactionId() + "-DR")
                 .accountId(sourceId)
                 .mutationType("TRANSFER")
@@ -246,9 +242,15 @@ public class BalanceMutationService {
                 .approvedByUserId(request.getApprovedByUserId())
                 .status("COMMITTED")
                 .createdAt(Instant.now())
-                .build());
+                .build();
+        auditRepository.save(audit);
+        try {
+            kafkaPublisher.publishAuditEvent(audit);
+        } catch (Exception ex) {
+            log.warn("[KAFKA AUDIT WARNING] Failed to stream to audit-events: {}", ex.getMessage());
+        }
 
-                // Persist to Oracle Transactional Outbox (EVT-601)
+        // Persist to Oracle Transactional Outbox (EVT-601)
         try {
             TransactionEvent event = TransactionEvent.builder()
                     .transactionId(request.getTransactionId())
@@ -288,8 +290,8 @@ public class BalanceMutationService {
                     .afterBalance(senderAfter)
                     .status("COMMITTED")
                     .eventType("TRANSFER_EXECUTED")
-                    .requiresMakerChecker(false)
-                    .makerUserId(request.getInitiatorUserId() != null ? request.getInitiatorUserId() : "U1001")
+                    .requires2FaOtp(false)
+                    .initiatorUserId(request.getInitiatorUserId() != null ? request.getInitiatorUserId() : "U1001")
                     .timestamp(Instant.now())
                     .description("Retail Fund Transfer")
                     .build();
@@ -551,8 +553,8 @@ public class BalanceMutationService {
                     .afterBalance(senderAfter)
                     .status("COMMITTED")
                     .eventType("TRANSFER_EXECUTED")
-                    .requiresMakerChecker(false)
-                    .makerUserId(sourceAccount.getUserId())
+                    .requires2FaOtp(false)
+                    .initiatorUserId(sourceAccount.getUserId())
                     .timestamp(Instant.now())
                     .description(checkerRequest.getRemarks() != null ? checkerRequest.getRemarks() : "Approved by Dual-Control Checker")
                     .build();
@@ -716,6 +718,7 @@ public class BalanceMutationService {
 
         String otp = "";
         if (request.get("otp") != null) otp = request.get("otp").toString().trim();
+        else if (request.get("otpCode") != null) otp = request.get("otpCode").toString().trim();
         else if (request.get("verification_code") != null) otp = request.get("verification_code").toString().trim();
         else if (request.get("code") != null) otp = request.get("code").toString().trim();
 
@@ -723,7 +726,21 @@ public class BalanceMutationService {
             throw new IllegalArgumentException("Please enter a valid 6-digit verification code.");
         }
 
-        log.info("[VERIFY-OTP] Validating OTP code {} for transfer ID {}", otp, transferId);
+        String redisKey = "otp:transfer:" + transferId;
+        String storedOtp = redisTemplate != null ? redisTemplate.opsForValue().get(redisKey) : null;
+        log.info("[VERIFY-OTP] Validating OTP code {} for transfer ID {}. Stored in Redis: {}", otp, transferId, storedOtp);
+
+        if (storedOtp != null && !storedOtp.isBlank()) {
+            if (!storedOtp.equals(otp)) {
+                log.warn("[VERIFY-OTP FAILED] Incorrect OTP for transferId={}. Expected={}, Provided={}", transferId, storedOtp, otp);
+                throw new IllegalArgumentException("The verification code you entered is incorrect. Please check your email and try again.");
+            }
+            // Invalidate OTP immediately so it cannot be reused
+            redisTemplate.delete(redisKey);
+        } else {
+            log.warn("[VERIFY-OTP EXPIRED] No active OTP found in Redis for transferId={}", transferId);
+            throw new IllegalArgumentException("Verification code has expired or is invalid. Please request a new verification code.");
+        }
 
         // Check if transaction exists in DB
         Optional<TransactionMaster> txOpt = transactionRepository.findById(transferId);
@@ -781,22 +798,101 @@ public class BalanceMutationService {
                 tx.setUpdatedAt(Instant.now());
                 transactionRepository.save(tx);
 
-                // Postgres Audit Log
+                // Publish settled event to Transactional Outbox for Kafka relay
                 try {
-                    auditRepository.save(LedgerMutationAudit.builder()
-                            .transactionId(transferId + "-OTP-VERIFIED")
-                            .accountId(sourceId)
-                            .mutationType("TRANSFER")
-                            .mutationAmount(amount)
+                    TransactionNotificationEvent settledNotif = TransactionNotificationEvent.builder()
+                            .transferId(transferId)
+                            .sourceAccount(sourceId)
+                            .destinationAccount(targetId)
+                            .userId(customerUserId)
+                            .recipientEmail("juan.dc@email.com")
+                            .amount(amount)
+                            .currency("PHP")
                             .beforeBalance(senderBefore)
                             .afterBalance(senderAfter)
-                            .initiatorUserId(customerUserId)
-                            .approvedByUserId(customerUserId)
                             .status("COMMITTED")
+                            .eventType("MUTATION_COMMITTED")
+                            .requires2FaOtp(false)
+                            .initiatorUserId(customerUserId)
+                            .timestamp(Instant.now())
+                            .description("Customer 2FA OTP Verified - Funds Settled")
+                            .build();
+
+                    outboxRepository.save(OutboxEventMaster.builder()
+                            .eventId("EVT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                            .aggregateType("TRANSACTION")
+                            .aggregateId(transferId)
+                            .eventType("MUTATION_COMMITTED")
+                            .kafkaTopic("banking.transfers.events")
+                            .payload(objectMapper.writeValueAsString(settledNotif))
+                            .status("PENDING")
+                            .retryCount(0)
                             .createdAt(Instant.now())
                             .build());
                 } catch (Exception ex) {
+                    log.warn("[OUTBOX WARNING] Failed to persist settled outbox event: {}", ex.getMessage());
+                }
+
+                // Postgres Audit Log & Kafka Audit Stream
+                LedgerMutationAudit auditLog = LedgerMutationAudit.builder()
+                        .transactionId(transferId + "-OTP-VERIFIED")
+                        .accountId(sourceId)
+                        .mutationType("TRANSFER")
+                        .mutationAmount(amount)
+                        .beforeBalance(senderBefore)
+                        .afterBalance(senderAfter)
+                        .initiatorUserId(customerUserId)
+                        .approvedByUserId(customerUserId)
+                        .status("COMMITTED")
+                        .createdAt(Instant.now())
+                        .build();
+
+                try {
+                    auditRepository.save(auditLog);
+                } catch (Exception ex) {
                     log.warn("[AUDIT LOG WARNING] Failed to persist audit log for OTP verification: {}", ex.getMessage());
+                }
+
+                // 1. Kafka Audit Stream (topic: audit-events)
+                try {
+                    kafkaPublisher.publishAuditEvent(auditLog);
+                } catch (Exception ex) {
+                    log.warn("[KAFKA AUDIT WARNING] Failed to stream to audit-events: {}", ex.getMessage());
+                }
+
+                // 2. Kafka Transaction Stream (topic: transaction-events)
+                try {
+                    kafkaPublisher.publishTransactionEvent(TransactionEvent.builder()
+                            .transactionId(transferId)
+                            .sourceAccountId(sourceId)
+                            .destinationAccountId(targetId)
+                            .amount(amount)
+                            .currency("PHP")
+                            .mutationType("TRANSFER")
+                            .status("COMMITTED")
+                            .initiatorUserId(customerUserId)
+                            .timestamp(Instant.now())
+                            .build());
+                } catch (Exception ex) {
+                    log.warn("[KAFKA TRANSACTION WARNING] Failed to stream to transaction-events: {}", ex.getMessage());
+                }
+
+                // 3. Kafka Notification Alert (topic: notification-alerts)
+                try {
+                    kafkaPublisher.publishNotificationAlert(NotificationAlertEvent.builder()
+                            .alertId("ALT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                            .transactionId(transferId)
+                            .recipientUserId(customerUserId)
+                            .recipientAccountId(sourceId)
+                            .alertType("CUSTOMER_OTP_VERIFIED")
+                            .amount(amount)
+                            .balanceAfter(senderAfter)
+                            .title("Transfer Successfully Settled")
+                            .message(String.format("Transfer of PHP %s to %s has been verified via Customer 2FA OTP and settled.", amount, targetId))
+                            .createdAt(Instant.now())
+                            .build());
+                } catch (Exception ex) {
+                    log.warn("[KAFKA ALERT WARNING] Failed to stream to notification-alerts: {}", ex.getMessage());
                 }
             } else {
                 tx.setStatus("COMMITTED");

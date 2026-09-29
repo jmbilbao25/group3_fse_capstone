@@ -52,15 +52,49 @@ public class TransactionNotificationEvent {
     @JsonProperty("event_type")
     private String eventType; // TRANSFER_EXECUTED, TRANSFER_PENDING_APPROVAL, TRANSFER_REJECTED
 
-    @JsonProperty("requires_maker_checker")
-    private boolean requiresMakerChecker;
+    @JsonProperty("requires_2fa_otp")
+    @com.fasterxml.jackson.annotation.JsonAlias({"requires_maker_checker"})
+    private boolean requires2FaOtp;
 
-    @JsonProperty("maker_user_id")
-    private String makerUserId;
+    @JsonProperty("initiator_user_id")
+    @com.fasterxml.jackson.annotation.JsonAlias({"maker_user_id"})
+    private String initiatorUserId;
 
     @JsonProperty("timestamp")
     private Instant timestamp;
 
     @JsonProperty("description")
     private String description;
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    public boolean isRequiresMakerChecker() {
+        return requires2FaOtp;
+    }
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    public void setRequiresMakerChecker(boolean requiresMakerChecker) {
+        this.requires2FaOtp = requiresMakerChecker;
+    }
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    public String getMakerUserId() {
+        return initiatorUserId != null ? initiatorUserId : userId;
+    }
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    public void setMakerUserId(String makerUserId) {
+        this.initiatorUserId = makerUserId;
+    }
+
+    public static class TransactionNotificationEventBuilder {
+        public TransactionNotificationEventBuilder requiresMakerChecker(boolean val) {
+            this.requires2FaOtp = val;
+            return this;
+        }
+
+        public TransactionNotificationEventBuilder makerUserId(String val) {
+            this.initiatorUserId = val;
+            return this;
+        }
+    }
 }

@@ -43,8 +43,8 @@ public class TransactionMaster {
     @Column(name = "status", nullable = false, length = 30)
     private String status; // PENDING_APPROVAL, COMMITTED, FAILED
 
-    @Column(name = "requires_maker_checker", nullable = false)
-    private Integer requiresMakerChecker; // 0 or 1
+    @Column(name = "requires_2fa_otp", nullable = false)
+    private Integer requires2FaOtp; // 0 or 1
 
     @Column(name = "approved_by_user_id", length = 64)
     private String approvedByUserId;
@@ -54,4 +54,20 @@ public class TransactionMaster {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    // Backward-compatibility accessors
+    public Integer getRequiresMakerChecker() {
+        return requires2FaOtp != null ? requires2FaOtp : 0;
+    }
+
+    public void setRequiresMakerChecker(Integer val) {
+        this.requires2FaOtp = val;
+    }
+
+    public static class TransactionMasterBuilder {
+        public TransactionMasterBuilder requiresMakerChecker(Integer val) {
+            this.requires2FaOtp = val;
+            return this;
+        }
+    }
 }

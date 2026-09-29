@@ -28,6 +28,25 @@ public class KafkaEventPublisher {
     @Value("${app.kafka.topics.notification-alerts:notification-alerts}")
     private String notificationAlertsTopic;
 
+    @Value("${app.kafka.topics.audit-events:audit-events}")
+    private String auditEventsTopic;
+
+    /**
+     * Publishes an immutable audit event to Kafka topic 'audit-events'
+     */
+    public CompletableFuture<SendResult<String, Object>> publishAuditEvent(Object auditRecord) {
+        log.info("[KAFKA AUDIT PUBLISH] Emitting audit record to {}", auditEventsTopic);
+        return kafkaTemplate.send(auditEventsTopic, auditRecord)
+                .whenComplete((result, ex) -> {
+                    if (ex == null) {
+                        log.info("[KAFKA SUCCESS] AuditEvent sent to partition: {}, offset: {}",
+                                result.getRecordMetadata().partition(), result.getRecordMetadata().offset());
+                    } else {
+                        log.error("[KAFKA ERROR] Failed to send AuditEvent: {}", ex.getMessage());
+                    }
+                });
+    }
+
     /**
      * Publishes a committed transaction event.
      * Uses sourceAccountId as the partition key to guarantee FIFO ordering per account.

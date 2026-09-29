@@ -185,11 +185,29 @@ public class EmailNotificationServiceImpl implements EmailNotificationService {
         String transferId = event.getTransferId();
         String makerId = event.getMakerUserId() != null ? event.getMakerUserId() : (event.getUserId() != null ? event.getUserId() : "USR-CUSTOMER");
 
-        String code = "849201";
-        if (event.getDescription() != null) {
+        // Deduplication to prevent duplicate emails within 15 seconds
+        if (redisTemplate != null && transferId != null) {
+            Boolean first = redisTemplate.opsForValue().setIfAbsent("otp:sent:" + transferId, "1", java.time.Duration.ofSeconds(15));
+            if (Boolean.FALSE.equals(first)) {
+                log.info("[OTP DEDUP] Email already dispatched recently for transferId={}", transferId);
+                return true;
+            }
+        }
+
+        String code = null;
+        if (redisTemplate != null && transferId != null) {
+            code = redisTemplate.opsForValue().get("otp:transfer:" + transferId);
+        }
+        if (code == null && event.getDescription() != null) {
             java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\[\\s*(\\d{6})\\s*\\]").matcher(event.getDescription());
             if (m.find()) {
                 code = m.group(1);
+            }
+        }
+        if (code == null || code.isBlank() || "849201".equals(code)) {
+            code = String.format("%06d", new java.security.SecureRandom().nextInt(1000000));
+            if (redisTemplate != null && transferId != null) {
+                redisTemplate.opsForValue().set("otp:transfer:" + transferId, code, java.time.Duration.ofMinutes(5));
             }
         }
 
@@ -240,9 +258,28 @@ public class EmailNotificationServiceImpl implements EmailNotificationService {
         String targetRecipient = recipientEmail != null && !recipientEmail.isBlank()
                 ? recipientEmail
                 : "juan.dc@email.com";
-        String code = verificationCode != null && !verificationCode.isBlank()
-                ? verificationCode
-                : "849201";
+
+        // Deduplication to prevent duplicate emails within 15 seconds
+        if (redisTemplate != null && transferId != null) {
+            Boolean first = redisTemplate.opsForValue().setIfAbsent("otp:sent:" + transferId, "1", java.time.Duration.ofSeconds(15));
+            if (Boolean.FALSE.equals(first)) {
+                log.info("[OTP DEDUP] Email already dispatched recently for transferId={}", transferId);
+                return true;
+            }
+        }
+
+        String code = verificationCode;
+        if (code == null || code.isBlank() || "849201".equals(code)) {
+            if (redisTemplate != null && transferId != null) {
+                code = redisTemplate.opsForValue().get("otp:transfer:" + transferId);
+            }
+            if (code == null || code.isBlank() || "849201".equals(code)) {
+                code = String.format("%06d", new java.security.SecureRandom().nextInt(1000000));
+                if (redisTemplate != null && transferId != null) {
+                    redisTemplate.opsForValue().set("otp:transfer:" + transferId, code, java.time.Duration.ofMinutes(5));
+                }
+            }
+        }
 
         Context context = new Context();
         context.setVariable("transferId", transferId);

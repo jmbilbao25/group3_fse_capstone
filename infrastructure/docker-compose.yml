@@ -170,6 +170,22 @@ services:
       - banking-net
 
   # ============================================================================
+  # 7b. Redis Insight Web Management GUI
+  # Container Name: redis-insight
+  # Visual dashboard for inspecting Redis keys, memory usage, and TTLs
+  # ============================================================================
+  redis-insight:
+    container_name: redis-insight
+    image: redis/redisinsight:latest
+    restart: unless-stopped
+    ports:
+      - "5540:5540" # Web UI
+    networks:
+      - banking-net
+    depends_on:
+      - redis-cache
+
+  # ============================================================================
   # 8. Account & Identity Service (Spring Boot :8081)
   # Container Name: account-service
   # User registration, authentication, KYC profiles, and account provisioning
@@ -407,6 +423,26 @@ services:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
     networks:
       - banking-net
+
+  # ============================================================================
+  # 17. Datadog Synthetics Private Location Worker
+  # Container Name: datadog-synthetics-worker
+  # Executes Synthetic API tests inside the internal banking-net container network
+  # ============================================================================
+  datadog-synthetics-worker:
+    container_name: datadog-synthetics-worker
+    image: registry.datadoghq.com/synthetics-private-location-worker:latest
+    restart: unless-stopped
+    environment:
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
+      - NODE_EXTRA_CA_CERTS=/etc/datadog/certs/ca-bundle.pem
+    volumes:
+      - ./datadog/synthetics-location-config.json:/etc/datadog/synthetics-check-runner.json:ro
+      - ./datadog/certs:/etc/datadog/certs:ro
+    networks:
+      - banking-net
+    depends_on:
+      - gateway-service
 
 volumes:
   oracle_data:

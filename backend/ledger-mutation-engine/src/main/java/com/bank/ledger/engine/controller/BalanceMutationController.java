@@ -103,6 +103,15 @@ public class BalanceMutationController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * 6. PostgreSQL Compliance Audit Vault: Query all immutable mutation audit records
+     */
+    @GetMapping({"/audit", "/audit-logs", "/audit/records"})
+    public ResponseEntity<List<com.bank.ledger.engine.entity.audit.LedgerMutationAudit>> getAuditRecords() {
+        log.info("[HTTP REQUEST] GET /api/v1/ledger/audit querying PostgreSQL ledger_mutation_audit");
+        return ResponseEntity.ok(mutationService.getAuditRecords());
+    }
+
     // =========================================================================
     // RFC-7807 FINANCIAL & SECURITY EXCEPTION HANDLERS
     // =========================================================================

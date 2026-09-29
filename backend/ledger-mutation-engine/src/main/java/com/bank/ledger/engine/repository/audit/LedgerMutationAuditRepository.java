@@ -8,4 +8,5 @@ import java.util.Optional;
 @Repository
 public interface LedgerMutationAuditRepository extends JpaRepository<LedgerMutationAudit, Long> {
     Optional<LedgerMutationAudit> findByTransactionId(String transactionId);
+    java.util.List<LedgerMutationAudit> findAllByOrderByAuditIdDesc();
 }

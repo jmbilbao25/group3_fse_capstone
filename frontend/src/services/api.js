@@ -169,8 +169,8 @@ const initialMockState = {
     account_type: 'SAVINGS',
     currency: 'PHP',
     current_balance: 15000000.0000,
-    held_balance: 725000.0000,
-    available_balance: 14275000.0000,
+    held_balance: 0.0000,
+    available_balance: 15000000.0000,
     credit_limit: 0.0000,
     status: 'ACTIVE',
   },
@@ -200,40 +200,32 @@ const initialMockState = {
       recipient_name: 'Apex Commercial Supplies Ltd.',
       amount: 600000.0000,
       currency: 'PHP',
-      status: 'PENDING_APPROVAL',
+      status: 'SETTLED',
       regulatory_tier: 'TIER_3_AMLA_CTR',
-      tier_label: 'Tier 3: AMLA CTR + Dual Control',
+      tier_label: 'Tier 3: AMLA CTR + Customer OTP',
       created_at: new Date(Date.now() - 600000).toISOString(),
       memo: 'Commercial server farm procurement batch #3',
       maker_user_id: 'U1001',
-      hold_active: true,
-      approval_stage: 1, // Stage 1 of 2: Awaiting First Manager Approval
-      required_stages: 2,
-      l1_approver_id: null,
-      l1_approver_name: null,
-      l1_approved_at: null,
-      l1_notes: null,
-      l2_approver_id: null,
-      l2_approver_name: null,
-      l2_approved_at: null,
-      l2_notes: null,
+      hold_active: false,
+      approval_stage: 0,
+      required_stages: 0,
     },
     {
-      id: 'TX-5002-MC',
+      id: 'TX-5002-OTP',
       from_account_id: '1000-2000-3001',
       to_account_id: '1000-2000-3002',
       recipient_name: 'Maria Santos',
       amount: 125000.0000,
       currency: 'PHP',
-      status: 'PENDING_APPROVAL',
-      regulatory_tier: 'TIER_2_DUAL_CONTROL',
-      tier_label: 'Tier 2: Maker-Checker Dual Control',
+      status: 'SETTLED',
+      regulatory_tier: 'TIER_2_CUSTOMER_VERIFY',
+      tier_label: 'Tier 2: Customer Email OTP Verified',
       created_at: new Date(Date.now() - 1800000).toISOString(),
       memo: 'Branch office refurbishment contractor retainer',
       maker_user_id: 'U1001',
-      hold_active: true,
-      approval_stage: 1, // Stage 1 of 1: Single Manager Sign-off
-      required_stages: 1,
+      hold_active: false,
+      approval_stage: 0,
+      required_stages: 0,
     },
     {
       id: 'TX-5001-STP',
@@ -291,43 +283,46 @@ const initialMockState = {
   ],
   auditLogs: [
     {
-      scn: 18492041,
-      tx_id: 'TX-5001-STP',
-      event_type: 'BALANCE_MUTATION_DEBIT',
-      actor_id: 'U1001',
-      actor_role: 'CUSTOMER',
-      account_id: '1000-2000-3001',
-      delta_amount: -2000.0000,
-      balance_after: 998000.0000,
-      digest_hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-      timestamp: new Date(Date.now() - 7200000).toISOString(),
-      status: 'VERIFIED',
-    },
-    {
-      scn: 18492042,
-      tx_id: 'TX-5002-MC',
-      event_type: 'SOFT_HOLD_RESERVATION',
-      actor_id: 'U1001',
-      actor_role: 'CUSTOMER',
-      account_id: '1000-2000-3001',
-      delta_amount: -125000.0000,
-      balance_after: 873000.0000,
-      digest_hash: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08',
-      timestamp: new Date(Date.now() - 1800000).toISOString(),
-      status: 'VERIFIED',
-    },
-    {
-      scn: 18492043,
-      tx_id: 'TX-5003-AMLA',
-      event_type: 'AMLA_CTR_HOLD_FLAGGED',
+      scn: 52,
+      tx_id: 'TX-5003-AMLA-OTP-VERIFIED',
+      event_type: 'AMLA_CTR_CUSTOMER_OTP_VERIFIED',
       actor_id: 'U1001',
       actor_role: 'CUSTOMER',
       account_id: '1000-2000-3001',
       delta_amount: -600000.0000,
-      balance_after: 273000.0000,
+      before_balance: 15000000.0000,
+      balance_after: 14400000.0000,
       digest_hash: '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8',
       timestamp: new Date(Date.now() - 600000).toISOString(),
-      status: 'VERIFIED',
+      status: 'COMMITTED',
+    },
+    {
+      scn: 51,
+      tx_id: 'TX-5002-OTP-VERIFIED',
+      event_type: 'CUSTOMER_EMAIL_OTP_VERIFIED',
+      actor_id: 'U1001',
+      actor_role: 'CUSTOMER',
+      account_id: '1000-2000-3001',
+      delta_amount: -125000.0000,
+      before_balance: 14400000.0000,
+      balance_after: 14275000.0000,
+      digest_hash: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08',
+      timestamp: new Date(Date.now() - 1800000).toISOString(),
+      status: 'COMMITTED',
+    },
+    {
+      scn: 50,
+      tx_id: 'TX-5001-STP',
+      event_type: 'TRANSFER',
+      actor_id: 'U1001',
+      actor_role: 'CUSTOMER',
+      account_id: '1000-2000-3001',
+      delta_amount: -2000.0000,
+      before_balance: 14275000.0000,
+      balance_after: 14273000.0000,
+      digest_hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+      timestamp: new Date(Date.now() - 7200000).toISOString(),
+      status: 'COMMITTED',
     }
   ]
 };
@@ -338,22 +333,26 @@ const loadMockState = () => {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && parsed.account && Array.isArray(parsed.transfers)) {
-        // Migration and compatibility check for multi-level approval
+        // Migration and compatibility check: ensure no legacy holds or approvals remain
         parsed.transfers.forEach((tx) => {
+          tx.hold_active = false;
+          tx.approval_stage = 0;
+          tx.required_stages = 0;
+          if (tx.status === 'PENDING_APPROVAL') {
+            tx.status = 'SETTLED';
+          }
           if (tx.regulatory_tier === 'TIER_3_AMLA_CTR') {
-            tx.required_stages = 2;
-            if (!tx.approval_stage) {
-              tx.approval_stage = tx.l1_approver_id ? 2 : 1;
-            }
-          } else if (tx.regulatory_tier === 'TIER_2_DUAL_CONTROL') {
-            tx.required_stages = 1;
-            tx.approval_stage = 1;
+            tx.tier_label = 'Tier 3: AMLA CTR + Customer OTP';
+          } else if (tx.regulatory_tier === 'TIER_2_DUAL_CONTROL' || tx.regulatory_tier === 'TIER_2_CUSTOMER_VERIFY') {
+            tx.regulatory_tier = 'TIER_2_CUSTOMER_VERIFY';
+            tx.tier_label = 'Tier 2: Customer Email OTP Verified';
           }
         });
+        parsed.account.held_balance = 0.0000;
         if (parsed.account.current_balance < 15000000.0000) {
           parsed.account.current_balance = 15000000.0000;
-          parsed.account.available_balance = 15000000.0000 - (parsed.account.held_balance || 0);
         }
+        parsed.account.available_balance = parsed.account.current_balance;
         if (!parsed.users || !Array.isArray(parsed.users) || parsed.users.length === 0) {
           parsed.users = JSON.parse(JSON.stringify(initialMockState.users));
         }
@@ -642,14 +641,14 @@ function handleMockFallback(config) {
 
         if (isTier3) {
           tier = 'TIER_3_AMLA_CTR';
-          tierLabel = 'Tier 3: AMLA CTR + Customer Verification';
+          tierLabel = 'Tier 3: AMLA CTR + Customer OTP';
           status = 'PENDING_VERIFICATION';
-          responseMsg = 'AMLA Covered Transaction (≥ ₱500k). Soft hold placed. 6-digit verification code dispatched to your registered email (MailHog :8025) and CTR regulatory notice generated.';
+          responseMsg = 'AMLA Covered Transaction (≥ ₱500k). 6-digit verification code dispatched to your registered email (MailHog :8025) and CTR regulatory notice generated.';
         } else if (isTier2) {
           tier = 'TIER_2_CUSTOMER_VERIFY';
           tierLabel = 'Tier 2: Customer Email Verification (MailHog)';
           status = 'PENDING_VERIFICATION';
-          responseMsg = 'Transfer exceeds ₱50,000 threshold. Soft hold placed. 6-digit verification code dispatched to your registered email (MailHog :8025) to confirm transfer.';
+          responseMsg = 'Transfer exceeds ₱50,000 threshold. 6-digit verification code dispatched to your registered email (MailHog :8025) to confirm transfer.';
         }
 
         const isPayCredit = (matchedAccount.account_number || toAccountId || '').includes('3003') || toAccountId === 'A2003';
@@ -671,7 +670,7 @@ function handleMockFallback(config) {
           created_at: new Date().toISOString(),
           memo: payload.memo || (isPayCredit ? 'Credit Line Balance Settlement' : 'Standard Retail Transfer'),
           maker_user_id: payload.maker_user_id || 'U1001',
-          hold_active: isHeld,
+          hold_active: false,
           approval_stage: 0,
           required_stages: 0,
           l1_approver_id: null,
@@ -685,8 +684,7 @@ function handleMockFallback(config) {
         };
 
         if (isHeld) {
-          sourceAccount.held_balance += amount;
-          sourceAccount.available_balance -= amount;
+          sourceAccount.held_balance = 0.0000;
         } else {
           if (isFromCredit) {
             sourceAccount.current_balance += amount;
@@ -824,31 +822,28 @@ function handleMockFallback(config) {
         tx.tier_label = 'Tier 2: Customer Email Verified (MailHog)';
 
         const sourceAccount = mockState.account;
-        if (sourceAccount.held_balance >= tx.amount) {
-          sourceAccount.held_balance -= tx.amount;
-        } else {
-          sourceAccount.held_balance = 0;
-        }
+        sourceAccount.held_balance = 0.0000;
         sourceAccount.current_balance = Math.max(0, sourceAccount.current_balance - tx.amount);
-        sourceAccount.available_balance = sourceAccount.current_balance - sourceAccount.held_balance;
+        sourceAccount.available_balance = sourceAccount.current_balance;
 
         // Record Audit Entry
         const nextScn = mockState.auditLogs.length > 0 
           ? mockState.auditLogs[mockState.auditLogs.length - 1].scn + 1 
           : 18492044;
         
-        mockState.auditLogs.push({
+        mockState.auditLogs.unshift({
           scn: nextScn,
-          tx_id: tx.id,
-          event_type: 'CUSTOMER_EMAIL_OTP_VERIFIED',
+          tx_id: tx.id + '-OTP-VERIFIED',
+          event_type: tx.amount >= THRESHOLDS.AMLA_CTR_MIN ? 'AMLA_CTR_CUSTOMER_OTP_VERIFIED' : 'CUSTOMER_EMAIL_OTP_VERIFIED',
           actor_id: tx.maker_user_id || 'U1001',
           actor_role: 'CUSTOMER',
           account_id: tx.from_account_id,
           delta_amount: -tx.amount,
+          before_balance: sourceAccount.current_balance + tx.amount,
           balance_after: sourceAccount.available_balance,
-          digest_hash: Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2),
+          digest_hash: Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2),
           timestamp: tx.verified_at,
-          status: 'VERIFIED',
+          status: 'COMMITTED',
         });
         saveMockState();
 
@@ -874,6 +869,11 @@ function handleMockFallback(config) {
             record: tx,
           }
         });
+      }
+
+      // 4c. Get Audit records from PostgreSQL / audit projection
+      if ((url.includes('/ledger/audit') || url.includes('/audit-logs') || url.includes('/audit/records')) && method === 'get') {
+        return resolve({ data: mockState.auditLogs });
       }
 
       // 5. Get Pending Transfers for Manager Queue

@@ -40,39 +40,15 @@ const ROLE_HOME = {
   CUSTOMER: '/customer',
 };
 
-/** Seed pending items for the teller station. Unchanged from the prior build. */
-const SEED_PENDING = [
-  {
-    transactionId: 'TX-772190',
-    sourceAccountId: 'A2001',
-    destinationAccountId: 'A2002',
-    amount: 75000.0,
-    initiatorUserId: 'U1001',
-    description: 'Vendor Invoice Settlement (Hardware Supplier)',
-    submittedAt: new Date(Date.now() - 1000 * 60 * 14).toISOString(),
-    status: 'PENDING_APPROVAL',
-    riskTier: 'TIER_2_MAKER_CHECKER',
-  },
-  {
-    transactionId: 'TX-551029',
-    sourceAccountId: 'A2001',
-    destinationAccountId: 'A2002',
-    amount: 650000.0,
-    initiatorUserId: 'U1001',
-    description: 'Commercial Real Estate Acquisition Escrow',
-    submittedAt: new Date(Date.now() - 1000 * 60 * 32).toISOString(),
-    status: 'PENDING_APPROVAL',
-    riskTier: 'TIER_3_AMLA',
-  },
-];
+const SEED_PENDING = [];
 
 const INITIAL_BALANCE = {
   account_id: '1000-2000-3001',
   account_type: 'SAVINGS',
   currency: 'PHP',
   current_balance: 15000000.0,
-  held_balance: 725000.0,
-  available_balance: 14275000.0,
+  held_balance: 0.0,
+  available_balance: 15000000.0,
   credit_limit: 0.0,
 };
 

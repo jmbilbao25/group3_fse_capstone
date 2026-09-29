@@ -52,27 +52,42 @@ export const ROLES = {
     id: 'U1001',
     name: 'Juan Dela Cruz',
     role: 'CUSTOMER',
-    badge: 'Retail Customer (Maker)',
+    badge: 'Retail Customer',
     description: 'Account Holder & Transaction Initiator',
   },
   TELLER: {
     id: 'U3002',
     name: 'Beatriz Ocampo',
     role: 'MANAGER',
-    badge: 'Branch Operations Officer (Checker)',
-    description: 'Authorized Dual-Control Approver',
+    badge: 'Branch Operations Officer',
+    description: 'Branch Operations Officer',
   },
   ADMIN: {
     id: 'U0001',
     name: 'Diana Vance',
     role: 'ADMIN',
-    badge: 'System Administrator & Compliance',
-    description: 'Telemetry, Health, and Audit Oversight',
+    badge: 'Compliance Auditor',
+    description: 'PostgreSQL Immutable Audit Trail & Regulatory Discovery',
   },
 };
 
 // API Services
 export const LedgerService = {
+  // Query immutable audit records from PostgreSQL
+  getAuditRecords: async () => {
+    try {
+      const response = await apiClient.get('/v1/ledger/audit');
+      return { success: true, data: response.data || [] };
+    } catch (error) {
+      try {
+        const directRes = await axios.get('http://localhost:8082/api/v1/ledger/audit', { timeout: 3000 });
+        return { success: true, data: directRes.data || [] };
+      } catch (err2) {
+        return { success: false, error: error.message, data: [] };
+      }
+    }
+  },
+
   // Execute balance mutation / transfer
   executeTransfer: async (payload) => {
     try {

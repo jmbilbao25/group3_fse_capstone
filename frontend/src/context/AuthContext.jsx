@@ -88,7 +88,7 @@ export function AuthProvider({ children }) {
         
         // UI Presentation helpers
         name: user_name || `${dbUser?.first_name || (targetUserId === 'U3003' ? 'Carlos' : targetUserId === 'U3002' ? 'Beatriz' : targetUserId === 'U0001' ? 'Diana' : 'Juan')} ${dbUser?.last_name || (targetUserId === 'U3003' ? 'Mendoza' : targetUserId === 'U3002' ? 'Ocampo' : targetUserId === 'U0001' ? 'Vance' : 'Dela Cruz')}`,
-        title: user_title || (targetUserId === 'U3003' || targetUserId === 'U3002' ? 'Operations Manager' : targetUserId === 'U0001' ? 'System Auditor & Compliance' : 'Retail Account Holder (Maker)'),
+        title: user_title || (targetUserId === 'U3003' || targetUserId === 'U3002' ? 'Operations Manager' : targetUserId === 'U0001' ? 'System Auditor & Compliance' : 'Retail Account Holder'),
       };
       
       setUser(authenticatedUser);

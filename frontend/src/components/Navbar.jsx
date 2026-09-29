@@ -24,7 +24,7 @@ export default function Navbar({ onRefreshBalance, isLiveConnected }) {
     {
       role: 'ROLE_CUSTOMER',
       label: 'Juan Dela Cruz',
-      subtitle: 'Verified Account Holder (Maker)',
+      subtitle: 'Verified Account Holder',
       id: 'U1001',
       badge: 'Private Client',
       badgeColor: 'bg-cyan-50 text-cyan-700 border-cyan-200',
@@ -32,7 +32,7 @@ export default function Navbar({ onRefreshBalance, isLiveConnected }) {
     {
       role: 'ROLE_MANAGER',
       label: 'Beatriz Ocampo',
-      subtitle: 'Maker-Checker Supervisor (Operations Reviewer)',
+      subtitle: 'Operations Manager',
       id: 'U3002',
       badge: 'Operations Manager',
       badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
@@ -40,7 +40,7 @@ export default function Navbar({ onRefreshBalance, isLiveConnected }) {
     {
       role: 'ROLE_MANAGER',
       label: 'Carlos Mendoza',
-      subtitle: 'Maker-Checker Supervisor (Operations Reviewer)',
+      subtitle: 'Operations Manager',
       id: 'U3003',
       badge: 'Operations Manager',
       badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
@@ -164,12 +164,12 @@ export default function Navbar({ onRefreshBalance, isLiveConnected }) {
                 </div>
                 <div className="divide-y divide-slate-100 text-xs py-1">
                   <div className="py-2">
-                    <p className="font-semibold text-slate-800">Maker-Checker Dual Approval</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">Transfer TX-551029 (₱650k) pending second manager approval.</p>
+                    <p className="font-semibold text-slate-800">Customer Security Verification</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">High-value transfer requires customer email verification via MailHog.</p>
                   </div>
                   <div className="py-2">
-                    <p className="font-semibold text-slate-800">Credit Facility Statement Ready</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">Billing cycle cutoff active. ₱2,000 statement balance due.</p>
+                    <p className="font-semibold text-slate-800">Savings Account Statement Ready</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">Monthly e-statement generated for account 1000-2000-3001.</p>
                   </div>
                 </div>
               </div>

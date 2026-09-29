@@ -46,7 +46,7 @@ function MainApp() {
       description: 'Vendor Invoice Settlement (Hardware Supplier)',
       submittedAt: new Date(Date.now() - 1000 * 60 * 14).toISOString(),
       status: 'PENDING_APPROVAL',
-      riskTier: 'TIER_2_MAKER_CHECKER',
+      riskTier: 'TIER_2_CUSTOMER_VERIFICATION',
     },
     {
       transactionId: 'TX-551029',

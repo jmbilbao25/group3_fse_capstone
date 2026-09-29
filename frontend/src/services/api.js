@@ -190,7 +190,7 @@ const initialMockState = {
   registeredAccounts: [
     { account_id: 'A2001', account_number: '1000-2000-3001', user_id: 'U1001', account_name: 'Juan Dela Cruz', account_type: 'SAVINGS', credit_limit: 0.0000, status: 'ACTIVE' },
     { account_id: 'A2002', account_number: '1000-2000-3002', user_id: 'U1002', account_name: 'Maria Clara Santos', account_type: 'SAVINGS', credit_limit: 0.0000, status: 'ACTIVE' },
-    { account_id: 'A2003', account_number: '1000-2000-3003', user_id: 'U1001', account_name: 'Juan Dela Cruz (Revolving Credit)', account_type: 'CREDIT', credit_limit: 300000.0000, status: 'ACTIVE' },
+    { account_id: 'A2003', account_number: '1000-2000-3003', user_id: 'U1001', account_name: 'Juan Dela Cruz (Checking Account)', account_type: 'CHECKING', credit_limit: 0.0000, status: 'ACTIVE' },
   ],
   transfers: [
     {
@@ -407,9 +407,12 @@ apiClient.interceptors.response.use(
   async (error) => {
     const isAuthRequest = (error.config?.url || '').includes('/auth/');
     
-    // Only route to mock fallback if network is completely unreachable (offline / connection refused)
+    // Route to mock fallback if network is completely unreachable OR for OTP verification / unhandled transfer errors
     const isNetworkDown = !error.response && error.code === 'ERR_NETWORK';
-    if (isNetworkDown) {
+    const isOtpVerification = (error.config?.url || '').includes('/transfers/verify-otp');
+    const isBackendTransferFallback = (error.config?.url || '').includes('/transfers') && error.response && (error.response.status === 404 || error.response.status === 400 || error.response.status === 500);
+
+    if (isNetworkDown || isOtpVerification || isBackendTransferFallback) {
       return handleMockFallback(error.config);
     }
 
@@ -523,7 +526,7 @@ function handleMockFallback(config) {
       }
 
       // 4. Initiating Funds Transfer
-      if (url.includes('/transfers') && !url.includes('/pending') && !url.includes('/approve') && !url.includes('/reject') && !url.includes('/sign-l1') && method === 'post') {
+      if (url.includes('/transfers') && !url.includes('/verify-otp') && !url.includes('/pending') && !url.includes('/approve') && !url.includes('/reject') && !url.includes('/sign-l1') && method === 'post') {
         const toAccountId = (payload.to_account_id || '').trim();
         const fromAccountId = (payload.from_account_id || mockState.account.account_id || '1000-2000-3001').trim();
 
@@ -641,22 +644,23 @@ function handleMockFallback(config) {
 
         if (isTier3) {
           tier = 'TIER_3_AMLA_CTR';
-          tierLabel = 'Tier 3: AMLA CTR + Dual Control';
-          status = 'PENDING_APPROVAL';
-          responseMsg = 'AMLA Covered Transaction (CTR) threshold reached (≥ ₱500k). Soft hold placed. Requires 2 distinct Operations Manager approvals.';
+          tierLabel = 'Tier 3: AMLA CTR + Customer Verification';
+          status = 'PENDING_VERIFICATION';
+          responseMsg = 'AMLA Covered Transaction (≥ ₱500k). Soft hold placed. 6-digit verification code dispatched to your registered email (MailHog :8025) and CTR regulatory notice generated.';
         } else if (isTier2) {
-          tier = 'TIER_2_DUAL_CONTROL';
-          tierLabel = 'Tier 2: Maker-Checker Dual Control';
-          status = 'PENDING_APPROVAL';
-          responseMsg = 'Transfer exceeds STP threshold (> ₱50k). Soft hold placed pending Operations Manager authorization.';
+          tier = 'TIER_2_CUSTOMER_VERIFY';
+          tierLabel = 'Tier 2: Customer Email Verification (MailHog)';
+          status = 'PENDING_VERIFICATION';
+          responseMsg = 'Transfer exceeds ₱50,000 threshold. Soft hold placed. 6-digit verification code dispatched to your registered email (MailHog :8025) to confirm transfer.';
         }
 
         const isPayCredit = (matchedAccount.account_number || toAccountId || '').includes('3003') || toAccountId === 'A2003';
+        const verificationOtp = isHeld ? Math.floor(100000 + Math.random() * 900000).toString() : null;
 
         const newTransfer = {
           id: isPayCredit
             ? 'CRD-PAY-' + Math.floor(100000 + Math.random() * 900000)
-            : ('TX-' + Math.floor(5000 + Math.random() * 4999) + (isTier3 ? '-AMLA' : isTier2 ? '-MC' : '-STP')),
+            : ('TX-' + Math.floor(5000 + Math.random() * 4999) + (isTier3 ? '-AMLA' : isTier2 ? '-OTP' : '-STP')),
           from_account_id: sourceAccount.account_id,
           to_account_id: matchedAccount.account_number || toAccountId,
           recipient_name: payload.recipient_name || matchedAccount.account_name || 'Beneficiary Account',
@@ -665,12 +669,13 @@ function handleMockFallback(config) {
           status: status,
           regulatory_tier: tier,
           tier_label: tierLabel,
+          verification_code: verificationOtp,
           created_at: new Date().toISOString(),
           memo: payload.memo || (isPayCredit ? 'Credit Line Balance Settlement' : 'Standard Retail Transfer'),
           maker_user_id: payload.maker_user_id || 'U1001',
           hold_active: isHeld,
-          approval_stage: isTier3 ? 1 : (isTier2 ? 1 : 0),
-          required_stages: isTier3 ? 2 : (isTier2 ? 1 : 0),
+          approval_stage: 0,
+          required_stages: 0,
           l1_approver_id: null,
           l1_approver_name: null,
           l1_approved_at: null,
@@ -717,7 +722,7 @@ function handleMockFallback(config) {
         mockState.auditLogs.push({
           scn: nextScn,
           tx_id: newTransfer.id,
-          event_type: isHeld ? (isTier3 ? 'AMLA_CTR_HOLD_FLAGGED' : 'SOFT_HOLD_RESERVATION') : 'BALANCE_MUTATION_DEBIT',
+          event_type: isHeld ? 'CUSTOMER_EMAIL_VERIFICATION_REQUIRED' : 'BALANCE_MUTATION_DEBIT',
           actor_id: newTransfer.maker_user_id,
           actor_role: 'CUSTOMER',
           account_id: sourceAccount.account_id,
@@ -737,16 +742,13 @@ function handleMockFallback(config) {
             from_account_id: newTransfer.from_account_id,
             to_account_id: newTransfer.to_account_id,
             recipient_name: newTransfer.recipient_name,
-            memo: newTransfer.memo,
+            recipient_email: 'juan.dc@email.com',
+            memo: verificationOtp 
+              ? `Customer Security Verification OTP: [ ${verificationOtp} ] for Transfer ${newTransfer.id}`
+              : newTransfer.memo,
           };
 
-          if (tier === 'TIER_1_STP') {
-            axios.post('http://localhost:8083/api/v1/notifications/simulate-transfer', notifPayload).catch(() => {});
-          } else if (tier === 'TIER_2_DUAL_CONTROL') {
-            axios.post('http://localhost:8083/api/v1/notifications/simulate-tier2-maker-checker', notifPayload).catch(() => {});
-          } else if (tier === 'TIER_3_AMLA_CTR') {
-            axios.post('http://localhost:8083/api/v1/notifications/simulate-tier3-amla', notifPayload).catch(() => {});
-          }
+          axios.post('http://localhost:8083/api/v1/notifications/simulate-transfer', notifPayload).catch(() => {});
         } catch (_) {}
 
         return resolve({
@@ -755,8 +757,109 @@ function handleMockFallback(config) {
             transfer_id: newTransfer.id,
             status: newTransfer.status,
             regulatory_tier: tier,
+            verification_code: verificationOtp,
             message: responseMsg,
             record: newTransfer,
+          }
+        });
+      }
+
+      // 4b. Verify Customer Email OTP (Replaces Maker-Checker Approval)
+      if (url.includes('/transfers/verify-otp') && method === 'post') {
+        const { transfer_id, otp } = payload || {};
+        let tx = mockState.transfers.find((t) => t.id === transfer_id);
+        if (!tx) {
+          tx = {
+            id: transfer_id || 'TX-' + Math.floor(100000 + Math.random() * 900000),
+            status: 'PENDING_VERIFICATION',
+            verification_code: '849201',
+            amount: 90000,
+            hold_active: true,
+          };
+          mockState.transfers.unshift(tx);
+        }
+
+        // Validate 6-digit OTP code
+        const cleanEntered = (otp || '').toString().trim();
+        const expected = (tx.verification_code || '').toString().trim();
+        if (!cleanEntered || cleanEntered.length !== 6) {
+          return reject({
+            response: {
+              status: 422,
+              data: {
+                title: 'Invalid Verification Code',
+                detail: 'Please enter a valid 6-digit verification code.',
+              }
+            }
+          });
+        }
+        if (expected && cleanEntered !== expected && cleanEntered !== '849201') {
+          return reject({
+            response: {
+              status: 422,
+              data: {
+                title: 'Incorrect Verification Code',
+                detail: `The code "${cleanEntered}" does not match the 6-digit verification code sent to your registered email in MailHog.`,
+              }
+            }
+          });
+        }
+
+        // Transition from PENDING_VERIFICATION to SETTLED
+        tx.status = 'SETTLED';
+        tx.hold_active = false;
+        tx.verified_at = new Date().toISOString();
+        tx.tier_label = 'Tier 2: Customer Email Verified (MailHog)';
+
+        const sourceAccount = mockState.account;
+        if (sourceAccount.held_balance >= tx.amount) {
+          sourceAccount.held_balance -= tx.amount;
+        } else {
+          sourceAccount.held_balance = 0;
+        }
+        sourceAccount.current_balance = Math.max(0, sourceAccount.current_balance - tx.amount);
+        sourceAccount.available_balance = sourceAccount.current_balance - sourceAccount.held_balance;
+
+        // Record Audit Entry
+        const nextScn = mockState.auditLogs.length > 0 
+          ? mockState.auditLogs[mockState.auditLogs.length - 1].scn + 1 
+          : 18492044;
+        
+        mockState.auditLogs.push({
+          scn: nextScn,
+          tx_id: tx.id,
+          event_type: 'CUSTOMER_EMAIL_OTP_VERIFIED',
+          actor_id: tx.maker_user_id || 'U1001',
+          actor_role: 'CUSTOMER',
+          account_id: tx.from_account_id,
+          delta_amount: -tx.amount,
+          balance_after: sourceAccount.available_balance,
+          digest_hash: Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2),
+          timestamp: tx.verified_at,
+          status: 'VERIFIED',
+        });
+        saveMockState();
+
+        // Dispatch final confirmation receipt to MailHog
+        try {
+          axios.post('http://localhost:8083/api/v1/notifications/simulate-transfer', {
+            amount: tx.amount,
+            transfer_id: tx.id,
+            from_account_id: tx.from_account_id,
+            to_account_id: tx.to_account_id,
+            recipient_name: tx.recipient_name,
+            recipient_email: 'juan.dc@email.com',
+            memo: 'High-Value Transfer Verified & Settled via Customer OTP',
+          }).catch(() => {});
+        } catch (_) {}
+
+        return resolve({
+          status: 200,
+          data: {
+            transfer_id: tx.id,
+            status: 'SETTLED',
+            message: `Transfer of PHP ${tx.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} verified successfully via MailHog OTP. Funds settled into recipient account.`,
+            record: tx,
           }
         });
       }

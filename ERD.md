@@ -10,9 +10,6 @@ This document defines the canonical database schemas across the Master Transacti
 erDiagram
     USERS ||--o{ ACCOUNTS : "owns"
     ACCOUNTS ||--|| BALANCE_MASTER : "maintains"
-    ACCOUNTS ||--o{ CREDIT_ASSESSMENTS : "secured by"
-    USERS ||--o{ CREDIT_ASSESSMENTS : "applies for"
-    USERS ||--o{ CREDIT_ASSESSMENTS : "assessed by teller"
     ACCOUNTS ||--o{ TRANSACTIONS : "source account"
     ACCOUNTS ||--o{ TRANSACTIONS : "destination account"
     USERS ||--o{ TRANSACTIONS : "approved by user"
@@ -42,7 +39,7 @@ erDiagram
         VARCHAR account_id PK
         VARCHAR user_id FK
         VARCHAR account_number UK
-        VARCHAR account_type "SAVINGS, CREDIT"
+        VARCHAR account_type "SAVINGS, CHECKING"
         VARCHAR status "ACTIVE, LOCKED, PENDING_APPROVAL"
         DECIMAL credit_limit "NUMBER(18, 4)"
         TIMESTAMP created_at
@@ -58,33 +55,16 @@ erDiagram
         TIMESTAMP updated_at
     }
 
-    CREDIT_ASSESSMENTS {
-        VARCHAR assessment_id PK
-        VARCHAR account_id FK
-        VARCHAR user_id FK
-        VARCHAR collateral_type "REAL_ESTATE, VEHICLE, TIME_DEPOSIT"
-        TEXT collateral_description
-        DECIMAL collateral_market_value "NUMBER(18, 4)"
-        DECIMAL collateral_appraised_value "NUMBER(18, 4)"
-        INTEGER credit_score
-        DECIMAL approved_credit_limit "NUMBER(18, 4)"
-        VARCHAR risk_tier "LOW_RISK, MEDIUM_RISK, HIGH_RISK"
-        VARCHAR assessed_by_teller_id FK
-        VARCHAR status "PENDING, APPROVED, REJECTED"
-        TIMESTAMP created_at
-        TIMESTAMP updated_at
-    }
-
     TRANSACTIONS {
         VARCHAR transaction_id PK
         VARCHAR from_account_id FK
         VARCHAR to_account_id FK
-        VARCHAR type "DEPOSIT, WITHDRAWAL, TRANSFER, CREDIT_DRAW"
+        VARCHAR type "DEPOSIT, WITHDRAWAL, TRANSFER"
         DECIMAL amount "NUMBER(18, 4)"
         DECIMAL before_balance "NUMBER(18, 4)"
         DECIMAL after_balance "NUMBER(18, 4)"
         VARCHAR status "PENDING_APPROVAL, COMMITTED, FAILED"
-        BOOLEAN requires_maker_checker
+        BOOLEAN requires_maker_checker "Flag for Email OTP > PHP 50k"
         VARCHAR approved_by_user_id FK
         TIMESTAMP created_at
         TIMESTAMP updated_at
@@ -92,9 +72,9 @@ erDiagram
 
     OUTBOX_EVENTS {
         VARCHAR event_id PK
-        VARCHAR aggregate_type "TRANSACTION, MAKER_CHECKER, BALANCE_MUTATION"
+        VARCHAR aggregate_type "TRANSACTION, BALANCE_MUTATION, CUSTOMER_VERIFICATION"
         VARCHAR aggregate_id FK
-        VARCHAR event_type "MAKER_PENDING, CHECKER_APPROVED, MUTATION_COMMITTED"
+        VARCHAR event_type "VERIFICATION_PENDING, VERIFICATION_CONFIRMED, MUTATION_COMMITTED"
         VARCHAR kafka_topic
         TEXT payload
         VARCHAR status "PENDING, PUBLISHED, FAILED"
@@ -106,7 +86,7 @@ erDiagram
     NOTIFICATIONS {
         VARCHAR notification_id PK
         VARCHAR user_id FK
-        VARCHAR type "TRANSACTION_ALERT, SECURITY_ALERT, MAKER_CHECKER_ALERT"
+        VARCHAR type "TRANSACTION_ALERT, SECURITY_ALERT, CUSTOMER_VERIFICATION_ALERT, AMLA_CTR_ALERT"
         TEXT message
         TIMESTAMP sent_at
         TIMESTAMP created_at
@@ -146,7 +126,7 @@ CREATE TABLE accounts (
     account_id     VARCHAR2(64) PRIMARY KEY,
     user_id        VARCHAR2(64) NOT NULL,
     account_number VARCHAR2(32) NOT NULL UNIQUE,
-    account_type   VARCHAR2(20) NOT NULL CHECK (account_type IN ('SAVINGS', 'CREDIT')),
+    account_type   VARCHAR2(20) NOT NULL CHECK (account_type IN ('SAVINGS', 'CHECKING')),
     status         VARCHAR2(20) DEFAULT 'ACTIVE' NOT NULL CHECK (status IN ('ACTIVE', 'LOCKED', 'PENDING_APPROVAL')),
     credit_limit   NUMBER(18, 4) DEFAULT 0.0000 NOT NULL CHECK (credit_limit >= 0),
     created_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -166,33 +146,12 @@ CREATE TABLE balance_master (
     CONSTRAINT chk_bm_available_balance CHECK (balance_amount >= hold_amount)
 );
 
--- 4. Credit Assessments Table
-CREATE TABLE credit_assessments (
-    assessment_id              VARCHAR2(64) PRIMARY KEY,
-    account_id                 VARCHAR2(64) NOT NULL,
-    user_id                    VARCHAR2(64) NOT NULL,
-    collateral_type            VARCHAR2(50) NOT NULL CHECK (collateral_type IN ('REAL_ESTATE', 'VEHICLE', 'TIME_DEPOSIT')),
-    collateral_description     CLOB NOT NULL,
-    collateral_market_value    NUMBER(18, 4) NOT NULL,
-    collateral_appraised_value NUMBER(18, 4) NOT NULL,
-    credit_score               NUMBER(4) NOT NULL CHECK (credit_score BETWEEN 300 AND 850),
-    approved_credit_limit      NUMBER(18, 4) NOT NULL,
-    risk_tier                  VARCHAR2(20) NOT NULL CHECK (risk_tier IN ('LOW_RISK', 'MEDIUM_RISK', 'HIGH_RISK')),
-    assessed_by_teller_id      VARCHAR2(64) NOT NULL,
-    status                     VARCHAR2(20) DEFAULT 'PENDING' NOT NULL CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
-    created_at                 TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at                 TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    CONSTRAINT fk_ca_account FOREIGN KEY (account_id) REFERENCES accounts(account_id),
-    CONSTRAINT fk_ca_user FOREIGN KEY (user_id) REFERENCES users(user_id),
-    CONSTRAINT fk_ca_teller FOREIGN KEY (assessed_by_teller_id) REFERENCES users(user_id)
-);
-
--- 5. Transactions Table
+-- 4. Transactions Table
 CREATE TABLE transactions (
     transaction_id         VARCHAR2(64) PRIMARY KEY,
     from_account_id        VARCHAR2(64) NOT NULL,
     to_account_id          VARCHAR2(64),
-    type                   VARCHAR2(30) NOT NULL CHECK (type IN ('DEPOSIT', 'WITHDRAWAL', 'TRANSFER', 'CREDIT_DRAW')),
+    type                   VARCHAR2(30) NOT NULL CHECK (type IN ('DEPOSIT', 'WITHDRAWAL', 'TRANSFER')),
     amount                 NUMBER(18, 4) NOT NULL CHECK (amount > 0),
     before_balance         NUMBER(18, 4) NOT NULL,
     after_balance          NUMBER(18, 4) NOT NULL,
@@ -206,12 +165,12 @@ CREATE TABLE transactions (
     CONSTRAINT fk_tx_approver FOREIGN KEY (approved_by_user_id) REFERENCES users(user_id)
 );
 
--- 6. Outbox Events Table (Transactional Outbox Pattern)
+-- 5. Outbox Events Table (Transactional Outbox Pattern)
 CREATE TABLE outbox_events (
     event_id       VARCHAR2(64) PRIMARY KEY,
-    aggregate_type VARCHAR2(50) NOT NULL CHECK (aggregate_type IN ('TRANSACTION', 'MAKER_CHECKER', 'BALANCE_MUTATION')),
+    aggregate_type VARCHAR2(50) NOT NULL CHECK (aggregate_type IN ('TRANSACTION', 'BALANCE_MUTATION', 'CUSTOMER_VERIFICATION')),
     aggregate_id   VARCHAR2(64) NOT NULL,
-    event_type     VARCHAR2(50) NOT NULL CHECK (event_type IN ('MAKER_PENDING', 'CHECKER_APPROVED', 'MUTATION_COMMITTED')),
+    event_type     VARCHAR2(50) NOT NULL CHECK (event_type IN ('VERIFICATION_PENDING', 'VERIFICATION_CONFIRMED', 'MUTATION_COMMITTED')),
     kafka_topic    VARCHAR2(100) NOT NULL,
     payload        CLOB NOT NULL,
     status         VARCHAR2(20) DEFAULT 'PENDING' NOT NULL CHECK (status IN ('PENDING', 'PUBLISHED', 'FAILED')),
@@ -221,11 +180,11 @@ CREATE TABLE outbox_events (
     CONSTRAINT fk_oe_aggregate FOREIGN KEY (aggregate_id) REFERENCES transactions(transaction_id)
 );
 
--- 7. Notifications Table
+-- 6. Notifications Table
 CREATE TABLE notifications (
     notification_id VARCHAR2(64) PRIMARY KEY,
     user_id         VARCHAR2(64) NOT NULL,
-    type            VARCHAR2(50) NOT NULL CHECK (type IN ('TRANSACTION_ALERT', 'SECURITY_ALERT', 'MAKER_CHECKER_ALERT')),
+    type            VARCHAR2(50) NOT NULL CHECK (type IN ('TRANSACTION_ALERT', 'SECURITY_ALERT', 'CUSTOMER_VERIFICATION_ALERT', 'AMLA_CTR_ALERT')),
     message         CLOB NOT NULL,
     sent_at         TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,

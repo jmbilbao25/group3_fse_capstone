@@ -107,12 +107,12 @@ INSERT INTO users (
 -- ------------------------------------------------------------------------------
 -- 2. SEED ACCOUNTS
 -- ------------------------------------------------------------------------------
--- Juan's Credit Account (A2001) with credit limit 300,000.0000
+-- Juan's Savings Account (A2001)
 INSERT INTO accounts (
     account_id, user_id, account_number, account_type, status, credit_limit,
     created_at, updated_at
 ) VALUES (
-    'A2001', 'U1001', '1000-2000-3001', 'CREDIT', 'ACTIVE', 300000.0000,
+    'A2001', 'U1001', '1000-2000-3001', 'SAVINGS', 'ACTIVE', 0.0000,
     TIMESTAMP '2024-01-10 09:20:00 UTC', TIMESTAMP '2024-01-10 09:20:00 UTC'
 );
 
@@ -125,12 +125,12 @@ INSERT INTO accounts (
     TIMESTAMP '2024-01-12 10:15:00 UTC', TIMESTAMP '2024-01-12 10:15:00 UTC'
 );
 
--- Juan's Secondary Savings Account (A2003)
+-- Juan's Secondary Checking Account (A2003)
 INSERT INTO accounts (
     account_id, user_id, account_number, account_type, status, credit_limit,
     created_at, updated_at
 ) VALUES (
-    'A2003', 'U1001', '1000-2000-3003', 'SAVINGS', 'ACTIVE', 0.0000,
+    'A2003', 'U1001', '1000-2000-3003', 'CHECKING', 'ACTIVE', 0.0000,
     TIMESTAMP '2024-01-15 14:00:00 UTC', TIMESTAMP '2024-01-15 14:00:00 UTC'
 );
 
@@ -139,7 +139,7 @@ INSERT INTO accounts (
 -- 3. SEED BALANCE MASTER
 -- Note: available_balance is automatically calculated via trg_calc_available_balance
 -- ------------------------------------------------------------------------------
--- Balance for Juan's Credit Account A2001 (Balance: 298,000, Hold: 0)
+-- Balance for Juan's Savings Account A2001 (Balance: 298,000, Hold: 0)
 INSERT INTO balance_master (
     account_id, balance_amount, hold_amount, created_at, updated_at
 ) VALUES (
@@ -155,30 +155,12 @@ INSERT INTO balance_master (
     TIMESTAMP '2024-01-12 10:15:00 UTC', TIMESTAMP '2024-06-01 14:32:00 UTC'
 );
 
--- Balance for Juan's Savings Account A2003 (Balance: 15,500, Hold: 0)
+-- Balance for Juan's Checking Account A2003 (Balance: 15,500, Hold: 0)
 INSERT INTO balance_master (
     account_id, balance_amount, hold_amount, created_at, updated_at
 ) VALUES (
     'A2003', 15500.0000, 0.0000,
     TIMESTAMP '2024-01-15 14:00:00 UTC', TIMESTAMP '2024-05-20 11:00:00 UTC'
-);
-
-
--- ------------------------------------------------------------------------------
--- 4. SEED CREDIT ASSESSMENTS
--- Evaluation by Alex (Teller U3001) for Juan (U1001) backed by vehicle collateral
--- ------------------------------------------------------------------------------
-INSERT INTO credit_assessments (
-    assessment_id, account_id, user_id, collateral_type, collateral_description,
-    collateral_market_value, collateral_appraised_value, credit_score,
-    approved_credit_limit, risk_tier, assessed_by_teller_id, status,
-    created_at, updated_at
-) VALUES (
-    'CA3001', 'A2001', 'U1001', 'VEHICLE',
-    '2022 Toyota Vios 1.5G Automatic (Plate: ABC-1234)',
-    750000.0000, 600000.0000, 765,
-    300000.0000, 'LOW_RISK', 'U3001', 'APPROVED',
-    TIMESTAMP '2024-01-10 09:25:00 UTC', TIMESTAMP '2024-01-10 09:25:00 UTC'
 );
 
 

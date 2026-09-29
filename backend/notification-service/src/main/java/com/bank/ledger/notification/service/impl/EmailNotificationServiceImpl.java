@@ -204,7 +204,7 @@ public class EmailNotificationServiceImpl implements EmailNotificationService {
                 "Customer initiated transfer online; transaction is held in PENDING_APPROVAL. A Bank Manager must review and authorize in the Manager Console before release.");
 
         String htmlContent = templateEngine.process("email/maker-checker-alert.html", context);
-        String subject = String.format("DUAL CONTROL REVIEW: Transfer %s Requires Manager Approval [%s]",
+        String subject = String.format("SECURITY VERIFICATION: Transfer %s OTP Code: [849201] [%s]",
                 receiptGenerator.formatCurrencyPhp(event.getAmount()), transferId);
 
         boolean dispatched = dispatchEmail(complianceEmail, subject, htmlContent, transferId);

@@ -21,6 +21,7 @@ Every containerized service in the Docker Compose bridge network (`banking-net`)
 | `notif_svc`| `notification-service` | `8083` | `8083` | HTTP / REST | Internal Network | Kafka listener, receipt generation, email 2FA OTP delivery |
 | `mailhog`  | `mailhog-smtp`         | `8025` / `1025` | `8025` / `1025` | HTTP / SMTP | Web Inbox / Host | Mock email inbox UI (:8025) and SMTP receiver (:1025) for OTP codes |
 | `auth_cache`| `redis-cache` | `6379` | `6379` | RESP / TCP | Internal Network | Token blacklist, 2FA OTP cache (300s TTL), rate limiting |
+| `redis_ui`  | `redis-insight`| `5540` | `5540` | HTTP | Host Browser | Redis Insight Web GUI: interactive key browser, TTL & memory inspector |
 | `master_db`| `oracle-xe-master` | `1521` | `1521` | Oracle TNS | Internal Network | Master relational state (users, accounts, balances, outbox) |
 | `audit_db` | `postgres-audit-vault`| `5432` | `5432` | PostgreSQL | Internal Network | Append-only audit vault (`ledger_mutation_audit`) |
 | `broker` | `kafka-broker` | `9092` | `9092` | PLAINTEXT | Internal Network | Apache Kafka commit log in KRaft mode |

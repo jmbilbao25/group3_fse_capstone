@@ -170,6 +170,22 @@ services:
       - banking-net
 
   # ============================================================================
+  # 7b. Redis Insight Web Management GUI
+  # Container Name: redis-insight
+  # Visual dashboard for inspecting Redis keys, memory usage, and TTLs
+  # ============================================================================
+  redis-insight:
+    container_name: redis-insight
+    image: redis/redisinsight:latest
+    restart: unless-stopped
+    ports:
+      - "5540:5540" # Web UI
+    networks:
+      - banking-net
+    depends_on:
+      - redis-cache
+
+  # ============================================================================
   # 8. Account & Identity Service (Spring Boot :8081)
   # Container Name: account-service
   # User registration, authentication, KYC profiles, and account provisioning

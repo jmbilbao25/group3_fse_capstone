@@ -55,18 +55,11 @@ export const ROLES = {
     badge: 'Retail Customer',
     description: 'Account Holder & Transaction Initiator',
   },
-  TELLER: {
-    id: 'U3002',
-    name: 'Beatriz Ocampo',
-    role: 'MANAGER',
-    badge: 'Branch Operations Officer',
-    description: 'Branch Operations Officer',
-  },
   ADMIN: {
     id: 'U0001',
     name: 'Diana Vance',
     role: 'ADMIN',
-    badge: 'Compliance Auditor',
+    badge: 'Administrator',
     description: 'PostgreSQL Immutable Audit Trail & Regulatory Discovery',
   },
 };

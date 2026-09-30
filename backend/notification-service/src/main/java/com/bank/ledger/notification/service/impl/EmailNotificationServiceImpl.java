@@ -195,7 +195,10 @@ public class EmailNotificationServiceImpl implements EmailNotificationService {
         }
 
         String code = null;
-        if (redisTemplate != null && transferId != null) {
+        if (event.getOtpCode() != null && !event.getOtpCode().isBlank()) {
+            code = event.getOtpCode().trim();
+        }
+        if (code == null && redisTemplate != null && transferId != null) {
             code = redisTemplate.opsForValue().get("otp:transfer:" + transferId);
         }
         if (code == null && event.getDescription() != null) {
@@ -204,7 +207,7 @@ public class EmailNotificationServiceImpl implements EmailNotificationService {
                 code = m.group(1);
             }
         }
-        if (code == null || code.isBlank() || "849201".equals(code)) {
+        if (code == null || code.isBlank()) {
             code = String.format("%06d", new java.security.SecureRandom().nextInt(1000000));
             if (redisTemplate != null && transferId != null) {
                 redisTemplate.opsForValue().set("otp:transfer:" + transferId, code, java.time.Duration.ofMinutes(5));
@@ -243,7 +246,7 @@ public class EmailNotificationServiceImpl implements EmailNotificationService {
 
         persistNotificationRecord(
                 makerId,
-                "MAKER_CHECKER_ALERT",
+                "CUSTOMER_VERIFICATION_ALERT",
                 String.format("Tier 2 transfer %s for %s OTP verification sent to %s.",
                         transferId, receiptGenerator.formatCurrencyPhp(event.getAmount()), targetRecipient)
         );
@@ -269,11 +272,11 @@ public class EmailNotificationServiceImpl implements EmailNotificationService {
         }
 
         String code = verificationCode;
-        if (code == null || code.isBlank() || "849201".equals(code)) {
+        if (code == null || code.isBlank()) {
             if (redisTemplate != null && transferId != null) {
                 code = redisTemplate.opsForValue().get("otp:transfer:" + transferId);
             }
-            if (code == null || code.isBlank() || "849201".equals(code)) {
+            if (code == null || code.isBlank()) {
                 code = String.format("%06d", new java.security.SecureRandom().nextInt(1000000));
                 if (redisTemplate != null && transferId != null) {
                     redisTemplate.opsForValue().set("otp:transfer:" + transferId, code, java.time.Duration.ofMinutes(5));
@@ -300,7 +303,7 @@ public class EmailNotificationServiceImpl implements EmailNotificationService {
 
         persistNotificationRecord(
                 "U1001",
-                "SECURITY_OTP",
+                "CUSTOMER_VERIFICATION_ALERT",
                 String.format("Security verification OTP %s dispatched for transfer %s (%s) to %s",
                         code, transferId, receiptGenerator.formatCurrencyPhp(amount != null ? amount : java.math.BigDecimal.ZERO), targetRecipient)
         );

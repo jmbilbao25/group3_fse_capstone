@@ -28,11 +28,10 @@ import { cn } from '../ui';
 
 const ROLE_LABELS = {
   ROLE_CUSTOMER: 'Customer',
-  ROLE_MANAGER: 'Manager',
-  ROLE_ADMIN: 'Compliance Auditor',
+  ROLE_ADMIN: 'Admin',
 };
 
-/* The three personas this build ships for demonstration. */
+/* The personas this build ships for demonstration. */
 const PERSONAS = [
   {
     role: 'ROLE_CUSTOMER',
@@ -41,22 +40,15 @@ const PERSONAS = [
     id: 'U1001',
   },
   {
-    role: 'ROLE_MANAGER',
-    name: 'Beatriz Ocampo',
-    title: 'Operations manager',
-    id: 'U3002',
-  },
-  {
     role: 'ROLE_ADMIN',
     name: 'Diana Vance',
-    title: 'Compliance Auditor',
+    title: 'Administrator',
     id: 'U0001',
   },
 ];
 
 const ROLE_HOME = {
   ROLE_CUSTOMER: '/customer',
-  ROLE_MANAGER: '/manager',
   ROLE_ADMIN: '/admin',
 };
 

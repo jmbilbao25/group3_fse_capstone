@@ -4,8 +4,6 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Login from './components/Login';
 import CustomerPortal from './components/CustomerPortal';
-import ManagerPortal from './components/ManagerPortal';
-import TellerPortal from './components/TellerPortal';
 import AdminPortal from './components/AdminPortal';
 import Toast from './components/Toast';
 import LiveNotices from './components/LiveNotices';
@@ -30,17 +28,11 @@ import apiClient, { mockState } from './services/api';
  */
 
 const ROLE_HOME = {
-  ROLE_TELLER: '/teller',
-  TELLER: '/teller',
-  ROLE_MANAGER: '/manager',
-  MANAGER: '/manager',
   ROLE_ADMIN: '/admin',
   ADMIN: '/admin',
   ROLE_CUSTOMER: '/customer',
   CUSTOMER: '/customer',
 };
-
-const SEED_PENDING = [];
 
 const INITIAL_BALANCE = {
   account_id: '1000-2000-3001',
@@ -60,7 +52,6 @@ function MainApp() {
 
   const [isLiveConnected, setIsLiveConnected] = useState(false);
   const [liveNotices, setLiveNotices] = useState([]);
-  const [pendingTransactions, setPendingTransactions] = useState(SEED_PENDING);
 
   const addNotice = (notice) => {
     setLiveNotices((prev) => [notice, ...prev.slice(0, 4)]);
@@ -193,38 +184,14 @@ function MainApp() {
           />
 
           <Route
-            path="/manager"
-            element={
-              (user.role === 'ROLE_MANAGER' || user.role === 'MANAGER') ? (
-                <ManagerPortal onActionComplete={fetchBalance} showToast={showToast} />
-              ) : (
-                <Navigate to={home} replace />
-              )
-            }
-          />
-
-          <Route
-            path="/teller"
-            element={
-              (user.role === 'ROLE_TELLER' || user.role === 'TELLER' || user.role === 'ROLE_MANAGER' || user.role === 'MANAGER') ? (
-                <TellerPortal
-                  pendingTransactions={pendingTransactions}
-                  setPendingTransactions={setPendingTransactions}
-                  onApprovalComplete={() => fetchBalance(activeAccountId)}
-                />
-              ) : (
-                <Navigate to={home} replace />
-              )
-            }
-          />
-
-          <Route
             path="/admin"
             element={
               (user.role === 'ROLE_ADMIN' || user.role === 'ADMIN') ? <AdminPortal /> : <Navigate to={home} replace />
             }
           />
 
+          <Route path="/manager" element={<Navigate to={home} replace />} />
+          <Route path="/teller" element={<Navigate to={home} replace />} />
           <Route path="*" element={<Navigate to={home} replace />} />
         </Routes>
       </main>

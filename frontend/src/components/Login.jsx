@@ -7,9 +7,7 @@ import { Button, Field, Input, Callout, cn } from '../ui';
 
 const PERSONAS = [
   { name: 'Juan Dela Cruz', role: 'Customer', email: 'juan.dc@email.com' },
-  { name: 'Beatriz Ocampo', role: 'Operations manager', email: 'beatriz.ocampo@bank.com' },
-  { name: 'Carlos Mendoza', role: 'Senior manager', email: 'carlos.mendoza@bank.com' },
-  { name: 'Diana Vance', role: 'Compliance officer', email: 'diana.admin@bank.com' },
+  { name: 'Diana Vance', role: 'Admin', email: 'diana.admin@bank.com' },
 ];
 
 const DEMO_PASSWORD = 'password123';

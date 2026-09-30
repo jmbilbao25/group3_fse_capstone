@@ -462,11 +462,7 @@ function handleMockFallback(config) {
         );
 
         if (!userRecord) {
-          if (email.includes('carlos') || email.includes('mendoza')) {
-            userRecord = mockState.users.find(u => u.user_id === 'U3003');
-          } else if (email.includes('manager') || email.includes('ocampo') || email.includes('beatriz')) {
-            userRecord = mockState.users.find(u => u.user_id === 'U3002');
-          } else if (email.includes('admin') || email.includes('vance') || email.includes('diana') || email.includes('audit')) {
+          if (email.includes('admin') || email.includes('vance') || email.includes('diana') || email.includes('audit')) {
             userRecord = mockState.users.find(u => u.user_id === 'U0001');
           } else {
             userRecord = mockState.users.find(u => u.user_id === 'U1001') || mockState.users[0];
@@ -475,15 +471,12 @@ function handleMockFallback(config) {
 
         user_id = userRecord.user_id;
         user_name = `${userRecord.first_name} ${userRecord.middle_name ? userRecord.middle_name + ' ' : ''}${userRecord.last_name}`;
-        if (userRecord.role === 'MANAGER') {
-          role = 'ROLE_MANAGER';
-          user_title = 'Operations Manager';
-        } else if (userRecord.role === 'ADMIN') {
+        if (userRecord.role === 'ADMIN') {
           role = 'ROLE_ADMIN';
-          user_title = 'System Auditor & Compliance';
+          user_title = 'System Administrator & Auditor';
         } else {
           role = 'ROLE_CUSTOMER';
-          user_title = 'Retail Account Holder (Maker)';
+          user_title = 'Retail Account Holder';
         }
 
         return resolve({
@@ -782,7 +775,7 @@ function handleMockFallback(config) {
           tx = {
             id: transfer_id || 'TX-' + Math.floor(100000 + Math.random() * 900000),
             status: 'PENDING_VERIFICATION',
-            verification_code: '849201',
+            verification_code: Math.floor(100000 + Math.random() * 900000).toString(),
             amount: 90000,
             hold_active: true,
           };

@@ -59,7 +59,7 @@ public class NotificationController {
         }
 
         // If no valid verificationCode provided, check Redis or generate a secure random 6-digit OTP
-        if (verificationCode == null || verificationCode.isBlank() || "849201".equals(verificationCode)) {
+        if (verificationCode == null || verificationCode.isBlank()) {
             String redisKey = "otp:transfer:" + transferId;
             if (redisTemplate != null) {
                 String existing = redisTemplate.opsForValue().get(redisKey);
@@ -67,7 +67,7 @@ public class NotificationController {
                     verificationCode = existing;
                 }
             }
-            if (verificationCode == null || verificationCode.isBlank() || "849201".equals(verificationCode)) {
+            if (verificationCode == null || verificationCode.isBlank()) {
                 verificationCode = String.format("%06d", new java.security.SecureRandom().nextInt(1000000));
             }
         }
@@ -177,7 +177,7 @@ public class NotificationController {
         BigDecimal amount = new BigDecimal("150000.0000");
         String transferId = "TRX-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         String recipientEmail = "juan.dc@email.com";
-        String description = "Tier 2: Customer Security Verification OTP: [ 849201 ]";
+        String dynamicOtp = String.format("%06d", new java.security.SecureRandom().nextInt(1000000));
 
         if (request != null) {
             if (request.get("amount") != null) {
@@ -189,12 +189,19 @@ public class NotificationController {
             if (request.get("recipient_email") != null) {
                 recipientEmail = request.get("recipient_email").toString();
             }
-            if (request.get("verification_code") != null) {
-                description = "Tier 2: Customer Security Verification OTP: [ " + request.get("verification_code") + " ]";
+            if (request.get("verification_code") != null && !request.get("verification_code").toString().isBlank()) {
+                dynamicOtp = request.get("verification_code").toString().trim();
+            } else if (request.get("otp") != null && !request.get("otp").toString().isBlank()) {
+                dynamicOtp = request.get("otp").toString().trim();
             }
         } else if (amountParam != null) {
             amount = amountParam;
         }
+
+        if (redisTemplate != null) {
+            redisTemplate.opsForValue().set("otp:transfer:" + transferId, dynamicOtp, java.time.Duration.ofMinutes(5));
+        }
+        String description = "Tier 2: Customer Security Verification OTP: [ " + dynamicOtp + " ]";
 
         TransactionNotificationEvent event = TransactionNotificationEvent.builder()
                 .transferId(transferId)
@@ -210,6 +217,7 @@ public class NotificationController {
                 .status("PENDING_APPROVAL")
                 .eventType("TRANSFER_PENDING_APPROVAL")
                 .requiresMakerChecker(true)
+                .otpCode(dynamicOtp)
                 .timestamp(Instant.now())
                 .description(description)
                 .build();

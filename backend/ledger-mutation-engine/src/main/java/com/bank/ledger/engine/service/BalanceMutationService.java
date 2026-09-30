@@ -149,9 +149,10 @@ public class BalanceMutationService {
                         .status("PENDING_APPROVAL")
                         .eventType("TRANSFER_PENDING_APPROVAL")
                         .requires2FaOtp(true)
+                        .otpCode(generatedOtp)
                         .initiatorUserId(request.getInitiatorUserId() != null ? request.getInitiatorUserId() : "U1001")
                         .timestamp(Instant.now())
-                        .description("Customer 2FA Email OTP Verification Required (> PHP 50,000)")
+                        .description("Customer 2FA Email OTP Verification Required: [ " + generatedOtp + " ]")
                         .build();
 
                 outboxRepository.save(OutboxEventMaster.builder()

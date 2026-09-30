@@ -56,6 +56,10 @@ public class TransactionNotificationEvent {
     @com.fasterxml.jackson.annotation.JsonAlias({"requires_maker_checker"})
     private boolean requires2FaOtp;
 
+    @JsonProperty("otp_code")
+    @com.fasterxml.jackson.annotation.JsonAlias({"otp", "verification_code", "verificationCode"})
+    private String otpCode;
+
     @JsonProperty("initiator_user_id")
     @com.fasterxml.jackson.annotation.JsonAlias({"maker_user_id"})
     private String initiatorUserId;

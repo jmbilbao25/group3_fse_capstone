@@ -847,11 +847,8 @@ public class BalanceMutationService {
                         .createdAt(Instant.now())
                         .build();
 
-                try {
-                    auditRepository.save(auditLog);
-                } catch (Exception ex) {
-                    log.warn("[AUDIT LOG WARNING] Failed to persist audit log for OTP verification: {}", ex.getMessage());
-                }
+                // Immutable Postgres Audit persistence: if Postgres is down, triggers rollback in Oracle
+                auditRepository.save(auditLog);
 
                 // 1. Kafka Audit Stream (topic: audit-events)
                 try {

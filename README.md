@@ -12,54 +12,8 @@ Customers submit transactions through a unified **Flutter multiplatform client**
 
 In local development, the platform runs via Docker Compose with Oracle XE and PostgreSQL. In cloud production, the architecture deploys natively to Microsoft Azure using **Azure Kubernetes Service (AKS)**, **Azure SQL Database with Ledger tables** (consolidating live state and cryptographic audit trails into a single engine), **Azure Container Registry (ACR)**, **Azure Event Hubs**, and an automated **GitHub Actions CI/CD pipeline**.
 
-```
-                      +-----------------------------------------+
-                      |           FLUTTER CLIENT TIER           |
-                      |   Single Shared Dart/Flutter Codebase   |
-                      +--------------------+--------------------+
-                                           |
-                                           v HTTPS :8080
-                      +-----------------------------------------+
-                      |           API GATEWAY SERVICE           |
-                      |        Spring Cloud Gateway :8080       |
-                      |  Token-Bucket Rate Limiter (>10 req/s)  |
-                      +---------+---------------------+---------+
-                                |                     |
-        /api/v1/auth, /accounts |                     | /api/v1/transfers/*
-                                v                     v
-        +-------------------------------+   +-------------------------------+
-        |   Account & Identity Service  |   |     Orchestration Engine      |
-        |       Spring Boot :8081       |   |       Spring Boot :8082       |
-        +---------------+---------------+   +---+---------------+-------+---+
-                        |                       |               |       |
-            RTR Tokens  v          Eval <=200ms v   OFS String  v       |
-        +-------------------------------+   +-----------+   +-------+   |
-        |         Redis 7 Cache         |   |Risk Engine|   |Temenos|   |
-        |   RTR Families, JTI Blacklist,|   |  Python   |   |  T24  |   |
-        |   OTP Store & Balance Caches  |   |  :8084    |   | Mock  |   |
-        +-------------------------------+   +-----------+   +-------+   |
-                                                |                       |
-                                   Row Lock     v   Outbox Event Relay  v
-                              +--------------------+     +--------------------+
-                              |  Oracle XE Master  |     |  Kafka KRaft 3.7   |
-                              | Operational State  |     |  Event Commit Log  |
-                              |    (Port 1521)     |     |    (Port 9092)     |
-                              +--------------------+     +---------+----------+
-                                                                   |
-                                                                   v
-                                                     +----------------------------+
-                                                     |    Notification Service    |
-                                                     |     Spring Boot :8083      |
-                                                     |  Email Advices & 2FA OTP   |
-                                                     +--------------+-------------+
-                                                                    |
-                                                                    v
-                                                     +----------------------------+
-                                                     |      PostgreSQL Audit      |
-                                                     |   Immutable Audit Vault    |
-                                                     |    (Port 5433 -> 5432)     |
-                                                     +----------------------------+
-```
+<img width="2252" height="886" alt="image" src="https://github.com/user-attachments/assets/e566f48b-4c5c-43aa-9c87-f246f29f1f4b" />
+
 
 ### Interactive Architecture Specifications
 * **Local Docker Container Architecture:** Delivered at [`capstone2_architecture.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/capstone2_architecture.html)

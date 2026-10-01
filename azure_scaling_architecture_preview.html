@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Azure Cloud Scaling Architecture</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background-color: #0b0f19;
+      display: flex;
+      justify-content: center;
+      font-family: system-ui, sans-serif;
+    }
+    svg {
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+      border-radius: 12px;
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+  <svg width="2000" height="2050" viewBox="0 0 2000 2050" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#60a5fa" />
+      </marker>
+    </defs>
+    <rect width="100%" height="100%" fill="#0b0f19" />
+    <rect x="60" y="40" width="1880" height="110" rx="8" fill="#0f172a" stroke="#38bdf8" stroke-width="2"  opacity="1"/>
+<text x="90" y="80" fill="#f8fafc" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="22px" font-weight="bold">RETAIL LEDGER &amp; MUTATION ENGINE: AZURE CLOUD ARCHITECTURE &amp; SCALING BLUEPRINT</text>
+<text x="90" y="105.5" fill="#94a3b8" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13.5px" font-weight="normal">Multi-Tier Load Balancing (L7 Edge WAF + Internal Envoy), Event-Driven Autoscaling (HPA + KEDA), and Dual Relational Persistence</text>
+<rect x="1250" y="70" width="199" height="26" rx="8" fill="#451a03" stroke="#f59e0b" stroke-width="1"  opacity="1"/>
+<text x="1264" y="87" fill="#fde68a" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">TIER 1 &amp; 2 LOAD BALANCERS</text>
+<rect x="1510" y="70" width="179" height="26" rx="8" fill="#3b0764" stroke="#a855f7" stroke-width="1"  opacity="1"/>
+<text x="1524" y="87" fill="#f3e8ff" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">HPA &amp; KEDA AUTOSCALING</text>
+<rect x="1730" y="70" width="165" height="26" rx="8" fill="#064e3b" stroke="#10b981" stroke-width="1"  opacity="1"/>
+<text x="1744" y="87" fill="#a7f3d0" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">DUAL RELATIONAL ACID</text>
+<rect x="60" y="170" width="1880" height="115" rx="8" fill="#0b1329" stroke="#334155" stroke-width="1.5" stroke-dasharray="6,6" opacity="1"/>
+<text x="90" y="194" fill="#38bdf8" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12px" font-weight="normal">ZONE 1: PUBLIC TRAFFIC INGRESS &amp; CLIENT ACCESS (INTERNET)</text>
+<rect x="180" y="205" width="480" height="60" rx="8" fill="#0f172a" stroke="#38bdf8" stroke-width="1.5"  opacity="1"/>
+<text x="205" y="231" fill="#e0f2fe" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14px" font-weight="normal">Retail Banking Customers (Web SPA &amp; Mobile HTTPS)</text>
+<text x="205" y="250" fill="#7dd3fc" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">Customer single page sessions, transfers &amp; 2FA OTP verification</text>
+<rect x="740" y="205" width="480" height="60" rx="8" fill="#0f172a" stroke="#94a3b8" stroke-width="1.5"  opacity="1"/>
+<text x="765" y="231" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14px" font-weight="normal">Bank Operations, Audit &amp; Compliance Officers</text>
+<text x="765" y="250" fill="#94a3b8" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">Admin telemetry grid, KYC approvals, and immutable audit inspection</text>
+<rect x="1300" y="205" width="520" height="60" rx="8" fill="#0f172a" stroke="#a78bfa" stroke-width="1.5"  opacity="1"/>
+<text x="1325" y="231" fill="#ede9fe" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14px" font-weight="normal">Azure DNS &amp; Global Traffic Management</text>
+<text x="1325" y="250" fill="#c4b5fd" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">Anycast DNS resolution, DDoS Protection Standard, geo-routing</text>
+<rect x="60" y="345" width="1880" height="160" rx="8" fill="#1c1917" stroke="#f59e0b" stroke-width="2"  opacity="1"/>
+<text x="90" y="369" fill="#fbbf24" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12px" font-weight="normal">ZONE 2: PERIMETER SECURITY &amp; TIER 1 LOAD BALANCER (EDGE INGRESS)</text>
+<rect x="90" y="380" width="1820" height="110" rx="8" fill="#292524" stroke="#d97706" stroke-width="2"  opacity="1"/>
+<text x="120" y="409" fill="#fef3c7" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16px" font-weight="bold">Azure Application Gateway v2 with WAF (Public VIP / Edge Ingress)</text>
+<rect x="120" y="421" width="199" height="26" rx="8" fill="#451a03" stroke="#f59e0b" stroke-width="1"  opacity="1"/>
+<text x="134" y="438" fill="#fef3c7" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">TIER 1 LOAD BALANCER (L7)</text>
+<rect x="340" y="421" width="199" height="26" rx="8" fill="#451a03" stroke="#f59e0b" stroke-width="1"  opacity="1"/>
+<text x="354" y="438" fill="#fef3c7" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">SSL/TLS Offloading (:443)</text>
+<rect x="545" y="421" width="213" height="26" rx="8" fill="#451a03" stroke="#f59e0b" stroke-width="1"  opacity="1"/>
+<text x="559" y="438" fill="#fef3c7" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">OWASP WAF Core Rule Set 3.2</text>
+<rect x="795" y="421" width="185" height="26" rx="8" fill="#451a03" stroke="#f59e0b" stroke-width="1"  opacity="1"/>
+<text x="809" y="438" fill="#fef3c7" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">Zone-Redundant Multi-AZ</text>
+<text x="120" y="469" fill="#fde68a" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12px" font-weight="normal">• Path Routing:  /api/*  ==&gt;  API Gateway Service Replicas     |     /* (Static)  ==&gt;  React Frontend Nginx Replicas</text>
+<text x="120" y="485.8" fill="#fde68a" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12px" font-weight="normal">• Traffic Balancing: Round-Robin distribution with continuous health probe validation (GET /actuator/health)</text>
+<rect x="60" y="565" width="1880" height="420" rx="8" fill="#0c1527" stroke="#2563eb" stroke-width="2"  opacity="1"/>
+<text x="90" y="589" fill="#60a5fa" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12px" font-weight="normal">ZONE 3: COMPUTE &amp; ORCHESTRATION TIER (Azure Container Apps Managed Environment - Private VNet 10.0.1.0/24)</text>
+<rect x="90" y="605" width="340" height="360" rx="8" fill="#0f172a" stroke="#0284c7" stroke-width="2"  opacity="1"/>
+<text x="110" y="636" fill="#38bdf8" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16px" font-weight="bold">banking-frontend</text>
+<text x="110" y="654" fill="#94a3b8" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12px" font-weight="normal">React 18 + Vite (Nginx :80)</text>
+<rect x="110" y="668" width="172" height="26" rx="8" fill="#082f49" stroke="#0284c7" stroke-width="1"  opacity="1"/>
+<text x="124" y="685" fill="#7dd3fc" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">⚡ HPA: 2 - 5 Replicas</text>
+<rect x="110" y="700" width="144" height="26" rx="8" fill="#082f49" stroke="#0284c7" stroke-width="1"  opacity="1"/>
+<text x="124" y="717" fill="#7dd3fc" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">Metric: CPU &gt; 70%</text>
+<text x="110" y="756.5" fill="#cbd5e1" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Serves optimized SPA static assets</text>
+<text x="110" y="773.52" fill="#cbd5e1" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Implements Customer &amp; Admin Portals</text>
+<text x="110" y="790.54" fill="#cbd5e1" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Nginx reverse-proxies /api/ to Gateway</text>
+<text x="110" y="807.56" fill="#cbd5e1" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Fast client-side routing &amp; JWT storage</text>
+<text x="110" y="824.58" fill="#cbd5e1" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• 4-Decimal mutation input validation</text>
+<rect x="460" y="605" width="340" height="360" rx="8" fill="#0f172a" stroke="#2563eb" stroke-width="2"  opacity="1"/>
+<text x="480" y="636" fill="#60a5fa" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16px" font-weight="bold">gateway-service</text>
+<text x="480" y="654" fill="#94a3b8" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12px" font-weight="normal">Spring Cloud Gateway (:8080)</text>
+<rect x="480" y="668" width="179" height="26" rx="8" fill="#172554" stroke="#2563eb" stroke-width="1"  opacity="1"/>
+<text x="494" y="685" fill="#93c5fd" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">⚡ HPA: 2 - 10 Replicas</text>
+<rect x="480" y="700" width="172" height="26" rx="8" fill="#172554" stroke="#2563eb" stroke-width="1"  opacity="1"/>
+<text x="494" y="717" fill="#93c5fd" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">Metric: 100 RPS / Pod</text>
+<text x="480" y="756.5" fill="#cbd5e1" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Perimeter JWT cryptographic verification</text>
+<text x="480" y="773.52" fill="#cbd5e1" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Queries Redis token blacklist in sub-5ms</text>
+<text x="480" y="790.54" fill="#cbd5e1" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Token-bucket rate limiting (100 req/sec)</text>
+<text x="480" y="807.56" fill="#cbd5e1" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Forwards internal routes through Envoy:</text>
+<text x="480" y="824.58" fill="#cbd5e1" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  - /api/v1/auth/** -&gt; account-service</text>
+<text x="480" y="841.6" fill="#cbd5e1" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  - /api/v1/transfers/** -&gt; ledger-engine</text>
+<rect x="830" y="605" width="1080" height="65" rx="8" fill="#172554" stroke="#3b82f6" stroke-width="2"  opacity="1"/>
+<text x="850" y="629.5" fill="#eff6ff" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14.5px" font-weight="normal">Azure Container Apps Internal Envoy Proxy (TIER 2 LOAD BALANCER &amp; SERVICE MESH)</text>
+<rect x="850" y="638" width="227" height="22" rx="8" fill="#1e3a8a" stroke="#60a5fa" stroke-width="1"  opacity="1"/>
+<text x="864" y="653" fill="#bfdbfe" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10px" font-weight="normal">TIER 2 INTERNAL L7 LOAD BALANCER</text>
+<rect x="1100" y="638" width="233" height="22" rx="8" fill="#1e3a8a" stroke="#60a5fa" stroke-width="1"  opacity="1"/>
+<text x="1114" y="653" fill="#bfdbfe" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10px" font-weight="normal">Virtual DNS (http://service-name)</text>
+<rect x="1360" y="638" width="270" height="22" rx="8" fill="#1e3a8a" stroke="#60a5fa" stroke-width="1"  opacity="1"/>
+<text x="1374" y="653" fill="#bfdbfe" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10px" font-weight="normal">East-West Traffic Balancing Across Pods</text>
+<rect x="1670" y="638" width="109" height="22" rx="8" fill="#1e3a8a" stroke="#60a5fa" stroke-width="1"  opacity="1"/>
+<text x="1684" y="653" fill="#bfdbfe" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10px" font-weight="normal">Health Probes</text>
+<rect x="830" y="690" width="340" height="275" rx="8" fill="#0f172a" stroke="#6366f1" stroke-width="2"  opacity="1"/>
+<text x="850" y="721" fill="#818cf8" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16px" font-weight="bold">account-service</text>
+<text x="850" y="739" fill="#94a3b8" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12px" font-weight="normal">Spring Boot 3 Identity (:8081)</text>
+<rect x="850" y="752" width="172" height="26" rx="8" fill="#1e1b4b" stroke="#6366f1" stroke-width="1"  opacity="1"/>
+<text x="864" y="769" fill="#c7d2fe" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">⚡ HPA: 2 - 8 Replicas</text>
+<rect x="850" y="784" width="206" height="26" rx="8" fill="#1e1b4b" stroke="#6366f1" stroke-width="1"  opacity="1"/>
+<text x="864" y="801" fill="#c7d2fe" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">🔒 HikariCP Pool: 25 conns</text>
+<text x="850" y="836.5" fill="#cbd5e1" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• User registration &amp; BCrypt hashing</text>
+<text x="850" y="853.175" fill="#cbd5e1" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Refresh Token Rotation (RTR) logic</text>
+<text x="850" y="869.85" fill="#cbd5e1" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Instant session breach family purge</text>
+<text x="850" y="886.525" fill="#cbd5e1" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• KYC verification &amp; account provisioning</text>
+<text x="850" y="903.2" fill="#cbd5e1" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Balance inquiry cache (Redis 30s TTL)</text>
+<rect x="1200" y="690" width="340" height="275" rx="8" fill="#0f172a" stroke="#a855f7" stroke-width="2"  opacity="1"/>
+<text x="1220" y="721" fill="#c084fc" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16px" font-weight="bold">ledger-mutation-engine</text>
+<text x="1220" y="739" fill="#94a3b8" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12px" font-weight="normal">Spring Boot 3 Core Engine (:8082)</text>
+<rect x="1220" y="752" width="179" height="26" rx="8" fill="#3b0764" stroke="#a855f7" stroke-width="1"  opacity="1"/>
+<text x="1234" y="769" fill="#e9d5ff" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">⚡ KEDA: 2 - 6 Replicas</text>
+<rect x="1220" y="784" width="206" height="26" rx="8" fill="#3b0764" stroke="#a855f7" stroke-width="1"  opacity="1"/>
+<text x="1234" y="801" fill="#e9d5ff" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">🔒 HikariCP Pool: 30 conns</text>
+<text x="1220" y="836.5" fill="#cbd5e1" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Pessimistic row locking kernel</text>
+<text x="1220" y="853.175" fill="#cbd5e1" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• 4-Decimal precision (@Digits 14,4)</text>
+<text x="1220" y="869.85" fill="#cbd5e1" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Transactional Outbox pattern (&lt;15ms)</text>
+<text x="1220" y="886.525" fill="#cbd5e1" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Kafka Command Producer &amp; Consumer</text>
+<text x="1220" y="903.2" fill="#cbd5e1" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Customer OTP verification for &gt;₱50k</text>
+<text x="1220" y="919.875" fill="#cbd5e1" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Scales out when Kafka lag &gt; 50 msgs</text>
+<rect x="1570" y="690" width="340" height="275" rx="8" fill="#0f172a" stroke="#10b981" stroke-width="2"  opacity="1"/>
+<text x="1590" y="721" fill="#34d399" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16px" font-weight="bold">notification-service</text>
+<text x="1590" y="739" fill="#94a3b8" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12px" font-weight="normal">Spring Boot 3 Notifications (:8083)</text>
+<rect x="1590" y="752" width="179" height="26" rx="8" fill="#064e3b" stroke="#10b981" stroke-width="1"  opacity="1"/>
+<text x="1604" y="769" fill="#a7f3d0" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">⚡ KEDA: 2 - 6 Replicas</text>
+<rect x="1590" y="784" width="199" height="26" rx="8" fill="#064e3b" stroke="#10b981" stroke-width="1"  opacity="1"/>
+<text x="1604" y="801" fill="#a7f3d0" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">Trigger: Events Topic Lag</text>
+<text x="1590" y="836.5" fill="#cbd5e1" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Kafka transfers.events listener</text>
+<text x="1590" y="853.175" fill="#cbd5e1" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Thymeleaf rich HTML template engine</text>
+<text x="1590" y="869.85" fill="#cbd5e1" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• 2FA OTP code dispatch via SMTP</text>
+<text x="1590" y="886.525" fill="#cbd5e1" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• HTML debit/credit receipt generation</text>
+<text x="1590" y="903.2" fill="#cbd5e1" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Mandatory AMLA CTR compliance filing</text>
+<text x="1590" y="919.875" fill="#cbd5e1" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• In-memory retry spooling for outages</text>
+<rect x="60" y="1045" width="1880" height="530" rx="8" fill="#022c22" stroke="#059669" stroke-width="2"  opacity="1"/>
+<text x="90" y="1069" fill="#6ee7b7" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12px" font-weight="normal">ZONE 4: PERSISTENCE, CACHING &amp; EVENT STREAMING TIER (Subnets: 10.0.2.0/24 &amp; 10.0.3.0/24)</text>
+<rect x="90" y="1080" width="430" height="475" rx="8" fill="#042f2e" stroke="#14b8a6" stroke-width="2"  opacity="1"/>
+<text x="110" y="1111" fill="#2dd4bf" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16px" font-weight="bold">Azure Cache for Redis</text>
+<text x="110" y="1129" fill="#99f6e4" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12px" font-weight="normal">Tier 3 In-Memory Fast Path (:6380 TLS)</text>
+<rect x="110" y="1145" width="213" height="26" rx="8" fill="#134e4a" stroke="#2dd4bf" stroke-width="1"  opacity="1"/>
+<text x="124" y="1162" fill="#ccfbf1" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">⚡ SUB-5MS LATENCY FAST PATH</text>
+<rect x="110" y="1177" width="206" height="26" rx="8" fill="#134e4a" stroke="#2dd4bf" stroke-width="1"  opacity="1"/>
+<text x="124" y="1194" fill="#ccfbf1" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">Standard / Clustered Scale</text>
+<text x="110" y="1231.5" fill="#f0fdfa" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Token Blacklist:</text>
+<text x="110" y="1248.52" fill="#f0fdfa" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  blacklist:jti:&lt;id&gt; (15-min TTL, blocks revoked</text>
+<text x="110" y="1265.54" fill="#f0fdfa" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  access tokens immediately in sub-5ms)</text>
+<text x="110" y="1282.56" fill="#f0fdfa" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Session Families:</text>
+<text x="110" y="1299.58" fill="#f0fdfa" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  token_family:&lt;id&gt; (7-day TTL, detects token</text>
+<text x="110" y="1316.6" fill="#f0fdfa" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  theft &amp; revokes entire family)</text>
+<text x="110" y="1333.62" fill="#f0fdfa" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Idempotency Guard:</text>
+<text x="110" y="1350.64" fill="#f0fdfa" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  tx:&lt;uuid&gt; (60-sec TTL, blocks duplicate</text>
+<text x="110" y="1367.66" fill="#f0fdfa" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  double-click transfer submissions)</text>
+<text x="110" y="1384.68" fill="#f0fdfa" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Balance Read Cache:</text>
+<text x="110" y="1401.7" fill="#f0fdfa" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  account:balance:&lt;id&gt; (30-sec TTL, absorbs</text>
+<text x="110" y="1418.72" fill="#f0fdfa" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  80%+ of account screen reads)</text>
+<text x="110" y="1435.74" fill="#f0fdfa" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• 2FA OTP Store:</text>
+<text x="110" y="1452.76" fill="#f0fdfa" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  2fa:otp:&lt;userId&gt; (300-sec TTL for &gt; ₱50k)</text>
+<rect x="550" y="1080" width="440" height="475" rx="8" fill="#431407" stroke="#ea580c" stroke-width="2"  opacity="1"/>
+<text x="570" y="1111" fill="#fb923c" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16px" font-weight="bold">Oracle XE 21c Master DB</text>
+<text x="570" y="1129" fill="#fdba74" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12px" font-weight="normal">Master Operational Relational State (:1521)</text>
+<rect x="570" y="1145" width="206" height="26" rx="8" fill="#7c2d12" stroke="#fb923c" stroke-width="1"  opacity="1"/>
+<text x="584" y="1162" fill="#ffedd5" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">🔒 ACID MASTER PERSISTENCE</text>
+<rect x="570" y="1177" width="213" height="26" rx="8" fill="#7c2d12" stroke="#fb923c" stroke-width="1"  opacity="1"/>
+<text x="584" y="1194" fill="#ffedd5" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">Linux VM + 64GB Premium SSD</text>
+<text x="570" y="1231.5" fill="#fff7ed" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Dedicated Linux VM (Standard_D2s_v5) with</text>
+<text x="570" y="1248.52" fill="#fff7ed" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  attached Azure Premium SSD Managed Disk</text>
+<text x="570" y="1265.54" fill="#fff7ed" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Kernel: Pessimistic Row Locking Kernel</text>
+<text x="570" y="1282.56" fill="#fff7ed" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  (SELECT ... FOR UPDATE) on balance_master</text>
+<text x="570" y="1299.58" fill="#fff7ed" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Strict Check Constraints:</text>
+<text x="570" y="1316.6" fill="#fff7ed" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  CHECK (balance_amount &gt;= hold_amount &gt;= 0)</text>
+<text x="570" y="1333.62" fill="#fff7ed" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Master Schema Tables:</text>
+<text x="570" y="1350.64" fill="#fff7ed" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  users, accounts, balance_master,</text>
+<text x="570" y="1367.66" fill="#fff7ed" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  transactions, outbox_events</text>
+<text x="570" y="1384.68" fill="#fff7ed" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Concurrency Protection:</text>
+<text x="570" y="1401.7" fill="#fff7ed" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  HikariCP pool caps active connections at 30;</text>
+<text x="570" y="1418.72" fill="#fff7ed" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  Transactional Outbox returns HTTP 202 in &lt;15ms.</text>
+<rect x="1020" y="1080" width="450" height="475" rx="8" fill="#2e1065" stroke="#8b5cf6" stroke-width="2"  opacity="1"/>
+<text x="1040" y="1111" fill="#c084fc" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16px" font-weight="bold">Azure Event Hubs (Kafka Bus)</text>
+<text x="1040" y="1129" fill="#ddd6fe" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12px" font-weight="normal">Apache Kafka 1.0+ Protocol Surface (:9093)</text>
+<rect x="1040" y="1145" width="179" height="26" rx="8" fill="#4c1d95" stroke="#a78bfa" stroke-width="1"  opacity="1"/>
+<text x="1054" y="1162" fill="#f5f3ff" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">⚡ MANAGED EVENT BROKER</text>
+<rect x="1040" y="1177" width="226" height="26" rx="8" fill="#4c1d95" stroke="#a78bfa" stroke-width="1"  opacity="1"/>
+<text x="1054" y="1194" fill="#f5f3ff" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">Auto-Inflate Throughput Units</text>
+<text x="1040" y="1231.5" fill="#f5f3ff" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• banking.transfers.commands</text>
+<text x="1040" y="1248.52" fill="#f5f3ff" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  - 6 Partitions (Key: source_account_id)</text>
+<text x="1040" y="1265.54" fill="#f5f3ff" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  - Guarantees strict per-account chronological</text>
+<text x="1040" y="1282.56" fill="#f5f3ff" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">    serialization without distributed locks</text>
+<text x="1040" y="1299.58" fill="#f5f3ff" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  - Up to 6 active parallel worker consumers</text>
+<text x="1040" y="1316.6" fill="#f5f3ff" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• banking.transfers.events</text>
+<text x="1040" y="1333.62" fill="#f5f3ff" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  - 6 Partitions (Key: transfer_id)</text>
+<text x="1040" y="1350.64" fill="#f5f3ff" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  - Fan-out to Audit and Notification groups</text>
+<text x="1040" y="1367.66" fill="#f5f3ff" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• banking.transfers.retry</text>
+<text x="1040" y="1384.68" fill="#f5f3ff" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  - 3 Partitions with exponential backoff</text>
+<text x="1040" y="1401.7" fill="#f5f3ff" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• banking.transfers.dlt</text>
+<text x="1040" y="1418.72" fill="#f5f3ff" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  - 1 Partition dead-letter poison pill isolation</text>
+<rect x="1500" y="1080" width="410" height="225" rx="8" fill="#082f49" stroke="#0284c7" stroke-width="2"  opacity="1"/>
+<text x="1520" y="1110" fill="#38bdf8" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="15px" font-weight="normal">Cloud Email: SendGrid / ACS</text>
+<rect x="1520" y="1120" width="179" height="26" rx="8" fill="#0c4a6e" stroke="#38bdf8" stroke-width="1"  opacity="1"/>
+<text x="1534" y="1137" fill="#e0f2fe" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">REPLACES LOCAL MAILHOG</text>
+<text x="1520" y="1166" fill="#f0f9ff" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">• Production replacement for local MailHog</text>
+<text x="1520" y="1181.62" fill="#f0f9ff" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">• Delivers real 6-digit OTP codes via SMTP</text>
+<text x="1520" y="1197.24" fill="#f0f9ff" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">  (:587 TLS) for transfers &gt; ₱50,000.00</text>
+<text x="1520" y="1212.86" fill="#f0f9ff" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">• Dispatches rich HTML debit/credit receipts</text>
+<text x="1520" y="1228.48" fill="#f0f9ff" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">  with masked accounts &amp; SHA-256 hash</text>
+<text x="1520" y="1244.1" fill="#f0f9ff" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">• In-memory retry spooling for network blips</text>
+<rect x="1500" y="1330" width="410" height="225" rx="8" fill="#064e3b" stroke="#10b981" stroke-width="2"  opacity="1"/>
+<text x="1520" y="1360" fill="#34d399" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="15px" font-weight="normal">PostgreSQL Audit Vault (:5432)</text>
+<rect x="1520" y="1370" width="172" height="26" rx="8" fill="#022c22" stroke="#34d399" stroke-width="1"  opacity="1"/>
+<text x="1534" y="1387" fill="#a7f3d0" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">IMMUTABLE AUDIT VAULT</text>
+<text x="1520" y="1416" fill="#ecfdf5" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">• Azure Database for PostgreSQL Flexible Svc</text>
+<text x="1520" y="1431.62" fill="#ecfdf5" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">• Trigger trg_no_update_delete blocks</text>
+<text x="1520" y="1447.24" fill="#ecfdf5" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">  all UPDATE/DELETE statements</text>
+<text x="1520" y="1462.86" fill="#ecfdf5" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">• 100% Append-only immutable compliance</text>
+<text x="1520" y="1478.48" fill="#ecfdf5" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">• Built-in PgBouncer connection multiplexing</text>
+<text x="1520" y="1494.1" fill="#ecfdf5" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">• Async projection from transfers.events</text>
+<rect x="60" y="1605" width="1880" height="390" rx="8" fill="#0f172a" stroke="#475569" stroke-width="2"  opacity="1"/>
+<text x="90" y="1632" fill="#cbd5e1" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12px" font-weight="normal">ZONE 5: PLATFORM GOVERNANCE, ENTERPRISE OBSERVABILITY &amp; ARCHITECTURE SCALING MATRIX</text>
+<rect x="90" y="1645" width="430" height="330" rx="8" fill="#1e293b" stroke="#e11d48" stroke-width="1.5"  opacity="1"/>
+<text x="110" y="1675" fill="#fda4af" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="15px" font-weight="normal">Azure Key Vault &amp; Managed Identity</text>
+<rect x="110" y="1687" width="192" height="26" rx="8" fill="#4c0519" stroke="#f43f5e" stroke-width="1"  opacity="1"/>
+<text x="124" y="1704" fill="#ffe4e6" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">ZERO-SECRET ARCHITECTURE</text>
+<text x="110" y="1736.5" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Eliminates plaintext credentials in files and git</text>
+<text x="110" y="1753.52" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Microservices authenticate via System-Assigned</text>
+<text x="110" y="1770.54" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  Managed Identity with zero static tokens</text>
+<text x="110" y="1787.56" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Centralized Secrets:</text>
+<text x="110" y="1804.58" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  - Oracle DB &amp; PostgreSQL audit passwords</text>
+<text x="110" y="1821.6" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  - Cryptographic HMAC-SHA256 JWT secret</text>
+<text x="110" y="1838.62" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  - SendGrid SMTP credentials &amp; Datadog API keys</text>
+<text x="110" y="1855.64" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Automatic certificate renewal &amp; audit logging</text>
+<rect x="550" y="1645" width="440" height="330" rx="8" fill="#1e293b" stroke="#2563eb" stroke-width="1.5"  opacity="1"/>
+<text x="570" y="1675" fill="#93c5fd" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="15px" font-weight="normal">Azure Container Registry (ACR)</text>
+<rect x="570" y="1687" width="199" height="26" rx="8" fill="#172554" stroke="#3b82f6" stroke-width="1"  opacity="1"/>
+<text x="584" y="1704" fill="#dbeafe" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">SECURE OCI IMAGE REGISTRY</text>
+<text x="570" y="1736.5" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Private, geo-replicated container repository</text>
+<text x="570" y="1753.52" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Houses versioned production container images:</text>
+<text x="570" y="1770.54" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  - banking-frontend (Nginx Alpine)</text>
+<text x="570" y="1787.56" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  - gateway-service (Spring Cloud Gateway)</text>
+<text x="570" y="1804.58" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  - account-service (Spring Boot 3)</text>
+<text x="570" y="1821.6" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  - ledger-mutation-engine (Spring Boot 3)</text>
+<text x="570" y="1838.62" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  - notification-service (Spring Boot 3)</text>
+<text x="570" y="1855.64" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Microsoft Defender image vulnerability scans</text>
+<rect x="1020" y="1645" width="450" height="330" rx="8" fill="#1e293b" stroke="#7c3aed" stroke-width="1.5"  opacity="1"/>
+<text x="1040" y="1675" fill="#d8b4fe" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="15px" font-weight="normal">Datadog Enterprise APM &amp; Telemetry</text>
+<rect x="1040" y="1687" width="233" height="26" rx="8" fill="#2e1065" stroke="#8b5cf6" stroke-width="1"  opacity="1"/>
+<text x="1054" y="1704" fill="#f3e8ff" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">APM TRACES &amp; 200 TPS BENCHMARK</text>
+<text x="1040" y="1736.5" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• dd-java-agent bytecode instrumentation</text>
+<text x="1040" y="1753.52" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• APM Trace ingestion (:8126) + OTLP spans (:4317)</text>
+<text x="1040" y="1770.54" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• DogStatsD UDP (:8125): Custom business metrics</text>
+<text x="1040" y="1787.56" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  - TPS throughput against 200 TPS benchmark</text>
+<text x="1040" y="1804.58" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  - p50, p95, p99 latencies against 150ms SLA</text>
+<text x="1040" y="1821.6" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• HikariCP pool saturation &amp; Kafka consumer lag alerts</text>
+<text x="1040" y="1838.62" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Synthetic Check Runner (datadog-synthetics-worker)</text>
+<text x="1040" y="1855.64" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  running end-to-end API tests inside the private VNet</text>
+<rect x="1500" y="1645" width="410" height="330" rx="8" fill="#1e293b" stroke="#059669" stroke-width="1.5"  opacity="1"/>
+<text x="1520" y="1675" fill="#6ee7b7" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="15px" font-weight="normal">Scaling &amp; Load Balancing Matrix</text>
+<rect x="1520" y="1687" width="179" height="26" rx="8" fill="#064e3b" stroke="#10b981" stroke-width="1"  opacity="1"/>
+<text x="1534" y="1704" fill="#d1fae5" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">ARCHITECTURE REFERENCE</text>
+<text x="1520" y="1736.5" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Tier 1 LB: Azure App Gateway v2 (L7 Edge WAF)</text>
+<text x="1520" y="1753.52" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Tier 2 LB: ACA Internal Envoy Proxy (Virtual DNS)</text>
+<text x="1520" y="1770.54" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Tier 3 LB: Built-in PgBouncer &amp; HikariCP caps</text>
+<text x="1520" y="1787.56" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• HPA Scaling: Frontend (2-5), Gateway (2-10),</text>
+<text x="1520" y="1804.58" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  Account (2-8) scale on CPU &gt; 70% and RPS</text>
+<text x="1520" y="1821.6" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• KEDA Scaling: Ledger &amp; Notification (2-6)</text>
+<text x="1520" y="1838.62" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  scale on Kafka consumer topic lag</text>
+<text x="1520" y="1855.64" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">• Partition Limit: 6 Partitions = Max 6 active</text>
+<text x="1520" y="1872.66" fill="#f1f5f9" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5px" font-weight="normal">  parallel consumers per account stream</text>
+<line x1="420" y1="265" x2="420" y2="380" stroke="#38bdf8" stroke-width="2.5"  marker-end="url(#arrowhead)"/>
+<text x="388" y="321" fill="#93c5fd" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">HTTPS :443</text>
+<line x1="980" y1="265" x2="980" y2="380" stroke="#94a3b8" stroke-width="2"  marker-end="url(#arrowhead)"/>
+<text x="948" y="321" fill="#93c5fd" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">HTTPS :443</text>
+<line x1="260" y1="490" x2="260" y2="605" stroke="#38bdf8" stroke-width="2.5"  marker-end="url(#arrowhead)"/>
+<text x="196" y="546" fill="#93c5fd" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">Path /* (Static SPA)</text>
+<line x1="630" y1="490" x2="630" y2="605" stroke="#60a5fa" stroke-width="2.5"  marker-end="url(#arrowhead)"/>
+<text x="560" y="546" fill="#93c5fd" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">Path /api/* (API REST)</text>
+<line x1="800" y1="638" x2="830" y2="638" stroke="#60a5fa" stroke-width="2.5"  marker-end="url(#arrowhead)"/>
+<text x="764" y="636" fill="#93c5fd" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">Forward to Envoy</text>
+<line x1="1000" y1="670" x2="1000" y2="690" stroke="#818cf8" stroke-width="2"  marker-end="url(#arrowhead)"/>
+<text x="968" y="678" fill="#93c5fd" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">HTTP :8081</text>
+<line x1="1370" y1="670" x2="1370" y2="690" stroke="#c084fc" stroke-width="2"  marker-end="url(#arrowhead)"/>
+<text x="1338" y="678" fill="#93c5fd" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">HTTP :8082</text>
+<line x1="1740" y1="670" x2="1740" y2="690" stroke="#34d399" stroke-width="2"  marker-end="url(#arrowhead)"/>
+<text x="1708" y="678" fill="#93c5fd" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">HTTP :8083</text>
+<line x1="300" y1="965" x2="300" y2="1080" stroke="#2dd4bf" stroke-width="2.5"  marker-end="url(#arrowhead)"/>
+<text x="172" y="1021" fill="#93c5fd" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">Token Blacklist &amp; Rate Limit (:6380 TLS)</text>
+<line x1="770" y1="965" x2="770" y2="1080" stroke="#fb923c" stroke-width="2.5"  marker-end="url(#arrowhead)"/>
+<text x="658" y="1021" fill="#93c5fd" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">Oracle TNS :1521 (Users &amp; Accounts)</text>
+<line x1="1250" y1="965" x2="1250" y2="1080" stroke="#c084fc" stroke-width="2.5"  marker-end="url(#arrowhead)"/>
+<text x="1144" y="1021" fill="#93c5fd" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">Produce Commands &amp; Events (:9093)</text>
+<line x1="1705" y1="965" x2="1705" y2="1080" stroke="#38bdf8" stroke-width="2.5"  marker-end="url(#arrowhead)"/>
+<text x="1622" y="1021" fill="#93c5fd" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">SMTP :587 (OTP &amp; Receipts)</text>
+<line x1="1470" y1="1440" x2="1500" y2="1440" stroke="#34d399" stroke-width="2.5"  marker-end="url(#arrowhead)"/>
+<text x="1421" y="1438" fill="#93c5fd" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11px" font-weight="normal">Audit Stream (:5432)</text>
+
+  </svg>
+</body>
+</html>

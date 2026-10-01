@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Retail Ledger & Mutation Engine: Azure Cloud Scaling Architecture",
+    "output": "architecture_azure_scaling.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "edge-ingress",
+        "label": "Edge Ingress & Perimeter",
+        "focus": ["clients", "edge_lb", "frontend", "gateway"],
+        "note": "Public HTTPS traffic enters through Azure Application Gateway v2 with WAF for SSL offload and path-based routing."
+      },
+      {
+        "id": "internal-mesh",
+        "label": "Internal Service Mesh & Scaling",
+        "focus": ["gateway", "envoy", "account_svc", "ledger_engine", "notif_svc"],
+        "note": "Spring Cloud Gateway distributes internal traffic through the ACA Envoy load balancer with HPA and KEDA autoscaling."
+      },
+      {
+        "id": "acid-persistence",
+        "label": "ACID Mutations & Cache",
+        "focus": ["account_svc", "ledger_engine", "redis_cache", "oracle_master"],
+        "note": "Fast-path Redis caching shields master state while Oracle XE handles pessimistic row locking and transactional outbox records."
+      },
+      {
+        "id": "event-audit",
+        "label": "Event Streaming & Immutable Audit",
+        "focus": ["ledger_engine", "event_hubs", "notif_svc", "postgres_audit"],
+        "note": "Kafka-compatible Event Hubs streams partition-ordered transfer events to notification workers and the immutable audit vault."
+      }
+    ]
+  },
+  "components": [
+    { "id": "clients", "type": "external", "label": "Retail Customers", "sublabel": "Web & Mobile", "pos": [40, 235], "size": [130, 56] },
+    { "id": "edge_lb", "type": "security", "label": "App Gateway + WAF", "sublabel": "Edge Load Balancer", "pos": [250, 235], "size": [140, 56], "tag": "Tier 1 LB" },
+    { "id": "frontend", "type": "frontend", "label": "Banking Frontend", "sublabel": "React 18 / Nginx :80", "pos": [470, 130], "size": [130, 56], "tag": "HPA: 2-5" },
+    { "id": "gateway", "type": "security", "label": "Gateway Service", "sublabel": "Gateway :8080", "pos": [470, 235], "size": [130, 56], "tag": "HPA: 2-10" },
+    { "id": "envoy", "type": "cloud", "label": "ACA Envoy Ingress", "sublabel": "Internal Load Balancer", "pos": [680, 235], "size": [130, 56], "tag": "Tier 2 LB" },
+    { "id": "account_svc", "type": "backend", "label": "Account & KYC", "sublabel": "Account KYC :8081", "pos": [890, 80], "size": [130, 56], "tag": "HPA: 2-8" },
+    { "id": "ledger_engine", "type": "backend", "label": "Ledger Engine", "sublabel": "Ledger Core :8082", "pos": [890, 235], "size": [130, 56], "tag": "KEDA: 2-6" },
+    { "id": "notif_svc", "type": "backend", "label": "Notification Svc", "sublabel": "Notifications :8083", "pos": [890, 390], "size": [130, 56], "tag": "KEDA: 2-6" },
+    { "id": "redis_cache", "type": "database", "label": "Azure Cache Redis", "sublabel": "Cache :6380 TLS", "pos": [1100, 50], "size": [140, 56], "tag": "Sub-5ms" },
+    { "id": "oracle_master", "type": "database", "label": "Oracle Master DB", "sublabel": "Oracle XE 21c VM", "pos": [1100, 150], "size": [140, 56], "tag": "ACID Kernel" },
+    { "id": "event_hubs", "type": "messagebus", "label": "Azure Event Hubs", "sublabel": "Event Hubs :9093", "pos": [1100, 320], "size": [140, 56], "tag": "6 Partitions" },
+    { "id": "postgres_audit", "type": "database", "label": "Postgres Audit", "sublabel": "PostgreSQL :5432", "pos": [1100, 430], "size": [140, 56], "tag": "Immutable" }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Azure Virtual Network (VNet 10.0.0.0/16)",
+      "wraps": ["edge_lb", "frontend", "gateway", "envoy", "account_svc", "ledger_engine", "notif_svc", "redis_cache", "oracle_master", "event_hubs", "postgres_audit"],
+      "pad": 18
+    },
+    {
+      "kind": "security-group",
+      "label": "ACA Environment (Subnet 10.0.1.0/24)",
+      "wraps": ["frontend", "gateway", "envoy", "account_svc", "ledger_engine", "notif_svc"],
+      "pad": 12
+    },
+    {
+      "kind": "security-group",
+      "label": "Data & Messaging Subnets",
+      "wraps": ["redis_cache", "oracle_master", "event_hubs", "postgres_audit"],
+      "pad": 12
+    }
+  ],
+  "connections": [
+    { "id": "clients-to-edge", "from": "clients", "to": "edge_lb", "label": "HTTPS :443", "variant": "emphasis" },
+    { "id": "edge-to-frontend", "from": "edge_lb", "to": "frontend", "label": "/* static", "fromSide": "top", "toSide": "left" },
+    { "id": "edge-to-gateway", "from": "edge_lb", "to": "gateway", "label": "/api/*", "variant": "emphasis", "fromSide": "right", "toSide": "left" },
+    { "id": "frontend-to-gateway", "from": "frontend", "to": "gateway", "fromSide": "bottom", "toSide": "top", "variant": "dashed" },
+    { "id": "gateway-to-envoy", "from": "gateway", "to": "envoy", "label": "forward L7", "variant": "emphasis" },
+    { "id": "envoy-to-account", "from": "envoy", "to": "account_svc", "label": "HTTP :8081", "fromSide": "top", "toSide": "left" },
+    { "id": "envoy-to-ledger", "from": "envoy", "to": "ledger_engine", "label": "HTTP :8082", "fromSide": "right", "toSide": "left" },
+    { "id": "envoy-to-notif", "from": "envoy", "to": "notif_svc", "label": "HTTP :8083", "fromSide": "bottom", "toSide": "left" },
+    { "id": "account-to-redis", "from": "account_svc", "to": "redis_cache", "label": "token family", "variant": "dashed" },
+    { "id": "account-to-oracle", "from": "account_svc", "to": "oracle_master", "label": "users/KYC" },
+    { "id": "ledger-to-oracle", "from": "ledger_engine", "to": "oracle_master", "label": "row lock", "variant": "emphasis", "fromSide": "top", "toSide": "left" },
+    { "id": "ledger-to-events", "from": "ledger_engine", "to": "event_hubs", "label": "events", "variant": "emphasis", "fromSide": "bottom", "toSide": "left" },
+    { "id": "events-to-notif", "from": "event_hubs", "to": "notif_svc", "label": "consume events", "variant": "dashed" },
+    { "id": "events-to-audit", "from": "event_hubs", "to": "postgres_audit", "label": "audit stream", "variant": "security", "labelDy": 20 }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "Multi-Tier Load Balancing",
+      "items": [
+        "Tier 1: Azure App Gateway v2 terminates SSL/TLS at the edge, runs OWASP WAF, and routes /api/* to Gateway and /* to Frontend.",
+        "Tier 2: Azure Container Apps embedded Envoy proxy routes east-west microservice traffic using internal virtual DNS.",
+        "Tier 3: Built-in PgBouncer and HikariCP connection pools (capped at 30 conns) protect databases from connection exhaustion."
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Event-Driven & Reactive Autoscaling",
+      "items": [
+        "Stateless frontend, gateway, and account services scale horizontally via HPA based on CPU (>70%) and concurrent requests.",
+        "Ledger Mutation Engine and Notification Service scale via KEDA driven by consumer lag on Kafka/Event Hubs topics.",
+        "Partitioning by source_account_id (6 partitions) guarantees strict chronological transaction order per account."
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Dual-Storage Relational Persistence",
+      "items": [
+        "Oracle XE 21c master database executes pessimistic row locks (SELECT FOR UPDATE) and stores transactional outbox events.",
+        "Azure Database for PostgreSQL Flexible Server stores append-only mutation journals protected by immutable triggers.",
+        "Azure Cache for Redis provides sub-5ms token blacklist checks and absorbs 80%+ of account balance inquiries."
+      ]
+    }
+  ]
+}

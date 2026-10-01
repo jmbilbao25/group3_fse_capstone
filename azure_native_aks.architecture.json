@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Integrated Capstone: Azure Native AKS & Azure SQL Cloud Architecture",
+    "output": "capstone2_azure_scaling.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "cicd-and-ingress",
+        "label": "CI/CD & Perimeter Ingress",
+        "focus": ["cicd", "acr", "clients", "app_gateway", "gateway_pod"],
+        "note": "GitHub Actions pushes containers to ACR. Flutter clients route via Azure App Gateway v2 with WAF to Spring Gateway pods in AKS."
+      },
+      {
+        "id": "auth-and-rtr",
+        "label": "Identity & Refresh Token Rotation",
+        "focus": ["gateway_pod", "account_pod", "azure_redis"],
+        "note": "Gateway routes auth traffic to Account Pods. Account Pods issue JWTs and persist Refresh Token Rotation state in Azure Cache for Redis."
+      },
+      {
+        "id": "risk-and-orchestration",
+        "label": "Async Risk Screening & Core Ledger",
+        "focus": ["gateway_pod", "orchestrator_pod", "risk_engine_pod", "azure_sql", "azure_event_hubs"],
+        "note": "Orchestrator calls Python Risk Engine (<=200ms), acquires row locks in Azure SQL, and publishes outbox events to Azure Event Hubs."
+      },
+      {
+        "id": "datadog-telemetry",
+        "label": "Datadog APM & Cluster Tracing",
+        "focus": ["gateway_pod", "datadog", "orchestrator_pod", "azure_sql"],
+        "note": "Datadog Agent DaemonSet in AKS gathers W3C traces, container logs, and pod metrics for live request waterfalls and cluster telemetry."
+      }
+    ]
+  },
+  "components": [
+    { "id": "cicd", "type": "cloud", "label": "GitHub Actions", "sublabel": "CI/CD Pipeline", "pos": [40, 100], "size": [120, 56], "tag": "Automated Build" },
+    { "id": "clients", "type": "frontend", "label": "Flutter Clients", "sublabel": "Mobile & Web Parity", "pos": [40, 240], "size": [120, 56], "tag": "KeyStore & SWA" },
+    { "id": "acr", "type": "cloud", "label": "Azure Registry", "sublabel": "ACR Image Store", "brand": "docker", "pos": [240, 100], "size": [130, 56], "tag": "OCI Container Hub" },
+    { "id": "app_gateway", "type": "security", "label": "App Gateway v2", "sublabel": "Azure WAF + Ingress", "pos": [240, 240], "size": [130, 56], "tag": "Tier 1 Ingress" },
+    { "id": "gateway_pod", "type": "security", "label": "Gateway Pods", "sublabel": "Spring Cloud :8080", "brand": "spring", "pos": [450, 240], "size": [140, 56], "tag": "HPA: 2-10 Replicas" },
+    { "id": "datadog", "type": "cloud", "label": "Datadog Daemon", "sublabel": "DaemonSet APM :8126", "brand": "datadog", "pos": [450, 380], "size": [140, 56], "tag": "Cluster APM & Logs" },
+    { "id": "account_pod", "type": "backend", "label": "Account Pods", "sublabel": "Spring Boot :8081", "brand": "spring", "pos": [670, 100], "size": [140, 56], "tag": "JWT & RTR Issuance" },
+    { "id": "orchestrator_pod", "type": "backend", "label": "Orchestrator Pod", "sublabel": "Spring Boot :8082", "brand": "spring", "pos": [670, 240], "size": [140, 56], "tag": "HPA: 2-8 Replicas" },
+    { "id": "risk_engine_pod", "type": "backend", "label": "Risk Engine Pod", "sublabel": "Python asyncio :8084", "brand": "python", "pos": [670, 380], "size": [140, 56], "tag": "SLA <= 200ms (0.85)" },
+    { "id": "azure_redis", "type": "database", "label": "Azure Redis", "sublabel": "RTR & OTP :6380", "brand": "redis", "pos": [890, 100], "size": [140, 56], "tag": "5-Min OTP & Blacklist" },
+    { "id": "azure_sql", "type": "database", "label": "Azure SQL Database", "sublabel": "Ledger Tables & ACID", "pos": [890, 240], "size": [140, 56], "tag": "Row Lock & Ledger" },
+    { "id": "azure_event_hubs", "type": "messagebus", "label": "Azure Event Hubs", "sublabel": "Kafka Protocol :9093", "brand": "apache-kafka", "pos": [890, 380], "size": [140, 56], "tag": "Outbox Streaming" }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Flutter Client Tier",
+      "wraps": ["cicd", "clients"],
+      "pad": 14
+    },
+    {
+      "kind": "region",
+      "label": "Azure Virtual Network (VNet 10.0.0.0/16)",
+      "wraps": ["acr", "app_gateway", "gateway_pod", "datadog", "account_pod", "orchestrator_pod", "risk_engine_pod", "azure_redis", "azure_sql", "azure_event_hubs"],
+      "pad": 18
+    },
+    {
+      "kind": "security-group",
+      "label": "Edge DMZ & Registry",
+      "wraps": ["acr", "app_gateway"],
+      "pad": 12
+    },
+    {
+      "kind": "security-group",
+      "label": "Azure Kubernetes Service (AKS Cluster)",
+      "wraps": ["gateway_pod", "datadog", "account_pod", "orchestrator_pod", "risk_engine_pod"],
+      "pad": 12
+    },
+    {
+      "kind": "security-group",
+      "label": "Azure Managed Cloud PaaS",
+      "wraps": ["azure_redis", "azure_sql", "azure_event_hubs"],
+      "pad": 12
+    }
+  ],
+  "connections": [
+    { "id": "cicd-to-acr", "from": "cicd", "to": "acr", "label": "docker push", "fromSide": "right", "toSide": "left" },
+    { "id": "acr-to-account", "from": "acr", "to": "account_pod", "label": "image pull", "variant": "dashed", "fromSide": "right", "toSide": "left" },
+    { "id": "clients-to-appgw", "from": "clients", "to": "app_gateway", "label": "HTTPS :443", "variant": "emphasis", "fromSide": "right", "toSide": "left" },
+    { "id": "appgw-to-gateway", "from": "app_gateway", "to": "gateway_pod", "label": "AGIC Ingress", "variant": "emphasis", "fromSide": "right", "toSide": "left" },
+    { "id": "gateway-to-account", "from": "gateway_pod", "to": "account_pod", "label": "/api/auth/*", "fromSide": "top", "toSide": "left" },
+    { "id": "gateway-to-orchestrator", "from": "gateway_pod", "to": "orchestrator_pod", "label": "forward L7", "variant": "emphasis", "fromSide": "right", "toSide": "left" },
+    { "id": "gateway-to-datadog", "from": "gateway_pod", "to": "datadog", "label": "W3C traces", "variant": "dashed", "fromSide": "bottom", "toSide": "top", "labelDy": 24 },
+    { "id": "account-to-redis", "from": "account_pod", "to": "azure_redis", "label": "RTR & tokens", "variant": "security", "fromSide": "right", "toSide": "left" },
+    { "id": "orchestrator-to-risk", "from": "orchestrator_pod", "to": "risk_engine_pod", "label": "eval <=200ms", "variant": "security", "fromSide": "bottom", "toSide": "top", "labelDy": 24, "labelDx": -35 },
+    { "id": "orchestrator-to-sql", "from": "orchestrator_pod", "to": "azure_sql", "label": "row lock & ledger", "variant": "emphasis", "fromSide": "right", "toSide": "left", "labelDy": -20 },
+    { "id": "orchestrator-to-events", "from": "orchestrator_pod", "to": "azure_event_hubs", "label": "outbox stream", "fromSide": "bottom", "toSide": "left" }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "Azure Kubernetes Service & CI/CD Pipeline",
+      "items": [
+        "GitHub Actions CI/CD: Automated linting, unit testing, and Trivy security scanning; publishes multi-arch container images to Azure Container Registry (ACR).",
+        "AKS Ingress & Autoscaling: Azure App Gateway v2 with WAF terminates SSL; Gateway and Orchestrator pods autoscale via HPA (2 to 10 replicas) based on CPU and RPS.",
+        "Datadog DaemonSet: Datadog Agent DaemonSet runs on every AKS node, collecting container metrics, distributed OTLP traces, and streaming pod logs."
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Azure SQL Database with Ledger & Event Hubs",
+      "items": [
+        "Azure SQL Database & Ledger: Single unified database replacing Oracle and PostgreSQL; utilizes Azure SQL Ledger tables for cryptographically verifiable, append-only audit trails.",
+        "ACID Concurrency: Spring Boot Orchestrator acquires pessimistic row locks (SELECT ... WITH (UPDLOCK, ROWLOCK)) in Azure SQL, preventing overdrafts and race conditions.",
+        "Azure Event Hubs & Redis: Event Hubs provides managed Kafka API (:9093) for outbox events; Azure Cache for Redis manages RTR token families and 5-min OTPs."
+      ]
+    }
+  ]
+}

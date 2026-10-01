@@ -1,0 +1,463 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Integrated Capstone: Omnichannel Real-Time Remittance & Fraud Screening",
+    "output": "capstone2_architecture.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "perimeter-screening",
+        "label": "Perimeter & Auth Ingress",
+        "focus": [
+          "mobile_app",
+          "web_app",
+          "gateway",
+          "redis_tier",
+          "account_service"
+        ],
+        "note": "Calls hit Gateway :8080. Auth routes to Account Service :8081, which issues JWTs and tracks Refresh Token Rotation (RTR) in Redis."
+      },
+      {
+        "id": "risk-screening",
+        "label": "Async Risk Scoring & Core Simulation",
+        "focus": [
+          "gateway",
+          "orchestrator",
+          "risk_engine",
+          "temenos_mock"
+        ],
+        "note": "Spring Boot holds DB tx while Python asyncio scores risk. Scores > 0.85 or > 200ms drop. Valid txs generate raw OFSCore strings."
+      },
+      {
+        "id": "high-value-otp",
+        "label": "High-Value OTP Verification (>50k)",
+        "focus": [
+          "orchestrator",
+          "master_db",
+          "kafka_bus",
+          "notif_service",
+          "redis_tier"
+        ],
+        "note": "Transfers > 50k PHP trigger a soft balance hold. A 6-digit OTP is sent via Kafka and email with a 5-min Redis TTL before settlement."
+      },
+      {
+        "id": "datadog-audit",
+        "label": "Datadog APM & Audit Vault",
+        "focus": [
+          "gateway",
+          "datadog",
+          "kafka_bus",
+          "audit_vault"
+        ],
+        "note": "W3C traces stream to Datadog Agent for APM waterfalls and live logs, while Kafka streams immutable audit records to PostgreSQL."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "mobile_app",
+      "type": "frontend",
+      "label": "Flutter Mobile App",
+      "sublabel": "iOS / Android (Dart)",
+      "pos": [
+        40,
+        150
+      ],
+      "size": [
+        140,
+        56
+      ],
+      "tag": "KeyStore & Parity"
+    },
+    {
+      "id": "web_app",
+      "type": "frontend",
+      "label": "Flutter Web App",
+      "sublabel": "CanvasKit / Wasm :3000",
+      "pos": [
+        40,
+        290
+      ],
+      "size": [
+        140,
+        56
+      ],
+      "tag": "Unified Design UI"
+    },
+    {
+      "id": "redis_tier",
+      "type": "database",
+      "label": "Redis 7 Cache",
+      "sublabel": "RTR, Tokens & OTP :6379",
+      "brand": "redis",
+      "pos": [
+        260,
+        90
+      ],
+      "size": [
+        140,
+        56
+      ],
+      "tag": "RTR & Rate Limiter"
+    },
+    {
+      "id": "gateway",
+      "type": "security",
+      "label": "API Gateway",
+      "sublabel": "Spring Cloud :8080",
+      "brand": "spring",
+      "pos": [
+        260,
+        220
+      ],
+      "size": [
+        140,
+        56
+      ],
+      "tag": "Scrub & Proxy"
+    },
+    {
+      "id": "datadog",
+      "type": "cloud",
+      "label": "Datadog Agent",
+      "sublabel": "APM & Traces :8126",
+      "brand": "datadog",
+      "pos": [
+        260,
+        350
+      ],
+      "size": [
+        140,
+        56
+      ],
+      "tag": "Live APM"
+    },
+    {
+      "id": "account_service",
+      "type": "backend",
+      "label": "Account & Auth Svc",
+      "sublabel": "Spring Boot :8081",
+      "brand": "spring",
+      "pos": [
+        480,
+        90
+      ],
+      "size": [
+        150,
+        56
+      ],
+      "tag": "JWT & RTR Issuance"
+    },
+    {
+      "id": "orchestrator",
+      "type": "backend",
+      "label": "Orchestrator",
+      "sublabel": "Spring Boot :8082",
+      "brand": "spring",
+      "pos": [
+        480,
+        220
+      ],
+      "size": [
+        150,
+        56
+      ],
+      "tag": "Non-Blocking"
+    },
+    {
+      "id": "temenos_mock",
+      "type": "external",
+      "label": "Temenos T24 Core",
+      "sublabel": "OFSCore Loopback",
+      "pos": [
+        480,
+        350
+      ],
+      "size": [
+        150,
+        56
+      ],
+      "tag": "Simulated Core"
+    },
+    {
+      "id": "risk_engine",
+      "type": "backend",
+      "label": "Risk Engine",
+      "sublabel": "Python asyncio :8084",
+      "brand": "python",
+      "pos": [
+        710,
+        60
+      ],
+      "size": [
+        140,
+        56
+      ],
+      "tag": "Score <= 0.85"
+    },
+    {
+      "id": "master_db",
+      "type": "database",
+      "label": "Oracle XE Master",
+      "sublabel": "Relational DB :1521",
+      "pos": [
+        710,
+        190
+      ],
+      "size": [
+        140,
+        56
+      ],
+      "tag": "Pessimistic Lock"
+    },
+    {
+      "id": "kafka_bus",
+      "type": "messagebus",
+      "label": "Kafka Broker",
+      "sublabel": "KRaft Mode :9092",
+      "brand": "apache-kafka",
+      "pos": [
+        710,
+        320
+      ],
+      "size": [
+        140,
+        56
+      ],
+      "tag": "Event Decoupling"
+    },
+    {
+      "id": "notif_service",
+      "type": "backend",
+      "label": "Notification Svc",
+      "sublabel": "Email & 2FA OTP :8083",
+      "brand": "spring",
+      "pos": [
+        930,
+        150
+      ],
+      "size": [
+        140,
+        56
+      ],
+      "tag": "2FA OTP > 50k"
+    },
+    {
+      "id": "audit_vault",
+      "type": "database",
+      "label": "Postgres Audit",
+      "sublabel": "PostgreSQL 16 :5432",
+      "brand": "postgresql",
+      "pos": [
+        930,
+        290
+      ],
+      "size": [
+        140,
+        56
+      ],
+      "tag": "Append-Only"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Flutter Client Tier",
+      "wraps": [
+        "mobile_app",
+        "web_app"
+      ],
+      "pad": 16
+    },
+    {
+      "kind": "region",
+      "label": "Hardened Docker Bridge (banking-net: Internal Only)",
+      "wraps": [
+        "redis_tier",
+        "gateway",
+        "datadog",
+        "account_service",
+        "orchestrator",
+        "temenos_mock",
+        "risk_engine",
+        "master_db",
+        "kafka_bus",
+        "notif_service",
+        "audit_vault"
+      ],
+      "pad": 18
+    },
+    {
+      "kind": "security-group",
+      "label": "Perimeter & Rate Limiting",
+      "wraps": [
+        "redis_tier",
+        "gateway"
+      ],
+      "pad": 12
+    },
+    {
+      "kind": "security-group",
+      "label": "Core Banking & Fraud Analytics",
+      "wraps": [
+        "account_service",
+        "orchestrator",
+        "temenos_mock",
+        "risk_engine"
+      ],
+      "pad": 12
+    },
+    {
+      "kind": "security-group",
+      "label": "Persistence, Outbox & Audit Vault",
+      "wraps": [
+        "master_db",
+        "kafka_bus",
+        "notif_service",
+        "audit_vault"
+      ],
+      "pad": 12
+    }
+  ],
+  "connections": [
+    {
+      "id": "mobile-to-gateway",
+      "from": "mobile_app",
+      "to": "gateway",
+      "label": "HTTPS :8080",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "web-to-gateway",
+      "from": "web_app",
+      "to": "gateway",
+      "label": "HTTPS :8080",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "gateway-to-redis",
+      "from": "gateway",
+      "to": "redis_tier",
+      "label": "token-bucket",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "gateway-to-datadog",
+      "from": "gateway",
+      "to": "datadog",
+      "label": "W3C traces",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    },
+    {
+      "id": "gateway-to-account",
+      "from": "gateway",
+      "to": "account_service",
+      "label": "/api/v1/auth/*",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelDy": -18
+    },
+    {
+      "id": "account-to-redis",
+      "from": "account_service",
+      "to": "redis_tier",
+      "label": "RTR tokens",
+      "variant": "dashed",
+      "fromSide": "left",
+      "toSide": "right"
+    },
+    {
+      "id": "gateway-to-orchestrator",
+      "from": "gateway",
+      "to": "orchestrator",
+      "label": "forward :8080",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelDy": 22
+    },
+    {
+      "id": "orchestrator-to-risk",
+      "from": "orchestrator",
+      "to": "risk_engine",
+      "label": "eval <=200ms",
+      "variant": "security",
+      "fromSide": "top",
+      "toSide": "left",
+      "labelDy": -10
+    },
+    {
+      "id": "orchestrator-to-temenos",
+      "from": "orchestrator",
+      "to": "temenos_mock",
+      "label": "OFSCore string",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    },
+    {
+      "id": "orchestrator-to-master",
+      "from": "orchestrator",
+      "to": "master_db",
+      "label": "row lock",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "orchestrator-to-kafka",
+      "from": "orchestrator",
+      "to": "kafka_bus",
+      "label": "outbox relay",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "kafka-to-notif",
+      "from": "kafka_bus",
+      "to": "notif_service",
+      "label": "OTP & alerts",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "left"
+    },
+    {
+      "id": "kafka-to-audit",
+      "from": "kafka_bus",
+      "to": "audit_vault",
+      "label": "audit log",
+      "variant": "security",
+      "fromSide": "right",
+      "toSide": "left"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "Account Auth, Fraud & 2FA OTP Rules",
+      "items": [
+        "Account & Auth Service (:8081): Issues HMAC-SHA256 JWT access tokens (15m TTL) and tracks Refresh Token Rotation (RTR) families in Redis.",
+        "Async Risk Engine (Python :8084): Transfers scored 0.00-1.00; score > 0.85 drops immediately within <=200ms SLA.",
+        "High-Value OTP (> 50k PHP): Soft hold placed on available balance; 6-digit OTP delivered via email with 5-min Redis TTL."
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Flutter Parity, Security & Chaos",
+      "items": [
+        "Flutter Omnichannel Parity: Single Flutter codebase deployed to iOS, Android, and Web with 100% UI and business logic parity.",
+        "Perimeter & Redis State: Spring Cloud Gateway (:8080) validates JWTs, Redis RTR refresh token families, and rate limits (>10 rps -> 429).",
+        "Chaos Testing Protocols: 1) DB degradation choke, 2) Risk engine container kill (<=200ms SLA), and 3) Perimeter port attack."
+      ]
+    }
+  ]
+}

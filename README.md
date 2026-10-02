@@ -256,6 +256,42 @@ cd flutter_client
 flutter run -d chrome --web-port 3000
 ```
 
+### Database Web Console (Adminer Credentials)
+
+Adminer provides a browser-based SQL client to inspect and query both the Oracle XE operational database and the PostgreSQL audit vault.
+
+* **Adminer Web URL:** `http://localhost:8088`
+
+#### Oracle Database XE 21c (Master Operational Store)
+
+When logging into Adminer, fill in the following fields:
+
+| Field | Value | Notes |
+| :--- | :--- | :--- |
+| **System** | `Oracle (beta)` | Select from the system dropdown |
+| **Server** | `oracle-xe-master/XEPDB1` | Uses container service name on `banking-net` |
+| **Username** | `fse_user` | Application schema owner (or `SYSTEM` for DBA access) |
+| **Password** | `fse_password` | For `fse_user` (or `Password123#` for `SYSTEM`) |
+| **Database** | `XEPDB1` | Pluggable database name |
+
+For external database tools (DBeaver, SQL Developer) connecting from the host machine:
+* Host: `localhost`, Port: `1521`, Service Name: `XEPDB1`, User: `fse_user`, Password: `fse_password`
+
+#### PostgreSQL 16 (Immutable Audit Vault)
+
+When logging into Adminer, fill in the following fields:
+
+| Field | Value | Notes |
+| :--- | :--- | :--- |
+| **System** | `PostgreSQL` | Select from the system dropdown |
+| **Server** | `postgres-audit-vault` | Or `postgres-audit-vault:5432` on `banking-net` |
+| **Username** | `audit_user` | Audit vault database user |
+| **Password** | `audit_password` | Configured password |
+| **Database** | `banking_audit` | Target audit database |
+
+For external database tools (DBeaver, pgAdmin, psql) connecting from the host machine:
+* Host: `localhost`, Port: `5433`, Database: `banking_audit`, User: `audit_user`, Password: `audit_password`
+
 ---
 
 ## 8. Repository Structure

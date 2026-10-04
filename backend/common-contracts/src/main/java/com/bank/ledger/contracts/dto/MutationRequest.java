@@ -62,4 +62,20 @@ public class MutationRequest {
     @JsonProperty("approved_by_user_id")
     @JsonAlias({"approved_by_user_id", "approvedByUserId", "checker_user_id"})
     private String approvedByUserId;
+
+    @JsonProperty("memo")
+    @JsonAlias({"memo", "remarks", "note", "description"})
+    private String memo;
+
+    @JsonProperty("latitude")
+    @JsonAlias({"latitude", "lat"})
+    private Double latitude;
+
+    @JsonProperty("longitude")
+    @JsonAlias({"longitude", "lng", "lon"})
+    private Double longitude;
+
+    @JsonProperty("ip_address")
+    @JsonAlias({"ip_address", "ipAddress", "ip", "client_ip"})
+    private String ipAddress;
 }

@@ -1,0 +1,21 @@
+transaction_id,user_id,is_fraud,amount_php,spike_ratio,memo_present,memo,rooted,attestation_verdict,velocity_kmh
+TX-C1-000801,usr-C1-0054,False,430.0,0.86,False,,False,MEETS_DEVICE,0.95
+TX-C1-000802,usr-C1-0021,True,13757.24,6.82,True,bpi expressonline transfer,False,MEETS_STRONG,0.54
+TX-C1-000803,usr-C1-0049,False,1873.95,0.97,True,GARDENER LANDSCAPING MAINTENANCE HNORARIUM,False,MEETS_STRONG,0.17
+TX-C1-000804,usr-C1-0041,False,5447.03,1.52,False,,False,MEETS_STRONG,40.22
+TX-C1-000805,usr-C1-0016,False,6772.65,1.49,False,,False,MEETS_DEVICE,1.06
+TX-C1-000806,usr-C1-0015,False,2366.8,1.18,False,,False,MEETS_STRONG,2.48
+TX-C1-000807,usr-C1-0014,False,254.89,0.23,False,,False,MEETS_STRONG,0.22
+TX-C1-000808,usr-C1-0045,False,1254.89,1.25,False,,False,MEETS_STRONG,0.33
+TX-C1-000809,usr-C1-0081,False,7712.59,1.69,False,,False,MEETS_STRONG,0.6
+TX-C1-000810,usr-C1-0088,False,3631.91,1.57,False,,False,MEETS_STRONG,0.5
+TX-C1-000811,usr-C1-0047,False,2350.8,0.78,False,,False,MEETS_STRONG,0.65
+TX-C1-000812,usr-C1-0027,False,2100.45,0.76,True,deposit - Ref #14643,False,MEETS_STRONG,0.23
+TX-C1-000813,usr-C1-0082,True,15568.52,7.43,True,Puregold weekly essentials and pantry supply,False,MEETS_STRONG,8503.1
+TX-C1-000814,usr-C1-0002,False,3100.75,1.37,False,,False,MEETS_STRONG,0.54
+TX-C1-000815,usr-C1-0084,False,4183.15,0.94,False,,False,MEETS_STRONG,0.88
+TX-C1-000816,usr-C1-0037,False,1829.2,1.38,False,,False,MEETS_STRONG,0.9
+TX-C1-000817,usr-C1-0014,False,110.82,0.1,False,,False,MEETS_STRONG,0.29
+TX-C1-000818,usr-C1-0052,False,165.45,0.06,False,,False,MEETS_STRONG,1.09
+TX-C1-000819,usr-C1-0072,False,1491.15,0.43,True,Mercury Drug Maintenance Pills For Lola,False,MEETS_DEVICE,0.22
+TX-C1-000820,usr-C1-0039,True,12911.38,2.04,True,Foreign exchange crypto conversion fee for withdrawal,False,FAILED,0.63

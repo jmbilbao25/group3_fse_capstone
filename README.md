@@ -42,12 +42,59 @@ In local development, the platform runs via Docker Compose with Oracle XE and Po
   * Refresh calls (`POST /api/v1/auth/refresh`) revoke the presented refresh token immediately and issue a new pair, recording the rotation inside the session's token family set (`token_family:<sessionId>`).
   * If an attacker attempts to replay a previously revoked refresh token, Redis triggers immediate breach detection (`purgeEntireTokenFamily`). The system purges all active refresh tokens associated with that session family, terminates the compromised session, and returns HTTP 401 Unauthorized.
 
-### ADR-04: Asynchronous Python Fraud Risk Screening Engine
-* **Decision:** Deploy an independent, non-blocking Python microservice on port 8084 using FastAPI and `asyncio` to score transaction risk.
-* **SLA & Thresholds:**
-  * The Java Orchestration Engine suspends the relational database transaction and invokes the Risk Engine via a non-blocking `WebClient` call.
-  * The Risk Engine calculates a normalized score from 0.00 to 1.00 based on velocity checks, transfer limits, and account history within a strict ≤ 200 ms SLA.
-  * Any transfer with a risk score exceeding **0.85** is dropped immediately with an HTTP 422 Unprocessable Entity (`RISK_THRESHOLD_EXCEEDED`) response. If the Risk Engine fails to respond within 200 ms, the Orchestration Engine aborts the transaction cleanly to protect ledger integrity.
+### ADR-04: Decoupled Fraud Risk Screening Engine (Synchronous S2 and Asynchronous NanoJev Reviewer)
+* **Decision:** Deploy an independent Python risk microservice (`risk-service`) on port 8084 utilizing a decoupled evaluation architecture:
+  * **Synchronous Path (< 2 ms):** Evaluates deterministic Gate 0 rules (impossible travel velocity, hardware tampering) and an XGBoost tabular model (S2) assessing 40+ behavioral and velocity features. Decisions (`ALLOW`, `REQUIRE_2FA`, or `BLOCK`) return immediately within a strict p99 < 200 ms SLA under 25 TPS load.
+  * **Asynchronous Path (Background Worker Pool):** When a transfer includes a memo and is not blocked, it is enqueued for second-look review using a quantized language model (NanoJev, based on Qwen2.5-0.5B INT8 ONNX with 8 intra-op threads). The reviewer detects social engineering, scam typologies, and memo inconsistencies.
+  * **Escalate-Only Invariant:** Enforced via `enforce_escalate_only()`, guaranteeing `RiskTier(final) >= RiskTier(S2)`. The reviewer can escalate an `ALLOW` to `REQUIRE_2FA` or `BLOCK`, but can never weaken an S2 decision or release held funds.
+  * **Simulated Settlement Window:** Transfers with memos hold a 60-second settlement clearing window (`PENDING_SETTLEMENT`). If the background reviewer flags fraud within the window, status transitions to `HELD` and an analyst case card is generated. If the window elapses, the transfer remains settled and is flagged for retrospective analyst review.
+
+#### Orchestrator to Risk Engine Service Contract (`POST /api/v1/risk/analyze`)
+
+To evaluate transfers accurately, the orchestrator (`ledger-mutation-engine`) supplies transaction details, client geolocation, device integrity indicators, and relationship context:
+
+```json
+{
+  "transaction_id": "TX-1001",
+  "user_id": "USR-1001",
+  "account_id": "ACC-100001",
+  "target_account_id": "ACC-200002",
+  "amount": 15000.00,
+  "currency": "PHP",
+  "memo": "Payment for goods",
+
+  "latitude": 14.5995,
+  "longitude": 120.9842,
+  "ip_address": "120.28.0.1",
+  "ip_latitude": 14.6000,
+  "ip_longitude": 120.9800,
+
+  "rooted": false,
+  "hooking": false,
+  "emulator": false,
+  "tampered": false,
+  "attestation_verdict": "PASS",
+  "mock_location": false,
+  "is_vpn": false,
+
+  "payee_age_days": 180.0,
+  "new_payee": false
+}
+```
+
+The Risk Engine returns:
+- `decision`: `ALLOW`, `REQUIRE_2FA`, or `BLOCK`.
+- `status`: `SETTLED` (no memo), `PENDING_SETTLEMENT` (memo present, 60s holding window), `REQUIRE_2FA`, or `BLOCKED`.
+- `fraud_score`: Calibrated integer score (0 to 100).
+- `review_enqueued`: Boolean indicating whether background second-look review was scheduled.
+- `metrics`: Geolocation velocity, distance from home, VPN detection, and amount spike ratio.
+
+Orchestrator integration rules:
+1. When `decision == "BLOCK"`, abort mutation and reject the transfer.
+2. When `decision == "REQUIRE_2FA"`, place soft hold on balance and dispatch email OTP.
+3. When `decision == "ALLOW"` and `status == "PENDING_SETTLEMENT"`, approve transaction and maintain the 60-second clearing interval. If the risk engine escalates status to `HELD`, halt outbound clearing.
+4. On timeout (recommended 1,500 ms limit), fall back safely to static rule thresholds without dropping valid customer transactions.
+
 
 ### ADR-05: Regulatory Transfer Value Thresholds & High-Value OTP
 * **Decision:** Enforce tiered transaction verification rules:
@@ -125,7 +172,7 @@ Every container attaches to the internal bridge network `banking-net`. Only peri
 | **Account Service** | `account-service` | *Internal* | `8081` | HTTP / REST | KYC onboarding, user profiles, JWT issuance, Refresh Token Rotation |
 | **Orchestration Engine** | `ledger-mutation-engine`| *Internal* | `8082` | HTTP / REST | Transaction orchestration, row locks, soft holds, outbox relay |
 | **Notification Service** | `notification-service` | *Internal* | `8083` | HTTP / REST | Kafka event listener, email receipts, 2FA OTP generation and dispatch |
-| **Fraud Risk Engine** | `risk-engine` | *Internal* | `8084` | HTTP / REST | Python asyncio real-time risk scoring (0.00-1.00, ≤200ms SLA) |
+| **Fraud Risk Engine** | `risk-service` | *Internal* | `8084` | HTTP / REST | Decoupled S2 XGBoost (sync <2ms) + NanoJev INT8 ONNX reviewer (async) |
 | **Redis Cache** | `redis-cache` | `6379` | `6379` | RESP / TCP | RTR token families, JWT blacklist, 5-minute OTP, rate limiting |
 | **Oracle Database XE** | `oracle-xe-master` | `1521` | `1521` | Oracle TNS | Operational relational state (`XEPDB1`), row locks, outbox events |
 | **PostgreSQL Audit** | `postgres-audit-vault`| `5433` | `5432` | PostgreSQL | Write-once append-only compliance audit journal (`banking_audit`) |
@@ -148,7 +195,7 @@ Every container attaches to the internal bridge network `banking-net`. Only peri
 | **API Gateway Pods** | Spring Cloud Gateway (:8080) | AKS Deployment (`gateway-service`) | HPA: 2 to 10 pods on CPU > 70% or request rate |
 | **Account Pods** | Identity & Auth (:8081) | AKS Deployment (`account-service`) | HPA: 2 to 6 pods with JWT/RTR key rotation |
 | **Orchestration Pods** | Core Remittance (:8082) | AKS Deployment (`ledger-mutation-engine`) | HPA: 2 to 8 pods with SLA ≤ 200 ms timeout |
-| **Risk Engine Pods** | Python Fraud Analytics (:8084) | AKS Deployment (`risk-engine`) | HPA: 2 to 6 pods with asyncio event loop |
+| **Risk Engine Pods** | Python Fraud Analytics (:8084) | AKS Deployment (`risk-service`) | HPA: 2 to 6 pods with decoupled S2 + NanoJev reviewer |
 | **Notification Pods** | Email & 2FA OTP (:8083) | AKS Deployment (`notification-service`) | KEDA scaled by Event Hubs topic consumer lag |
 | **Database & Ledger** | Operational State & Audit Vault | Azure SQL Database (General Purpose) | Pessimistic `UPDLOCK, ROWLOCK` + Azure SQL Ledger |
 | **In-Memory Cache** | RTR, Token Blacklist & OTP | Azure Cache for Redis (Standard C1 :6380) | Managed TLS in-memory cache with sub-5ms latency |
@@ -164,7 +211,7 @@ The project is executed across three official Capstone tracks mapped to a 100-po
 | Member | Track & Specialization | Key Codebase Ownership & Deliverables | Evaluation Pillar |
 | :--- | :--- | :--- | :--- |
 | **Zel** | Technical Lead, Core Mutation Engine & Ledger Testing | `BalanceMutationService.java`: row locking (Oracle XE & Azure SQL `UPDLOCK, ROWLOCK`), soft holds, transactional outbox, concurrency test harnesses, **Chaos Scenario 1** (DB degradation). | **Pillar 2 & 4** (Backend Logic & Chaos 1) |
-| **Maye** | Lead Risk Analytics Engineer & Scrum Backlog Lead | `backend/risk-engine`: Python FastAPI/asyncio risk heuristics (≤200ms SLA, score > 0.85 abort), JIRA backlog tracking, **Chaos Scenario 2** (Risk engine kill). | **Pillar 1 & 4** (JIRA & Chaos 2) |
+| **Maye** | Lead Risk Analytics Engineer & Scrum Backlog Lead | `backend/risk-service`: Gate 0 + S2 sync scoring (p99 < 200ms SLA), NanoJev INT8 async reviewer, prompt caching, JIRA backlog tracking, **Chaos Scenario 2** (Risk service kill). | **Pillar 1 & 4** (JIRA & Chaos 2) |
 | **JM** | Lead Flutter Architect & Datadog Observability | `flutter_client`: cross-platform Web/Mobile parity, client circuit breaker, Datadog APM Agent integration, W3C trace waterfalls, E2E testing passes. | **Pillar 3 & 4** (UI & Observability) |
 | **Wax** | Lead Core Banking Integration Engineer (Temenos T24) | `OfsMessageBuilder.java`, `TemenosLoopbackClient.java`: raw OFSCore serialization (`FUNDS.TRANSFER...`), local loopback simulation server. | **Pillar 2** (T24 Core Banking Hook) |
 | **Mae** | Flutter Mobile Engineer & Agile Scrum Coordinator | `flutter_client`: native KeyStore/Keychain encryption (`flutter_secure_storage`), responsive forms, JIRA sprint burn-down, evaluation demo runbook. | **Pillar 1 & 3** (JIRA & Mobile Client) |
@@ -249,7 +296,7 @@ cd backend/ledger-mutation-engine && ..\mvnw.cmd spring-boot:run
 cd backend/notification-service && ..\mvnw.cmd spring-boot:run
 
 # Terminal 5: Python Risk Engine (:8084)
-cd backend/risk-engine && uvicorn main:app --host 0.0.0.0 --port 8084 --reload
+cd backend/risk-service && python -m app.server
 
 # Step 3: Run Flutter Web Portal
 cd flutter_client
@@ -328,5 +375,5 @@ For external database tools (DBeaver, pgAdmin, psql) connecting from the host ma
     ├── account-service/                # KYC onboarding, JWT token issuance, RTR token rotation
     ├── ledger-mutation-engine/         # Balance mutation orchestrator, locks, T24 hook, outbox
     ├── notification-service/           # Kafka consumer, email receipts, 2FA OTP, spool buffer
-    └── risk-engine/                    # Python FastAPI asyncio fraud risk screening service
+    └── risk-service/                   # Decoupled S2 XGBoost and NanoJev second-look risk service
 ```

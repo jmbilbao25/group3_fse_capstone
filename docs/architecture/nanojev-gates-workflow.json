@@ -1,0 +1,89 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "NanoJev Cascading Two-Gate Risk Assessment Workflow",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "full-flow",
+        "label": "End-to-End Evaluation Flow",
+        "focus": ["tx_request", "geo_enrich", "gate0_triage", "fast_allow", "fast_block", "qwen_intake", "neural_eval", "bayesian_head", "escalate_verdict", "datadog_apm"],
+        "note": "Follow transactions from intake through Gate 0 fast triage and Gate 1 neural assessment."
+      },
+      {
+        "id": "fast-path",
+        "label": "Gate 0 Fast-Path (< 0.1ms)",
+        "focus": ["tx_request", "geo_enrich", "gate0_triage", "fast_allow", "fast_block"],
+        "note": "68% of traffic is resolved sub-millisecond without invoking the neural network."
+      },
+      {
+        "id": "neural-path",
+        "label": "Gate 1 Qwen Deep-Path (~110ms)",
+        "focus": ["gate0_triage", "qwen_intake", "neural_eval", "bayesian_head", "escalate_verdict"],
+        "note": "Ambiguous, high-value, and social engineering scams undergo deep semantic analysis."
+      }
+    ]
+  },
+  "lanes": [
+    { "id": "intake", "label": "Transaction Intake & Signal Math" },
+    { "id": "gate0", "label": "Gate 0: Deterministic Fast-Path (< 0.1ms)" },
+    { "id": "gate1", "label": "Gate 1: Neural Deep-Path (Qwen2.5-0.5B)" },
+    { "id": "verdict", "label": "Verdict, Telemetry & APM" }
+  ],
+  "phases": [
+    { "id": "enrich_phase", "label": "Intake & Math", "fromCol": 0, "toCol": 1 },
+    { "id": "triage_phase", "label": "Gate 0 Triage", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "verdict_phase", "label": "Neural Assessment & Settlement", "fromCol": 4, "toCol": 5, "variant": "dashed" }
+  ],
+  "mainPath": ["tx_request", "geo_enrich", "gate0_triage", "qwen_intake", "neural_eval", "bayesian_head", "escalate_verdict"],
+  "nodes": [
+    { "id": "tx_request", "lane": "intake", "col": 0, "type": "external", "label": "Transfer Request", "sublabel": "amount, memo, GPS", "width": 136 },
+    { "id": "geo_enrich", "lane": "intake", "col": 1, "type": "backend", "label": "Signal Math", "sublabel": "Haversine speed + spike", "width": 136 },
+    { "id": "gate0_triage", "lane": "gate0", "col": 2, "type": "security", "label": "Gate 0 Triage", "sublabel": "deterministic rules", "tag": "< 0.1ms", "width": 136 },
+    { "id": "fast_allow", "lane": "gate0", "col": 3, "type": "frontend", "label": "Instant ALLOW", "sublabel": "routine habit match", "tag": "68% traffic", "width": 136 },
+    { "id": "fast_block", "lane": "verdict", "col": 2, "type": "security", "label": "Instant BLOCK", "sublabel": "speed > 1,000 km/h", "tag": "5% traffic", "width": 136 },
+    { "id": "qwen_intake", "lane": "gate1", "col": 3, "type": "backend", "label": "Qwen2.5 Intake", "sublabel": "compact 43 tokens", "tag": "10 CPU threads", "width": 136 },
+    { "id": "neural_eval", "lane": "gate1", "col": 4, "type": "cloud", "label": "Neural Attention", "sublabel": "memo semantics & logits", "width": 136 },
+    { "id": "bayesian_head", "lane": "gate1", "col": 5, "type": "database", "label": "Bayesian Synthesis", "sublabel": "Choice, Score, Noul", "width": 136 },
+    { "id": "escalate_verdict", "lane": "verdict", "col": 5, "type": "security", "label": "2FA / Block Verdict", "sublabel": "score [0-100] + flags", "width": 136 },
+    { "id": "datadog_apm", "lane": "verdict", "col": 4, "type": "messagebus", "label": "Datadog APM & Logs", "sublabel": "traces, zero error spikes", "width": 136 }
+  ],
+  "edges": [
+    { "id": "req-enrich", "from": "tx_request", "to": "geo_enrich", "variant": "default" },
+    { "id": "enrich-gate0", "from": "geo_enrich", "to": "gate0_triage", "variant": "default" },
+    { "id": "gate0-allow", "from": "gate0_triage", "to": "fast_allow", "label": "routine habit", "variant": "default" },
+    { "id": "gate0-block", "from": "gate0_triage", "to": "fast_block", "label": "impossible travel", "variant": "security", "role": "error" },
+    { "id": "gate0-escalate", "from": "gate0_triage", "to": "qwen_intake", "label": "ambiguous / spike", "variant": "emphasis" },
+    { "id": "qwen-infer", "from": "qwen_intake", "to": "neural_eval", "variant": "default" },
+    { "id": "infer-bayes", "from": "neural_eval", "to": "bayesian_head", "variant": "default" },
+    { "id": "bayes-verdict", "from": "bayesian_head", "to": "escalate_verdict", "label": "calibrated score", "variant": "security" },
+    { "id": "verdict-apm", "from": "escalate_verdict", "to": "datadog_apm", "variant": "dashed", "role": "return" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Gate 0 Deterministic Triage",
+      "items": [
+        "Resolves 68% of banking traffic in under 0.1ms via strict routine habit rules",
+        "Immediately hard-blocks impossible physical travel (> 1,000 km/h)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Gate 1 Neural Deep-Path",
+      "items": [
+        "Qwen2.5-0.5B evaluates ambiguous edge cases and semantic memos",
+        "Bayesian head outputs calibrated Choice, Score (0-100), and Noul anomaly"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Telemetry & Observability",
+      "items": [
+        "Fleet median response time of 9.33ms across 2,000 transactions",
+        "Zero error spikes in Datadog through stdout log routing"
+      ]
+    }
+  ]
+}

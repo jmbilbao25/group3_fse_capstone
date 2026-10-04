@@ -2,7 +2,7 @@
 # Stop All FSE Core Retail Banking Microservices
 # ==============================================================================
 
-$ports = @(8080, 8081, 8082, 8083)
+$ports = @(8080, 8081, 8082, 8083, 8084)
 
 Write-Host "Stopping banking services on ports: $($ports -join ', ')..." -ForegroundColor Yellow
 

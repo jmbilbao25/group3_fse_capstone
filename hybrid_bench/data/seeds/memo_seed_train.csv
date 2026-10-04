@@ -1,0 +1,209 @@
+memo,signal,subtype,language,difficulty,typology_novel,split_role,author
+SM Supermarket grocery haul,legit,groceries,en,easy,False,seed_pool,ml_expert_auditor
+Puregold weekly essentials and pantry supply,legit,groceries,en,easy,False,seed_pool,ml_expert_auditor
+Robinsons Supermarket fresh fruits and meat,legit,groceries,en,easy,False,seed_pool,ml_expert_auditor
+Pambili ng bigas at ulam sa palengke,legit,groceries,tl,easy,False,seed_pool,ml_expert_auditor
+Weekly grocery share sa bahay,legit,groceries,taglish,easy,False,seed_pool,ml_expert_auditor
+Landmark supermarket groceries,legit,groceries,en,easy,False,seed_pool,ml_expert_auditor
+S&R membership shopping items,legit,groceries,en,easy,False,seed_pool,ml_expert_auditor
+Pantry food stocks replenishment,legit,groceries,en,easy,False,seed_pool,ml_expert_auditor
+Wet market seafood purchase,legit,groceries,en,easy,False,seed_pool,ml_expert_auditor
+South Star Drug vitamins and prescription medicines,legit,groceries,en,easy,False,seed_pool,ml_expert_auditor
+Mercury Drug maintenance pills for lola,legit,groceries,taglish,easy,False,seed_pool,ml_expert_auditor
+Watsons skincare and hygiene supplies,legit,groceries,en,easy,False,seed_pool,ml_expert_auditor
+Baby diapers and milk formula supply,legit,groceries,en,easy,False,seed_pool,ml_expert_auditor
+Cat food kibbles and litter sand,legit,groceries,en,easy,False,seed_pool,ml_expert_auditor
+Dog veterinary shampoo and tick medicine,legit,groceries,en,easy,False,seed_pool,ml_expert_auditor
+Water refilling station 10 gallons delivery,legit,groceries,en,easy,False,seed_pool,ml_expert_auditor
+Bakery bread and morning pandesal treat,legit,groceries,en,easy,False,seed_pool,ml_expert_auditor
+Office lunch share Jollibee chickenjoy bucket,legit,groceries,taglish,easy,False,seed_pool,ml_expert_auditor
+Samgyupsal team dinner split payment,legit,groceries,en,easy,False,seed_pool,ml_expert_auditor
+Coffee and pastry meeting at UCC Cafe,legit,groceries,en,easy,False,seed_pool,ml_expert_auditor
+Lunch delivery GrabFood order share,legit,groceries,en,easy,False,seed_pool,ml_expert_auditor
+Pizza party chip-in for project celebration,legit,groceries,en,easy,False,seed_pool,ml_expert_auditor
+Dinner delivery Foodpanda bill share,legit,groceries,en,easy,False,seed_pool,ml_expert_auditor
+Ambag sa birthday cake ni boss,legit,groceries,taglish,easy,False,seed_pool,ml_expert_auditor
+Dessert milk tea afternoon snack,legit,groceries,en,easy,False,seed_pool,ml_expert_auditor
+Snacks and refreshments for bible study,legit,groceries,en,easy,False,seed_pool,ml_expert_auditor
+Korean grocery noodles and kimchi stock,legit,groceries,en,easy,False,seed_pool,ml_expert_auditor
+Fruits and vegetables from Baguio market,legit,groceries,en,easy,False,seed_pool,ml_expert_auditor
+Organic eggs and fresh milk delivery,legit,groceries,en,easy,False,seed_pool,ml_expert_auditor
+Sunday family brunch at Mary Grace,legit,groceries,en,easy,False,seed_pool,ml_expert_auditor
+Barbeque stall payment via QR Ph,legit,groceries,en,easy,False,seed_pool,ml_expert_auditor
+Canteen lunch credit settlement,legit,groceries,en,easy,False,seed_pool,ml_expert_auditor
+Fastfood breakfast drive-thru share,legit,groceries,en,easy,False,seed_pool,ml_expert_auditor
+Pampanga meat tocino and longganisa order,legit,groceries,taglish,easy,False,seed_pool,ml_expert_auditor
+Bottled mineral water office supply,legit,groceries,en,easy,False,seed_pool,ml_expert_auditor
+Meralco electricity bill payment for September,legit,utilities,en,easy,False,seed_pool,ml_expert_auditor
+Maynilad water services residential account,legit,utilities,en,easy,False,seed_pool,ml_expert_auditor
+Manila Water monthly bill settlement,legit,utilities,en,easy,False,seed_pool,ml_expert_auditor
+PLDT Home Fibr monthly internet broadband,legit,utilities,en,easy,False,seed_pool,ml_expert_auditor
+Globe postpaid telecom monthly plan,legit,utilities,en,easy,False,seed_pool,ml_expert_auditor
+Converge ICT fiber internet connection,legit,utilities,en,easy,False,seed_pool,ml_expert_auditor
+Smart Communications postpaid cellular bill,legit,utilities,en,easy,False,seed_pool,ml_expert_auditor
+Sky Cable television monthly subscription,legit,utilities,en,easy,False,seed_pool,ml_expert_auditor
+Cignal TV prepaid reload package,legit,utilities,en,easy,False,seed_pool,ml_expert_auditor
+LPG gas tank refill delivery cooking,legit,utilities,en,easy,False,seed_pool,ml_expert_auditor
+Monthly rent payment for Studio Unit 12B,legit,rent,en,easy,False,seed_pool,ml_expert_auditor
+Bayad sa upa para sa buwan ng Oktubre,legit,rent,tl,easy,False,seed_pool,ml_expert_auditor
+Apartment monthly rental fee and water share,legit,rent,en,easy,False,seed_pool,ml_expert_auditor
+Condominium association dues and garbage fee,legit,rent,en,easy,False,seed_pool,ml_expert_auditor
+Parking slot rental payment B2 slot 45,legit,rent,en,easy,False,seed_pool,ml_expert_auditor
+Commercial stall lease payment monthly,legit,rent,en,easy,False,seed_pool,ml_expert_auditor
+Warehouse storage room monthly lease,legit,rent,en,easy,False,seed_pool,ml_expert_auditor
+Office co-working space dedicated desk fee,legit,rent,en,easy,False,seed_pool,ml_expert_auditor
+Staff housing dormitory room share,legit,rent,en,easy,False,seed_pool,ml_expert_auditor
+Townhouse security maintenance monthly dues,legit,rent,en,easy,False,seed_pool,ml_expert_auditor
+Subdivision clubhouse dues and guard fee,legit,rent,en,easy,False,seed_pool,ml_expert_auditor
+Advance one month rent deposit for renewal,legit,rent,en,medium,False,seed_pool,ml_expert_auditor
+Room rental balance settlement for mid-month,legit,rent,en,easy,False,seed_pool,ml_expert_auditor
+Aircon cleaning and preventive maintenance service,legit,utilities,en,easy,False,seed_pool,ml_expert_auditor
+Plumbing repair service and replacement parts,legit,utilities,en,easy,False,seed_pool,ml_expert_auditor
+Electrical rewiring installation labor cost,legit,utilities,en,easy,False,seed_pool,ml_expert_auditor
+Pest control termite treatment service,legit,utilities,en,easy,False,seed_pool,ml_expert_auditor
+Internet router replacement hardware cost,legit,utilities,en,easy,False,seed_pool,ml_expert_auditor
+CCTV surveillance installation downpayment,legit,utilities,en,easy,False,seed_pool,ml_expert_auditor
+Subdivision vehicle RFID sticker purchase,legit,utilities,en,easy,False,seed_pool,ml_expert_auditor
+Monthly allowance for college daughter,legit,allowance,en,easy,False,seed_pool,ml_expert_auditor
+Pang allowance ni bunso sa UST,legit,allowance,taglish,easy,False,seed_pool,ml_expert_auditor
+Financial allowance support for mama and papa,legit,allowance,en,easy,False,seed_pool,ml_expert_auditor
+Weekly school allowance and bus fare,legit,allowance,en,easy,False,seed_pool,ml_expert_auditor
+Pang matrikula at school projects,legit,allowance,tl,easy,False,seed_pool,ml_expert_auditor
+Emergency financial assistance for cousin,legit,allowance,en,medium,False,seed_pool,ml_expert_auditor
+Pang bili ng gamot at gatas ni lolo,legit,allowance,tl,easy,False,seed_pool,ml_expert_auditor
+Graduation gift monetary present,legit,allowance,en,easy,False,seed_pool,ml_expert_auditor
+Birthday monetary gift for niece,legit,allowance,en,easy,False,seed_pool,ml_expert_auditor
+Wedding gift cash transfer for newlywed couple,legit,allowance,en,easy,False,seed_pool,ml_expert_auditor
+Padala pambayad sa kuryente sa probinsya,legit,allowance,tl,easy,False,seed_pool,ml_expert_auditor
+Christmas pamasko for godchildren,legit,allowance,taglish,easy,False,seed_pool,ml_expert_auditor
+Childcare nanny yaya monthly salary payment,legit,allowance,taglish,easy,False,seed_pool,ml_expert_auditor
+Family driver semi-monthly wages,legit,allowance,en,easy,False,seed_pool,ml_expert_auditor
+House helper monthly salary and allowance,legit,allowance,en,easy,False,seed_pool,ml_expert_auditor
+Gardener landscaping maintenance honorarium,legit,allowance,en,easy,False,seed_pool,ml_expert_auditor
+Elderly caregiver allowance and groceries,legit,allowance,en,easy,False,seed_pool,ml_expert_auditor
+Pang boundary ng tricycle driver,legit,allowance,tl,easy,False,seed_pool,ml_expert_auditor
+Sibling contribution for mother hospital bill,legit,allowance,en,medium,False,seed_pool,ml_expert_auditor
+Pocket money for provincial vacation trip,legit,allowance,en,easy,False,seed_pool,ml_expert_auditor
+Youth fellowship camp registration allowance,legit,allowance,en,easy,False,seed_pool,ml_expert_auditor
+Sports training uniform and gear allowance,legit,allowance,en,easy,False,seed_pool,ml_expert_auditor
+Music lessons piano teacher monthly fee,legit,allowance,en,easy,False,seed_pool,ml_expert_auditor
+Art workshop materials cash allowance,legit,allowance,en,easy,False,seed_pool,ml_expert_auditor
+Pang requirements sa board examination,legit,allowance,taglish,easy,False,seed_pool,ml_expert_auditor
+University tuition matriculation fee installment 1,legit,education,en,easy,False,seed_pool,ml_expert_auditor
+DLSU term 2 tuition balance settlement,legit,education,en,easy,False,seed_pool,ml_expert_auditor
+Ateneo graduate school MBA tuition installment,legit,education,en,easy,False,seed_pool,ml_expert_auditor
+College laboratory fee and textbook package,legit,education,en,easy,False,seed_pool,ml_expert_auditor
+O'Reilly mastering cryptocurrency book tutorial,legit,technical_book,en,hard,False,seed_pool,ml_expert_auditor
+Designing data intensive applications technical textbook,legit,technical_book,en,easy,False,seed_pool,ml_expert_auditor
+Python machine learning book and online course access,legit,technical_book,en,easy,False,seed_pool,ml_expert_auditor
+AWS certified solutions architect study guide,legit,technical_book,en,easy,False,seed_pool,ml_expert_auditor
+Cybersecurity risk analysis handbook textbook,legit,technical_book,en,hard,False,seed_pool,ml_expert_auditor
+Attorney legal document notarization service fee,legit,legal_fee,en,hard,False,seed_pool,ml_expert_auditor
+Notarial fee for deed of absolute sale,legit,legal_fee,en,hard,False,seed_pool,ml_expert_auditor
+Law office consultation retainer balance,legit,legal_fee,en,hard,False,seed_pool,ml_expert_auditor
+Corporate legal secretarial compliance fees,legit,legal_fee,en,hard,False,seed_pool,ml_expert_auditor
+Certified public accountant audit engagement deposit,legit,legal_fee,en,hard,False,seed_pool,ml_expert_auditor
+Real estate property appraisal fee,legit,legal_fee,en,hard,False,seed_pool,ml_expert_auditor
+Architectural house renovation plan blueprint fee,legit,education,en,easy,False,seed_pool,ml_expert_auditor
+Dentist tooth extraction and cleaning procedure,legit,education,en,easy,False,seed_pool,ml_expert_auditor
+Medical clinic consultation and diagnostic blood test,legit,education,en,easy,False,seed_pool,ml_expert_auditor
+Ophthalmology prescription glasses lenses payment,legit,education,en,easy,False,seed_pool,ml_expert_auditor
+Professional engineering consultancy service billing,legit,legal_fee,en,hard,False,seed_pool,ml_expert_auditor
+Funds transfer,neutral,generic,en,easy,False,seed_pool,ml_expert_auditor
+Payment,neutral,generic,en,easy,False,seed_pool,ml_expert_auditor
+Transfer,neutral,generic,en,easy,False,seed_pool,ml_expert_auditor
+Bills payment,neutral,generic,en,easy,False,seed_pool,ml_expert_auditor
+Deposit,neutral,generic,en,easy,False,seed_pool,ml_expert_auditor
+Settlement,neutral,generic,en,easy,False,seed_pool,ml_expert_auditor
+GCash cash in transaction,neutral,generic,en,easy,False,seed_pool,ml_expert_auditor
+Maya digital wallet reload,neutral,generic,en,easy,False,seed_pool,ml_expert_auditor
+BPI express online transfer,neutral,generic,en,easy,False,seed_pool,ml_expert_auditor
+Ref 982341,neutral,reference,en,easy,False,seed_pool,ml_expert_auditor
+Invoice 2026-089,neutral,reference,en,easy,False,seed_pool,ml_expert_auditor
+Personal transfer,neutral,generic,en,easy,False,seed_pool,ml_expert_auditor
+Own account transfer,neutral,generic,en,easy,False,seed_pool,ml_expert_auditor
+Savings transfer,neutral,generic,en,easy,False,seed_pool,ml_expert_auditor
+For safe keeping,neutral,generic,en,easy,False,seed_pool,ml_expert_auditor
+Transaction reimbursement,neutral,generic,en,easy,False,seed_pool,ml_expert_auditor
+Reimbursement,neutral,generic,en,easy,False,seed_pool,ml_expert_auditor
+Payment for services rendered,neutral,generic,en,medium,False,seed_pool,ml_expert_auditor
+Contract agreement payment,neutral,generic,en,medium,False,seed_pool,ml_expert_auditor
+Thank you,neutral,generic,en,easy,False,seed_pool,ml_expert_auditor
+Salamat,neutral,generic,tl,easy,False,seed_pool,ml_expert_auditor
+Padala,neutral,generic,tl,easy,False,seed_pool,ml_expert_auditor
+Bayad,neutral,generic,tl,easy,False,seed_pool,ml_expert_auditor
+Pambayad,neutral,generic,tl,easy,False,seed_pool,ml_expert_auditor
+Shared expenses,neutral,generic,en,easy,False,seed_pool,ml_expert_auditor
+Miscellaneous payment,neutral,generic,en,easy,False,seed_pool,ml_expert_auditor
+Balance settlement,neutral,generic,en,easy,False,seed_pool,ml_expert_auditor
+Advance settlement,neutral,generic,en,easy,False,seed_pool,ml_expert_auditor
+Urgent processing fee to release cryptocurrency trading profit,scam,crypto_scam,en,easy,False,seed_pool,ml_expert_auditor
+Advance gas fee deposit to unlock USDT trading profits,scam,crypto_scam,en,easy,False,seed_pool,ml_expert_auditor
+Wallet release clearance charge for bitcoin investment,scam,crypto_scam,en,easy,False,seed_pool,ml_expert_auditor
+Urgent tax deposit to withdraw offshore crypto wallet funds,scam,crypto_scam,en,medium,False,seed_pool,ml_expert_auditor
+Arbitrage trading pool deposit to withdraw accumulated balance,scam,crypto_scam,en,medium,False,seed_pool,ml_expert_auditor
+Binance smart chain gas fee verification transfer,scam,crypto_scam,en,medium,False,seed_pool,ml_expert_auditor
+Crypto wallet authentication fee for frozen balance,scam,crypto_scam,en,easy,False,seed_pool,ml_expert_auditor
+Withdrawal insurance fee for crypto futures trade payout,scam,crypto_scam,en,medium,False,seed_pool,ml_expert_auditor
+International blockchain compliance fee for capital release,scam,crypto_scam,en,medium,False,seed_pool,ml_expert_auditor
+Liquidity pool deposit to claim doubling yield bonus,scam,crypto_scam,en,easy,False,seed_pool,ml_expert_auditor
+Urgent unlock fee for frozen international wallet account,scam,crypto_scam,en,easy,False,seed_pool,ml_expert_auditor
+Digital asset recovery service upfront documentation charge,scam,crypto_scam,en,hard,False,seed_pool,ml_expert_auditor
+P2P crypto release bond deposit immediately required,scam,crypto_scam,en,medium,False,seed_pool,ml_expert_auditor
+Foreign exchange crypto conversion fee for withdrawal,scam,crypto_scam,en,medium,False,seed_pool,ml_expert_auditor
+Mining node staking fee to unfreeze weekly income,scam,crypto_scam,en,medium,False,seed_pool,ml_expert_auditor
+VIP member fee to release daily crypto arbitrage returns,scam,crypto_scam,en,medium,False,seed_pool,ml_expert_auditor
+Urgent smart contract clearance payment for payout,scam,crypto_scam,en,easy,False,seed_pool,ml_expert_auditor
+Escrow release commission for cryptocurrency exchange sale,scam,crypto_scam,en,hard,False,seed_pool,ml_expert_auditor
+Anti money laundering certificate fee for crypto release,scam,crypto_scam,en,hard,False,seed_pool,ml_expert_auditor
+Fast track liquidity withdrawal fee for decentralized wallet,scam,crypto_scam,en,medium,False,seed_pool,ml_expert_auditor
+Deposit advance fee to claim grand prize promo winning,scam,prize_scam,en,easy,False,seed_pool,ml_expert_auditor
+Processing charge to release brand new SUV raffle prize,scam,prize_scam,en,easy,False,seed_pool,ml_expert_auditor
+BIR tax clearance fee for PCSO sweepstakes jackpot claim,scam,prize_scam,taglish,medium,False,seed_pool,ml_expert_auditor
+Advance courier freight fee for winning Apple iPhone 16,scam,prize_scam,en,easy,False,seed_pool,ml_expert_auditor
+Claim fee for anniversary cash prize reward from telecom,scam,prize_scam,en,easy,False,seed_pool,ml_expert_auditor
+Registration fee to process 500k lucky draw reward,scam,prize_scam,en,easy,False,seed_pool,ml_expert_auditor
+Notarization doc fee to disburse overseas inheritance estate,scam,prize_scam,en,medium,False,seed_pool,ml_expert_auditor
+Consortium grant release handling charge for lottery winner,scam,prize_scam,en,medium,False,seed_pool,ml_expert_auditor
+Urgent customs clearance fee for parcel package release,scam,task_scam,en,medium,False,seed_pool,ml_expert_auditor
+Customs inspection tax to release foreign luggage delivery,scam,task_scam,en,medium,False,seed_pool,ml_expert_auditor
+Diplomatic courier delivery stamp fee for gold package,scam,task_scam,en,easy,False,seed_pool,ml_expert_auditor
+Postal parcel insurance fee for international gift delivery,scam,task_scam,en,medium,False,seed_pool,ml_expert_auditor
+Telegram product review task fee to earn 3000 daily,scam,task_scam,en,easy,False,seed_pool,ml_expert_auditor
+Shopee seller boost activation deposit for commission payout,scam,task_scam,taglish,easy,False,seed_pool,ml_expert_auditor
+Lazada merchant trial deposit to unlock affiliate earnings,scam,task_scam,taglish,easy,False,seed_pool,ml_expert_auditor
+TikTok video likes task deposit to qualify for VIP level,scam,task_scam,en,easy,False,seed_pool,ml_expert_auditor
+YouTube subscriber task deposit for guaranteed commission,scam,task_scam,en,easy,False,seed_pool,ml_expert_auditor
+Online hotel booking review task collateral deposit,scam,task_scam,en,easy,False,seed_pool,ml_expert_auditor
+Data entry job enrollment training kit deposit,scam,task_scam,en,easy,False,seed_pool,ml_expert_auditor
+Freelance virtual assistant verification deposit to start work,scam,task_scam,en,medium,False,seed_pool,ml_expert_auditor
+Home based packing job security bond fee,scam,task_scam,en,easy,False,seed_pool,ml_expert_auditor
+Part time survey evaluation deposit to unlock salary,scam,task_scam,en,easy,False,seed_pool,ml_expert_auditor
+App testing commission guarantee deposit payment,scam,task_scam,en,easy,False,seed_pool,ml_expert_auditor
+Movie trailer watching task deposit for instant bonus,scam,task_scam,en,easy,False,seed_pool,ml_expert_auditor
+VIP merchant merchant rating task upgrade deposit,scam,task_scam,en,easy,False,seed_pool,ml_expert_auditor
+Locked capital deposit for guaranteed 40% monthly return,scam,ponzi,en,easy,False,seed_pool,ml_expert_auditor
+Capital investment deposit for guaranteed 10% weekly payout,scam,ponzi,en,easy,False,seed_pool,ml_expert_auditor
+P2P double your savings program membership deposit,scam,ponzi,en,easy,False,seed_pool,ml_expert_auditor
+Automated forex algorithmic trading bot deposit license,scam,ponzi,en,medium,False,seed_pool,ml_expert_auditor
+Livestock piggery investment contract guaranteed return,scam,ponzi,en,medium,False,seed_pool,ml_expert_auditor
+Solar energy crowdfunding certificate guaranteed dividend,scam,ponzi,en,medium,False,seed_pool,ml_expert_auditor
+Gold bullion trading certificate daily profit sharing,scam,ponzi,en,medium,False,seed_pool,ml_expert_auditor
+Fast cash online loan approval collateral fee,scam,loan_scam,en,easy,False,seed_pool,ml_expert_auditor
+Credit repair advance processing fee to fix credit rating,scam,loan_scam,en,medium,False,seed_pool,ml_expert_auditor
+Pre approved salary loan insurance bond deposit,scam,loan_scam,en,easy,False,seed_pool,ml_expert_auditor
+Emergency microloan processing and disbursal verification fee,scam,loan_scam,en,easy,False,seed_pool,ml_expert_auditor
+BDO account reactivation fee to release locked incoming remittance,scam,impersonation,taglish,medium,False,seed_pool,ml_expert_auditor
+BPI online account security update compliance fee,scam,impersonation,taglish,medium,False,seed_pool,ml_expert_auditor
+PNB overseas remittance clearance penalty payment,scam,impersonation,en,medium,False,seed_pool,ml_expert_auditor
+Maya digital wallet restoration fee for compromised account,scam,impersonation,en,medium,False,seed_pool,ml_expert_auditor
+GCash AMLA compliance clearance bond payment,scam,impersonation,taglish,hard,False,seed_pool,ml_expert_auditor
+Anti cybercrime group investigation clearance fee,scam,impersonation,en,hard,False,seed_pool,ml_expert_auditor
+Temporary holding transfer for mule redirection please cash out,scam,mule,en,easy,False,seed_pool,ml_expert_auditor
+Paki forward agad pagka pasok ng pera sa account,scam,mule,tl,easy,False,seed_pool,ml_expert_auditor
+Holding fund transfer please withdraw over the counter and give cash,scam,mule,en,easy,False,seed_pool,ml_expert_auditor
+Intermediary transfer routing please pass to third party account,scam,mule,en,medium,False,seed_pool,ml_expert_auditor
+Transit remittance to distribute to designated recipient,scam,mule,en,medium,False,seed_pool,ml_expert_auditor
+Split remittance forwarding please send via pawnshop remitter,scam,mule,en,easy,False,seed_pool,ml_expert_auditor
+Temporary payroll holding deposit please return 90 percent cash,scam,mule,en,medium,False,seed_pool,ml_expert_auditor
+Commission sharing cashout proxy transfer immediately,scam,mule,en,easy,False,seed_pool,ml_expert_auditor

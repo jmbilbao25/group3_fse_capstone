@@ -237,6 +237,7 @@ services:
       - SPRING_DATA_REDIS_HOST=redis-cache
       - SPRING_DATA_REDIS_PORT=6379
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka-broker:29092
+      - APP_RISK_SERVICE_URL=http://risk-service:8084
     networks:
       - banking-net
     depends_on:
@@ -244,6 +245,50 @@ services:
       - postgres-audit-vault
       - redis-cache
       - kafka-broker
+      - risk-service
+
+  # ============================================================================
+  # 9b. Local NanoJev Risk Engine (FastAPI / Threaded Python :8084)
+  # Container Name: risk-service
+  # Real-time System 1 transfer risk evaluation, geo-velocity & anomaly scoring
+  # ============================================================================
+  risk-service:
+    container_name: risk-service
+    build:
+      context: ../backend/risk-service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8084:8084"
+    volumes:
+      - ../backend/risk-service/app:/app/app
+      - ../backend/risk-service/data:/app/data
+      - ../hybrid_bench:/app/hybrid_bench
+    environment:
+      - DD_AGENT_HOST=dd-agent
+      - DD_TRACE_AGENT_PORT=8126
+      - DD_SERVICE=risk-service
+      - DD_ENV=production
+      - DD_VERSION=2.0.0
+      - DD_LOGS_INJECTION=true
+      - SETTLEMENT_WINDOW_SECONDS=60.0
+      - REVIEW_QUEUE_MAXSIZE=1000
+      - REVIEW_WORKER_THREADS=2
+      - ONNX_INTRA_OP_THREADS=8
+      - TAU_2FA=0.40
+      - TAU_BLOCK=0.50
+    labels:
+      com.datadoghq.ad.logs: '[{"source": "python", "service": "risk-service"}]'
+    networks:
+      - banking-net
+    depends_on:
+      - dd-agent
+    healthcheck:
+      test: ["CMD", "/opt/datadog-agent/embedded/bin/python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8084/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
 
   # ============================================================================
   # 10. Notification & Alert Service (Spring Boot :8083)

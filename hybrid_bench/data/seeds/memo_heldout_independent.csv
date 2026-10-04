@@ -1,0 +1,107 @@
+memo,signal,subtype,language,difficulty,typology_novel,split_role,author
+Barangay clearance and business permit renewal fee,legit,government_fee,en,easy,False,heldout_c2,ml_expert_auditor
+Real property tax amilyar settlement city treasury,legit,government_fee,taglish,medium,False,heldout_c2,ml_expert_auditor
+BIR withholding tax return payment form 0605,legit,government_fee,en,hard,False,heldout_c2,ml_expert_auditor
+Social security system voluntary member contribution,legit,government_fee,en,easy,False,heldout_c2,ml_expert_auditor
+PhilHealth annual health insurance contribution,legit,government_fee,en,easy,False,heldout_c2,ml_expert_auditor
+Pag-IBIG housing loan monthly amortization deduction,legit,government_fee,en,easy,False,heldout_c2,ml_expert_auditor
+Land Transportation Office motor vehicle registration fee,legit,government_fee,en,easy,False,heldout_c2,ml_expert_auditor
+Comprehensive automotive insurance policy premium renewal,legit,insurance,en,easy,False,heldout_c2,ml_expert_auditor
+Homeowners association special assessment for flood gate repair,legit,rent,en,medium,True,heldout_c2,ml_expert_auditor
+St. Luke's medical center outpatient laboratory diagnostic test,legit,healthcare,en,easy,False,heldout_c2,ml_expert_auditor
+The Medical City cardiac rehabilitation consultation copay,legit,healthcare,en,easy,False,heldout_c2,ml_expert_auditor
+Makati Medical Center pediatric checkup and immunization,legit,healthcare,en,easy,False,heldout_c2,ml_expert_auditor
+Veterinary hospital emergency cat laparotomy surgery,legit,healthcare,en,medium,True,heldout_c2,ml_expert_auditor
+Dental implant and crown procedure downpayment,legit,healthcare,en,medium,True,heldout_c2,ml_expert_auditor
+Physical therapy session rehabilitation 10 pack,legit,healthcare,en,easy,False,heldout_c2,ml_expert_auditor
+Aesthetic dermatology laser treatment package,legit,healthcare,en,easy,False,heldout_c2,ml_expert_auditor
+Architectural landscape CAD blueprint drafting honorarium,legit,professional_fee,en,hard,True,heldout_c2,ml_expert_auditor
+Structural engineer soil test inspection certification fee,legit,professional_fee,en,hard,True,heldout_c2,ml_expert_auditor
+Piano regulation tuning and hammer replacement service,legit,professional_fee,en,medium,True,heldout_c2,ml_expert_auditor
+Acoustic guitar luthier fretboard repair and setup,legit,professional_fee,en,easy,True,heldout_c2,ml_expert_auditor
+Solar rooftop inverter replacement hardware balance,legit,home_improvement,en,medium,True,heldout_c2,ml_expert_auditor
+Deep well submersible water pump repair labor,legit,home_improvement,en,medium,True,heldout_c2,ml_expert_auditor
+Aluminum glass sliding window fabrication deposit,legit,home_improvement,en,easy,False,heldout_c2,ml_expert_auditor
+Custom solid mahogany dining table carpentry balance,legit,home_improvement,en,medium,True,heldout_c2,ml_expert_auditor
+House interior repainting contractor labor contract,legit,home_improvement,en,easy,False,heldout_c2,ml_expert_auditor
+Automobile transmission overhaul labor and fluid replacement,legit,automotive,en,medium,False,heldout_c2,ml_expert_auditor
+Car battery AGM replacement and installation roadside,legit,automotive,en,easy,False,heldout_c2,ml_expert_auditor
+Set of four Bridgestone tires replacement wheel alignment,legit,automotive,en,medium,False,heldout_c2,ml_expert_auditor
+Baguio heritage hotel weekend accommodation downpayment,legit,travel,en,easy,False,heldout_c2,ml_expert_auditor
+El Nido island hopping boat charter reservation,legit,travel,en,easy,False,heldout_c2,ml_expert_auditor
+Boracay resort beachfront room balance checkout,legit,travel,en,easy,False,heldout_c2,ml_expert_auditor
+Siargao surf school 5-day package enrollment,legit,travel,en,easy,False,heldout_c2,ml_expert_auditor
+Philippine Airlines roundtrip flight booking confirmation,legit,travel,en,easy,False,heldout_c2,ml_expert_auditor
+Cebu Pacific baggage allowance and seat selector add on,legit,travel,en,easy,False,heldout_c2,ml_expert_auditor
+Scuba diving open water certification course tuition,legit,education,en,medium,True,heldout_c2,ml_expert_auditor
+Culinary institute pastry masterclass weekend workshop,legit,education,en,easy,True,heldout_c2,ml_expert_auditor
+Kumon math learning center monthly module tuition,legit,education,en,easy,False,heldout_c2,ml_expert_auditor
+Taekwondo martial arts academy monthly dojo fee,legit,education,en,easy,False,heldout_c2,ml_expert_auditor
+Ballet dance academy annual recital participation fee,legit,education,en,easy,False,heldout_c2,ml_expert_auditor
+Pre-school toddler playgroup term enrollment,legit,education,en,easy,False,heldout_c2,ml_expert_auditor
+Secondhand mirrorless camera body via FB marketplace meetup,legit,electronics,en,medium,True,heldout_c2,ml_expert_auditor
+Mechanical keyboard custom keycaps and switch modding,legit,electronics,en,easy,True,heldout_c2,ml_expert_auditor
+Ergonomic mesh office chair delivery payment,legit,home_improvement,en,easy,False,heldout_c2,ml_expert_auditor
+High-end espresso machine descaling maintenance overhaul,legit,home_improvement,en,medium,True,heldout_c2,ml_expert_auditor
+Church tithes and benevolent community fund offering,legit,donation,en,easy,False,heldout_c2,ml_expert_auditor
+Rotary club international annual membership dues,legit,donation,en,easy,False,heldout_c2,ml_expert_auditor
+Animal welfare shelter volunteer rescue sponsorship,legit,donation,en,easy,False,heldout_c2,ml_expert_auditor
+Red Cross humanitarian disaster relief donation,legit,donation,en,easy,False,heldout_c2,ml_expert_auditor
+Alumni homecoming commemorative banquet ticket payment,legit,donation,en,easy,False,heldout_c2,ml_expert_auditor
+Funeral memorial plan monthly pre-need amortization,legit,insurance,en,easy,False,heldout_c2,ml_expert_auditor
+Cemetery columbarium niche perpetual care maintenance fee,legit,insurance,en,hard,True,heldout_c2,ml_expert_auditor
+Bayad sa caterer para sa binyag ni baby,legit,events,tl,easy,False,heldout_c2,ml_expert_auditor
+Wedding photographer prenup photoshoot balance,legit,events,en,easy,False,heldout_c2,ml_expert_auditor
+Sound system and stage lights rental for debut party,legit,events,en,easy,False,heldout_c2,ml_expert_auditor
+Bridal gown couture alterations and final fitting fee,legit,events,en,easy,False,heldout_c2,ml_expert_auditor
+Settlement of agreed balance,neutral,generic,en,easy,False,heldout_c2,ml_expert_auditor
+Interbank funds settlement,neutral,generic,en,easy,False,heldout_c2,ml_expert_auditor
+Replenishment,neutral,generic,en,easy,False,heldout_c2,ml_expert_auditor
+Account balance realignment,neutral,generic,en,easy,False,heldout_c2,ml_expert_auditor
+Statement reference 44921,neutral,reference,en,easy,False,heldout_c2,ml_expert_auditor
+Direct remittance payment,neutral,generic,en,easy,False,heldout_c2,ml_expert_auditor
+Service fulfillment,neutral,generic,en,easy,False,heldout_c2,ml_expert_auditor
+Quarterly share,neutral,generic,en,easy,False,heldout_c2,ml_expert_auditor
+Deposit settlement,neutral,generic,en,easy,False,heldout_c2,ml_expert_auditor
+Remittance as agreed,neutral,generic,en,easy,False,heldout_c2,ml_expert_auditor
+Full payment for order,neutral,generic,en,easy,False,heldout_c2,ml_expert_auditor
+Bayad sa balance,neutral,generic,tl,easy,False,heldout_c2,ml_expert_auditor
+Pang dagdag sa savings,neutral,generic,tl,easy,False,heldout_c2,ml_expert_auditor
+Pang pondo,neutral,generic,tl,easy,False,heldout_c2,ml_expert_auditor
+Transfer ref ID 10938,neutral,reference,en,easy,False,heldout_c2,ml_expert_auditor
+AI algorithmic high frequency bot license fee for daily passive yield,scam,novel_ai_scam,en,medium,True,heldout_c2,ml_expert_auditor
+Deepfake celebrity giveaway verification bond to receive 1 million,scam,novel_deepfake,en,easy,True,heldout_c2,ml_expert_auditor
+TikTok live selling unboxing gift refund release insurance,scam,novel_ecommerce,en,easy,True,heldout_c2,ml_expert_auditor
+Government e-Gov portal penalty compromise fee to lift arrest warrant,scam,novel_gov_impersonation,en,hard,True,heldout_c2,ml_expert_auditor
+Anti money laundering AML certificate bond for offshore remittances,scam,novel_regulatory,en,hard,True,heldout_c2,ml_expert_auditor
+BIR tax compromise settlement fee for undeclared foreign estate assets,scam,novel_tax_scam,en,hard,True,heldout_c2,ml_expert_auditor
+Interpol regional cyber fraud compensation payout registration fee,scam,novel_recovery,en,hard,True,heldout_c2,ml_expert_auditor
+Victim restitution fund administrative filing fee for scam recovery,scam,novel_recovery,en,hard,True,heldout_c2,ml_expert_auditor
+E-Sabong online wallet frozen credit recovery processing fee,scam,novel_gambling,en,medium,True,heldout_c2,ml_expert_auditor
+Offshore online casino VIP withdrawal tax clearance payment,scam,novel_gambling,en,medium,True,heldout_c2,ml_expert_auditor
+Digital gold pawnshop collateral advance buyout fee,scam,novel_pawn_scam,en,medium,True,heldout_c2,ml_expert_auditor
+Carbon credit green bond crowdfunding guaranteed 50 percent return,scam,novel_esg_ponzi,en,medium,True,heldout_c2,ml_expert_auditor
+NFT staking yield aggregator redemption unlock charge,scam,novel_crypto,en,medium,True,heldout_c2,ml_expert_auditor
+Cross chain decentralized bridge slippage verification gas fee,scam,novel_crypto,en,hard,True,heldout_c2,ml_expert_auditor
+Automated telegram copy trading mirror account license fee,scam,novel_crypto,en,medium,True,heldout_c2,ml_expert_auditor
+Pre IPO startup technology stock pre allocation reservation fee,scam,novel_equity_scam,en,hard,True,heldout_c2,ml_expert_auditor
+Overseas nursing job visa sponsorship fast track documentation fee,scam,novel_recruitment,en,medium,True,heldout_c2,ml_expert_auditor
+Cruise ship crew employment contract medical clearance bond deposit,scam,novel_recruitment,en,medium,True,heldout_c2,ml_expert_auditor
+Middle East refinery welder priority flight booking clearance fee,scam,novel_recruitment,en,medium,True,heldout_c2,ml_expert_auditor
+Student visa financial show money escrow temporary routing,scam,novel_visa_mule,en,hard,True,heldout_c2,ml_expert_auditor
+Foreign ambassador luggage security escort insurance tag fee,scam,novel_diplomatic,en,easy,True,heldout_c2,ml_expert_auditor
+International courier package scanner customs duty exemption bribe,scam,novel_customs,en,medium,True,heldout_c2,ml_expert_auditor
+Inheritance barrister stamp duty advance settlement in London,scam,novel_inheritance,en,medium,True,heldout_c2,ml_expert_auditor
+Monetary authority anti terrorism financing clearance certificate,scam,novel_regulatory,en,hard,True,heldout_c2,ml_expert_auditor
+Supreme court judicial hold order cancellation penalty fee,scam,novel_gov_impersonation,en,hard,True,heldout_c2,ml_expert_auditor
+SIM card registration reactivation fee to restore banking access,scam,novel_telecom,en,medium,True,heldout_c2,ml_expert_auditor
+NBI clearance express delivery processing fee for online fraud suspect,scam,novel_gov_impersonation,en,medium,True,heldout_c2,ml_expert_auditor
+Bank secrecy waiver filing fee to unblock high value international wire,scam,novel_regulatory,en,hard,True,heldout_c2,ml_expert_auditor
+Cryptocurrency tax withholding voucher for foreign exchange remittance,scam,novel_crypto,en,hard,True,heldout_c2,ml_expert_auditor
+VIP dating romance partner emergency luggage release transit fee,scam,novel_romance,en,easy,True,heldout_c2,ml_expert_auditor
+Military peacekeeper gold consignment safety deposit box box fee,scam,novel_romance,en,easy,True,heldout_c2,ml_expert_auditor
+Paki cash out agad at ipadala ang 80 percent via Palawan Express,scam,novel_mule,tl,easy,True,heldout_c2,ml_expert_auditor
+Mule account routing commission deposit please withdraw balance,scam,novel_mule,en,easy,True,heldout_c2,ml_expert_auditor
+Temporary account transit test transfer please refund via GCash,scam,novel_mule,en,medium,True,heldout_c2,ml_expert_auditor
+Lending app harassment settlement cancellation of debt blackmail,scam,novel_extortion,en,medium,True,heldout_c2,ml_expert_auditor
+Cyber investigation ransomware decrypter key advance purchase,scam,novel_extortion,en,hard,True,heldout_c2,ml_expert_auditor

@@ -1,0 +1,21 @@
+transaction_id,user_id,is_fraud,amount_php,spike_ratio,memo_present,memo,rooted,attestation_verdict,velocity_kmh
+TX-C4-002401,usr-C4-0030,False,621.15,0.52,False,,False,MISSING,0.42
+TX-C4-002402,usr-C4-0026,False,5550.43,1.08,False,,False,MEETS_STRONG,0.17
+TX-C4-002403,usr-C4-0019,False,287.19,0.43,True,Foreign diplomat gift package release fee,False,MEETS_STRONG,0.51
+TX-C4-002404,usr-C4-0008,False,5952.01,1.32,False,,True,MEETS_BASIC,0.37
+TX-C4-002405,usr-C4-0019,False,1061.93,1.59,False,,False,MEETS_STRONG,0.57
+TX-C4-002406,usr-C4-0027,False,1233.75,0.12,False,,False,MEETS_STRONG,0.84
+TX-C4-002407,usr-C4-0013,True,7912.15,2.09,True,School supplies at National Bookstore,False,MEETS_STRONG,1.33
+TX-C4-002408,usr-C4-0001,False,3096.01,1.37,False,,False,MEETS_DEVICE,0.52
+TX-C4-002409,usr-C4-0026,False,4985.11,0.97,False,,False,MISSING,177.32
+TX-C4-002410,usr-C4-0015,False,2256.14,0.74,False,,False,MEETS_DEVICE,0.84
+TX-C4-002411,usr-C4-0022,False,4670.75,0.74,False,,False,MEETS_DEVICE,1.08
+TX-C4-002412,usr-C4-0016,False,4791.58,1.73,False,,False,MEETS_STRONG,0.14
+TX-C4-002413,usr-C4-0019,False,3573.16,5.35,False,,False,MEETS_STRONG,1.02
+TX-C4-002414,usr-C4-0017,False,3773.98,0.83,False,,False,MEETS_DEVICE,3.85
+TX-C4-002415,usr-C4-0030,False,955.61,0.8,True,Motorcycle maintenance change oil,False,MEETS_STRONG,0.11
+TX-C4-002416,usr-C4-0006,False,3691.99,0.47,False,,False,MEETS_STRONG,0.44
+TX-C4-002417,usr-C4-0018,False,4794.22,1.03,True,Deposit 5000 to unlock Shopee task VIP commission,False,MEETS_STRONG,8.81
+TX-C4-002418,usr-C4-0016,False,3711.4,1.34,False,,False,MEETS_STRONG,0.44
+TX-C4-002419,usr-C4-0025,False,898.22,0.34,False,,False,MEETS_STRONG,0.54
+TX-C4-002420,usr-C4-0001,False,1898.28,0.84,False,,False,MEETS_STRONG,0.64

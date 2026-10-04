@@ -1,0 +1,100 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Decoupled Risk Engine: Synchronous S2 Gate with Asynchronous Second-Look Reviewer",
+    "animation": "trace",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "sync-fast-path",
+        "label": "Synchronous Fast Path (< 2 ms)",
+        "focus": ["mobile_web_app", "api_gateway", "ledger_engine", "gate0_rules", "s2_xgboost", "fast_response"],
+        "note": "Gate 0 physical rules and S2 XGBoost score transfer; memo-present ALLOW returns PENDING_SETTLEMENT immediately."
+      },
+      {
+        "id": "async-second-look",
+        "label": "Asynchronous Second-Look Reviewer",
+        "focus": ["transfer_store", "worker_pool", "nanojev_onnx", "analyst_portal"],
+        "note": "NanoJev evaluates scam typologies & consistency; escalations inside 60s hold funds before disbursement."
+      }
+    ],
+    "output": "docs/architecture/decoupled_risk_flow.html"
+  },
+  "lanes": [
+    { "id": "client_lane", "label": "Customer & Analyst Channels" },
+    { "id": "engine_lane", "label": "Perimeter & Ledger Engine (:8080 / :8082)" },
+    { "id": "sync_lane", "label": "Synchronous Risk Rail (:8084 < 2 ms)" },
+    { "id": "async_lane", "label": "Async NanoJev Reviewer (Background Pool)" }
+  ],
+  "phases": [
+    { "id": "intake_phase", "label": "Intake & Perimeter Triage", "fromCol": 0, "toCol": 1 },
+    { "id": "sync_eval_phase", "label": "Synchronous S2 Gate", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "async_review_phase", "label": "Async Neural Review & Interception", "fromCol": 4, "toCol": 5, "variant": "dashed" }
+  ],
+  "groups": [
+    { "id": "ledger_group", "label": "Core balance mutation", "lane": "engine_lane", "fromCol": 1, "toCol": 2, "variant": "emphasis" },
+    { "id": "sync_risk_group", "label": "Gate 0 + S2 XGBoost", "lane": "sync_lane", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "async_worker_group", "label": "NanoJev Second-Look", "lane": "async_lane", "fromCol": 4, "toCol": 5, "variant": "dashed" }
+  ],
+  "mainPath": [
+    "mobile_web_app",
+    "api_gateway",
+    "ledger_engine",
+    "gate0_rules",
+    "s2_xgboost",
+    "fast_response"
+  ],
+  "nodes": [
+    { "id": "mobile_web_app", "lane": "client_lane", "col": 0, "type": "frontend", "label": "Banking Client", "sublabel": "Web SPA & Mobile App", "width": 132 },
+    { "id": "api_gateway", "lane": "engine_lane", "col": 1, "type": "security", "label": "API Gateway", "sublabel": "Spring Cloud :8080", "brand": "spring", "tag": "JWT & telemetry", "width": 132 },
+    { "id": "ledger_engine", "lane": "engine_lane", "col": 2, "type": "backend", "label": "Ledger Engine", "sublabel": "Spring Boot :8082", "tag": "balance mutation", "width": 132 },
+    { "id": "gate0_rules", "lane": "sync_lane", "col": 2, "type": "security", "label": "Gate 0 Rules", "sublabel": "physical triage (<1us)", "tag": "velocity & root", "width": 132 },
+    { "id": "s2_xgboost", "lane": "sync_lane", "col": 3, "type": "backend", "label": "XGBoost (S2)", "sublabel": "tabular + device context", "tag": "< 2 ms inference", "width": 132 },
+    { "id": "transfer_store", "lane": "sync_lane", "col": 4, "type": "database", "label": "Transfer Store", "sublabel": "PENDING_SETTLEMENT", "tag": "60s hold window", "width": 132 },
+    { "id": "fast_response", "lane": "client_lane", "col": 4, "type": "frontend", "label": "Client Response", "sublabel": "p99 < 85 ms | status", "tag": "settlement pending", "width": 132 },
+    { "id": "worker_pool", "lane": "async_lane", "col": 4, "type": "backend", "label": "Worker Pool", "sublabel": "2 workers | 8 threads", "tag": "prompt cache", "width": 132 },
+    { "id": "nanojev_onnx", "lane": "async_lane", "col": 5, "type": "backend", "label": "NanoJev ONNX", "sublabel": "Qwen2.5-0.5B INT8", "tag": "typology + audit", "width": 132 },
+    { "id": "analyst_portal", "lane": "sync_lane", "col": 5, "type": "frontend", "label": "Analyst Queue", "sublabel": "Case card & decisions", "tag": "ground truth", "width": 132 }
+  ],
+  "edges": [
+    { "id": "e-submit", "from": "mobile_web_app", "to": "api_gateway", "label": "transfer request", "variant": "default" },
+    { "id": "e-gw-to-cme", "from": "api_gateway", "to": "ledger_engine", "label": "forward mutation", "variant": "emphasis" },
+    { "id": "e-cme-to-g0", "from": "ledger_engine", "to": "gate0_rules", "label": "POST /risk/transfer", "variant": "emphasis" },
+    { "id": "e-g0-to-s2", "from": "gate0_rules", "to": "s2_xgboost", "label": "passed hard rules", "variant": "default" },
+    { "id": "e-s2-to-resp", "from": "s2_xgboost", "to": "fast_response", "label": "ALLOW verdict", "variant": "emphasis", "role": "return" },
+    { "id": "e-s2-to-store", "from": "s2_xgboost", "to": "transfer_store", "label": "persist transfer", "variant": "default" },
+    { "id": "e-store-to-pool", "from": "transfer_store", "to": "worker_pool", "label": "enqueue review", "variant": "default" },
+    { "id": "e-pool-to-qwen", "from": "worker_pool", "to": "nanojev_onnx", "label": "score memo", "variant": "emphasis" },
+    { "id": "e-qwen-to-analyst", "from": "nanojev_onnx", "to": "analyst_portal", "label": "escalated card", "variant": "security" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Synchronous Fast Path (< 2 ms)",
+      "items": [
+        "Gate 0 physical rules and S2 XGBoost evaluate device, velocity, and transaction features",
+        "Client receives decision immediately (p99 latency 83 ms under 25 TPS on CPU)",
+        "Memo-present transfers marked PENDING_SETTLEMENT for a 60-second holding window"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Asynchronous Second-Look Reviewer",
+      "items": [
+        "NanoJev Qwen2.5-0.5B INT8 ONNX runs in background with 8 intra-op threads and SHA256 prompt caching",
+        "Scores calibrated risk probabilities (T=5.0), fixed scam typologies, and memo-vs-behavior consistency",
+        "Never blocks or stalls sync callers; timeouts and queue overflows drop safely to UNREVIEWED"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Escalate-Only Safety Invariant",
+      "items": [
+        "enforce_escalate_only guarantees RiskTier(final) >= RiskTier(S2 action)",
+        "Escalations inside the 60s window transition status from PENDING_SETTLEMENT to HELD",
+        "Escalations after 60s leave status SETTLED and flag LATE_ESCALATION for analyst recovery"
+      ]
+    }
+  ]
+}

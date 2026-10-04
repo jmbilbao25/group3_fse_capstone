@@ -46,7 +46,24 @@ foreach ($svc in $services) {
     Write-Host "  -> Process ID: $($proc.Id) (logging to $($svc.Name).stdout.log)" -ForegroundColor Green
 }
 
+# Launch Risk Engine Service (:8084)
+$pythonExe = Join-Path $PSScriptRoot "risk-service\.venv\Scripts\python.exe"
+if (-not (Test-Path $pythonExe)) {
+    $pythonExe = Join-Path $PSScriptRoot "..\.venv\Scripts\python.exe"
+}
+if (-not (Test-Path $pythonExe)) {
+    $pythonExe = "python"
+}
+
+$riskStdout = Join-Path $PSScriptRoot "risk-service.stdout.log"
+$riskStderr = Join-Path $PSScriptRoot "risk-service.stderr.log"
+$riskDir = Join-Path $PSScriptRoot "risk-service"
+
+Write-Host "[STARTING] risk-service on port 8084..." -ForegroundColor Yellow
+$riskProc = Start-Process -FilePath $pythonExe -ArgumentList "-m", "app.server" -WorkingDirectory $riskDir -RedirectStandardOutput $riskStdout -RedirectStandardError $riskStderr -PassThru -NoNewWindow
+Write-Host "  -> Process ID: $($riskProc.Id) (logging to risk-service.stdout.log)" -ForegroundColor Green
+
 Write-Host "======================================================================" -ForegroundColor Cyan
-Write-Host "All 4 services launched. Tail logs with: Get-Content <service>.log -Wait" -ForegroundColor Cyan
+Write-Host "All 5 banking services launched. Tail logs with: Get-Content <service>.log -Wait" -ForegroundColor Cyan
 Write-Host "Traces available at: https://app.datadoghq.com/apm/traces" -ForegroundColor Cyan
 Write-Host "======================================================================" -ForegroundColor Cyan

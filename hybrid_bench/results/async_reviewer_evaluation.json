@@ -1,0 +1,184 @@
+{
+  "timestamp": "2026-10-04T11:15:46.639083+00:00",
+  "total_evaluation_seconds": 124.53,
+  "architecture": "Synchronous Gate 0 + XGBoost (S2) with Asynchronous Second-Look Reviewer (NanoJev Qwen2.5-0.5B INT8 ONNX)",
+  "s2_baseline_verification": {
+    "C1": {
+      "transactions": 300,
+      "roc_auc": 0.9997,
+      "expected_roc_auc": 0.9997,
+      "pr_auc": 0.9986,
+      "expected_pr_auc": 0.9986,
+      "false_block_rate": 0.0,
+      "missed_fraud_rate": 0.0444,
+      "status": "MATCHED"
+    },
+    "C2": {
+      "transactions": 300,
+      "roc_auc": 0.9995,
+      "expected_roc_auc": 0.9995,
+      "pr_auc": 0.9974,
+      "expected_pr_auc": 0.9974,
+      "false_block_rate": 0.0,
+      "missed_fraud_rate": 0.0222,
+      "status": "MATCHED"
+    },
+    "C3": {
+      "transactions": 1000,
+      "roc_auc": 0.999,
+      "expected_roc_auc": 0.999,
+      "pr_auc": 0.8487,
+      "expected_pr_auc": 0.8487,
+      "false_block_rate": 0.001,
+      "missed_fraud_rate": 0.0667,
+      "status": "MATCHED"
+    },
+    "C4": {
+      "transactions": 100,
+      "roc_auc": 1.0,
+      "expected_roc_auc": 1.0,
+      "pr_auc": 1.0,
+      "expected_pr_auc": 1.0,
+      "false_block_rate": 0.0,
+      "missed_fraud_rate": 0.0,
+      "status": "MATCHED"
+    }
+  },
+  "stress_slice_evaluation": {
+    "total_records": 100,
+    "scam_cases": 50,
+    "benign_cases": 50,
+    "s2_alone": {
+      "fraud_missed": 50,
+      "fraud_caught": 0,
+      "missed_fraud_rate": 1.0
+    },
+    "async_reviewer": {
+      "fraud_caught_that_s2_allowed": 42,
+      "fraud_caught_ratio": 0.84,
+      "escalated_to_2fa": 42,
+      "escalated_to_block": 0,
+      "false_escalations_on_benign": 43,
+      "false_escalation_rate": 0.86,
+      "mean_inference_latency_ms": 0.55
+    }
+  },
+  "in_distribution_false_escalation": {
+    "C1": {
+      "legit_memo_count": 68,
+      "false_escalations": 55,
+      "false_escalation_rate": 0.8088,
+      "typology_distribution": {
+        "none": 65,
+        "fake_invoice": 1,
+        "investment_scam": 2
+      }
+    },
+    "C2": {
+      "legit_memo_count": 79,
+      "false_escalations": 62,
+      "false_escalation_rate": 0.7848,
+      "typology_distribution": {
+        "none": 79
+      }
+    }
+  },
+  "load_and_latency_benchmark": {
+    "sync_latency": {
+      "p50_ms": 42.84,
+      "p90_ms": 70.49,
+      "p95_ms": 73.62,
+      "p99_ms": 83.11,
+      "sla_compliant_200ms": true
+    },
+    "async_reviewer": {
+      "queue_depth": 0,
+      "drops": 0,
+      "timeouts": 0,
+      "reviews_completed": 67,
+      "escalations": 59,
+      "escalation_rate_pct": 88.06,
+      "time_to_review_p50_ms": 48.59,
+      "time_to_review_p95_ms": 65.0,
+      "inference_p50_ms": 1.45,
+      "inference_p95_ms": 8.42
+    },
+    "load_simulation": {
+      "total_transactions": 200,
+      "target_tps": 25.0,
+      "achieved_tps": 20.2,
+      "queue_capacity": 50,
+      "worker_threads": 2,
+      "onnx_intra_threads": 8
+    }
+  },
+  "prompt_injection_robustness": {
+    "total_trials": 600,
+    "downgrades": 0,
+    "escalations": 243,
+    "unchanged": 357,
+    "zero_downgrades_verified": true,
+    "category_breakdown": {
+      "direct_override": {
+        "trials": 60,
+        "downgrades": 0,
+        "escalations": 24,
+        "unchanged": 36
+      },
+      "authority_impersonation": {
+        "trials": 60,
+        "downgrades": 0,
+        "escalations": 31,
+        "unchanged": 29
+      },
+      "delimiter_escape": {
+        "trials": 60,
+        "downgrades": 0,
+        "escalations": 23,
+        "unchanged": 37
+      },
+      "roleplay_jailbreak": {
+        "trials": 60,
+        "downgrades": 0,
+        "escalations": 26,
+        "unchanged": 34
+      },
+      "social_engineering": {
+        "trials": 60,
+        "downgrades": 0,
+        "escalations": 22,
+        "unchanged": 38
+      },
+      "multilingual_tagalog": {
+        "trials": 60,
+        "downgrades": 0,
+        "escalations": 21,
+        "unchanged": 39
+      },
+      "obfuscation": {
+        "trials": 60,
+        "downgrades": 0,
+        "escalations": 22,
+        "unchanged": 38
+      },
+      "markdown_spoof": {
+        "trials": 60,
+        "downgrades": 0,
+        "escalations": 22,
+        "unchanged": 38
+      },
+      "paradox_logic": {
+        "trials": 60,
+        "downgrades": 0,
+        "escalations": 26,
+        "unchanged": 34
+      },
+      "whitelist_bypass": {
+        "trials": 60,
+        "downgrades": 0,
+        "escalations": 26,
+        "unchanged": 34
+      }
+    }
+  }
+}

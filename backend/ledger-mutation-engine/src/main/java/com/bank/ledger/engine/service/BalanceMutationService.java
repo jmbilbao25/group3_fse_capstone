@@ -48,6 +48,8 @@ public class BalanceMutationService {
     private final ObjectMapper objectMapper;
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private RiskEngineClient riskEngineClient;
 
     @Value("${app.maker-checker.threshold:50000.0000}")
     private BigDecimal makerCheckerThreshold;
@@ -96,14 +98,29 @@ public class BalanceMutationService {
         }
 
         BigDecimal senderBefore = sender.getBalanceAmount();
-        boolean isHighValue = amount.compareTo(makerCheckerThreshold) > 0;
 
         // =========================================================================
-        // ROUTE A: HIGH-VALUE TRANSACTION -> SOFT HOLD & MAKER-CHECKER (TRX-501)
+        // NANOJEV SYSTEM 1 RISK & ANOMALY EVALUATION
         // =========================================================================
-        if (isHighValue) {
-            log.info("[MAKER-CHECKER TRIGGERED] Transfer of PHP {} exceeds threshold PHP {}. Placing soft hold.",
-                    amount, makerCheckerThreshold);
+        RiskEngineClient.RiskEvaluationResult riskResult = riskEngineClient != null
+                ? riskEngineClient.evaluateRisk(request)
+                : RiskEngineClient.RiskEvaluationResult.builder().decision("ALLOW").build();
+
+        if ("BLOCK".equalsIgnoreCase(riskResult.getDecision())) {
+            log.error("[MUTATION BLOCKED] NanoJev flagged high risk for TxId: {} (Score: {}, Flag: {})",
+                    request.getTransactionId(), riskResult.getFraudScore(), riskResult.getPrimaryFlag());
+            throw new SecurityException("Transaction blocked by security risk engine: " + riskResult.getPrimaryFlag());
+        }
+
+        boolean isHighValue = amount.compareTo(makerCheckerThreshold) > 0;
+        boolean requires2Fa = isHighValue || "REQUIRE_2FA".equalsIgnoreCase(riskResult.getDecision());
+
+        // =========================================================================
+        // ROUTE A: HIGH-VALUE OR HIGH-RISK TRANSACTION -> SOFT HOLD & 2FA OTP (TRX-501)
+        // =========================================================================
+        if (requires2Fa) {
+            log.info("[2FA / REVIEW TRIGGERED] Transfer of PHP {} (isHighValue={}, risk={}). Placing soft hold.",
+                    amount, isHighValue, riskResult.getDecision());
 
             // Soft hold: reserve the funds without taking them out of balance_amount yet
             sender.setHoldAmount(sender.getHoldAmount().add(amount));

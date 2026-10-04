@@ -167,4 +167,17 @@ public class BalanceMutationController {
                 "timestamp", Instant.now()
         ));
     }
-}
+
+    /**
+     * Security Risk Engine Blocked -> HTTP 403 Forbidden
+     */
+    @ExceptionHandler(SecurityException.class)
+    public ResponseEntity<Map<String, Object>> handleSecurityBlocked(SecurityException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                "status", "BLOCKED",
+                "error_code", "RISK_ENGINE_BLOCKED",
+                "message", ex.getMessage(),
+                "timestamp", Instant.now()
+        ));
+    }
+}

@@ -1,0 +1,22 @@
+| transaction_id | user_id | is_fraud | amount_php | spike_ratio | memo_present | memo | rooted | attestation_verdict | velocity_kmh |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| TX-V-000601 | usr-V-0030 | False | 1289.02 | 0.69 | False |  | False | MEETS_STRONG | 0.71 |
+| TX-V-000602 | usr-V-0014 | False | 13749.68 | 1.75 | False |  | False | MISSING | 1.53 |
+| TX-V-000603 | usr-V-0056 | False | 72.31 | 0.05 | False |  | False | MEETS_STRONG | 0.33 |
+| TX-V-000604 | usr-V-0029 | False | 7616.13 | 6.3 | False |  | False | MISSING | 0.31 |
+| TX-V-000605 | usr-V-0045 | False | 341.1 | 0.13 | False |  | False | MEETS_STRONG | 0.51 |
+| TX-V-000606 | usr-V-0058 | False | 1864.24 | 0.87 | False |  | False | MEETS_STRONG | 0.35 |
+| TX-V-000607 | usr-V-0043 | True | 14223.15 | 5.06 | True | App testin commission guarantee deposit payment | False | MEETS_STRONG | 0.45 |
+| TX-V-000608 | usr-V-0025 | True | 1705.0 | 3.41 | False |  | True | MEETS_BASIC | 0.5 |
+| TX-V-000609 | usr-V-0015 | False | 473.12 | 0.47 | True | mrecury drug maintenance pills for lola - Ref #97975 | False | MEETS_DEVICE | 0.26 |
+| TX-V-000610 | usr-V-0009 | False | 318.58 | 0.39 | True | maynilad water services residential account | False | MEETS_STRONG | 3.85 |
+| TX-V-000611 | usr-V-0046 | False | 292.95 | 0.1 | False |  | False | MEETS_STRONG | 0.39 |
+| TX-V-000612 | usr-V-0056 | False | 549.55 | 0.38 | False |  | False | MEETS_STRONG | 0.66 |
+| TX-V-000613 | usr-V-0011 | False | 10272.25 | 1.06 | False |  | False | MEETS_STRONG | 0.09 |
+| TX-V-000614 | usr-V-0053 | False | 4115.48 | 1.31 | False |  | False | MEETS_DEVICE | 0.56 |
+| TX-V-000615 | usr-V-0059 | False | 365.13 | 0.35 | True | Watsonss skincare and hygiene supplies - Ref #16050 | False | MEETS_STRONG | 0.6 |
+| TX-V-000616 | usr-V-0045 | False | 1311.91 | 0.5 | False |  | False | MEETS_DEVICE | 1.06 |
+| TX-V-000617 | usr-V-0054 | False | 5123.22 | 0.8 | False |  | False | MEETS_STRONG | 3.86 |
+| TX-V-000618 | usr-V-0002 | False | 5061.36 | 1.74 | False |  | False | MEETS_STRONG | 0.64 |
+| TX-V-000619 | usr-V-0007 | True | 39732.44 | 14.06 | False |  | True | MEETS_BASIC | 29715.92 |
+| TX-V-000620 | usr-V-0051 | False | 575.25 | 0.76 | True | music lessons piano teacher monthly fee - Ref #75709 | False | MISSING | 0.9 |

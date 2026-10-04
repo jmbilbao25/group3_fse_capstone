@@ -1,0 +1,15 @@
+# Pinned dependencies for hybrid_bench
+# Tested on Windows 11 AMD64 with Python 3.12.14
+numpy==2.5.3
+pandas==3.0.6
+scipy==1.18.1
+scikit-learn==1.9.1
+xgboost==3.4.1
+onnxruntime==1.30.0
+tokenizers==0.23.2
+transformers==5.18.0
+matplotlib==3.11.2
+pyarrow==25.0.1
+joblib==1.6.0
+pyyaml==6.0.3
+shap==0.52.0

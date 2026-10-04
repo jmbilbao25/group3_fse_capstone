@@ -1,0 +1,150 @@
+{
+  "timestamp": "2026-10-04 18:00:01",
+  "gate0_audit": {
+    "T": {
+      "split": "T",
+      "total_transactions": 600,
+      "gate0_fired_count": 17,
+      "gate0_fired_pct": 2.83,
+      "gate0_pass_count": 583,
+      "gate0_pass_pct": 97.17,
+      "overall_precision": 1.0,
+      "rule_breakdown": {
+        "IMPOSSIBLE_TRAVEL_VELOCITY": {
+          "fired_count": 9,
+          "fraud_count": 9,
+          "precision": 1.0
+        },
+        "CRITICAL_DEVICE_TAMPERING_HIGH_VALUE": {
+          "fired_count": 0,
+          "fraud_count": 0,
+          "precision": 1.0
+        },
+        "ROOTED_NEW_DEVICE_ELEVATED_AMOUNT": {
+          "fired_count": 0,
+          "fraud_count": 0,
+          "precision": 1.0
+        },
+        "FAILED_DEVICE_ATTESTATION": {
+          "fired_count": 8,
+          "fraud_count": 8,
+          "precision": 1.0
+        },
+        "MOCK_LOCATION_SPOOFING": {
+          "fired_count": 0,
+          "fraud_count": 0,
+          "precision": 1.0
+        }
+      }
+    },
+    "V": {
+      "split": "V",
+      "total_transactions": 200,
+      "gate0_fired_count": 6,
+      "gate0_fired_pct": 3.0,
+      "gate0_pass_count": 194,
+      "gate0_pass_pct": 97.0,
+      "overall_precision": 1.0,
+      "rule_breakdown": {
+        "IMPOSSIBLE_TRAVEL_VELOCITY": {
+          "fired_count": 4,
+          "fraud_count": 4,
+          "precision": 1.0
+        },
+        "CRITICAL_DEVICE_TAMPERING_HIGH_VALUE": {
+          "fired_count": 0,
+          "fraud_count": 0,
+          "precision": 1.0
+        },
+        "ROOTED_NEW_DEVICE_ELEVATED_AMOUNT": {
+          "fired_count": 2,
+          "fraud_count": 2,
+          "precision": 1.0
+        },
+        "FAILED_DEVICE_ATTESTATION": {
+          "fired_count": 0,
+          "fraud_count": 0,
+          "precision": 1.0
+        },
+        "MOCK_LOCATION_SPOOFING": {
+          "fired_count": 0,
+          "fraud_count": 0,
+          "precision": 1.0
+        }
+      }
+    }
+  },
+  "s1_tuned_rules": {
+    "w_spike": 25.0,
+    "w_drain": 10.0,
+    "w_dev": 20.0,
+    "w_vpn": 20.0,
+    "thresh": 25.0,
+    "val_f1": 0.7541
+  },
+  "s2_xgboost_full": {
+    "val_roc_auc": 0.9824,
+    "val_pr_auc": 0.9688,
+    "tau_2fa": 0.4,
+    "tau_block": 0.5,
+    "val_3action_score": 0.9897
+  },
+  "s3_xgboost_tfidf": {
+    "val_roc_auc": 0.9801,
+    "val_pr_auc": 0.9645
+  },
+  "ablations": {
+    "no_device_features": {
+      "val_roc_auc": 0.9686,
+      "val_pr_auc": 0.9649,
+      "roc_lift": 0.0137
+    },
+    "no_purpose_payee_features": {
+      "val_roc_auc": 0.985,
+      "val_pr_auc": 0.9651,
+      "roc_lift": -0.0027
+    }
+  },
+  "top_10_features_shap": [
+    {
+      "feature": "os_patch_age_days",
+      "mean_abs_shap": 1.505
+    },
+    {
+      "feature": "balance_drain_ratio",
+      "mean_abs_shap": 0.4622
+    },
+    {
+      "feature": "payee_age_days",
+      "mean_abs_shap": 0.3721
+    },
+    {
+      "feature": "form_seconds",
+      "mean_abs_shap": 0.3299
+    },
+    {
+      "feature": "payees_24h",
+      "mean_abs_shap": 0.3163
+    },
+    {
+      "feature": "spike_ratio",
+      "mean_abs_shap": 0.2966
+    },
+    {
+      "feature": "dow",
+      "mean_abs_shap": 0.2863
+    },
+    {
+      "feature": "credential_change_hours_ago",
+      "mean_abs_shap": 0.261
+    },
+    {
+      "feature": "seconds_since_login",
+      "mean_abs_shap": 0.2606
+    },
+    {
+      "feature": "velocity_kmh",
+      "mean_abs_shap": 0.2167
+    }
+  ]
+}

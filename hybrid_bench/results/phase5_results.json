@@ -1,0 +1,2759 @@
+{
+  "timestamp": "2026-10-04 18:11:55",
+  "splits_evaluated": [
+    "C1",
+    "C2",
+    "C3",
+    "C4"
+  ],
+  "split_results": {
+    "C1": {
+      "total_transactions": 300,
+      "fraud_count": 45,
+      "memo_present_count": 89,
+      "point_estimates": {
+        "S1": {
+          "binary": {
+            "roc_auc": 0.9205,
+            "pr_auc": 0.7841,
+            "recall_at_1_fpr": 0.6222,
+            "recall_at_0_1_fpr": 0.3333,
+            "prec_at_90_recall": 0.519
+          },
+          "action": {
+            "macro_f1": 0.6743,
+            "false_block_rate": 0.0039,
+            "missed_fraud_rate": 0.2667,
+            "alerts_per_1k": 173.3,
+            "confusion_matrix": {
+              "ALLOW": {
+                "pred_ALLOW": 236,
+                "pred_REQUIRE_2FA": 18,
+                "pred_BLOCK": 1
+              },
+              "REQUIRE_2FA": {
+                "pred_ALLOW": 12,
+                "pred_REQUIRE_2FA": 14,
+                "pred_BLOCK": 6
+              },
+              "BLOCK": {
+                "pred_ALLOW": 0,
+                "pred_REQUIRE_2FA": 3,
+                "pred_BLOCK": 10
+              }
+            },
+            "cost_metrics": {
+              "total_cost_php": 152110.36,
+              "cost_per_1k_php": 507034.53,
+              "missed_fraud": 12,
+              "false_blocks": 1,
+              "unnecessary_2fa": 18,
+              "mitigated_fraud": 17,
+              "correct_blocks": 16
+            }
+          }
+        },
+        "S2": {
+          "binary": {
+            "roc_auc": 0.9997,
+            "pr_auc": 0.9986,
+            "recall_at_1_fpr": 0.9778,
+            "recall_at_0_1_fpr": 0.9778,
+            "prec_at_90_recall": 1.0
+          },
+          "action": {
+            "macro_f1": 0.5414,
+            "false_block_rate": 0.0,
+            "missed_fraud_rate": 0.0444,
+            "alerts_per_1k": 143.3,
+            "confusion_matrix": {
+              "ALLOW": {
+                "pred_ALLOW": 255,
+                "pred_REQUIRE_2FA": 0,
+                "pred_BLOCK": 0
+              },
+              "REQUIRE_2FA": {
+                "pred_ALLOW": 2,
+                "pred_REQUIRE_2FA": 3,
+                "pred_BLOCK": 27
+              },
+              "BLOCK": {
+                "pred_ALLOW": 0,
+                "pred_REQUIRE_2FA": 1,
+                "pred_BLOCK": 12
+              }
+            },
+            "cost_metrics": {
+              "total_cost_php": 26908.91,
+              "cost_per_1k_php": 89696.37,
+              "missed_fraud": 2,
+              "false_blocks": 0,
+              "unnecessary_2fa": 0,
+              "mitigated_fraud": 4,
+              "correct_blocks": 39
+            }
+          }
+        },
+        "S3": {
+          "binary": {
+            "roc_auc": 0.9995,
+            "pr_auc": 0.9973,
+            "recall_at_1_fpr": 0.9778,
+            "recall_at_0_1_fpr": 0.9556,
+            "prec_at_90_recall": 1.0
+          },
+          "action": {
+            "macro_f1": 0.5414,
+            "false_block_rate": 0.0,
+            "missed_fraud_rate": 0.0444,
+            "alerts_per_1k": 143.3,
+            "confusion_matrix": {
+              "ALLOW": {
+                "pred_ALLOW": 255,
+                "pred_REQUIRE_2FA": 0,
+                "pred_BLOCK": 0
+              },
+              "REQUIRE_2FA": {
+                "pred_ALLOW": 2,
+                "pred_REQUIRE_2FA": 3,
+                "pred_BLOCK": 27
+              },
+              "BLOCK": {
+                "pred_ALLOW": 0,
+                "pred_REQUIRE_2FA": 1,
+                "pred_BLOCK": 12
+              }
+            },
+            "cost_metrics": {
+              "total_cost_php": 26908.91,
+              "cost_per_1k_php": 89696.37,
+              "missed_fraud": 2,
+              "false_blocks": 0,
+              "unnecessary_2fa": 0,
+              "mitigated_fraud": 4,
+              "correct_blocks": 39
+            }
+          }
+        },
+        "S4": {
+          "binary": {
+            "roc_auc": 0.9911,
+            "pr_auc": 0.9771,
+            "recall_at_1_fpr": 0.9556,
+            "recall_at_0_1_fpr": 0.9556,
+            "prec_at_90_recall": 1.0
+          },
+          "action": {
+            "macro_f1": 0.4775,
+            "false_block_rate": 0.0,
+            "missed_fraud_rate": 0.0222,
+            "alerts_per_1k": 323.3,
+            "confusion_matrix": {
+              "ALLOW": {
+                "pred_ALLOW": 202,
+                "pred_REQUIRE_2FA": 53,
+                "pred_BLOCK": 0
+              },
+              "REQUIRE_2FA": {
+                "pred_ALLOW": 1,
+                "pred_REQUIRE_2FA": 4,
+                "pred_BLOCK": 27
+              },
+              "BLOCK": {
+                "pred_ALLOW": 0,
+                "pred_REQUIRE_2FA": 1,
+                "pred_BLOCK": 12
+              }
+            },
+            "cost_metrics": {
+              "total_cost_php": 16963.82,
+              "cost_per_1k_php": 56546.08,
+              "missed_fraud": 1,
+              "false_blocks": 0,
+              "unnecessary_2fa": 53,
+              "mitigated_fraud": 5,
+              "correct_blocks": 39
+            }
+          }
+        },
+        "S5": {
+          "binary": {
+            "roc_auc": 0.7096,
+            "pr_auc": 0.4843,
+            "recall_at_1_fpr": 0.3111,
+            "recall_at_0_1_fpr": 0.2667,
+            "prec_at_90_recall": 0.15
+          },
+          "action": {
+            "macro_f1": 0.5417,
+            "false_block_rate": 0.0353,
+            "missed_fraud_rate": 0.4,
+            "alerts_per_1k": 303.3,
+            "confusion_matrix": {
+              "ALLOW": {
+                "pred_ALLOW": 191,
+                "pred_REQUIRE_2FA": 55,
+                "pred_BLOCK": 9
+              },
+              "REQUIRE_2FA": {
+                "pred_ALLOW": 16,
+                "pred_REQUIRE_2FA": 15,
+                "pred_BLOCK": 1
+              },
+              "BLOCK": {
+                "pred_ALLOW": 2,
+                "pred_REQUIRE_2FA": 3,
+                "pred_BLOCK": 8
+              }
+            },
+            "cost_metrics": {
+              "total_cost_php": 273460.41,
+              "cost_per_1k_php": 911534.71,
+              "missed_fraud": 18,
+              "false_blocks": 9,
+              "unnecessary_2fa": 55,
+              "mitigated_fraud": 18,
+              "correct_blocks": 9
+            }
+          }
+        }
+      },
+      "bootstrap_cis": {
+        "S1": {
+          "roc_auc": {
+            "mean": 0.9195,
+            "std": 0.0234,
+            "ci_95": [
+              0.8724,
+              0.9608
+            ]
+          },
+          "pr_auc": {
+            "mean": 0.7824,
+            "std": 0.0482,
+            "ci_95": [
+              0.6743,
+              0.8669
+            ]
+          },
+          "macro_f1": {
+            "mean": 0.6727,
+            "std": 0.0406,
+            "ci_95": [
+              0.5878,
+              0.746
+            ]
+          },
+          "cost_per_1k": {
+            "mean": 511953.3357,
+            "std": 128440.4284,
+            "ci_95": [
+              290079.8343,
+              790549.1275
+            ]
+          }
+        },
+        "S2": {
+          "roc_auc": {
+            "mean": 0.9997,
+            "std": 0.0003,
+            "ci_95": [
+              0.9989,
+              1.0
+            ]
+          },
+          "pr_auc": {
+            "mean": 0.9986,
+            "std": 0.0018,
+            "ci_95": [
+              0.9938,
+              1.0
+            ]
+          },
+          "macro_f1": {
+            "mean": 0.5367,
+            "std": 0.0413,
+            "ci_95": [
+              0.4507,
+              0.6166
+            ]
+          },
+          "cost_per_1k": {
+            "mean": 91133.758,
+            "std": 48510.2403,
+            "ci_95": [
+              18607.9522,
+              201022.8987
+            ]
+          }
+        },
+        "S3": {
+          "roc_auc": {
+            "mean": 0.9995,
+            "std": 0.0005,
+            "ci_95": [
+              0.9983,
+              1.0
+            ]
+          },
+          "pr_auc": {
+            "mean": 0.9973,
+            "std": 0.0027,
+            "ci_95": [
+              0.9901,
+              1.0
+            ]
+          },
+          "macro_f1": {
+            "mean": 0.5367,
+            "std": 0.0413,
+            "ci_95": [
+              0.4507,
+              0.6166
+            ]
+          },
+          "cost_per_1k": {
+            "mean": 91133.758,
+            "std": 48510.2403,
+            "ci_95": [
+              18607.9522,
+              201022.8987
+            ]
+          }
+        },
+        "S4": {
+          "roc_auc": {
+            "mean": 0.9907,
+            "std": 0.0068,
+            "ci_95": [
+              0.9746,
+              1.0
+            ]
+          },
+          "pr_auc": {
+            "mean": 0.9759,
+            "std": 0.017,
+            "ci_95": [
+              0.9354,
+              1.0
+            ]
+          },
+          "macro_f1": {
+            "mean": 0.4756,
+            "std": 0.0311,
+            "ci_95": [
+              0.411,
+              0.5357
+            ]
+          },
+          "cost_per_1k": {
+            "mean": 56611.822,
+            "std": 20607.5613,
+            "ci_95": [
+              20761.608,
+              98295.1047
+            ]
+          }
+        },
+        "S5": {
+          "roc_auc": {
+            "mean": 0.7085,
+            "std": 0.0475,
+            "ci_95": [
+              0.6171,
+              0.797
+            ]
+          },
+          "pr_auc": {
+            "mean": 0.4857,
+            "std": 0.0764,
+            "ci_95": [
+              0.3227,
+              0.6224
+            ]
+          },
+          "macro_f1": {
+            "mean": 0.541,
+            "std": 0.0429,
+            "ci_95": [
+              0.4532,
+              0.622
+            ]
+          },
+          "cost_per_1k": {
+            "mean": 920737.4793,
+            "std": 238254.6742,
+            "ci_95": [
+              487397.0723,
+              1416247.8327
+            ]
+          }
+        }
+      },
+      "paired_differences": {
+        "S4_vs_S2": {
+          "pr_auc": {
+            "mean_diff": -0.0226,
+            "ci_95": [
+              -0.0599,
+              0.0
+            ],
+            "p_value": 0.222
+          },
+          "macro_f1": {
+            "mean_diff": -0.0611,
+            "ci_95": [
+              -0.0967,
+              -0.0241
+            ],
+            "p_value": 0.0
+          },
+          "cost_per_1k": {
+            "mean_diff": -34521.936,
+            "ci_95": [
+              -116764.072,
+              5113.8112
+            ],
+            "p_value": 0.712
+          }
+        },
+        "S4_vs_S3": {
+          "pr_auc": {
+            "mean_diff": -0.0213,
+            "ci_95": [
+              -0.0564,
+              0.0
+            ],
+            "p_value": 0.222
+          },
+          "macro_f1": {
+            "mean_diff": -0.0611,
+            "ci_95": [
+              -0.0967,
+              -0.0241
+            ],
+            "p_value": 0.0
+          },
+          "cost_per_1k": {
+            "mean_diff": -34521.936,
+            "ci_95": [
+              -116764.072,
+              5113.8112
+            ],
+            "p_value": 0.712
+          }
+        }
+      }
+    },
+    "C2": {
+      "total_transactions": 300,
+      "fraud_count": 45,
+      "memo_present_count": 94,
+      "point_estimates": {
+        "S1": {
+          "binary": {
+            "roc_auc": 0.9111,
+            "pr_auc": 0.7599,
+            "recall_at_1_fpr": 0.5333,
+            "recall_at_0_1_fpr": 0.4222,
+            "prec_at_90_recall": 0.15
+          },
+          "action": {
+            "macro_f1": 0.5934,
+            "false_block_rate": 0.0,
+            "missed_fraud_rate": 0.3778,
+            "alerts_per_1k": 136.7,
+            "confusion_matrix": {
+              "ALLOW": {
+                "pred_ALLOW": 242,
+                "pred_REQUIRE_2FA": 13,
+                "pred_BLOCK": 0
+              },
+              "REQUIRE_2FA": {
+                "pred_ALLOW": 17,
+                "pred_REQUIRE_2FA": 9,
+                "pred_BLOCK": 10
+              },
+              "BLOCK": {
+                "pred_ALLOW": 0,
+                "pred_REQUIRE_2FA": 2,
+                "pred_BLOCK": 7
+              }
+            },
+            "cost_metrics": {
+              "total_cost_php": 116124.48,
+              "cost_per_1k_php": 387081.6,
+              "missed_fraud": 17,
+              "false_blocks": 0,
+              "unnecessary_2fa": 13,
+              "mitigated_fraud": 11,
+              "correct_blocks": 17
+            }
+          }
+        },
+        "S2": {
+          "binary": {
+            "roc_auc": 0.9995,
+            "pr_auc": 0.9974,
+            "recall_at_1_fpr": 0.9778,
+            "recall_at_0_1_fpr": 0.9778,
+            "prec_at_90_recall": 1.0
+          },
+          "action": {
+            "macro_f1": 0.4548,
+            "false_block_rate": 0.0,
+            "missed_fraud_rate": 0.0222,
+            "alerts_per_1k": 146.7,
+            "confusion_matrix": {
+              "ALLOW": {
+                "pred_ALLOW": 255,
+                "pred_REQUIRE_2FA": 0,
+                "pred_BLOCK": 0
+              },
+              "REQUIRE_2FA": {
+                "pred_ALLOW": 1,
+                "pred_REQUIRE_2FA": 1,
+                "pred_BLOCK": 34
+              },
+              "BLOCK": {
+                "pred_ALLOW": 0,
+                "pred_REQUIRE_2FA": 1,
+                "pred_BLOCK": 8
+              }
+            },
+            "cost_metrics": {
+              "total_cost_php": 8463.35,
+              "cost_per_1k_php": 28211.17,
+              "missed_fraud": 1,
+              "false_blocks": 0,
+              "unnecessary_2fa": 0,
+              "mitigated_fraud": 2,
+              "correct_blocks": 42
+            }
+          }
+        },
+        "S3": {
+          "binary": {
+            "roc_auc": 0.9999,
+            "pr_auc": 0.9995,
+            "recall_at_1_fpr": 1.0,
+            "recall_at_0_1_fpr": 0.9778,
+            "prec_at_90_recall": 1.0
+          },
+          "action": {
+            "macro_f1": 0.4548,
+            "false_block_rate": 0.0,
+            "missed_fraud_rate": 0.0222,
+            "alerts_per_1k": 146.7,
+            "confusion_matrix": {
+              "ALLOW": {
+                "pred_ALLOW": 255,
+                "pred_REQUIRE_2FA": 0,
+                "pred_BLOCK": 0
+              },
+              "REQUIRE_2FA": {
+                "pred_ALLOW": 1,
+                "pred_REQUIRE_2FA": 1,
+                "pred_BLOCK": 34
+              },
+              "BLOCK": {
+                "pred_ALLOW": 0,
+                "pred_REQUIRE_2FA": 1,
+                "pred_BLOCK": 8
+              }
+            },
+            "cost_metrics": {
+              "total_cost_php": 8463.35,
+              "cost_per_1k_php": 28211.17,
+              "missed_fraud": 1,
+              "false_blocks": 0,
+              "unnecessary_2fa": 0,
+              "mitigated_fraud": 2,
+              "correct_blocks": 42
+            }
+          }
+        },
+        "S4": {
+          "binary": {
+            "roc_auc": 0.9975,
+            "pr_auc": 0.9913,
+            "recall_at_1_fpr": 0.9778,
+            "recall_at_0_1_fpr": 0.9778,
+            "prec_at_90_recall": 1.0
+          },
+          "action": {
+            "macro_f1": 0.405,
+            "false_block_rate": 0.0,
+            "missed_fraud_rate": 0.0,
+            "alerts_per_1k": 356.7,
+            "confusion_matrix": {
+              "ALLOW": {
+                "pred_ALLOW": 193,
+                "pred_REQUIRE_2FA": 62,
+                "pred_BLOCK": 0
+              },
+              "REQUIRE_2FA": {
+                "pred_ALLOW": 0,
+                "pred_REQUIRE_2FA": 2,
+                "pred_BLOCK": 34
+              },
+              "BLOCK": {
+                "pred_ALLOW": 0,
+                "pred_REQUIRE_2FA": 1,
+                "pred_BLOCK": 8
+              }
+            },
+            "cost_metrics": {
+              "total_cost_php": 8372.35,
+              "cost_per_1k_php": 27907.83,
+              "missed_fraud": 0,
+              "false_blocks": 0,
+              "unnecessary_2fa": 62,
+              "mitigated_fraud": 3,
+              "correct_blocks": 42
+            }
+          }
+        },
+        "S5": {
+          "binary": {
+            "roc_auc": 0.5501,
+            "pr_auc": 0.2752,
+            "recall_at_1_fpr": 0.1333,
+            "recall_at_0_1_fpr": 0.1333,
+            "prec_at_90_recall": 0.15
+          },
+          "action": {
+            "macro_f1": 0.4575,
+            "false_block_rate": 0.0196,
+            "missed_fraud_rate": 0.6667,
+            "alerts_per_1k": 300.0,
+            "confusion_matrix": {
+              "ALLOW": {
+                "pred_ALLOW": 180,
+                "pred_REQUIRE_2FA": 70,
+                "pred_BLOCK": 5
+              },
+              "REQUIRE_2FA": {
+                "pred_ALLOW": 27,
+                "pred_REQUIRE_2FA": 9,
+                "pred_BLOCK": 0
+              },
+              "BLOCK": {
+                "pred_ALLOW": 3,
+                "pred_REQUIRE_2FA": 2,
+                "pred_BLOCK": 4
+              }
+            },
+            "cost_metrics": {
+              "total_cost_php": 461366.12,
+              "cost_per_1k_php": 1537887.08,
+              "missed_fraud": 30,
+              "false_blocks": 5,
+              "unnecessary_2fa": 70,
+              "mitigated_fraud": 11,
+              "correct_blocks": 4
+            }
+          }
+        }
+      },
+      "bootstrap_cis": {
+        "S1": {
+          "roc_auc": {
+            "mean": 0.912,
+            "std": 0.0303,
+            "ci_95": [
+              0.8486,
+              0.9645
+            ]
+          },
+          "pr_auc": {
+            "mean": 0.7601,
+            "std": 0.0607,
+            "ci_95": [
+              0.6235,
+              0.8647
+            ]
+          },
+          "macro_f1": {
+            "mean": 0.5856,
+            "std": 0.0532,
+            "ci_95": [
+              0.4691,
+              0.6787
+            ]
+          },
+          "cost_per_1k": {
+            "mean": 385069.2235,
+            "std": 113623.3139,
+            "ci_95": [
+              189773.2633,
+              634376.9628
+            ]
+          }
+        },
+        "S2": {
+          "roc_auc": {
+            "mean": 0.9995,
+            "std": 0.0006,
+            "ci_95": [
+              0.9981,
+              1.0
+            ]
+          },
+          "pr_auc": {
+            "mean": 0.9975,
+            "std": 0.003,
+            "ci_95": [
+              0.99,
+              1.0
+            ]
+          },
+          "macro_f1": {
+            "mean": 0.4505,
+            "std": 0.0348,
+            "ci_95": [
+              0.3829,
+              0.5156
+            ]
+          },
+          "cost_per_1k": {
+            "mean": 27790.2361,
+            "std": 17054.0908,
+            "ci_95": [
+              0.0,
+              65475.471
+            ]
+          }
+        },
+        "S3": {
+          "roc_auc": {
+            "mean": 0.9999,
+            "std": 0.0001,
+            "ci_95": [
+              0.9996,
+              1.0
+            ]
+          },
+          "pr_auc": {
+            "mean": 0.9996,
+            "std": 0.0008,
+            "ci_95": [
+              0.9974,
+              1.0
+            ]
+          },
+          "macro_f1": {
+            "mean": 0.4505,
+            "std": 0.0348,
+            "ci_95": [
+              0.3829,
+              0.5156
+            ]
+          },
+          "cost_per_1k": {
+            "mean": 27790.2361,
+            "std": 17054.0908,
+            "ci_95": [
+              0.0,
+              65475.471
+            ]
+          }
+        },
+        "S4": {
+          "roc_auc": {
+            "mean": 0.9975,
+            "std": 0.0027,
+            "ci_95": [
+              0.9912,
+              1.0
+            ]
+          },
+          "pr_auc": {
+            "mean": 0.9913,
+            "std": 0.0094,
+            "ci_95": [
+              0.9703,
+              1.0
+            ]
+          },
+          "macro_f1": {
+            "mean": 0.4011,
+            "std": 0.0317,
+            "ci_95": [
+              0.3346,
+              0.4589
+            ]
+          },
+          "cost_per_1k": {
+            "mean": 27771.9425,
+            "std": 15746.3962,
+            "ci_95": [
+              4930.5458,
+              65568.2382
+            ]
+          }
+        },
+        "S5": {
+          "roc_auc": {
+            "mean": 0.5464,
+            "std": 0.0387,
+            "ci_95": [
+              0.4713,
+              0.6213
+            ]
+          },
+          "pr_auc": {
+            "mean": 0.2738,
+            "std": 0.053,
+            "ci_95": [
+              0.169,
+              0.3738
+            ]
+          },
+          "macro_f1": {
+            "mean": 0.4484,
+            "std": 0.0558,
+            "ci_95": [
+              0.3335,
+              0.5493
+            ]
+          },
+          "cost_per_1k": {
+            "mean": 1559423.8368,
+            "std": 639462.037,
+            "ci_95": [
+              601239.1223,
+              3054527.7925
+            ]
+          }
+        }
+      },
+      "paired_differences": {
+        "S4_vs_S2": {
+          "pr_auc": {
+            "mean_diff": -0.0061,
+            "ci_95": [
+              -0.0227,
+              0.0
+            ],
+            "p_value": 0.78
+          },
+          "macro_f1": {
+            "mean_diff": -0.0494,
+            "ci_95": [
+              -0.0755,
+              -0.0254
+            ],
+            "p_value": 0.002
+          },
+          "cost_per_1k": {
+            "mean_diff": -18.2936,
+            "ci_95": [
+              -12193.351,
+              6004.1577
+            ],
+            "p_value": 0.988
+          }
+        },
+        "S4_vs_S3": {
+          "pr_auc": {
+            "mean_diff": -0.0082,
+            "ci_95": [
+              -0.0297,
+              0.0
+            ],
+            "p_value": 0.78
+          },
+          "macro_f1": {
+            "mean_diff": -0.0494,
+            "ci_95": [
+              -0.0755,
+              -0.0254
+            ],
+            "p_value": 0.002
+          },
+          "cost_per_1k": {
+            "mean_diff": -18.2936,
+            "ci_95": [
+              -12193.351,
+              6004.1577
+            ],
+            "p_value": 0.988
+          }
+        }
+      }
+    },
+    "C3": {
+      "total_transactions": 1000,
+      "fraud_count": 15,
+      "memo_present_count": 305,
+      "point_estimates": {
+        "S1": {
+          "binary": {
+            "roc_auc": 0.9219,
+            "pr_auc": 0.3335,
+            "recall_at_1_fpr": 0.4667,
+            "recall_at_0_1_fpr": 0.0,
+            "prec_at_90_recall": 0.0927
+          },
+          "action": {
+            "macro_f1": 0.5453,
+            "false_block_rate": 0.0041,
+            "missed_fraud_rate": 0.4,
+            "alerts_per_1k": 62.0,
+            "confusion_matrix": {
+              "ALLOW": {
+                "pred_ALLOW": 932,
+                "pred_REQUIRE_2FA": 49,
+                "pred_BLOCK": 4
+              },
+              "REQUIRE_2FA": {
+                "pred_ALLOW": 6,
+                "pred_REQUIRE_2FA": 3,
+                "pred_BLOCK": 2
+              },
+              "BLOCK": {
+                "pred_ALLOW": 0,
+                "pred_REQUIRE_2FA": 0,
+                "pred_BLOCK": 4
+              }
+            },
+            "cost_metrics": {
+              "total_cost_php": 40706.54,
+              "cost_per_1k_php": 40706.54,
+              "missed_fraud": 6,
+              "false_blocks": 4,
+              "unnecessary_2fa": 49,
+              "mitigated_fraud": 3,
+              "correct_blocks": 6
+            }
+          }
+        },
+        "S2": {
+          "binary": {
+            "roc_auc": 0.999,
+            "pr_auc": 0.8487,
+            "recall_at_1_fpr": 1.0,
+            "recall_at_0_1_fpr": 0.0,
+            "prec_at_90_recall": 0.9333
+          },
+          "action": {
+            "macro_f1": 0.4732,
+            "false_block_rate": 0.001,
+            "missed_fraud_rate": 0.0667,
+            "alerts_per_1k": 16.0,
+            "confusion_matrix": {
+              "ALLOW": {
+                "pred_ALLOW": 983,
+                "pred_REQUIRE_2FA": 1,
+                "pred_BLOCK": 1
+              },
+              "REQUIRE_2FA": {
+                "pred_ALLOW": 1,
+                "pred_REQUIRE_2FA": 0,
+                "pred_BLOCK": 10
+              },
+              "BLOCK": {
+                "pred_ALLOW": 0,
+                "pred_REQUIRE_2FA": 0,
+                "pred_BLOCK": 4
+              }
+            },
+            "cost_metrics": {
+              "total_cost_php": 16580.38,
+              "cost_per_1k_php": 16580.38,
+              "missed_fraud": 1,
+              "false_blocks": 1,
+              "unnecessary_2fa": 1,
+              "mitigated_fraud": 0,
+              "correct_blocks": 14
+            }
+          }
+        },
+        "S3": {
+          "binary": {
+            "roc_auc": 0.9985,
+            "pr_auc": 0.8316,
+            "recall_at_1_fpr": 1.0,
+            "recall_at_0_1_fpr": 0.0,
+            "prec_at_90_recall": 0.9333
+          },
+          "action": {
+            "macro_f1": 0.4728,
+            "false_block_rate": 0.001,
+            "missed_fraud_rate": 0.0667,
+            "alerts_per_1k": 18.0,
+            "confusion_matrix": {
+              "ALLOW": {
+                "pred_ALLOW": 981,
+                "pred_REQUIRE_2FA": 3,
+                "pred_BLOCK": 1
+              },
+              "REQUIRE_2FA": {
+                "pred_ALLOW": 1,
+                "pred_REQUIRE_2FA": 0,
+                "pred_BLOCK": 10
+              },
+              "BLOCK": {
+                "pred_ALLOW": 0,
+                "pred_REQUIRE_2FA": 0,
+                "pred_BLOCK": 4
+              }
+            },
+            "cost_metrics": {
+              "total_cost_php": 16630.38,
+              "cost_per_1k_php": 16630.38,
+              "missed_fraud": 1,
+              "false_blocks": 1,
+              "unnecessary_2fa": 3,
+              "mitigated_fraud": 0,
+              "correct_blocks": 14
+            }
+          }
+        },
+        "S4": {
+          "binary": {
+            "roc_auc": 0.9799,
+            "pr_auc": 0.7932,
+            "recall_at_1_fpr": 0.9333,
+            "recall_at_0_1_fpr": 0.0,
+            "prec_at_90_recall": 0.9333
+          },
+          "action": {
+            "macro_f1": 0.4266,
+            "false_block_rate": 0.001,
+            "missed_fraud_rate": 0.0667,
+            "alerts_per_1k": 257.0,
+            "confusion_matrix": {
+              "ALLOW": {
+                "pred_ALLOW": 742,
+                "pred_REQUIRE_2FA": 242,
+                "pred_BLOCK": 1
+              },
+              "REQUIRE_2FA": {
+                "pred_ALLOW": 1,
+                "pred_REQUIRE_2FA": 0,
+                "pred_BLOCK": 10
+              },
+              "BLOCK": {
+                "pred_ALLOW": 0,
+                "pred_REQUIRE_2FA": 0,
+                "pred_BLOCK": 4
+              }
+            },
+            "cost_metrics": {
+              "total_cost_php": 22605.38,
+              "cost_per_1k_php": 22605.38,
+              "missed_fraud": 1,
+              "false_blocks": 1,
+              "unnecessary_2fa": 242,
+              "mitigated_fraud": 0,
+              "correct_blocks": 14
+            }
+          }
+        },
+        "S5": {
+          "binary": {
+            "roc_auc": 0.6742,
+            "pr_auc": 0.1152,
+            "recall_at_1_fpr": 0.1333,
+            "recall_at_0_1_fpr": 0.0,
+            "prec_at_90_recall": 0.015
+          },
+          "action": {
+            "macro_f1": 0.3232,
+            "false_block_rate": 0.0325,
+            "missed_fraud_rate": 0.4667,
+            "alerts_per_1k": 293.0,
+            "confusion_matrix": {
+              "ALLOW": {
+                "pred_ALLOW": 700,
+                "pred_REQUIRE_2FA": 253,
+                "pred_BLOCK": 32
+              },
+              "REQUIRE_2FA": {
+                "pred_ALLOW": 6,
+                "pred_REQUIRE_2FA": 5,
+                "pred_BLOCK": 0
+              },
+              "BLOCK": {
+                "pred_ALLOW": 1,
+                "pred_REQUIRE_2FA": 1,
+                "pred_BLOCK": 2
+              }
+            },
+            "cost_metrics": {
+              "total_cost_php": 134877.89,
+              "cost_per_1k_php": 134877.89,
+              "missed_fraud": 7,
+              "false_blocks": 32,
+              "unnecessary_2fa": 253,
+              "mitigated_fraud": 6,
+              "correct_blocks": 2
+            }
+          }
+        }
+      },
+      "bootstrap_cis": {
+        "S1": {
+          "roc_auc": {
+            "mean": 0.9248,
+            "std": 0.0315,
+            "ci_95": [
+              0.8572,
+              0.9738
+            ]
+          },
+          "pr_auc": {
+            "mean": 0.3665,
+            "std": 0.1122,
+            "ci_95": [
+              0.165,
+              0.5852
+            ]
+          },
+          "macro_f1": {
+            "mean": 0.5391,
+            "std": 0.0577,
+            "ci_95": [
+              0.4111,
+              0.6346
+            ]
+          },
+          "cost_per_1k": {
+            "mean": 40763.3843,
+            "std": 14102.1678,
+            "ci_95": [
+              18081.2025,
+              72828.5242
+            ]
+          }
+        },
+        "S2": {
+          "roc_auc": {
+            "mean": 0.999,
+            "std": 0.0009,
+            "ci_95": [
+              0.9969,
+              1.0
+            ]
+          },
+          "pr_auc": {
+            "mean": 0.8747,
+            "std": 0.1124,
+            "ci_95": [
+              0.6383,
+              1.0
+            ]
+          },
+          "macro_f1": {
+            "mean": 0.4686,
+            "std": 0.0472,
+            "ci_95": [
+              0.3769,
+              0.5549
+            ]
+          },
+          "cost_per_1k": {
+            "mean": 16822.6342,
+            "std": 15044.7651,
+            "ci_95": [
+              0.0,
+              49426.151
+            ]
+          }
+        },
+        "S3": {
+          "roc_auc": {
+            "mean": 0.9985,
+            "std": 0.0011,
+            "ci_95": [
+              0.9961,
+              1.0
+            ]
+          },
+          "pr_auc": {
+            "mean": 0.8573,
+            "std": 0.1148,
+            "ci_95": [
+              0.6142,
+              1.0
+            ]
+          },
+          "macro_f1": {
+            "mean": 0.4683,
+            "std": 0.0472,
+            "ci_95": [
+              0.3765,
+              0.5547
+            ]
+          },
+          "cost_per_1k": {
+            "mean": 16873.9277,
+            "std": 15045.0356,
+            "ci_95": [
+              27.0763,
+              49578.823
+            ]
+          }
+        },
+        "S4": {
+          "roc_auc": {
+            "mean": 0.9793,
+            "std": 0.0194,
+            "ci_95": [
+              0.9316,
+              1.0
+            ]
+          },
+          "pr_auc": {
+            "mean": 0.8177,
+            "std": 0.1265,
+            "ci_95": [
+              0.5428,
+              1.0
+            ]
+          },
+          "macro_f1": {
+            "mean": 0.4221,
+            "std": 0.0473,
+            "ci_95": [
+              0.3287,
+              0.5072
+            ]
+          },
+          "cost_per_1k": {
+            "mean": 22841.0942,
+            "std": 15037.5478,
+            "ci_95": [
+              5810.1255,
+              55730.845
+            ]
+          }
+        },
+        "S5": {
+          "roc_auc": {
+            "mean": 0.6747,
+            "std": 0.0696,
+            "ci_95": [
+              0.545,
+              0.8094
+            ]
+          },
+          "pr_auc": {
+            "mean": 0.1331,
+            "std": 0.0826,
+            "ci_95": [
+              0.0162,
+              0.3217
+            ]
+          },
+          "macro_f1": {
+            "mean": 0.3232,
+            "std": 0.0242,
+            "ci_95": [
+              0.2832,
+              0.3732
+            ]
+          },
+          "cost_per_1k": {
+            "mean": 136274.037,
+            "std": 52581.1514,
+            "ci_95": [
+              59599.5398,
+              264081.6622
+            ]
+          }
+        }
+      },
+      "paired_differences": {
+        "S4_vs_S2": {
+          "pr_auc": {
+            "mean_diff": -0.057,
+            "ci_95": [
+              -0.1862,
+              0.0
+            ],
+            "p_value": 0.696
+          },
+          "macro_f1": {
+            "mean_diff": -0.0465,
+            "ci_95": [
+              -0.0527,
+              -0.0413
+            ],
+            "p_value": 0.0
+          },
+          "cost_per_1k": {
+            "mean_diff": 6018.46,
+            "ci_95": [
+              5421.6592,
+              6690.6128
+            ],
+            "p_value": 0.0
+          }
+        },
+        "S4_vs_S3": {
+          "pr_auc": {
+            "mean_diff": -0.0396,
+            "ci_95": [
+              -0.1268,
+              0.0026
+            ],
+            "p_value": 0.516
+          },
+          "macro_f1": {
+            "mean_diff": -0.0462,
+            "ci_95": [
+              -0.0522,
+              -0.0409
+            ],
+            "p_value": 0.0
+          },
+          "cost_per_1k": {
+            "mean_diff": 5967.1665,
+            "ci_95": [
+              5364.4775,
+              6635.6655
+            ],
+            "p_value": 0.0
+          }
+        }
+      }
+    },
+    "C4": {
+      "total_transactions": 100,
+      "fraud_count": 15,
+      "memo_present_count": 33,
+      "point_estimates": {
+        "S1": {
+          "binary": {
+            "roc_auc": 0.9478,
+            "pr_auc": 0.7934,
+            "recall_at_1_fpr": 0.0667,
+            "recall_at_0_1_fpr": 0.0667,
+            "prec_at_90_recall": 0.7
+          },
+          "action": {
+            "macro_f1": 0.5636,
+            "false_block_rate": 0.0118,
+            "missed_fraud_rate": 0.2,
+            "alerts_per_1k": 140.0,
+            "confusion_matrix": {
+              "ALLOW": {
+                "pred_ALLOW": 83,
+                "pred_REQUIRE_2FA": 1,
+                "pred_BLOCK": 1
+              },
+              "REQUIRE_2FA": {
+                "pred_ALLOW": 3,
+                "pred_REQUIRE_2FA": 9,
+                "pred_BLOCK": 2
+              },
+              "BLOCK": {
+                "pred_ALLOW": 0,
+                "pred_REQUIRE_2FA": 1,
+                "pred_BLOCK": 0
+              }
+            },
+            "cost_metrics": {
+              "total_cost_php": 45458.23,
+              "cost_per_1k_php": 454582.26,
+              "missed_fraud": 3,
+              "false_blocks": 1,
+              "unnecessary_2fa": 1,
+              "mitigated_fraud": 10,
+              "correct_blocks": 2
+            }
+          }
+        },
+        "S2": {
+          "binary": {
+            "roc_auc": 1.0,
+            "pr_auc": 1.0,
+            "recall_at_1_fpr": 1.0,
+            "recall_at_0_1_fpr": 1.0,
+            "prec_at_90_recall": 1.0
+          },
+          "action": {
+            "macro_f1": 0.4222,
+            "false_block_rate": 0.0,
+            "missed_fraud_rate": 0.0,
+            "alerts_per_1k": 150.0,
+            "confusion_matrix": {
+              "ALLOW": {
+                "pred_ALLOW": 85,
+                "pred_REQUIRE_2FA": 0,
+                "pred_BLOCK": 0
+              },
+              "REQUIRE_2FA": {
+                "pred_ALLOW": 0,
+                "pred_REQUIRE_2FA": 1,
+                "pred_BLOCK": 13
+              },
+              "BLOCK": {
+                "pred_ALLOW": 0,
+                "pred_REQUIRE_2FA": 0,
+                "pred_BLOCK": 1
+              }
+            },
+            "cost_metrics": {
+              "total_cost_php": 2558.59,
+              "cost_per_1k_php": 25585.85,
+              "missed_fraud": 0,
+              "false_blocks": 0,
+              "unnecessary_2fa": 0,
+              "mitigated_fraud": 1,
+              "correct_blocks": 14
+            }
+          }
+        },
+        "S3": {
+          "binary": {
+            "roc_auc": 1.0,
+            "pr_auc": 1.0,
+            "recall_at_1_fpr": 1.0,
+            "recall_at_0_1_fpr": 1.0,
+            "prec_at_90_recall": 1.0
+          },
+          "action": {
+            "macro_f1": 0.4222,
+            "false_block_rate": 0.0,
+            "missed_fraud_rate": 0.0,
+            "alerts_per_1k": 150.0,
+            "confusion_matrix": {
+              "ALLOW": {
+                "pred_ALLOW": 85,
+                "pred_REQUIRE_2FA": 0,
+                "pred_BLOCK": 0
+              },
+              "REQUIRE_2FA": {
+                "pred_ALLOW": 0,
+                "pred_REQUIRE_2FA": 1,
+                "pred_BLOCK": 13
+              },
+              "BLOCK": {
+                "pred_ALLOW": 0,
+                "pred_REQUIRE_2FA": 0,
+                "pred_BLOCK": 1
+              }
+            },
+            "cost_metrics": {
+              "total_cost_php": 2558.59,
+              "cost_per_1k_php": 25585.85,
+              "missed_fraud": 0,
+              "false_blocks": 0,
+              "unnecessary_2fa": 0,
+              "mitigated_fraud": 1,
+              "correct_blocks": 14
+            }
+          }
+        },
+        "S4": {
+          "binary": {
+            "roc_auc": 1.0,
+            "pr_auc": 1.0,
+            "recall_at_1_fpr": 1.0,
+            "recall_at_0_1_fpr": 1.0,
+            "prec_at_90_recall": 1.0
+          },
+          "action": {
+            "macro_f1": 0.3339,
+            "false_block_rate": 0.0,
+            "missed_fraud_rate": 0.0,
+            "alerts_per_1k": 410.0,
+            "confusion_matrix": {
+              "ALLOW": {
+                "pred_ALLOW": 59,
+                "pred_REQUIRE_2FA": 26,
+                "pred_BLOCK": 0
+              },
+              "REQUIRE_2FA": {
+                "pred_ALLOW": 0,
+                "pred_REQUIRE_2FA": 1,
+                "pred_BLOCK": 13
+              },
+              "BLOCK": {
+                "pred_ALLOW": 0,
+                "pred_REQUIRE_2FA": 0,
+                "pred_BLOCK": 1
+              }
+            },
+            "cost_metrics": {
+              "total_cost_php": 3208.59,
+              "cost_per_1k_php": 32085.85,
+              "missed_fraud": 0,
+              "false_blocks": 0,
+              "unnecessary_2fa": 26,
+              "mitigated_fraud": 1,
+              "correct_blocks": 14
+            }
+          }
+        },
+        "S5": {
+          "binary": {
+            "roc_auc": 0.5416,
+            "pr_auc": 0.2268,
+            "recall_at_1_fpr": 0.0667,
+            "recall_at_0_1_fpr": 0.0667,
+            "prec_at_90_recall": 0.15
+          },
+          "action": {
+            "macro_f1": 0.3133,
+            "false_block_rate": 0.0235,
+            "missed_fraud_rate": 0.6667,
+            "alerts_per_1k": 320.0,
+            "confusion_matrix": {
+              "ALLOW": {
+                "pred_ALLOW": 58,
+                "pred_REQUIRE_2FA": 25,
+                "pred_BLOCK": 2
+              },
+              "REQUIRE_2FA": {
+                "pred_ALLOW": 10,
+                "pred_REQUIRE_2FA": 4,
+                "pred_BLOCK": 0
+              },
+              "BLOCK": {
+                "pred_ALLOW": 0,
+                "pred_REQUIRE_2FA": 1,
+                "pred_BLOCK": 0
+              }
+            },
+            "cost_metrics": {
+              "total_cost_php": 88356.26,
+              "cost_per_1k_php": 883562.65,
+              "missed_fraud": 10,
+              "false_blocks": 2,
+              "unnecessary_2fa": 25,
+              "mitigated_fraud": 5,
+              "correct_blocks": 0
+            }
+          }
+        }
+      },
+      "bootstrap_cis": {
+        "S1": {
+          "roc_auc": {
+            "mean": 0.9517,
+            "std": 0.0317,
+            "ci_95": [
+              0.8876,
+              0.9995
+            ]
+          },
+          "pr_auc": {
+            "mean": 0.8106,
+            "std": 0.0942,
+            "ci_95": [
+              0.6231,
+              0.9924
+            ]
+          },
+          "macro_f1": {
+            "mean": 0.5593,
+            "std": 0.0355,
+            "ci_95": [
+              0.4883,
+              0.6191
+            ]
+          },
+          "cost_per_1k": {
+            "mean": 462729.2568,
+            "std": 208087.7515,
+            "ci_95": [
+              119556.9837,
+              931580.961
+            ]
+          }
+        },
+        "S2": {
+          "roc_auc": {
+            "mean": 1.0,
+            "std": 0.0,
+            "ci_95": [
+              1.0,
+              1.0
+            ]
+          },
+          "pr_auc": {
+            "mean": 1.0,
+            "std": 0.0,
+            "ci_95": [
+              1.0,
+              1.0
+            ]
+          },
+          "macro_f1": {
+            "mean": 0.4123,
+            "std": 0.0477,
+            "ci_95": [
+              0.3333,
+              0.5
+            ]
+          },
+          "cost_per_1k": {
+            "mean": 25631.9358,
+            "std": 25262.7694,
+            "ci_95": [
+              0.0,
+              80818.9285
+            ]
+          }
+        },
+        "S3": {
+          "roc_auc": {
+            "mean": 1.0,
+            "std": 0.0,
+            "ci_95": [
+              1.0,
+              1.0
+            ]
+          },
+          "pr_auc": {
+            "mean": 1.0,
+            "std": 0.0,
+            "ci_95": [
+              1.0,
+              1.0
+            ]
+          },
+          "macro_f1": {
+            "mean": 0.4123,
+            "std": 0.0477,
+            "ci_95": [
+              0.3333,
+              0.5
+            ]
+          },
+          "cost_per_1k": {
+            "mean": 25631.9358,
+            "std": 25262.7694,
+            "ci_95": [
+              0.0,
+              80818.9285
+            ]
+          }
+        },
+        "S4": {
+          "roc_auc": {
+            "mean": 1.0,
+            "std": 0.0,
+            "ci_95": [
+              1.0,
+              1.0
+            ]
+          },
+          "pr_auc": {
+            "mean": 1.0,
+            "std": 0.0,
+            "ci_95": [
+              1.0,
+              1.0
+            ]
+          },
+          "macro_f1": {
+            "mean": 0.3275,
+            "std": 0.0394,
+            "ci_95": [
+              0.2613,
+              0.4054
+            ]
+          },
+          "cost_per_1k": {
+            "mean": 32222.4767,
+            "std": 25324.0312,
+            "ci_95": [
+              4760.6802,
+              87260.6237
+            ]
+          }
+        },
+        "S5": {
+          "roc_auc": {
+            "mean": 0.5389,
+            "std": 0.077,
+            "ci_95": [
+              0.4068,
+              0.6976
+            ]
+          },
+          "pr_auc": {
+            "mean": 0.2332,
+            "std": 0.0805,
+            "ci_95": [
+              0.0881,
+              0.3894
+            ]
+          },
+          "macro_f1": {
+            "mean": 0.3098,
+            "std": 0.0268,
+            "ci_95": [
+              0.2592,
+              0.3652
+            ]
+          },
+          "cost_per_1k": {
+            "mean": 886641.1043,
+            "std": 291649.4773,
+            "ci_95": [
+              412364.0633,
+              1565587.7867
+            ]
+          }
+        }
+      },
+      "paired_differences": {
+        "S4_vs_S2": {
+          "pr_auc": {
+            "mean_diff": 0.0,
+            "ci_95": [
+              0.0,
+              0.0
+            ],
+            "p_value": 2.0
+          },
+          "macro_f1": {
+            "mean_diff": -0.0848,
+            "ci_95": [
+              -0.1415,
+              -0.0409
+            ],
+            "p_value": 0.0
+          },
+          "cost_per_1k": {
+            "mean_diff": 6590.541,
+            "ci_95": [
+              4422.7973,
+              9036.3102
+            ],
+            "p_value": 0.0
+          }
+        },
+        "S4_vs_S3": {
+          "pr_auc": {
+            "mean_diff": 0.0,
+            "ci_95": [
+              0.0,
+              0.0
+            ],
+            "p_value": 2.0
+          },
+          "macro_f1": {
+            "mean_diff": -0.0848,
+            "ci_95": [
+              -0.1415,
+              -0.0409
+            ],
+            "p_value": 0.0
+          },
+          "cost_per_1k": {
+            "mean_diff": 6590.541,
+            "ci_95": [
+              4422.7973,
+              9036.3102
+            ],
+            "p_value": 0.0
+          }
+        }
+      }
+    }
+  },
+  "memo_present_subgroups": {
+    "C1": {
+      "S1": {
+        "binary": {
+          "roc_auc": 0.9566,
+          "pr_auc": 0.9024,
+          "recall_at_1_fpr": 0.619,
+          "recall_at_0_1_fpr": 0.619,
+          "prec_at_90_recall": 0.7692
+        },
+        "action": {
+          "macro_f1": 0.7054,
+          "false_block_rate": 0.0,
+          "missed_fraud_rate": 0.2381,
+          "alerts_per_1k": 202.2,
+          "confusion_matrix": {
+            "ALLOW": {
+              "pred_ALLOW": 66,
+              "pred_REQUIRE_2FA": 2,
+              "pred_BLOCK": 0
+            },
+            "REQUIRE_2FA": {
+              "pred_ALLOW": 5,
+              "pred_REQUIRE_2FA": 6,
+              "pred_BLOCK": 3
+            },
+            "BLOCK": {
+              "pred_ALLOW": 0,
+              "pred_REQUIRE_2FA": 2,
+              "pred_BLOCK": 5
+            }
+          },
+          "cost_metrics": {
+            "total_cost_php": 69382.21,
+            "cost_per_1k_php": 779575.39,
+            "missed_fraud": 5,
+            "false_blocks": 0,
+            "unnecessary_2fa": 2,
+            "mitigated_fraud": 8,
+            "correct_blocks": 8
+          }
+        }
+      },
+      "S2": {
+        "binary": {
+          "roc_auc": 1.0,
+          "pr_auc": 1.0,
+          "recall_at_1_fpr": 1.0,
+          "recall_at_0_1_fpr": 1.0,
+          "prec_at_90_recall": 1.0
+        },
+        "action": {
+          "macro_f1": 0.5548,
+          "false_block_rate": 0.0,
+          "missed_fraud_rate": 0.0476,
+          "alerts_per_1k": 224.7,
+          "confusion_matrix": {
+            "ALLOW": {
+              "pred_ALLOW": 68,
+              "pred_REQUIRE_2FA": 0,
+              "pred_BLOCK": 0
+            },
+            "REQUIRE_2FA": {
+              "pred_ALLOW": 1,
+              "pred_REQUIRE_2FA": 1,
+              "pred_BLOCK": 12
+            },
+            "BLOCK": {
+              "pred_ALLOW": 0,
+              "pred_REQUIRE_2FA": 0,
+              "pred_BLOCK": 7
+            }
+          },
+          "cost_metrics": {
+            "total_cost_php": 16275.36,
+            "cost_per_1k_php": 182869.25,
+            "missed_fraud": 1,
+            "false_blocks": 0,
+            "unnecessary_2fa": 0,
+            "mitigated_fraud": 1,
+            "correct_blocks": 19
+          }
+        }
+      },
+      "S3": {
+        "binary": {
+          "roc_auc": 1.0,
+          "pr_auc": 1.0,
+          "recall_at_1_fpr": 1.0,
+          "recall_at_0_1_fpr": 1.0,
+          "prec_at_90_recall": 1.0
+        },
+        "action": {
+          "macro_f1": 0.5548,
+          "false_block_rate": 0.0,
+          "missed_fraud_rate": 0.0476,
+          "alerts_per_1k": 224.7,
+          "confusion_matrix": {
+            "ALLOW": {
+              "pred_ALLOW": 68,
+              "pred_REQUIRE_2FA": 0,
+              "pred_BLOCK": 0
+            },
+            "REQUIRE_2FA": {
+              "pred_ALLOW": 1,
+              "pred_REQUIRE_2FA": 1,
+              "pred_BLOCK": 12
+            },
+            "BLOCK": {
+              "pred_ALLOW": 0,
+              "pred_REQUIRE_2FA": 0,
+              "pred_BLOCK": 7
+            }
+          },
+          "cost_metrics": {
+            "total_cost_php": 16275.36,
+            "cost_per_1k_php": 182869.25,
+            "missed_fraud": 1,
+            "false_blocks": 0,
+            "unnecessary_2fa": 0,
+            "mitigated_fraud": 1,
+            "correct_blocks": 19
+          }
+        }
+      },
+      "S4": {
+        "binary": {
+          "roc_auc": 0.9776,
+          "pr_auc": 0.9712,
+          "recall_at_1_fpr": 0.9524,
+          "recall_at_0_1_fpr": 0.9524,
+          "prec_at_90_recall": 1.0
+        },
+        "action": {
+          "macro_f1": 0.3193,
+          "false_block_rate": 0.0,
+          "missed_fraud_rate": 0.0,
+          "alerts_per_1k": 831.5,
+          "confusion_matrix": {
+            "ALLOW": {
+              "pred_ALLOW": 15,
+              "pred_REQUIRE_2FA": 53,
+              "pred_BLOCK": 0
+            },
+            "REQUIRE_2FA": {
+              "pred_ALLOW": 0,
+              "pred_REQUIRE_2FA": 2,
+              "pred_BLOCK": 12
+            },
+            "BLOCK": {
+              "pred_ALLOW": 0,
+              "pred_REQUIRE_2FA": 0,
+              "pred_BLOCK": 7
+            }
+          },
+          "cost_metrics": {
+            "total_cost_php": 6330.27,
+            "cost_per_1k_php": 71126.67,
+            "missed_fraud": 0,
+            "false_blocks": 0,
+            "unnecessary_2fa": 53,
+            "mitigated_fraud": 2,
+            "correct_blocks": 19
+          }
+        }
+      },
+      "S5": {
+        "binary": {
+          "roc_auc": 0.7024,
+          "pr_auc": 0.5649,
+          "recall_at_1_fpr": 0.2857,
+          "recall_at_0_1_fpr": 0.2857,
+          "prec_at_90_recall": 0.2754
+        },
+        "action": {
+          "macro_f1": 0.2917,
+          "false_block_rate": 0.1324,
+          "missed_fraud_rate": 0.0,
+          "alerts_per_1k": 955.1,
+          "confusion_matrix": {
+            "ALLOW": {
+              "pred_ALLOW": 4,
+              "pred_REQUIRE_2FA": 55,
+              "pred_BLOCK": 9
+            },
+            "REQUIRE_2FA": {
+              "pred_ALLOW": 0,
+              "pred_REQUIRE_2FA": 13,
+              "pred_BLOCK": 1
+            },
+            "BLOCK": {
+              "pred_ALLOW": 0,
+              "pred_REQUIRE_2FA": 2,
+              "pred_BLOCK": 5
+            }
+          },
+          "cost_metrics": {
+            "total_cost_php": 37067.11,
+            "cost_per_1k_php": 416484.33,
+            "missed_fraud": 0,
+            "false_blocks": 9,
+            "unnecessary_2fa": 55,
+            "mitigated_fraud": 15,
+            "correct_blocks": 6
+          }
+        }
+      }
+    },
+    "C2": {
+      "S1": {
+        "binary": {
+          "roc_auc": 0.8819,
+          "pr_auc": 0.7606,
+          "recall_at_1_fpr": 0.5333,
+          "recall_at_0_1_fpr": 0.5333,
+          "prec_at_90_recall": 0.1596
+        },
+        "action": {
+          "macro_f1": 0.6259,
+          "false_block_rate": 0.0,
+          "missed_fraud_rate": 0.3333,
+          "alerts_per_1k": 127.7,
+          "confusion_matrix": {
+            "ALLOW": {
+              "pred_ALLOW": 77,
+              "pred_REQUIRE_2FA": 2,
+              "pred_BLOCK": 0
+            },
+            "REQUIRE_2FA": {
+              "pred_ALLOW": 5,
+              "pred_REQUIRE_2FA": 4,
+              "pred_BLOCK": 3
+            },
+            "BLOCK": {
+              "pred_ALLOW": 0,
+              "pred_REQUIRE_2FA": 1,
+              "pred_BLOCK": 2
+            }
+          },
+          "cost_metrics": {
+            "total_cost_php": 45118.97,
+            "cost_per_1k_php": 479989.04,
+            "missed_fraud": 5,
+            "false_blocks": 0,
+            "unnecessary_2fa": 2,
+            "mitigated_fraud": 5,
+            "correct_blocks": 5
+          }
+        }
+      },
+      "S2": {
+        "binary": {
+          "roc_auc": 0.9975,
+          "pr_auc": 0.9889,
+          "recall_at_1_fpr": 0.9333,
+          "recall_at_0_1_fpr": 0.9333,
+          "prec_at_90_recall": 1.0
+        },
+        "action": {
+          "macro_f1": 0.5075,
+          "false_block_rate": 0.0,
+          "missed_fraud_rate": 0.0667,
+          "alerts_per_1k": 148.9,
+          "confusion_matrix": {
+            "ALLOW": {
+              "pred_ALLOW": 79,
+              "pred_REQUIRE_2FA": 0,
+              "pred_BLOCK": 0
+            },
+            "REQUIRE_2FA": {
+              "pred_ALLOW": 1,
+              "pred_REQUIRE_2FA": 1,
+              "pred_BLOCK": 10
+            },
+            "BLOCK": {
+              "pred_ALLOW": 0,
+              "pred_REQUIRE_2FA": 0,
+              "pred_BLOCK": 3
+            }
+          },
+          "cost_metrics": {
+            "total_cost_php": 4286.14,
+            "cost_per_1k_php": 45597.2,
+            "missed_fraud": 1,
+            "false_blocks": 0,
+            "unnecessary_2fa": 0,
+            "mitigated_fraud": 1,
+            "correct_blocks": 13
+          }
+        }
+      },
+      "S3": {
+        "binary": {
+          "roc_auc": 1.0,
+          "pr_auc": 1.0,
+          "recall_at_1_fpr": 1.0,
+          "recall_at_0_1_fpr": 1.0,
+          "prec_at_90_recall": 1.0
+        },
+        "action": {
+          "macro_f1": 0.5075,
+          "false_block_rate": 0.0,
+          "missed_fraud_rate": 0.0667,
+          "alerts_per_1k": 148.9,
+          "confusion_matrix": {
+            "ALLOW": {
+              "pred_ALLOW": 79,
+              "pred_REQUIRE_2FA": 0,
+              "pred_BLOCK": 0
+            },
+            "REQUIRE_2FA": {
+              "pred_ALLOW": 1,
+              "pred_REQUIRE_2FA": 1,
+              "pred_BLOCK": 10
+            },
+            "BLOCK": {
+              "pred_ALLOW": 0,
+              "pred_REQUIRE_2FA": 0,
+              "pred_BLOCK": 3
+            }
+          },
+          "cost_metrics": {
+            "total_cost_php": 4286.14,
+            "cost_per_1k_php": 45597.2,
+            "missed_fraud": 1,
+            "false_blocks": 0,
+            "unnecessary_2fa": 0,
+            "mitigated_fraud": 1,
+            "correct_blocks": 13
+          }
+        }
+      },
+      "S4": {
+        "binary": {
+          "roc_auc": 0.9755,
+          "pr_auc": 0.9561,
+          "recall_at_1_fpr": 0.9333,
+          "recall_at_0_1_fpr": 0.9333,
+          "prec_at_90_recall": 1.0
+        },
+        "action": {
+          "macro_f1": 0.2606,
+          "false_block_rate": 0.0,
+          "missed_fraud_rate": 0.0,
+          "alerts_per_1k": 819.1,
+          "confusion_matrix": {
+            "ALLOW": {
+              "pred_ALLOW": 17,
+              "pred_REQUIRE_2FA": 62,
+              "pred_BLOCK": 0
+            },
+            "REQUIRE_2FA": {
+              "pred_ALLOW": 0,
+              "pred_REQUIRE_2FA": 2,
+              "pred_BLOCK": 10
+            },
+            "BLOCK": {
+              "pred_ALLOW": 0,
+              "pred_REQUIRE_2FA": 0,
+              "pred_BLOCK": 3
+            }
+          },
+          "cost_metrics": {
+            "total_cost_php": 4195.14,
+            "cost_per_1k_php": 44629.11,
+            "missed_fraud": 0,
+            "false_blocks": 0,
+            "unnecessary_2fa": 62,
+            "mitigated_fraud": 2,
+            "correct_blocks": 13
+          }
+        }
+      },
+      "S5": {
+        "binary": {
+          "roc_auc": 0.4481,
+          "pr_auc": 0.3202,
+          "recall_at_1_fpr": 0.2,
+          "recall_at_0_1_fpr": 0.2,
+          "prec_at_90_recall": 0.1648
+        },
+        "action": {
+          "macro_f1": 0.2296,
+          "false_block_rate": 0.0633,
+          "missed_fraud_rate": 0.2,
+          "alerts_per_1k": 925.5,
+          "confusion_matrix": {
+            "ALLOW": {
+              "pred_ALLOW": 4,
+              "pred_REQUIRE_2FA": 70,
+              "pred_BLOCK": 5
+            },
+            "REQUIRE_2FA": {
+              "pred_ALLOW": 3,
+              "pred_REQUIRE_2FA": 9,
+              "pred_BLOCK": 0
+            },
+            "BLOCK": {
+              "pred_ALLOW": 0,
+              "pred_REQUIRE_2FA": 1,
+              "pred_BLOCK": 2
+            }
+          },
+          "cost_metrics": {
+            "total_cost_php": 33011.71,
+            "cost_per_1k_php": 351188.42,
+            "missed_fraud": 3,
+            "false_blocks": 5,
+            "unnecessary_2fa": 70,
+            "mitigated_fraud": 10,
+            "correct_blocks": 2
+          }
+        }
+      }
+    },
+    "C3": {
+      "S1": {
+        "binary": {
+          "roc_auc": 0.9501,
+          "pr_auc": 0.5838,
+          "recall_at_1_fpr": 0.5,
+          "recall_at_0_1_fpr": 0.5,
+          "prec_at_90_recall": 0.1818
+        },
+        "action": {
+          "macro_f1": 0.6124,
+          "false_block_rate": 0.0,
+          "missed_fraud_rate": 0.5,
+          "alerts_per_1k": 75.4,
+          "confusion_matrix": {
+            "ALLOW": {
+              "pred_ALLOW": 278,
+              "pred_REQUIRE_2FA": 19,
+              "pred_BLOCK": 0
+            },
+            "REQUIRE_2FA": {
+              "pred_ALLOW": 4,
+              "pred_REQUIRE_2FA": 1,
+              "pred_BLOCK": 1
+            },
+            "BLOCK": {
+              "pred_ALLOW": 0,
+              "pred_REQUIRE_2FA": 0,
+              "pred_BLOCK": 2
+            }
+          },
+          "cost_metrics": {
+            "total_cost_php": 24536.79,
+            "cost_per_1k_php": 80448.48,
+            "missed_fraud": 4,
+            "false_blocks": 0,
+            "unnecessary_2fa": 19,
+            "mitigated_fraud": 1,
+            "correct_blocks": 3
+          }
+        }
+      },
+      "S2": {
+        "binary": {
+          "roc_auc": 1.0,
+          "pr_auc": 1.0,
+          "recall_at_1_fpr": 1.0,
+          "recall_at_0_1_fpr": 1.0,
+          "prec_at_90_recall": 1.0
+        },
+        "action": {
+          "macro_f1": 0.454,
+          "false_block_rate": 0.0034,
+          "missed_fraud_rate": 0.0,
+          "alerts_per_1k": 29.5,
+          "confusion_matrix": {
+            "ALLOW": {
+              "pred_ALLOW": 296,
+              "pred_REQUIRE_2FA": 0,
+              "pred_BLOCK": 1
+            },
+            "REQUIRE_2FA": {
+              "pred_ALLOW": 0,
+              "pred_REQUIRE_2FA": 0,
+              "pred_BLOCK": 6
+            },
+            "BLOCK": {
+              "pred_ALLOW": 0,
+              "pred_REQUIRE_2FA": 0,
+              "pred_BLOCK": 2
+            }
+          },
+          "cost_metrics": {
+            "total_cost_php": 1000.0,
+            "cost_per_1k_php": 3278.69,
+            "missed_fraud": 0,
+            "false_blocks": 1,
+            "unnecessary_2fa": 0,
+            "mitigated_fraud": 0,
+            "correct_blocks": 8
+          }
+        }
+      },
+      "S3": {
+        "binary": {
+          "roc_auc": 1.0,
+          "pr_auc": 1.0,
+          "recall_at_1_fpr": 1.0,
+          "recall_at_0_1_fpr": 1.0,
+          "prec_at_90_recall": 1.0
+        },
+        "action": {
+          "macro_f1": 0.4534,
+          "false_block_rate": 0.0034,
+          "missed_fraud_rate": 0.0,
+          "alerts_per_1k": 32.8,
+          "confusion_matrix": {
+            "ALLOW": {
+              "pred_ALLOW": 295,
+              "pred_REQUIRE_2FA": 1,
+              "pred_BLOCK": 1
+            },
+            "REQUIRE_2FA": {
+              "pred_ALLOW": 0,
+              "pred_REQUIRE_2FA": 0,
+              "pred_BLOCK": 6
+            },
+            "BLOCK": {
+              "pred_ALLOW": 0,
+              "pred_REQUIRE_2FA": 0,
+              "pred_BLOCK": 2
+            }
+          },
+          "cost_metrics": {
+            "total_cost_php": 1025.0,
+            "cost_per_1k_php": 3360.66,
+            "missed_fraud": 0,
+            "false_blocks": 1,
+            "unnecessary_2fa": 1,
+            "mitigated_fraud": 0,
+            "correct_blocks": 8
+          }
+        }
+      },
+      "S4": {
+        "binary": {
+          "roc_auc": 1.0,
+          "pr_auc": 1.0,
+          "recall_at_1_fpr": 1.0,
+          "recall_at_0_1_fpr": 1.0,
+          "prec_at_90_recall": 1.0
+        },
+        "action": {
+          "macro_f1": 0.2254,
+          "false_block_rate": 0.0034,
+          "missed_fraud_rate": 0.0,
+          "alerts_per_1k": 819.7,
+          "confusion_matrix": {
+            "ALLOW": {
+              "pred_ALLOW": 55,
+              "pred_REQUIRE_2FA": 241,
+              "pred_BLOCK": 1
+            },
+            "REQUIRE_2FA": {
+              "pred_ALLOW": 0,
+              "pred_REQUIRE_2FA": 0,
+              "pred_BLOCK": 6
+            },
+            "BLOCK": {
+              "pred_ALLOW": 0,
+              "pred_REQUIRE_2FA": 0,
+              "pred_BLOCK": 2
+            }
+          },
+          "cost_metrics": {
+            "total_cost_php": 7025.0,
+            "cost_per_1k_php": 23032.79,
+            "missed_fraud": 0,
+            "false_blocks": 1,
+            "unnecessary_2fa": 241,
+            "mitigated_fraud": 0,
+            "correct_blocks": 8
+          }
+        }
+      },
+      "S5": {
+        "binary": {
+          "roc_auc": 0.5972,
+          "pr_auc": 0.1567,
+          "recall_at_1_fpr": 0.125,
+          "recall_at_0_1_fpr": 0.125,
+          "prec_at_90_recall": 0.0273
+        },
+        "action": {
+          "macro_f1": 0.0595,
+          "false_block_rate": 0.1077,
+          "missed_fraud_rate": 0.125,
+          "alerts_per_1k": 954.1,
+          "confusion_matrix": {
+            "ALLOW": {
+              "pred_ALLOW": 13,
+              "pred_REQUIRE_2FA": 252,
+              "pred_BLOCK": 32
+            },
+            "REQUIRE_2FA": {
+              "pred_ALLOW": 1,
+              "pred_REQUIRE_2FA": 5,
+              "pred_BLOCK": 0
+            },
+            "BLOCK": {
+              "pred_ALLOW": 0,
+              "pred_REQUIRE_2FA": 1,
+              "pred_BLOCK": 1
+            }
+          },
+          "cost_metrics": {
+            "total_cost_php": 52129.22,
+            "cost_per_1k_php": 170915.49,
+            "missed_fraud": 1,
+            "false_blocks": 32,
+            "unnecessary_2fa": 252,
+            "mitigated_fraud": 6,
+            "correct_blocks": 1
+          }
+        }
+      }
+    },
+    "C4": {
+      "S1": {
+        "binary": {
+          "roc_auc": 1.0,
+          "pr_auc": 1.0,
+          "recall_at_1_fpr": 1.0,
+          "recall_at_0_1_fpr": 1.0,
+          "prec_at_90_recall": 1.0
+        },
+        "action": {
+          "macro_f1": 0.5833,
+          "false_block_rate": 0.0,
+          "missed_fraud_rate": 0.0,
+          "alerts_per_1k": 151.5,
+          "confusion_matrix": {
+            "ALLOW": {
+              "pred_ALLOW": 28,
+              "pred_REQUIRE_2FA": 0,
+              "pred_BLOCK": 0
+            },
+            "REQUIRE_2FA": {
+              "pred_ALLOW": 0,
+              "pred_REQUIRE_2FA": 3,
+              "pred_BLOCK": 1
+            },
+            "BLOCK": {
+              "pred_ALLOW": 0,
+              "pred_REQUIRE_2FA": 1,
+              "pred_BLOCK": 0
+            }
+          },
+          "cost_metrics": {
+            "total_cost_php": 15289.82,
+            "cost_per_1k_php": 463327.85,
+            "missed_fraud": 0,
+            "false_blocks": 0,
+            "unnecessary_2fa": 0,
+            "mitigated_fraud": 4,
+            "correct_blocks": 1
+          }
+        }
+      },
+      "S2": {
+        "binary": {
+          "roc_auc": 1.0,
+          "pr_auc": 1.0,
+          "recall_at_1_fpr": 1.0,
+          "recall_at_0_1_fpr": 1.0,
+          "prec_at_90_recall": 1.0
+        },
+        "action": {
+          "macro_f1": 0.4444,
+          "false_block_rate": 0.0,
+          "missed_fraud_rate": 0.0,
+          "alerts_per_1k": 151.5,
+          "confusion_matrix": {
+            "ALLOW": {
+              "pred_ALLOW": 28,
+              "pred_REQUIRE_2FA": 0,
+              "pred_BLOCK": 0
+            },
+            "REQUIRE_2FA": {
+              "pred_ALLOW": 0,
+              "pred_REQUIRE_2FA": 0,
+              "pred_BLOCK": 4
+            },
+            "BLOCK": {
+              "pred_ALLOW": 0,
+              "pred_REQUIRE_2FA": 0,
+              "pred_BLOCK": 1
+            }
+          },
+          "cost_metrics": {
+            "total_cost_php": 0.0,
+            "cost_per_1k_php": 0.0,
+            "missed_fraud": 0,
+            "false_blocks": 0,
+            "unnecessary_2fa": 0,
+            "mitigated_fraud": 0,
+            "correct_blocks": 5
+          }
+        }
+      },
+      "S3": {
+        "binary": {
+          "roc_auc": 1.0,
+          "pr_auc": 1.0,
+          "recall_at_1_fpr": 1.0,
+          "recall_at_0_1_fpr": 1.0,
+          "prec_at_90_recall": 1.0
+        },
+        "action": {
+          "macro_f1": 0.4444,
+          "false_block_rate": 0.0,
+          "missed_fraud_rate": 0.0,
+          "alerts_per_1k": 151.5,
+          "confusion_matrix": {
+            "ALLOW": {
+              "pred_ALLOW": 28,
+              "pred_REQUIRE_2FA": 0,
+              "pred_BLOCK": 0
+            },
+            "REQUIRE_2FA": {
+              "pred_ALLOW": 0,
+              "pred_REQUIRE_2FA": 0,
+              "pred_BLOCK": 4
+            },
+            "BLOCK": {
+              "pred_ALLOW": 0,
+              "pred_REQUIRE_2FA": 0,
+              "pred_BLOCK": 1
+            }
+          },
+          "cost_metrics": {
+            "total_cost_php": 0.0,
+            "cost_per_1k_php": 0.0,
+            "missed_fraud": 0,
+            "false_blocks": 0,
+            "unnecessary_2fa": 0,
+            "mitigated_fraud": 0,
+            "correct_blocks": 5
+          }
+        }
+      },
+      "S4": {
+        "binary": {
+          "roc_auc": 1.0,
+          "pr_auc": 1.0,
+          "recall_at_1_fpr": 1.0,
+          "recall_at_0_1_fpr": 1.0,
+          "prec_at_90_recall": 1.0
+        },
+        "action": {
+          "macro_f1": 0.1556,
+          "false_block_rate": 0.0,
+          "missed_fraud_rate": 0.0,
+          "alerts_per_1k": 939.4,
+          "confusion_matrix": {
+            "ALLOW": {
+              "pred_ALLOW": 2,
+              "pred_REQUIRE_2FA": 26,
+              "pred_BLOCK": 0
+            },
+            "REQUIRE_2FA": {
+              "pred_ALLOW": 0,
+              "pred_REQUIRE_2FA": 0,
+              "pred_BLOCK": 4
+            },
+            "BLOCK": {
+              "pred_ALLOW": 0,
+              "pred_REQUIRE_2FA": 0,
+              "pred_BLOCK": 1
+            }
+          },
+          "cost_metrics": {
+            "total_cost_php": 650.0,
+            "cost_per_1k_php": 19696.97,
+            "missed_fraud": 0,
+            "false_blocks": 0,
+            "unnecessary_2fa": 26,
+            "mitigated_fraud": 0,
+            "correct_blocks": 5
+          }
+        }
+      },
+      "S5": {
+        "binary": {
+          "roc_auc": 0.4571,
+          "pr_auc": 0.1623,
+          "recall_at_1_fpr": 0.0,
+          "recall_at_0_1_fpr": 0.0,
+          "prec_at_90_recall": 0.1562
+        },
+        "action": {
+          "macro_f1": 0.0828,
+          "false_block_rate": 0.0714,
+          "missed_fraud_rate": 0.2,
+          "alerts_per_1k": 939.4,
+          "confusion_matrix": {
+            "ALLOW": {
+              "pred_ALLOW": 1,
+              "pred_REQUIRE_2FA": 25,
+              "pred_BLOCK": 2
+            },
+            "REQUIRE_2FA": {
+              "pred_ALLOW": 1,
+              "pred_REQUIRE_2FA": 3,
+              "pred_BLOCK": 0
+            },
+            "BLOCK": {
+              "pred_ALLOW": 0,
+              "pred_REQUIRE_2FA": 1,
+              "pred_BLOCK": 0
+            }
+          },
+          "cost_metrics": {
+            "total_cost_php": 24580.19,
+            "cost_per_1k_php": 744854.21,
+            "missed_fraud": 1,
+            "false_blocks": 2,
+            "unnecessary_2fa": 25,
+            "mitigated_fraud": 4,
+            "correct_blocks": 0
+          }
+        }
+      }
+    }
+  },
+  "memo_blank_sensitivity": {
+    "C1": [
+      {
+        "memo_blank_rate": 0.5,
+        "memo_present_rate": 0.5,
+        "actual_present_count": 89,
+        "pr_auc": {
+          "S2": 0.9986,
+          "S3": 0.9973,
+          "S4": 0.9771
+        },
+        "cost_per_1k_php": {
+          "S2": 89696.37,
+          "S3": 89696.37,
+          "S4": 56546.08
+        }
+      },
+      {
+        "memo_blank_rate": 0.7,
+        "memo_present_rate": 0.3,
+        "actual_present_count": 89,
+        "pr_auc": {
+          "S2": 0.9986,
+          "S3": 0.9973,
+          "S4": 0.9771
+        },
+        "cost_per_1k_php": {
+          "S2": 89696.37,
+          "S3": 89696.37,
+          "S4": 56546.08
+        }
+      },
+      {
+        "memo_blank_rate": 0.8,
+        "memo_present_rate": 0.2,
+        "actual_present_count": 66,
+        "pr_auc": {
+          "S2": 0.9986,
+          "S3": 0.9973,
+          "S4": 0.9812
+        },
+        "cost_per_1k_php": {
+          "S2": 89696.37,
+          "S3": 89696.37,
+          "S4": 55212.74
+        }
+      },
+      {
+        "memo_blank_rate": 0.95,
+        "memo_present_rate": 0.05,
+        "actual_present_count": 14,
+        "pr_auc": {
+          "S2": 0.9986,
+          "S3": 0.9973,
+          "S4": 0.9922
+        },
+        "cost_per_1k_php": {
+          "S2": 89696.37,
+          "S3": 89696.37,
+          "S4": 90196.37
+        }
+      }
+    ],
+    "C2": [
+      {
+        "memo_blank_rate": 0.5,
+        "memo_present_rate": 0.5,
+        "actual_present_count": 94,
+        "pr_auc": {
+          "S2": 0.9974,
+          "S3": 0.9995,
+          "S4": 0.9913
+        },
+        "cost_per_1k_php": {
+          "S2": 28211.17,
+          "S3": 28211.17,
+          "S4": 27907.83
+        }
+      },
+      {
+        "memo_blank_rate": 0.7,
+        "memo_present_rate": 0.3,
+        "actual_present_count": 84,
+        "pr_auc": {
+          "S2": 0.9974,
+          "S3": 0.9995,
+          "S4": 0.9862
+        },
+        "cost_per_1k_php": {
+          "S2": 28211.17,
+          "S3": 28211.17,
+          "S4": 32794.5
+        }
+      },
+      {
+        "memo_blank_rate": 0.8,
+        "memo_present_rate": 0.2,
+        "actual_present_count": 64,
+        "pr_auc": {
+          "S2": 0.9974,
+          "S3": 0.9995,
+          "S4": 0.9877
+        },
+        "cost_per_1k_php": {
+          "S2": 28211.17,
+          "S3": 28211.17,
+          "S4": 31877.83
+        }
+      },
+      {
+        "memo_blank_rate": 0.95,
+        "memo_present_rate": 0.05,
+        "actual_present_count": 9,
+        "pr_auc": {
+          "S2": 0.9974,
+          "S3": 0.9995,
+          "S4": 0.9953
+        },
+        "cost_per_1k_php": {
+          "S2": 28211.17,
+          "S3": 28211.17,
+          "S4": 28794.5
+        }
+      }
+    ]
+  },
+  "hypotheses_verdict": {
+    "H1_memo_generalization": {
+      "supported": true,
+      "evidence": {
+        "S4_pr_auc": 0.9561,
+        "S2_pr_auc": 0.9889,
+        "S3_pr_auc": 1.0,
+        "S4_recall_1_fpr": 0.9333,
+        "S2_recall_1_fpr": 0.9333,
+        "S3_recall_1_fpr": 1.0
+      },
+      "description": "On memo-present rows of C2 (held-out novel typologies), S4 achieves competitive or higher PR-AUC and recall."
+    },
+    "H2_false_block_control": {
+      "supported": true,
+      "evidence": {
+        "S4_false_block_rate": 0.0,
+        "S2_false_block_rate": 0.0,
+        "difference_percentage_points": 0.0,
+        "threshold_pp": 0.5
+      },
+      "description": "S4 false block rate does not exceed S2 false block rate by more than 0.50 percentage points on C1."
+    },
+    "H3_memo_absent_equivalence": {
+      "supported": true,
+      "evidence": {
+        "total_memo_absent_transactions_checked": 1179,
+        "strictly_identical": true
+      },
+      "description": "On all memo-absent transactions, S4 actions are strictly identical to S2 actions."
+    },
+    "H6_device_feature_contribution": {
+      "supported": true,
+      "evidence": {
+        "device_roc_lift": 0.0137,
+        "threshold": 0.005
+      },
+      "description": "Ablation confirms device context features yield a meaningful ROC-AUC lift."
+    }
+  }
+}

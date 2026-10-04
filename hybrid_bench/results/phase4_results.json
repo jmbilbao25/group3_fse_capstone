@@ -1,0 +1,25 @@
+{
+  "timestamp": "2026-10-04 18:01:28",
+  "memo_present_counts": {
+    "V": 55
+  },
+  "temperature_calibration": {
+    "optimal_temperature": 5.0,
+    "ece_uncalibrated": 0.4946,
+    "ece_calibrated": 0.2129,
+    "ece_reduction": 0.2817,
+    "reliability_diagram": "C:\\Users\\JLB83807\\The Vault\\workspaces\\FSE-Capstone\\hybrid_bench\\reports\\calibration_curve.png"
+  },
+  "escalate_only_tuning": {
+    "theta_block": 0.4,
+    "theta_2fa": 0.6,
+    "val_accuracy": 0.795,
+    "val_macro_f1": 0.4148,
+    "val_cost_php": 22193.77
+  },
+  "s5_standalone_v": {
+    "roc_auc": 0.6715,
+    "pr_auc": 0.4537,
+    "accuracy": 0.2909
+  }
+}

@@ -57,3 +57,11 @@ infrastructure/datadog/synthetics-location-config.json
 *.pem
 *.key
 
+### Python & AI Models ###
+*.onnx
+*.gguf
+*.bin
+.venv/
+**/__pycache__/
+**/cache/*.json
+

@@ -1,0 +1,113 @@
+# Configuration for Simplified Risk Engine Benchmark (hybrid_bench)
+# All parameters, random seeds, and explicitly labeled banking operational ASSUMPTIONS
+
+version: "1.0.0"
+
+seeds:
+  primary: 42
+  bootstrap_trials: 1000
+  multi_seed_eval: [42, 101, 2024]
+
+profiles:
+  quick:
+    split_sizes:
+      T: 600
+      V: 200
+      C1: 300
+      C2: 300
+      C3: 1000
+      C4: 100
+    user_counts:
+      T: 180
+      V: 60
+      C1: 90
+      C2: 90
+      C3: 300
+      C4: 30
+    xgb_trials: 10
+
+  full:
+    split_sizes:
+      T: 6000
+      V: 2000
+      C1: 3000
+      C2: 3000
+      C3: 10000
+      C4: 500
+    user_counts:
+      T: 200
+      V: 70
+      C1: 100
+      C2: 100
+      C3: 350
+      C4: 50
+    xgb_trials: 30
+
+splits:
+  fraud_rates:
+    T: 0.150
+    V: 0.150
+    C1: 0.150
+    C2: 0.150
+    C3: 0.015
+    C4: 0.150
+
+# Explicitly labeled banking operational ASSUMPTIONS
+assumptions:
+  memo_blank_rate: 0.70  # ASSUMPTION: 70% of retail bank transfers have empty memo
+  memo_distribution_present:
+    fraud:
+      scam: 0.40        # 40% of fraudulent transfers show explicit scam vernacular
+      neutral: 0.30     # 30% of fraudulent transfers use generic text ('Payment', 'Funds')
+      legit_mimic: 0.30 # 30% of fraudulent transfers mimic normal bills/groceries
+    legit:
+      legit: 0.79       # 79% of legitimate transfers describe actual everyday activity
+      neutral: 0.20     # 20% of legitimate transfers use generic text
+      scam: 0.01        # 1% false positive edge case (e.g., crypto textbook)
+
+  device_signals:
+    # Informative but non-deterministic distributions
+    p_rooted_given_fraud: 0.15
+    p_rooted_given_legit: 0.03
+    p_hooking_given_fraud: 0.06
+    p_hooking_given_legit: 0.005
+    p_emulator_given_fraud: 0.08
+    p_emulator_given_legit: 0.005
+    p_debugger_given_fraud: 0.05
+    p_debugger_given_legit: 0.002
+    p_tampered_given_fraud: 0.07
+    p_tampered_given_legit: 0.003
+    p_mock_location_given_fraud: 0.10
+    p_mock_location_given_legit: 0.01
+    p_vpn_given_fraud: 0.22
+    p_vpn_given_legit: 0.04
+    missing_context_rate: 0.05
+    label_noise_rate_t_v: 0.025
+    gate0_trivial_fraud_share: 0.10 # Only 10% of fraud is obvious impossible travel
+
+  transfer_purpose_mismatch:
+    # 35% of fraud shows purpose/payee mismatch (e.g., Bills Payment to individual); rest is consistent
+    fraud_mismatch_rate: 0.35
+    legit_mismatch_rate: 0.04
+
+gate0_thresholds:
+  velocity_kmh_block: 1000.0
+  high_value_amount_php: 50000.0
+  med_value_amount_php: 15000.0
+  mock_location_distance_km: 150.0
+
+cost_matrix:
+  # Unit costs in PHP
+  false_block_cost_php: 1000.0        # Customer friction, call center support, churn risk
+  unnecessary_2fa_cost_php: 25.0       # SMS OTP gateway fee and verification friction
+  stepup_mitigation_probability: 0.85 # 2FA successfully blocks 85% of compromised transfers
+  missed_fraud_cost_model: "amount"   # Full financial loss equals the transfer amount
+
+latency_bench:
+  num_warmup: 50
+  num_calls: 1000
+  threads_sweep: [1, 2, 4, 10]
+  tps_targets: [10, 25, 50]
+  duration_seconds: 60
+  timeout_ms: 150.0
+  sla_target_ms: 200.0

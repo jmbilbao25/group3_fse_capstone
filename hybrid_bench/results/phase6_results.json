@@ -1,0 +1,293 @@
+{
+  "timestamp": "2026-10-04 18:18:40",
+  "hardware_threads": 16,
+  "component_latencies": {
+    "gate0_deterministic_rules": {
+      "count": 200,
+      "mean_ms": 0.001,
+      "std_ms": 0.0,
+      "min_ms": 0.001,
+      "p50_ms": 0.001,
+      "p90_ms": 0.001,
+      "p95_ms": 0.001,
+      "p99_ms": 0.001,
+      "max_ms": 0.002
+    },
+    "tabular_feature_pipeline": {
+      "count": 200,
+      "mean_ms": 33.636,
+      "std_ms": 10.686,
+      "min_ms": 17.957,
+      "p50_ms": 31.131,
+      "p90_ms": 47.793,
+      "p95_ms": 52.395,
+      "p99_ms": 70.996,
+      "max_ms": 74.583
+    },
+    "xgboost_inference": {
+      "count": 200,
+      "mean_ms": 7.147,
+      "std_ms": 10.141,
+      "min_ms": 3.475,
+      "p50_ms": 4.405,
+      "p90_ms": 7.014,
+      "p95_ms": 29.381,
+      "p99_ms": 55.756,
+      "max_ms": 66.673
+    },
+    "nanojev_onnx_raw_cpu": {
+      "count": 30,
+      "mean_ms": 415.33,
+      "std_ms": 232.827,
+      "min_ms": 197.742,
+      "p50_ms": 294.599,
+      "p90_ms": 747.471,
+      "p95_ms": 857.612,
+      "p99_ms": 957.016,
+      "max_ms": 987.709
+    },
+    "nanojev_with_cache": {
+      "count": 200,
+      "mean_ms": 0.403,
+      "std_ms": 0.177,
+      "min_ms": 0.254,
+      "p50_ms": 0.36,
+      "p90_ms": 0.579,
+      "p95_ms": 0.671,
+      "p99_ms": 0.979,
+      "max_ms": 1.705
+    },
+    "escalate_only_fusion_rule": {
+      "count": 200,
+      "mean_ms": 0.0,
+      "std_ms": 0.0,
+      "min_ms": 0.0,
+      "p50_ms": 0.0,
+      "p90_ms": 0.0,
+      "p95_ms": 0.0,
+      "p99_ms": 0.001,
+      "max_ms": 0.003
+    },
+    "sar_generator_async_dispatch": {
+      "count": 200,
+      "mean_ms": 0.027,
+      "std_ms": 0.163,
+      "min_ms": 0.007,
+      "p50_ms": 0.008,
+      "p90_ms": 0.01,
+      "p95_ms": 0.014,
+      "p99_ms": 0.245,
+      "max_ms": 1.728
+    }
+  },
+  "thread_scaling": {
+    "1_threads": {
+      "count": 10,
+      "mean_ms": 825.235,
+      "std_ms": 157.784,
+      "min_ms": 619.119,
+      "p50_ms": 802.61,
+      "p90_ms": 1015.258,
+      "p95_ms": 1066.769,
+      "p99_ms": 1107.978,
+      "max_ms": 1118.28
+    },
+    "2_threads": {
+      "count": 10,
+      "mean_ms": 323.944,
+      "std_ms": 28.595,
+      "min_ms": 261.633,
+      "p50_ms": 328.396,
+      "p90_ms": 352.97,
+      "p95_ms": 357.6,
+      "p99_ms": 361.305,
+      "max_ms": 362.231
+    },
+    "4_threads": {
+      "count": 10,
+      "mean_ms": 261.813,
+      "std_ms": 21.842,
+      "min_ms": 227.814,
+      "p50_ms": 263.152,
+      "p90_ms": 285.525,
+      "p95_ms": 289.682,
+      "p99_ms": 293.008,
+      "max_ms": 293.839
+    },
+    "8_threads": {
+      "count": 10,
+      "mean_ms": 179.002,
+      "std_ms": 8.822,
+      "min_ms": 166.661,
+      "p50_ms": 177.509,
+      "p90_ms": 190.272,
+      "p95_ms": 191.852,
+      "p99_ms": 193.117,
+      "max_ms": 193.433
+    },
+    "10_threads": {
+      "count": 10,
+      "mean_ms": 176.951,
+      "std_ms": 9.976,
+      "min_ms": 160.76,
+      "p50_ms": 175.243,
+      "p90_ms": 191.203,
+      "p95_ms": 192.975,
+      "p99_ms": 194.393,
+      "max_ms": 194.748
+    },
+    "16_threads": {
+      "count": 10,
+      "mean_ms": 223.395,
+      "std_ms": 23.067,
+      "min_ms": 189.643,
+      "p50_ms": 228.072,
+      "p90_ms": 247.731,
+      "p95_ms": 256.662,
+      "p99_ms": 263.806,
+      "max_ms": 265.592
+    }
+  },
+  "system_paths": {
+    "S2_tabular_only": {
+      "count": 100,
+      "mean_ms": 28.26,
+      "std_ms": 4.266,
+      "min_ms": 0.005,
+      "p50_ms": 28.669,
+      "p90_ms": 30.016,
+      "p95_ms": 30.672,
+      "p99_ms": 32.92,
+      "max_ms": 35.959
+    },
+    "S4_memo_absent_path": {
+      "count": 100,
+      "mean_ms": 28.985,
+      "std_ms": 4.986,
+      "min_ms": 0.005,
+      "p50_ms": 28.631,
+      "p90_ms": 31.029,
+      "p95_ms": 35.095,
+      "p99_ms": 42.217,
+      "max_ms": 43.595
+    },
+    "S4_memo_present_cached": {
+      "count": 100,
+      "mean_ms": 30.029,
+      "std_ms": 7.57,
+      "min_ms": 0.005,
+      "p50_ms": 29.585,
+      "p90_ms": 30.876,
+      "p95_ms": 31.874,
+      "p99_ms": 47.961,
+      "max_ms": 88.186
+    },
+    "S4_memo_present_raw_onnx": {
+      "count": 20,
+      "mean_ms": 178.536,
+      "std_ms": 42.929,
+      "min_ms": 0.006,
+      "p50_ms": 182.266,
+      "p90_ms": 207.389,
+      "p95_ms": 212.476,
+      "p99_ms": 215.317,
+      "max_ms": 216.027
+    },
+    "S4_population_blended_70_30": {
+      "count": 1000,
+      "mean_ms": 72.855,
+      "std_ms": 72.36,
+      "min_ms": 0.005,
+      "p50_ms": 29.169,
+      "p90_ms": 192.294,
+      "p95_ms": 198.623,
+      "p99_ms": 212.289,
+      "max_ms": 216.027
+    }
+  },
+  "open_loop_simulation": {
+    "10_tps": {
+      "target_tps": 10,
+      "total_requests": 50,
+      "duration_seconds": 5.0,
+      "sla_target_ms": 200.0,
+      "sla_compliance_pct": 100.0,
+      "timeout_fallback_count": 0,
+      "timeout_fallback_pct": 0.0,
+      "response_time_ms": {
+        "count": 50,
+        "mean_ms": 73.972,
+        "std_ms": 38.766,
+        "min_ms": 0.099,
+        "p50_ms": 76.831,
+        "p90_ms": 125.296,
+        "p95_ms": 132.539,
+        "p99_ms": 137.006,
+        "max_ms": 138.056
+      },
+      "queue_time_p50_ms": 0.102,
+      "queue_time_p95_ms": 1.279,
+      "service_time_p50_ms": 76.149,
+      "service_time_p95_ms": 132.135
+    },
+    "25_tps": {
+      "target_tps": 25,
+      "total_requests": 125,
+      "duration_seconds": 5.0,
+      "sla_target_ms": 200.0,
+      "sla_compliance_pct": 4.0,
+      "timeout_fallback_count": 0,
+      "timeout_fallback_pct": 0.0,
+      "response_time_ms": {
+        "count": 125,
+        "mean_ms": 1167.286,
+        "std_ms": 585.657,
+        "min_ms": 2.695,
+        "p50_ms": 1116.89,
+        "p90_ms": 1956.748,
+        "p95_ms": 1998.757,
+        "p99_ms": 2073.064,
+        "max_ms": 2077.487
+      },
+      "queue_time_p50_ms": 612.522,
+      "queue_time_p95_ms": 1500.457,
+      "service_time_p50_ms": 535.351,
+      "service_time_p95_ms": 629.6
+    },
+    "50_tps": {
+      "target_tps": 50,
+      "total_requests": 250,
+      "duration_seconds": 5.0,
+      "sla_target_ms": 200.0,
+      "sla_compliance_pct": 1.2,
+      "timeout_fallback_count": 0,
+      "timeout_fallback_pct": 0.0,
+      "response_time_ms": {
+        "count": 250,
+        "mean_ms": 3550.963,
+        "std_ms": 1884.989,
+        "min_ms": 65.896,
+        "p50_ms": 3737.328,
+        "p90_ms": 6094.52,
+        "p95_ms": 6328.549,
+        "p99_ms": 6596.625,
+        "max_ms": 6634.893
+      },
+      "queue_time_p50_ms": 3220.883,
+      "queue_time_p95_ms": 5929.499,
+      "service_time_p50_ms": 465.162,
+      "service_time_p95_ms": 678.383
+    }
+  },
+  "hypothesis_h4": {
+    "supported": false,
+    "evidence": {
+      "p99_latency_ms": 2073.064,
+      "sla_target_ms": 200.0,
+      "sla_compliance_pct": 4.0,
+      "target_tps": 25,
+      "worker_threads": 10
+    },
+    "description": "At 25 TPS open-loop arrival with 10 worker threads, response latency satisfies the 200 ms SLA."
+  }
+}

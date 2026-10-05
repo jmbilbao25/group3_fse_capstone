@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Funds Transfer & OFS Settlement Sequence",
+    "quality_profile": "showcase",
+    "viewBox": [980, 620],
+    "animation": "trace",
+    "views": [
+      {
+        "id": "risk-scoring",
+        "label": "Risk scoring path",
+        "focus": ["user", "gateway", "orchestrator", "risk_engine"],
+        "note": "Follow real-time risk check from API Gateway to Python XGBoost engine under 2ms."
+      },
+      {
+        "id": "cbs-settlement",
+        "label": "T24 mock settlement",
+        "focus": ["orchestrator", "t24_cbs", "azure_sql", "kafka"],
+        "note": "Inspect Temenos OFS syntax serialization and atomic double-entry balance mutation."
+      }
+    ]
+  },
+  "participants": [
+    { "id": "user", "type": "external", "label": "Customer", "sublabel": "Flutter / Web" },
+    { "id": "gateway", "type": "security", "label": "API Gateway", "sublabel": "Spring Cloud :8080" },
+    { "id": "orchestrator", "type": "backend", "label": "Orchestrator", "sublabel": "Spring Boot :8082" },
+    { "id": "risk_engine", "type": "backend", "label": "Risk Engine", "sublabel": "Python :8084" },
+    { "id": "t24_cbs", "type": "backend", "label": "T24 Mock CBS", "sublabel": "Spring Boot :8085" },
+    { "id": "azure_sql", "type": "database", "label": "Azure SQL", "sublabel": "CBS Ledger DB" },
+    { "id": "kafka", "type": "messagebus", "label": "Kafka Stream", "sublabel": "Event Bus :9092" }
+  ],
+  "segments": [
+    { "from": 135, "to": 215, "label": "Inbound & Auth" },
+    { "from": 225, "to": 315, "label": "Python Risk Evaluation (< 2ms)" },
+    { "from": 325, "to": 450, "label": "Temenos OFS & ACID Ledger Commit" },
+    { "from": 460, "to": 550, "label": "Settlement Receipt & Events" }
+  ],
+  "messages": [
+    { "id": "msg-transfer-req", "from": "user", "to": "gateway", "y": 165, "label": "POST /api/v1/transfers", "variant": "emphasis" },
+    { "id": "msg-route-orch", "from": "gateway", "to": "orchestrator", "y": 198, "label": "forward transfer JSON", "variant": "emphasis" },
+    { "id": "msg-risk-eval", "from": "orchestrator", "to": "risk_engine", "y": 232, "label": "POST /api/v1/risk/transfer", "variant": "security" },
+    { "id": "msg-risk-resp", "from": "risk_engine", "to": "orchestrator", "y": 265, "label": "ALLOW (score 0.12, < 2ms)", "variant": "return" },
+    { "id": "msg-risk-event", "from": "risk_engine", "to": "kafka", "y": 298, "label": "publish risk evaluation", "variant": "dashed" },
+    { "id": "msg-ofs-dispatch", "from": "orchestrator", "to": "t24_cbs", "y": 332, "label": "POST OFS: FUNDS.TRANSFER...", "variant": "emphasis" },
+    { "id": "msg-sql-commit", "from": "t24_cbs", "to": "azure_sql", "y": 365, "label": "BEGIN & UPDLOCK balance", "variant": "security" },
+    { "id": "msg-sql-done", "from": "azure_sql", "to": "t24_cbs", "y": 398, "label": "ACID ledger committed", "variant": "return" },
+    { "id": "msg-ofs-resp", "from": "t24_cbs", "to": "orchestrator", "y": 432, "label": "FT26095A//1/SUCCESS", "variant": "return" },
+    { "id": "msg-event-emit", "from": "orchestrator", "to": "kafka", "y": 468, "label": "publish transfer event", "variant": "dashed" },
+    { "id": "msg-orch-resp", "from": "orchestrator", "to": "gateway", "y": 500, "label": "200 OK (Transfer Success)", "variant": "return" },
+    { "id": "msg-user-receipt", "from": "gateway", "to": "user", "y": 530, "label": "Transaction Receipt", "variant": "return" }
+  ],
+  "activations": [
+    { "participant": "gateway", "from": 165, "to": 535, "type": "security" },
+    { "participant": "orchestrator", "from": 198, "to": 505, "type": "backend" },
+    { "participant": "risk_engine", "from": 232, "to": 302, "type": "backend" },
+    { "participant": "t24_cbs", "from": 332, "to": 438, "type": "backend" },
+    { "participant": "azure_sql", "from": 365, "to": 402, "type": "database" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Python Risk Engine Fast Path (< 2ms SLA)",
+      "items": [
+        "Orchestrator invokes Python FastAPI risk evaluation before ledger mutation",
+        "Synchronous inference uses trained XGBoost model evaluating amount and velocity"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Temenos OFS Serialization (Spring Boot Mock)",
+      "items": [
+        "Orchestrator formats JSON into standard Temenos OFS command syntax",
+        "Spring Boot T24 mock parses OFS and enforces double-entry ledger debit and credit"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "ACID Guarantee on Azure SQL",
+      "items": [
+        "T24 Mock CBS maintains exclusive direct connection to Azure SQL Database",
+        "Applies strict row locking (UPDLOCK) preventing race conditions and overdrafts"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Core Banking Platform & Real-Time Risk Architecture",
+    "quality_profile": "showcase",
+    "viewBox": [1160, 560],
+    "views": [
+      {
+        "id": "transfer-lifecycle",
+        "label": "Transfer lifecycle",
+        "focus": ["clients", "gateway", "orchestrator", "risk_engine", "t24_cbs", "azure_sql"],
+        "note": "Follow an inbound transfer from client channels through real-time risk evaluation to T24 core banking ledger commit."
+      },
+      {
+        "id": "risk-inspection",
+        "label": "Python risk engine",
+        "focus": ["orchestrator", "risk_engine", "notif_service", "kafka"],
+        "note": "Inspect synchronous XGBoost risk scoring under 2ms and asynchronous case review queue."
+      },
+      {
+        "id": "cbs-settlement",
+        "label": "T24 mock settlement",
+        "focus": ["orchestrator", "t24_cbs", "azure_sql", "kafka", "azure_pg"],
+        "note": "Observe JSON to Temenos OFS syntax serialization and double-entry ACID ledger mutations in Azure SQL."
+      }
+    ]
+  },
+  "components": [
+    { "id": "clients", "type": "frontend", "label": "Client Channels", "sublabel": "React 18 & Flutter", "brand": "react", "pos": [38, 220], "size": [136, 66] },
+    { "id": "redis", "type": "database", "label": "Token Cache", "sublabel": "Redis :6379", "brand": "redis", "pos": [250, 80], "size": [140, 62], "tag": "In-Memory" },
+    { "id": "gateway", "type": "security", "label": "API Gateway", "sublabel": "Spring Cloud :8080", "brand": "spring", "pos": [250, 220], "size": [140, 66], "tag": "Java 17" },
+    { "id": "orchestrator", "type": "backend", "label": "Transfer Orchestrator", "sublabel": "Spring Boot :8082", "brand": "spring", "pos": [480, 220], "size": [154, 70], "tag": "Java 17" },
+    { "id": "notif_service", "type": "backend", "label": "Notification Service", "sublabel": "Spring Boot :8083", "brand": "spring", "pos": [480, 370], "size": [154, 66], "tag": "Java 17" },
+    { "id": "risk_engine", "type": "backend", "label": "Risk Engine", "sublabel": "Python + XGBoost :8084", "brand": "python", "pos": [720, 80], "size": [156, 68], "tag": "Python 3.11" },
+    { "id": "t24_cbs", "type": "backend", "label": "T24 Mock CBS", "sublabel": "Spring Boot :8085", "brand": "spring", "pos": [720, 220], "size": [156, 70], "tag": "Java 17" },
+    { "id": "azure_sql", "type": "database", "label": "Azure SQL Database", "sublabel": "Master CBS Ledgers", "pos": [720, 370], "size": [156, 68], "tag": "ACID Store" },
+    { "id": "kafka", "type": "messagebus", "label": "Event Stream", "sublabel": "Apache Kafka :9092", "brand": "apache-kafka", "pos": [960, 220], "size": [150, 68], "tag": "Pub/Sub" },
+    { "id": "azure_pg", "type": "database", "label": "Audit Vault", "sublabel": "PostgreSQL :5432", "brand": "postgresql", "pos": [960, 370], "size": [150, 68], "tag": "Append-Only" }
+  ],
+  "connections": [
+    { "id": "client-to-gw", "from": "clients", "to": "gateway", "label": "HTTPS / JWT", "variant": "emphasis", "labelDy": -28 },
+    { "id": "gw-to-redis", "from": "gateway", "to": "redis", "label": "token check", "variant": "dashed", "labelDx": -44 },
+    { "id": "gw-to-orch", "from": "gateway", "to": "orchestrator", "label": "route request", "variant": "emphasis", "labelDy": -28 },
+    { "id": "orch-to-risk", "from": "orchestrator", "to": "risk_engine", "label": "sync risk check", "variant": "security", "fromSide": "top", "toSide": "left" },
+    { "id": "orch-to-notif", "from": "orchestrator", "to": "notif_service", "label": "2FA OTP (if 2FA)", "variant": "dashed", "labelAt": [605, 330] },
+    { "id": "orch-to-t24", "from": "orchestrator", "to": "t24_cbs", "label": "JSON to OFS", "variant": "emphasis", "labelDy": -28 },
+    { "id": "t24-to-sql", "from": "t24_cbs", "to": "azure_sql", "label": "ACID balance update", "variant": "security", "labelAt": [740, 330] },
+    { "id": "t24-to-kafka", "from": "t24_cbs", "to": "kafka", "label": "transfer events", "variant": "dashed", "labelDy": -28 },
+    { "id": "risk-to-kafka", "from": "risk_engine", "to": "kafka", "label": "risk evaluations", "variant": "dashed", "fromSide": "right", "toSide": "top" },
+    { "id": "kafka-to-pg", "from": "kafka", "to": "azure_pg", "label": "audit projection", "variant": "dashed", "labelAt": [1080, 330] }
+  ],
+  "cards": [
+    { "dot": "emerald", "title": "Service Runtime Division", "items": ["Spring Boot 3 (Java 17) powers the Gateway, Orchestrator, Notifications, and T24 Mock CBS", "Python 3.11 + FastAPI powers the Decoupled Risk Engine with local XGBoost inference (< 2ms SLA)"] },
+    { "dot": "cyan", "title": "Temenos OFS Contract", "items": ["Orchestrator translates REST JSON payloads to official Temenos OFS syntax before sending to CBS", "T24 Mock CBS validates funds, computes transaction fees/interest, and maintains exclusive primary ledger connection"] },
+    { "dot": "amber", "title": "Data Isolation & Compliance", "items": ["Azure SQL Database enforces strict ACID consistency with row locks (UPDLOCK) during balance updates", "Azure PostgreSQL serves as an append-only audit vault with tamper-proof triggers for compliance"] }
+  ]
+}

@@ -17,13 +17,14 @@ Every containerized service in the Docker Compose bridge network (`banking-net`)
 | `client` | `banking-frontend` | `3000` | `80` / `3000` | HTTP | Public Browser | React 18 SPA: Customer (email 2FA) & Admin telemetry portals |
 | `gateway` | `gateway-service` | `8080` | `8080` | HTTP / REST | Public API Entry | Perimeter Security, JWT validation, rate limiting |
 | `acc_svc` | `account-service` | `8081` | `8081` | HTTP / REST | Internal Network | Customer KYC, user onboarding, account provisioning |
-| `tx_engine`| `ledger-mutation-engine`| `8082` | `8082` | HTTP / REST | Internal Network | Concurrency locking, balance mutation, email 2FA OTP verification, outbox publisher |
+| `tx_engine`| `transfer-orchestrator`| `8082` | `8082` | HTTP / REST | Internal Network | Transfer lifecycle orchestrator: Risk Engine evaluation, JSON-to-OFS conversion, T24 dispatch |
+| `t24_cbs`  | `temenos-t24-cbs`       | `9100` | `9100` | OFS / TCP   | Internal Network | Temenos T24 Core Banking System: balances, EOD/batch processing, fees, interest |
 | `notif_svc`| `notification-service` | `8083` | `8083` | HTTP / REST | Internal Network | Kafka listener, receipt generation, email 2FA OTP delivery |
 | `mailhog`  | `mailhog-smtp`         | `8025` / `1025` | `8025` / `1025` | HTTP / SMTP | Web Inbox / Host | Mock email inbox UI (:8025) and SMTP receiver (:1025) for OTP codes |
 | `auth_cache`| `redis-cache` | `6379` | `6379` | RESP / TCP | Internal Network | Token blacklist, 2FA OTP cache (300s TTL), rate limiting |
 | `redis_ui`  | `redis-insight`| `5540` | `5540` | HTTP | Host Browser | Redis Insight Web GUI: interactive key browser, TTL & memory inspector |
-| `master_db`| `oracle-xe-master` | `1521` | `1521` | Oracle TNS | Internal Network | Master relational state (users, accounts, balances, outbox) |
-| `audit_db` | `postgres-audit-vault`| `5432` | `5432` | PostgreSQL | Internal Network | Append-only audit vault (`ledger_mutation_audit`) |
+| `master_db`| `azure-sql-db`         | `1433` | `1433` | TDS / SSL   | Cloud / Internal | Azure SQL Database (Replaces Oracle XE): Master CBS accounts, balances, EOD journals (T24 main connection) |
+| `audit_db` | `azure-postgres-vault` | `5432` | `5432` | PostgreSQL  | Cloud / Internal | Azure Database for PostgreSQL: Append-only audit vault (`ledger_mutation_audit`) |
 | `broker` | `kafka-broker` | `9092` | `9092` | PLAINTEXT | Internal Network | Apache Kafka commit log in KRaft mode |
 | `broker_ui`| `kafka-ui` | `8085` | `8080` | HTTP | Host Browser | Kafka Web Management Dashboard for topics and consumer lag |
 | `telemetry`| `dd-agent` | `8126` / `8125` | `8126` / `8125` | APM / StatsD | Host / Internal | Datadog Agent 7: APM traces, DogStatsD metrics, live container logs |
@@ -75,33 +76,40 @@ Every containerized service in the Docker Compose bridge network (`banking-net`)
 
 ---
 
-### D. Core Ledger & Balance Mutation Engine (`ledger-mutation-engine` :8082)
-- **Runtime**: Spring Boot 3, Spring Data JPA, Spring Kafka, HikariCP (`maximum-pool-size=30`, `minimum-idle=5`).
-- **Datasource**: Connected to `oracle-xe-master:1521`.
+### D. Funds Transfer Orchestrator (`transfer-orchestrator` :8082)
+- **Runtime**: Spring Boot 3, Spring WebClient, Spring Kafka.
 - **Core Functions**:
   1. `PerimeterValidator`: Enforces `@Digits(integer=14, fraction=4)` and `@Positive` on mutation requests; intercepts malformed requests via `GlobalControllerAdvice` returning RFC-7807 Problem Details.
   2. `IdempotencyInterceptor`: Validates `X-Idempotency-Key` against Redis (`SET tx:<id> "PROCESSING" NX EX 60`). Rejects duplicate concurrent clicks with HTTP 409 Conflict.
-  3. `TransactionalOutboxService`:
-     - Receives `POST /api/v1/transfers`.
-     - Inserts transfer record into Oracle with status `INITIATED`.
-     - Inserts serialized command event into `outbox_events` table within the same local database transaction.
-     - Returns `HTTP 202 Accepted` to the client in under 15ms with tracking `transfer_id`.
-  4. `OutboxPublisherWorker`:
-     - Reads pending events from `outbox_events` with `SELECT ... FOR UPDATE SKIP LOCKED`.
-     - Publishes records to Kafka topic `banking.transfers.commands` using `source_account_id` as the partition key.
-     - Guarantees at-least-once delivery with producer confirmations (`acks=all`, `enable.idempotence=true`).
-  5. `TransferSagaConsumer`:
-     - Listens to `banking.transfers.commands` with consumer group `ledger-mutation-workers`.
-     - Executes `@Lock(LockModeType.PESSIMISTIC_WRITE)` (`SELECT ... FOR UPDATE`) on target rows in `balance_master`.
-     - Low-value (`<= 50,000.00 PHP`): Debits source account, credits destination account, updates status to `COMMITTED`.
-     - High-value (`> 50,000.00 PHP`): Applies soft hold (`hold_amount += amount`), transitions status to `PENDING_VERIFICATION`, stores 6-digit OTP in Redis (`2fa:otp:{userId}`, 300s TTL), and dispatches OTP email via MailHog.
-     - Customer OTP Verification: Endpoint `POST /api/v1/transfers/verify-otp` validates the customer-provided OTP against Redis. On match, releases hold, debits source account, credits destination account, and transitions status to `COMMITTED`. On failure or 3 invalid attempts, hold is released and status transitions to `FAILED`.
+  3. `RiskEngineCoordinator`:
+     - Dispatches transfer payload to Decoupled Risk Engine (`POST /api/v1/risk/transfer`) over non-blocking WebClient with strict 200ms SLA timeout.
+     - Receives risk evaluation verdict (`ALLOW`, `2FA_CHALLENGE`, or `BLOCK`).
+  4. `StepUpChallengeCoordinator`:
+     - If risk evaluation mandates 2FA or transfer > PHP 50,000.00, coordinates with `notification-service` to deliver 6-digit OTP to the customer and verifies the OTP before proceeding.
+  5. `OfsMessageBuilder & T24 Dispatcher`:
+     - Converts validated JSON transfer request into standard Temenos Open Financial Services (OFS) syntax:
+       `FUNDS.TRANSFER,AUTH/I/PROCESS,//PH100223,TXN.REF=...,DEBIT.ACCT=...,CREDIT.ACCT=...,AMOUNT=...`
+     - Dispatches OFS message to Temenos T24 CBS via high-performance TCP / message queue socket.
+     - Parses OFS response (`TXN-XXXX//1/SUCCESS` or error code).
   6. `TransferEventProducer`:
      - Publishes state change events to `banking.transfers.events` (`TransferExecuted`, `TransferPendingVerification`, `TransferFailed`).
 
 ---
 
-### E. Notification & Alert Microservice (`notification-service` :8083)
+### E. Temenos T24 Core Banking System (`temenos-t24-cbs` :9100)
+- **Runtime**: Temenos T24 Core Banking System runtime / Enterprise CBS.
+- **Datasource**: Direct and main connection point to `azure-sql-db:1433`.
+- **Core Functions**:
+  1. `OFS Ingestion Engine`: Listens on port 9100 for OFS financial strings, deserializes commands, and manages application locks.
+  2. `Double-Entry Balance Engine`: Primary owner of accounts, customer ledgers, and transaction postings in Azure SQL Database.
+  3. `End-of-Day (EOD) & Batch Processing`: Automated daily batch cycles, balance rollups, GL reconciliation, and statement generation.
+  4. `Fee Engine`: Computes and posts real-time and batch service fees, remittance tariffs, and transaction charges.
+  5. `Interest Engine`: Calculates interest accruals, periodic capitalization, and regulatory withholding tax.
+  6. `ACID Concurrency Kernel`: Acquires row-level pessimistic locks (`SELECT ... WITH (UPDLOCK, ROWLOCK)`) directly on Azure SQL tables.
+
+---
+
+### F. Notification & Alert Microservice (`notification-service` :8083)
 - **Runtime**: Spring Boot 3, Spring Kafka Client, Thymeleaf Template Engine.
 - **BSP MORB & AMLA Regulatory Compliance Matrix**:
   - **Tier 1: Normal Transaction (₱0.01 – ₱50,000.00)**: Direct STP execution. Automatically dispatches customer HTML email receipt with before/after balances, masked accounts, and SHA-256 verification hash.
@@ -115,7 +123,7 @@ Every containerized service in the Docker Compose bridge network (`banking-net`)
 
 ---
 
-### F. Distributed In-Memory Cache (`redis-cache` :6379)
+### G. Distributed In-Memory Cache (`redis-cache` :6379)
 - **Runtime**: Redis 7 Alpine.
 - **Core Functions**:
   1. `Token Blacklist`: Key `blacklist:jti:<jwt_id>` with TTL matching the remaining access token lifetime (max 15 minutes) to revoke logged-out tokens immediately.
@@ -128,20 +136,22 @@ Every containerized service in the Docker Compose bridge network (`banking-net`)
 
 ---
 
-### G. Master State Storage (`oracle-xe-master` :1521)
-- **Runtime**: Oracle Database Express Edition 21c.
+### H. Master State Storage (`azure-sql-db` :1433)
+- **Runtime**: Azure SQL Database (Replaces legacy Oracle XE).
+- **Primary Connection**: Exclusively accessed by Temenos T24 CBS for balance mutations, fees, interest, and EOD batch jobs.
 - **Core Functions**:
-  1. Master relational persistence: `users`, `accounts`, `balance_master`, `transactions`, `outbox_events`, `notifications`.
-  2. Row-level lock acquisition kernel: serializes concurrent transactions on `balance_master` via `FOR UPDATE`.
+  1. Master relational persistence: `users`, `accounts`, `balance_master`, `transactions`, `gl_ledger`, `batch_eod_logs`.
+  2. Row-level lock acquisition kernel: serializes concurrent transactions on `balance_master` via `UPDLOCK, ROWLOCK`.
   3. Strict database check constraints: `CHECK (balance_amount >= hold_amount)`, `CHECK (balance_amount >= 0)`.
 
 ---
 
-### H. Dedicated Immutable Audit Vault (`postgres-audit-vault` :5432)
-- **Runtime**: PostgreSQL 15+ Alpine.
+### I. Dedicated Immutable Audit Vault (`azure-postgres-vault` :5432)
+- **Runtime**: Azure Database for PostgreSQL Flexible Server.
 - **Core Functions**:
   1. Asynchronous Event Projection: Independent consumer group `audit-vault-workers` reads `banking.transfers.events` from Kafka and inserts rows into `ledger_mutation_audit`.
   2. Native compliance triggers: `trg_no_update_delete_mutation_audit` strictly rejects all `UPDATE` and `DELETE` SQL commands.
+  3. Fast B-Tree indexing on `(account_id, created_at)` and `(operator_id)` to serve auditor queries and REST endpoints (`GET /api/v1/audit/account/{id}`) in sub-5ms.
   3. Fast B-Tree indexing on `(account_id, created_at)` and `(operator_id)` to serve auditor queries and REST endpoints (`GET /api/v1/audit/account/{id}`) in sub-5ms.
 
 ---

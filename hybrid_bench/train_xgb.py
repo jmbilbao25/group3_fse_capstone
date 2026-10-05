@@ -23,16 +23,26 @@ import joblib
 import yaml
 import numpy as np
 import pandas as pd
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
+try:
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+except ImportError:
+    plt = None
 
 import xgboost as xgb
-from sklearn.model_selection import StratifiedKFold
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import roc_auc_score, average_precision_score, f1_score, confusion_matrix
-import shap
+try:
+    from sklearn.model_selection import StratifiedKFold
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.metrics import roc_auc_score, average_precision_score, f1_score, confusion_matrix
+except ImportError:
+    pass
+
+try:
+    import shap
+except ImportError:
+    shap = None
 
 from hybrid_bench.gate0 import Gate0Filter
 

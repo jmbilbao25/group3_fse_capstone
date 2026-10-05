@@ -1,0 +1,10 @@
+app/models/qwen/*.onnx
+.venv
+__pycache__
+*.pyc
+*.pyo
+cache/
+data/
+*.log
+.git
+.gitignore

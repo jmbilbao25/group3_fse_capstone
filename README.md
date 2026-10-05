@@ -12,7 +12,8 @@ Customers submit transactions through a unified **Flutter multiplatform client**
 
 In local development, the platform runs via Docker Compose with Oracle XE and PostgreSQL. In cloud production, the architecture deploys natively to Microsoft Azure using **Azure Kubernetes Service (AKS)**, **Azure SQL Database with Ledger tables** (consolidating live state and cryptographic audit trails into a single engine), **Azure Container Registry (ACR)**, **Azure Event Hubs**, and an automated **GitHub Actions CI/CD pipeline**.
 
-<img width="2252" height="886" alt="image" src="https://github.com/user-attachments/assets/e566f48b-4c5c-43aa-9c87-f246f29f1f4b" />
+
+<img width="2181" height="1027" alt="image" src="https://github.com/user-attachments/assets/98ad3672-4878-47b7-b4d8-a774faad1883" />
 
 
 ### Interactive Architecture Specifications

@@ -34,7 +34,8 @@ import {
   PieChart as PieChartIcon,
   Shield,
   HelpCircle,
-  AlertOctagon
+  AlertOctagon,
+  Info
 } from 'lucide-react';
 import apiClient, { mockState } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -103,14 +104,71 @@ const ADMIN_ROSTER = [
   }
 ];
 
-// 7 Scam Typologies from NanoJev Qwen2.5-0.5B ONNX
+// 7 Scam Typologies from NanoJev Qwen2.5-0.5B ONNX INT8
 const SCAM_TYPOLOGIES = [
-  { key: 'investment_scam', label: 'Investment / Ponzi Fraud', pct: 38, count: 46, color: '#38BDF8' },
-  { key: 'romance_scam', label: 'Romance / Emergency Aid', pct: 24, count: 29, color: '#EC4899' },
-  { key: 'impersonation', label: 'Fake Official / Bank Rep', pct: 18, count: 22, color: '#A855F7' },
-  { key: 'prize_or_fee_scam', label: 'Prize / Advance Fee Scam', pct: 13, count: 16, color: '#F59E0B' },
-  { key: 'fake_invoice_or_selling_scam', label: 'Fake COD / Selling Scam', pct: 7, count: 8, color: '#10B981' }
+  { key: 'investment_scam', label: 'Investment / Ponzi Fraud', pct: 36, count: 44, color: '#38BDF8' },
+  { key: 'romance_scam', label: 'Romance / Emergency Aid', pct: 23, count: 28, color: '#EC4899' },
+  { key: 'impersonation', label: 'Fake Official / Bank Rep', pct: 17, count: 21, color: '#A855F7' },
+  { key: 'prize_or_fee_scam', label: 'Prize / Advance Fee Scam', pct: 12, count: 15, color: '#F59E0B' },
+  { key: 'fake_invoice_or_selling_scam', label: 'Fake COD / Selling Scam', pct: 6, count: 7, color: '#10B981' },
+  { key: 'other_suspicious', label: 'Other Suspicious Memos', pct: 4, count: 5, color: '#F43F5E' },
+  { key: 'none', label: 'Clean / Legitimate Memos', pct: 2, count: 1, color: '#64748B' }
 ];
+
+// Daily velocity and threat datapoints for the 7-day range
+const VELOCITY_SERIES = [
+  { day: 'Mon', settled: 320000, threat: 35000, label: 'Mon Oct 29' },
+  { day: 'Tue', settled: 480000, threat: 55000, label: 'Tue Oct 30' },
+  { day: 'Wed', settled: 950000, threat: 110000, label: 'Wed Oct 31' },
+  { day: 'Thu', settled: 1150000, threat: 140000, label: 'Thu Nov 01' },
+  { day: 'Fri', settled: 880000, threat: 85000, label: 'Fri Nov 02' },
+  { day: 'Sat', settled: 740000, threat: 60000, label: 'Sat Nov 03' },
+  { day: 'Today', settled: 1439201, threat: 250000, label: 'Today (Peak 14:00)' }
+];
+
+// Reusable Interactive Info Tooltip
+function InfoTooltip({ title, text, align = 'right' }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div 
+      className="relative inline-flex items-center"
+      onMouseEnter={() => setIsOpen(true)}
+      onMouseLeave={() => setIsOpen(false)}
+      onFocus={() => setIsOpen(true)}
+      onBlur={() => setIsOpen(false)}
+    >
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen(!isOpen);
+        }}
+        className="flex h-4 w-4 items-center justify-center rounded-full text-fg-subtle hover:text-accent hover:bg-surface/80 transition focus:outline-none"
+        aria-label="Information"
+      >
+        <Info className="h-3.5 w-3.5" />
+      </button>
+
+      {isOpen && (
+        <div 
+          className={cn(
+            "absolute bottom-full mb-2 z-50 w-72 rounded-2xl border border-line bg-surface p-3.5 text-left shadow-2xl backdrop-blur-md transition animate-in fade-in zoom-in-95 duration-150 pointer-events-none",
+            align === 'right' ? "right-0" : align === 'left' ? "left-0" : "left-1/2 -translate-x-1/2"
+          )}
+        >
+          {title && (
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-fg mb-1">
+              <Info className="h-3.5 w-3.5 text-accent shrink-0" />
+              <span>{title}</span>
+            </div>
+          )}
+          <p className="text-[11px] text-fg-muted leading-relaxed">{text}</p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function AdminExecutivePortal() {
   const { user: activeAuthUser } = useAuth();
@@ -121,6 +179,7 @@ export default function AdminExecutivePortal() {
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [hoveredVelocityIdx, setHoveredVelocityIdx] = useState(6); // Default to Today (Peak)
 
   // Active Admin Operator
   const [activeAdminId, setActiveAdminId] = useState(
@@ -409,9 +468,16 @@ export default function AdminExecutivePortal() {
 
           {/* Section: System Status */}
           <div className="rounded-2xl border border-line bg-sunken/40 p-3.5 space-y-2.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-fg-subtle block">
-              Engine Health
-            </span>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-fg-subtle">
+                Engine Health
+              </span>
+              <InfoTooltip 
+                title="Engine Health & Latency Telemetry"
+                text="Live runtime performance tracking across Gate 0 deterministic rules, tabular XGBoost scoring, NanoJev ONNX model latency, and PostgreSQL WORM (Write Once Read Many) cryptographic audit integrity."
+                align="left"
+              />
+            </div>
             <div className="space-y-1.5 text-[11px]">
               <div className="flex items-center justify-between">
                 <span className="text-fg-muted">Gate 0 + S2 XGBoost</span>
@@ -532,90 +598,154 @@ export default function AdminExecutivePortal() {
           <div className="space-y-6 animate-fade-in">
             {/* Top Row: Hero Graph Card + Stat Cards */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Hero Wave Card (Glowing Cyan & Magenta Curves from Reference Image) */}
+              {/* Hero Wave Card (Glowing Cyan & Magenta Curves with Y-Axis Range Scale & Hover Telemetry) */}
               <div className="lg:col-span-2 rounded-3xl border border-line bg-surface p-6 shadow-xs relative overflow-hidden flex flex-col justify-between">
                 {/* Background Glow */}
                 <div className="absolute top-0 right-0 -mt-10 -mr-10 h-64 w-64 rounded-full bg-accent/10 blur-3xl pointer-events-none" />
 
                 <div>
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                      <span className="text-xs font-medium text-fg-muted">Total Settled Volume & Velocity</span>
-                      <div className="mt-1 text-2xl font-bold tracking-tight text-fg">
-                        {formatPHP(stats.totalVolume)}
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-medium text-fg-muted">Total Settled Volume & Velocity</span>
+                        <InfoTooltip 
+                          title="Settled Volume & Threat Velocity Telemetry"
+                          text="Monitors retail transaction velocity (Cyan curve) against intercepted high-risk threat outflows (Magenta curve). The Y-axis scale benchmarks volume from ₱0 to ₱2.0M peak daily ceiling."
+                        />
+                      </div>
+                      <div className="mt-1 flex items-baseline gap-2">
+                        <span className="text-2xl font-bold tracking-tight text-fg">
+                          {formatPHP(stats.totalVolume)}
+                        </span>
+                        <span className="text-[11px] text-emerald-400 font-medium">
+                          +14.8% vs last week
+                        </span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-1.5 text-xs text-accent">
+                    {/* Legend & Selected Day Telemetry */}
+                    <div className="flex flex-wrap items-center gap-4 text-xs">
+                      <div className="flex items-center gap-1.5 text-accent">
                         <span className="h-2 w-2 rounded-full bg-accent" />
-                        <span>Settled Transfers</span>
+                        <span>Settled: <strong className="font-mono text-fg">{formatPHP(VELOCITY_SERIES[hoveredVelocityIdx].settled)}</strong></span>
                       </div>
-                      <div className="flex items-center gap-1.5 text-xs text-rose-400">
+                      <div className="flex items-center gap-1.5 text-rose-400">
                         <span className="h-2 w-2 rounded-full bg-rose-400" />
-                        <span>Threat Outflow</span>
+                        <span>Threat: <strong className="font-mono text-fg">{formatPHP(VELOCITY_SERIES[hoveredVelocityIdx].threat)}</strong></span>
                       </div>
                     </div>
                   </div>
 
-                  {/* SVG Wave Visualization (Dolab Style Curved Lines) */}
-                  <div className="relative mt-6 h-40 w-full flex items-end">
-                    <svg viewBox="0 0 500 150" className="w-full h-full overflow-visible">
-                      <defs>
-                        <linearGradient id="cyanGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#38BDF8" stopOpacity="0.4" />
-                          <stop offset="100%" stopColor="#38BDF8" stopOpacity="0.0" />
-                        </linearGradient>
-                        <linearGradient id="pinkGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#EC4899" stopOpacity="0.3" />
-                          <stop offset="100%" stopColor="#EC4899" stopOpacity="0.0" />
-                        </linearGradient>
-                      </defs>
+                  {/* Chart Grid Area with Y-Axis Currency Scale Labels */}
+                  <div className="relative mt-5 flex gap-3">
+                    {/* Y-Axis Value Labels Column (₱0 to ₱2.0M) */}
+                    <div className="flex flex-col justify-between text-[11px] font-mono text-fg-subtle shrink-0 py-1 text-right w-14 select-none">
+                      <span>₱ 2.0M</span>
+                      <span>₱ 1.5M</span>
+                      <span>₱ 1.0M</span>
+                      <span>₱ 500K</span>
+                      <span>₱ 0</span>
+                    </div>
 
-                      {/* Cyan Wave Path */}
-                      <path
-                        d="M 0,110 Q 70,120 125,75 T 250,50 T 375,90 T 500,30 L 500,150 L 0,150 Z"
-                        fill="url(#cyanGrad)"
-                      />
-                      <path
-                        d="M 0,110 Q 70,120 125,75 T 250,50 T 375,90 T 500,30"
-                        fill="none"
-                        stroke="#38BDF8"
-                        strokeWidth="3"
-                      />
+                    {/* Graph Canvas & Grid Lines */}
+                    <div className="relative flex-1 h-44">
+                      {/* Horizontal Reference Grid Lines */}
+                      <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
+                        <div className="border-b border-line/40 w-full" />
+                        <div className="border-b border-line/25 w-full border-dashed" />
+                        <div className="border-b border-line/25 w-full border-dashed" />
+                        <div className="border-b border-line/25 w-full border-dashed" />
+                        <div className="border-b border-line/50 w-full" />
+                      </div>
 
-                      {/* Magenta Threat Wave Path */}
-                      <path
-                        d="M 0,130 Q 70,135 125,110 T 250,90 T 375,120 T 500,80 L 500,150 L 0,150 Z"
-                        fill="url(#pinkGrad)"
-                      />
-                      <path
-                        d="M 0,130 Q 70,135 125,110 T 250,90 T 375,120 T 500,80"
-                        fill="none"
-                        stroke="#EC4899"
-                        strokeWidth="2.5"
-                      />
-                    </svg>
+                      {/* SVG Wave Visualization (Dolab Style Curved Lines) */}
+                      <svg viewBox="0 0 500 150" preserveAspectRatio="none" className="w-full h-full overflow-visible">
+                        <defs>
+                          <linearGradient id="cyanGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#38BDF8" stopOpacity="0.4" />
+                            <stop offset="100%" stopColor="#38BDF8" stopOpacity="0.0" />
+                          </linearGradient>
+                          <linearGradient id="pinkGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#EC4899" stopOpacity="0.3" />
+                            <stop offset="100%" stopColor="#EC4899" stopOpacity="0.0" />
+                          </linearGradient>
+                        </defs>
+
+                        {/* Cyan Settled Volume Wave Path (Scale: 0 to 150, 1.44M = ~y:42) */}
+                        <path
+                          d="M 0,126 Q 40,120 83,114 T 166,78 T 250,63 T 333,84 T 416,94 T 500,42 L 500,150 L 0,150 Z"
+                          fill="url(#cyanGrad)"
+                        />
+                        <path
+                          d="M 0,126 Q 40,120 83,114 T 166,78 T 250,63 T 333,84 T 416,94 T 500,42"
+                          fill="none"
+                          stroke="#38BDF8"
+                          strokeWidth="3"
+                        />
+
+                        {/* Magenta Threat Wave Path (250K = ~y:131) */}
+                        <path
+                          d="M 0,147 Q 40,146 83,145 T 166,141 T 250,139 T 333,143 T 416,145 T 500,131 L 500,150 L 0,150 Z"
+                          fill="url(#pinkGrad)"
+                        />
+                        <path
+                          d="M 0,147 Q 40,146 83,145 T 166,141 T 250,139 T 333,143 T 416,145 T 500,131"
+                          fill="none"
+                          stroke="#EC4899"
+                          strokeWidth="2.5"
+                        />
+
+                        {/* Data Points on Selected Day */}
+                        <circle cx="500" cy="42" r="5" fill="#38BDF8" className="animate-pulse" />
+                        <circle cx="500" cy="131" r="4" fill="#EC4899" />
+                      </svg>
+
+                      {/* Floating Peak Tag */}
+                      <div className="absolute right-0 top-3 -translate-y-1/2 flex flex-col items-end gap-1 pointer-events-none">
+                        <span className="rounded-lg bg-accent/20 border border-accent/40 px-2 py-0.5 text-[10px] font-mono font-bold text-accent shadow-lg backdrop-blur-md">
+                          Peak: ₱1.44M (14:00)
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between border-t border-line/60 pt-4 text-xs text-fg-subtle">
-                  <span>Mon</span>
-                  <span>Tue</span>
-                  <span>Wed</span>
-                  <span>Thu</span>
-                  <span>Fri</span>
-                  <span>Sat</span>
-                  <span>Today (Peak 14:00)</span>
+                {/* X-Axis Days Selector with Exact Settled Values */}
+                <div className="mt-4 flex items-center justify-between border-t border-line/60 pt-3 text-xs pl-16">
+                  {VELOCITY_SERIES.map((item, idx) => (
+                    <button
+                      key={item.day}
+                      type="button"
+                      onMouseEnter={() => setHoveredVelocityIdx(idx)}
+                      onClick={() => setHoveredVelocityIdx(idx)}
+                      className={cn(
+                        "px-2.5 py-1.5 rounded-xl transition text-center",
+                        hoveredVelocityIdx === idx
+                          ? "bg-accent/15 text-accent font-bold ring-1 ring-accent/30 shadow-xs"
+                          : "text-fg-subtle hover:text-fg hover:bg-sunken"
+                      )}
+                    >
+                      <div className="text-[11px] font-semibold">{item.day}</div>
+                      <div className="text-[9px] font-mono opacity-80">
+                        {formatPHP(item.settled).replace('.00', '').replace('PHP', '₱')}
+                      </div>
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* Right Side Stat Cards (Dolab Inspired Mini-Cards) */}
+              {/* Right Side Stat Cards (Dolab Inspired Mini-Cards with Info Tooltips) */}
               <div className="space-y-4 flex flex-col justify-between">
                 {/* Card 1: Reversals Restored */}
                 <div className="rounded-3xl border border-line bg-surface p-5 shadow-xs">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-fg-muted">Rollbacks Executed</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-medium text-fg-muted">Rollbacks Executed</span>
+                      <InfoTooltip 
+                        title="T24 Core Compensating Reversals"
+                        text="Compensating double-entry reversals authorized via Dual-Admin Maker-Checker workflow (Carlos + Diana). Reverses misdirected transfers and restores balances."
+                      />
+                    </div>
                     <span className="rounded-xl bg-amber-500/10 p-2 text-amber-500">
                       <RotateCcw className="h-4 w-4" />
                     </span>
@@ -631,7 +761,13 @@ export default function AdminExecutivePortal() {
                 {/* Card 2: Scam Typology Pressure Gauge */}
                 <div className="rounded-3xl border border-line bg-surface p-5 shadow-xs">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-fg-muted">Typology Friction</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-medium text-fg-muted">Typology Friction</span>
+                      <InfoTooltip 
+                        title="NanoJev Medium Friction Tier"
+                        text="Transactions exceeding calibrated threshold score θ(med) = 0.35 trigger an advisory friction modal requiring confirmation before funds can move."
+                      />
+                    </div>
                     <div className="flex h-9 w-9 items-center justify-center rounded-full bg-accent/10 text-xs font-bold text-accent">
                       38%
                     </div>
@@ -639,15 +775,21 @@ export default function AdminExecutivePortal() {
                   <div className="mt-1 text-base font-bold text-fg">
                     Medium Friction Tier
                   </div>
-                  <span className="mt-1 block text-xs text-fg-subtle">
-                    Threshold: $\theta_{'{'}med{'}'} = 0.35$ (NanoJev calibrated)
+                  <span className="mt-1 block text-xs text-fg-subtle font-mono">
+                    Threshold: θ(med) = 0.35 (NanoJev calibrated)
                   </span>
                 </div>
 
-                {/* Card 3: Latin Biometric Zero-OTP Compliance */}
+                {/* Card 3: Biometric Zero-OTP Compliance */}
                 <div className="rounded-3xl border border-line bg-surface p-5 shadow-xs">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-fg-muted">BSP Cir. 1213 Auth</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-medium text-fg-muted">BSP Cir. 1213 Auth</span>
+                      <InfoTooltip 
+                        title="Zero SMS OTP Mandate (BSP Cir. 1213)"
+                        text="Strict Bangko Sentral ng Pilipinas mandate banning SMS OTPs for funds transfers due to SIM-swap vulnerabilities. Primary device hardware biometrics (Face ID/Fingerprint) only."
+                      />
+                    </div>
                     <span className="rounded-xl bg-emerald-500/10 p-2 text-emerald-400">
                       <Fingerprint className="h-4 w-4" />
                     </span>
@@ -662,47 +804,71 @@ export default function AdminExecutivePortal() {
               </div>
             </div>
 
-            {/* Middle Row: Scam Typology Distribution + Two-Stage Telemetry + Device Surveillance */}
+            {/* Middle Row: Scam Typology Distribution (All 7 Categories) + Two-Stage Telemetry + Device Surveillance */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Donut Chart: 7 Scam Typologies */}
-              <div className="rounded-3xl border border-line bg-surface p-6 shadow-xs">
-                <div className="flex items-center justify-between border-b border-line pb-3">
-                  <div className="flex items-center gap-2">
-                    <PieChartIcon className="h-4 w-4 text-accent" />
-                    <h3 className="text-sm font-semibold text-fg">Scam Typology Mix</h3>
-                  </div>
-                  <span className="text-[11px] text-fg-subtle font-mono">NanoJev ONNX</span>
-                </div>
-
-                {/* Circular Donut Display */}
-                <div className="mt-6 flex items-center justify-center">
-                  <div className="relative flex h-36 w-36 items-center justify-center">
-                    <svg viewBox="0 0 36 36" className="h-full w-full rotate-[-90deg]">
-                      {/* Circle slices */}
-                      <circle cx="18" cy="18" r="14" fill="none" stroke="#1E293B" strokeWidth="4" />
-                      <circle cx="18" cy="18" r="14" fill="none" stroke="#38BDF8" strokeWidth="4" strokeDasharray="38 100" strokeDashoffset="0" />
-                      <circle cx="18" cy="18" r="14" fill="none" stroke="#EC4899" strokeWidth="4" strokeDasharray="24 100" strokeDashoffset="-38" />
-                      <circle cx="18" cy="18" r="14" fill="none" stroke="#A855F7" strokeWidth="4" strokeDasharray="18 100" strokeDashoffset="-62" />
-                      <circle cx="18" cy="18" r="14" fill="none" stroke="#F59E0B" strokeWidth="4" strokeDasharray="13 100" strokeDashoffset="-80" />
-                    </svg>
-                    <div className="absolute text-center">
-                      <span className="text-lg font-bold text-fg">121</span>
-                      <span className="block text-[10px] text-fg-subtle">Threat Memos</span>
+              {/* Donut Chart: Complete 7 Scam Typologies */}
+              <div className="rounded-3xl border border-line bg-surface p-6 shadow-xs flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between border-b border-line pb-3">
+                    <div className="flex items-center gap-2">
+                      <PieChartIcon className="h-4 w-4 text-accent" />
+                      <h3 className="text-sm font-semibold text-fg">Scam Typology Mix (7 Types)</h3>
+                      <InfoTooltip 
+                        title="7 Scam Typologies (NanoJev LLM)"
+                        text="Real-time breakdown of all 7 typologies identified by NanoJev (Qwen2.5-0.5B ONNX INT8) from unstructured transfer memos and device context: Investment, Romance, Impersonation, Prize/Fee, Fake COD/Selling, Other Suspicious, and Clean Transfers."
+                      />
                     </div>
+                    <span className="text-[11px] text-fg-subtle font-mono">NanoJev ONNX</span>
                   </div>
-                </div>
 
-                {/* Legend */}
-                <div className="mt-4 space-y-2 text-xs">
-                  {SCAM_TYPOLOGIES.slice(0, 4).map((item) => (
-                    <div key={item.key} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />
-                        <span className="text-fg-muted truncate max-w-[150px]">{item.label}</span>
+                  {/* Circular Donut Display (7 Typology Slices) */}
+                  <div className="mt-5 flex items-center justify-center">
+                    <div className="relative flex h-36 w-36 items-center justify-center">
+                      <svg viewBox="0 0 36 36" className="h-full w-full rotate-[-90deg]">
+                        {/* Background track */}
+                        <circle cx="18" cy="18" r="14" fill="none" stroke="#1E293B" strokeWidth="4" />
+                        {/* 1. Investment Scam 36% */}
+                        <circle cx="18" cy="18" r="14" fill="none" stroke="#38BDF8" strokeWidth="4" strokeDasharray="36 100" strokeDashoffset="0" />
+                        {/* 2. Romance Scam 23% */}
+                        <circle cx="18" cy="18" r="14" fill="none" stroke="#EC4899" strokeWidth="4" strokeDasharray="23 100" strokeDashoffset="-36" />
+                        {/* 3. Impersonation 17% */}
+                        <circle cx="18" cy="18" r="14" fill="none" stroke="#A855F7" strokeWidth="4" strokeDasharray="17 100" strokeDashoffset="-59" />
+                        {/* 4. Prize/Fee Scam 12% */}
+                        <circle cx="18" cy="18" r="14" fill="none" stroke="#F59E0B" strokeWidth="4" strokeDasharray="12 100" strokeDashoffset="-76" />
+                        {/* 5. Fake COD / Selling 6% */}
+                        <circle cx="18" cy="18" r="14" fill="none" stroke="#10B981" strokeWidth="4" strokeDasharray="6 100" strokeDashoffset="-88" />
+                        {/* 6. Other Suspicious 4% */}
+                        <circle cx="18" cy="18" r="14" fill="none" stroke="#F43F5E" strokeWidth="4" strokeDasharray="4 100" strokeDashoffset="-94" />
+                        {/* 7. Clean / Legitimate 2% */}
+                        <circle cx="18" cy="18" r="14" fill="none" stroke="#64748B" strokeWidth="4" strokeDasharray="2 100" strokeDashoffset="-98" />
+                      </svg>
+                      <div className="absolute text-center">
+                        <span className="text-lg font-bold text-fg">121</span>
+                        <span className="block text-[10px] text-fg-subtle">Threat Memos</span>
                       </div>
-                      <span className="font-mono font-semibold text-fg">{item.pct}%</span>
                     </div>
-                  ))}
+                  </div>
+
+                  {/* Complete 7 Typologies Legend */}
+                  <div className="mt-4 space-y-1.5 max-h-48 overflow-y-auto pr-1 text-xs">
+                    {SCAM_TYPOLOGIES.map((item) => (
+                      <div key={item.key} className="flex items-center justify-between py-0.5">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                          <span className="text-fg-muted truncate text-[11px]">{item.label}</span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-[10px] text-fg-subtle">{item.count} memos</span>
+                          <span className="font-mono font-semibold text-fg text-xs">{item.pct}%</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-line text-[10px] text-fg-subtle flex justify-between">
+                  <span>Inference SLA:</span>
+                  <span className="font-mono font-semibold text-accent">&lt; 1,500ms bounded</span>
                 </div>
               </div>
 
@@ -713,6 +879,10 @@ export default function AdminExecutivePortal() {
                     <div className="flex items-center gap-2">
                       <Cpu className="h-4 w-4 text-accent" />
                       <h3 className="text-sm font-semibold text-fg">Two-Stage Latency Budget</h3>
+                      <InfoTooltip 
+                        title="Two-Stage Pipeline SLAs"
+                        text="Stage A evaluates Gate 0 deterministic rules + XGBoost within <200ms (p50 ~28ms). Stage B evaluates NanoJev LLM with a 1,500ms bounded timeout. If Stage B times out, it safely falls back to Stage A's baseline."
+                      />
                     </div>
                     <span className="text-[11px] text-emerald-400 font-semibold font-mono">P99 Clear</span>
                   </div>
@@ -751,9 +921,13 @@ export default function AdminExecutivePortal() {
                       <div className="flex items-center gap-1.5 font-semibold text-fg">
                         <ShieldCheck className="h-3.5 w-3.5 text-accent" />
                         <span>Escalate-Only Safety Invariant</span>
+                        <InfoTooltip 
+                          title="Safety Invariant Invariance"
+                          text="Formal mathematical safety proof: NanoJev can escalate risk tier, but can never downgrade a Block decision from Gate 0, even under prompt injection attacks."
+                        />
                       </div>
-                      <p className="mt-1 text-[11px] text-fg-muted">
-                        $RiskTier(final) \ge RiskTier(a_0)$. NanoJev can never downgrade a Block decision.
+                      <p className="mt-1 text-[11px] text-fg-muted font-mono">
+                        RiskTier(final) ≥ RiskTier(a₀). NanoJev can never downgrade a Block decision.
                       </p>
                     </div>
                   </div>
@@ -772,6 +946,10 @@ export default function AdminExecutivePortal() {
                     <div className="flex items-center gap-2">
                       <Radio className="h-4 w-4 text-accent" />
                       <h3 className="text-sm font-semibold text-fg">Device Coercion Signals</h3>
+                      <InfoTooltip 
+                        title="Active Device Telemetry Surveillance"
+                        text="Captures real-time device posture: Screen-sharing Remote Access Tools (AnyDesk, TeamViewer), active telephone calls (Vishing voice coercion), and OS hooking frameworks (Frida, Magisk, Xposed)."
+                      />
                     </div>
                     <span className="text-[11px] text-fg-subtle">Real-Time Telemetry</span>
                   </div>

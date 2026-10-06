@@ -150,4 +150,19 @@ public class RedisSessionStore {
     public void evictCachedBalance(String accountId) {
         stringRedisTemplate.delete(BALANCE_CACHE_PREFIX + accountId);
     }
+
+    // --- Login MFA OTP Cache ---
+    private static final String LOGIN_OTP_PREFIX = "otp:login:";
+
+    public void storeLoginOtp(String userId, String otp, Duration ttl) {
+        stringRedisTemplate.opsForValue().set(LOGIN_OTP_PREFIX + userId, otp, ttl);
+    }
+
+    public String getLoginOtp(String userId) {
+        return stringRedisTemplate.opsForValue().get(LOGIN_OTP_PREFIX + userId);
+    }
+
+    public void clearLoginOtp(String userId) {
+        stringRedisTemplate.delete(LOGIN_OTP_PREFIX + userId);
+    }
 }

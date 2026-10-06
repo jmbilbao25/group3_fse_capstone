@@ -1,5 +1,6 @@
 package com.fse.banking.account.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,14 +11,18 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class LoginResponse {
+
+    @JsonProperty("status")
+    @Builder.Default
+    private String status = "AUTHENTICATED";
 
     @JsonProperty("access_token")
     private String accessToken;
 
     @JsonProperty("token_type")
-    @Builder.Default
-    private String tokenType = "Bearer";
+    private String tokenType;
 
     @JsonProperty("expires_in_seconds")
     private long expiresInSeconds;
@@ -27,4 +32,7 @@ public class LoginResponse {
 
     @JsonProperty("user_id")
     private String userId;
+
+    @JsonProperty("masked_email")
+    private String maskedEmail;
 }

@@ -6,6 +6,7 @@ import com.fse.banking.account.dto.LogoutResponse;
 import com.fse.banking.account.dto.RegisterRequest;
 import com.fse.banking.account.dto.RegisterResponse;
 import com.fse.banking.account.dto.TokenRefreshResponse;
+import com.fse.banking.account.dto.VerifyLoginOtpRequest;
 import com.fse.banking.account.service.AuthService;
 import com.fse.banking.account.service.TokenRotationService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,6 +18,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,6 +30,7 @@ import java.time.Duration;
 
 @Slf4j
 @RestController
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
@@ -57,6 +60,26 @@ public class AuthController {
         String userAgent = httpRequest.getHeader("User-Agent");
 
         AuthService.LoginResult result = authService.login(request, clientIp, userAgent);
+
+        if (result.getRefreshTokenId() != null) {
+            ResponseCookie cookie = createRefreshTokenCookie(result.getRefreshTokenId(), Duration.ofDays(7));
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                    .body(result.getResponse());
+        }
+
+        // MFA Required path: return challenge without issuing tokens or session cookies
+        return ResponseEntity.ok(result.getResponse());
+    }
+
+    @PostMapping("/verify-login-otp")
+    public ResponseEntity<LoginResponse> verifyLoginOtp(
+            @Valid @RequestBody VerifyLoginOtpRequest request,
+            HttpServletRequest httpRequest) {
+        String clientIp = httpRequest.getRemoteAddr();
+        String userAgent = httpRequest.getHeader("User-Agent");
+
+        AuthService.LoginResult result = authService.verifyLoginOtp(request, clientIp, userAgent);
 
         ResponseCookie cookie = createRefreshTokenCookie(result.getRefreshTokenId(), Duration.ofDays(7));
 

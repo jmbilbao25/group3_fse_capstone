@@ -154,4 +154,19 @@ class EmailNotificationServiceTest {
         assertTrue(result, "Tier 3 AMLA alert dispatch should succeed");
         verify(mailSender, times(1)).send(any(MimeMessage.class));
     }
+
+    @Test
+    @DisplayName("Should dispatch First-Time Login OTP email to customer")
+    void shouldSendLoginOtpSuccessfully() {
+        when(valueOperations.setIfAbsent(anyString(), anyString(), any(Duration.class)))
+                .thenReturn(true);
+
+        when(templateEngine.process(eq("email/login-otp.html"), any(Context.class)))
+                .thenReturn("<html><body>Login OTP 123456</body></html>");
+
+        boolean result = emailService.sendLoginOtp("juan.dc@email.com", "Juan Dela Cruz", "123456");
+
+        assertTrue(result, "Login OTP dispatch should succeed");
+        verify(mailSender, times(1)).send(any(MimeMessage.class));
+    }
 }

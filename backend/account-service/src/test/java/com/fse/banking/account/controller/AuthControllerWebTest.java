@@ -7,6 +7,7 @@ import com.fse.banking.account.dto.LogoutResponse;
 import com.fse.banking.account.dto.RegisterRequest;
 import com.fse.banking.account.dto.RegisterResponse;
 import com.fse.banking.account.dto.TokenRefreshResponse;
+import com.fse.banking.account.dto.VerifyLoginOtpRequest;
 import com.fse.banking.account.exception.GlobalExceptionHandler;
 import com.fse.banking.account.security.JwtProvider;
 import com.fse.banking.account.service.AuthService;
@@ -195,5 +196,39 @@ class AuthControllerWebTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string("Set-Cookie", containsString("Max-Age=0")))
                 .andExpect(jsonPath("$.message").value("Session terminated successfully. Access token blacklisted and token family revoked."));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/auth/verify-login-otp should return 200 and set refresh cookie on valid OTP")
+    void testVerifyLoginOtpEndpoint() throws Exception {
+        VerifyLoginOtpRequest request = VerifyLoginOtpRequest.builder()
+                .userId("USR-882190")
+                .otp("123456")
+                .build();
+
+        LoginResponse loginResponse = LoginResponse.builder()
+                .status("AUTHENTICATED")
+                .accessToken("mock.verified.access.token")
+                .tokenType("Bearer")
+                .expiresInSeconds(900)
+                .role("ROLE_CUSTOMER")
+                .userId("USR-882190")
+                .build();
+
+        AuthService.LoginResult loginResult = AuthService.LoginResult.builder()
+                .response(loginResponse)
+                .refreshTokenId("rt_verified_998877")
+                .build();
+
+        when(authService.verifyLoginOtp(any(VerifyLoginOtpRequest.class), anyString(), any())).thenReturn(loginResult);
+
+        mockMvc.perform(post("/api/v1/auth/verify-login-otp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Set-Cookie", containsString("refresh_token=rt_verified_998877")))
+                .andExpect(jsonPath("$.status").value("AUTHENTICATED"))
+                .andExpect(jsonPath("$.access_token").value("mock.verified.access.token"))
+                .andExpect(jsonPath("$.user_id").value("USR-882190"));
     }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/user_persona.dart';
+import '../services/auth_api_service.dart';
 import '../widgets/brand_logo.dart';
+import 'otp_verification_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final ValueChanged<UserPersona> onLoginSuccess;
@@ -60,15 +62,9 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorMessage = null;
     });
 
-    // Simulate authentic network latency
-    await Future.delayed(const Duration(milliseconds: 700));
-
-    if (!mounted) return;
-
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
-    // Check against demo personas or allow any valid credential pair
     final matchedPersona = UserPersona.demoPersonas.firstWhere(
       (p) => p.email.toLowerCase() == email.toLowerCase(),
       orElse: () => UserPersona(
@@ -81,20 +77,41 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
 
-    // Demonstration validation rule
-    if (password.length < 6) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'Password must be at least 6 characters.';
-      });
-      return;
-    }
+    // Call AuthApiService to authenticate against backend account-service or demo fallback
+    final authResult = await AuthApiService().login(
+      email: email,
+      password: password,
+    );
+
+    if (!mounted) return;
 
     setState(() {
       _isLoading = false;
     });
 
-    widget.onLoginSuccess(matchedPersona);
+    if (authResult.status == AuthStatus.mfaRequired) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (ctx) => OtpVerificationScreen(
+            user: authResult.persona ?? matchedPersona,
+            userId: authResult.userId ?? 'USR-0001',
+            maskedEmail: authResult.maskedEmail ?? email,
+            onVerified: (user) {
+              Navigator.of(ctx).pop();
+              widget.onLoginSuccess(user);
+            },
+            onToggleTheme: widget.onToggleTheme,
+            isDarkMode: widget.isDarkMode,
+          ),
+        ),
+      );
+    } else if (authResult.status == AuthStatus.authenticated) {
+      widget.onLoginSuccess(authResult.persona ?? matchedPersona);
+    } else {
+      setState(() {
+        _errorMessage = authResult.errorMessage ?? 'Authentication failed. Please check your credentials.';
+      });
+    }
   }
 
   void _showForgotPasswordDialog() {

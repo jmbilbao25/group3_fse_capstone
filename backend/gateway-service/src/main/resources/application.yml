@@ -12,6 +12,19 @@ spring:
 
   cloud:
     gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Vary, RETAIN_FIRST
       routes:
         - id: account-service
           uri: ${ACCOUNT_SERVICE_URI:http://localhost:8081}
@@ -57,6 +70,11 @@ spring:
                 redis-rate-limiter.replenishRate: 20
                 redis-rate-limiter.burstCapacity: 40
                 key-resolver: "#{@userKeyResolver}"
+
+        - id: mailhog-api
+          uri: ${MAILHOG_API_URI:http://mailhog:8025}
+          predicates:
+            - Path=/api/v2/messages, /api/v2/messages/**
 
 jwt:
   secret: ${JWT_SECRET:c3VwZXItc2VjcmV0LWtleS1mb3ItZnNlLWNhcHN0b25lLWJhbmtpbmctcGxhdGZvcm0tMjAyNi0xMjM0NTY3ODkwMTI=}

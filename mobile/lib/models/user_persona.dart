@@ -25,6 +25,14 @@ class UserPersona {
       balance: 15000000.00,
     ),
     UserPersona(
+      name: 'Maria Clara Reyes',
+      role: 'Customer',
+      email: 'maria.reyes@email.com',
+      password: 'password123',
+      accountId: '1000-2000-3002',
+      balance: 5000000.00,
+    ),
+    UserPersona(
       name: 'Diana Vance',
       role: 'Admin / Teller',
       email: 'diana.admin@bank.com',

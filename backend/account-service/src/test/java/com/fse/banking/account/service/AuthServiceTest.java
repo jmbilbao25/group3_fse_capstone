@@ -3,6 +3,7 @@ package com.fse.banking.account.service;
 import com.fse.banking.account.dto.LoginRequest;
 import com.fse.banking.account.dto.RegisterRequest;
 import com.fse.banking.account.dto.RegisterResponse;
+import com.fse.banking.account.dto.VerifyLoginOtpRequest;
 import com.fse.banking.account.model.UserEntity;
 import com.fse.banking.account.repository.UserRepository;
 import com.fse.banking.account.security.JwtProvider;
@@ -21,6 +22,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Optional;
 
@@ -131,8 +133,9 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("Should successfully authenticate credentials and issue tokens")
+    @DisplayName("Should successfully authenticate returning credentials and issue tokens")
     void testLoginSuccess() {
+        activeUser.setLastLoginAt(Instant.now());
         LoginRequest loginRequest = LoginRequest.builder()
                 .email("juan.delacruz@example.ph")
                 .password("Password123!")
@@ -147,10 +150,60 @@ class AuthServiceTest {
         AuthService.LoginResult result = authService.login(loginRequest, "127.0.0.1", "Mozilla/5.0");
 
         assertThat(result).isNotNull();
+        assertThat(result.getResponse().getStatus()).isEqualTo("AUTHENTICATED");
         assertThat(result.getResponse().getAccessToken()).isEqualTo("mock.jwt.token");
         assertThat(result.getResponse().getRole()).isEqualTo("ROLE_CUSTOMER");
         assertThat(result.getRefreshTokenId()).startsWith("rt_");
         verify(redisSessionStore).registerSessionToken(eq("USR-100001"), anyString(), eq(3));
+    }
+
+    @Test
+    @DisplayName("Should challenge first-time login with MFA_REQUIRED and dispatch OTP without tokens")
+    void testFirstTimeLoginRequiresOtp() {
+        activeUser.setLastLoginAt(null);
+        LoginRequest loginRequest = LoginRequest.builder()
+                .email("juan.delacruz@example.ph")
+                .password("Password123!")
+                .build();
+
+        when(userRepository.findByEmail("juan.delacruz@example.ph")).thenReturn(Optional.of(activeUser));
+        when(passwordEncoder.matches("Password123!", activeUser.getPasswordHash())).thenReturn(true);
+
+        AuthService.LoginResult result = authService.login(loginRequest, "127.0.0.1", "Mozilla/5.0");
+
+        assertThat(result).isNotNull();
+        assertThat(result.getResponse().getStatus()).isEqualTo("MFA_REQUIRED");
+        assertThat(result.getResponse().getUserId()).isEqualTo("USR-100001");
+        assertThat(result.getResponse().getMaskedEmail()).isNotNull();
+        assertThat(result.getResponse().getAccessToken()).isNull();
+        assertThat(result.getRefreshTokenId()).isNull();
+
+        verify(redisSessionStore).storeLoginOtp(eq("USR-100001"), anyString(), any());
+    }
+
+    @Test
+    @DisplayName("Should successfully verify login OTP and issue JWT tokens")
+    void testVerifyLoginOtpSuccess() {
+        VerifyLoginOtpRequest verifyRequest = VerifyLoginOtpRequest.builder()
+                .userId("USR-100001")
+                .otp("123456")
+                .build();
+
+        when(userRepository.findById("USR-100001")).thenReturn(Optional.of(activeUser));
+        when(redisSessionStore.getLoginOtp("USR-100001")).thenReturn("123456");
+        when(jwtProvider.generateAccessToken(eq("USR-100001"), eq("juan.delacruz@example.ph"), eq("ROLE_CUSTOMER"), anyString()))
+                .thenReturn("mock.verified.jwt");
+        when(jwtProvider.getAccessTokenExpirationSeconds()).thenReturn(900L);
+
+        AuthService.LoginResult result = authService.verifyLoginOtp(verifyRequest, "127.0.0.1", "Mozilla/5.0");
+
+        assertThat(result).isNotNull();
+        assertThat(result.getResponse().getStatus()).isEqualTo("AUTHENTICATED");
+        assertThat(result.getResponse().getAccessToken()).isEqualTo("mock.verified.jwt");
+        assertThat(activeUser.getLastLoginAt()).isNotNull();
+
+        verify(redisSessionStore).clearLoginOtp("USR-100001");
+        verify(userRepository).save(activeUser);
     }
 
     @Test

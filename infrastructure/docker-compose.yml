@@ -25,7 +25,7 @@ services:
     networks:
       - banking-net
     healthcheck:
-      test: ["CMD-SHELL", "/opt/oracle/checkDBStatus.sh || exit 0"]
+      test: [ "CMD-SHELL", "/opt/oracle/checkDBStatus.sh || exit 0" ]
       interval: 10s
       timeout: 5s
       retries: 20
@@ -52,7 +52,7 @@ services:
     networks:
       - banking-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U audit_user -d banking_audit"]
+      test: [ "CMD-SHELL", "pg_isready -U audit_user -d banking_audit" ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -69,16 +69,14 @@ services:
     restart: unless-stopped
     ports:
       - "6379:6379"
-    command: ["redis-server", "--appendonly", "yes"]
+    command: [ "redis-server", "--appendonly", "yes" ]
     labels:
       com.datadoghq.ad.check_names: '["redisdb"]'
       com.datadoghq.ad.init_configs: '[{}]'
       com.datadoghq.ad.instances: '[{"host": "%%host%%", "port": "6379"}]'
       com.datadoghq.ad.logs: '[{"source": "redis", "service": "redis-cache"}]'
     networks:
-      - banking-net
-
-        # ============================================================================
+      - banking-net # ============================================================================
   # 4. Event Bus: Apache Kafka (KRaft Mode - No ZooKeeper)
   # Container Name: kafka-broker
   # High-throughput asynchronous event streaming for mutations & alerts
@@ -284,7 +282,7 @@ services:
     depends_on:
       - dd-agent
     healthcheck:
-      test: ["CMD", "/opt/datadog-agent/embedded/bin/python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8084/health')"]
+      test: [ "CMD", "/opt/datadog-agent/embedded/bin/python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8084/health')" ]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -354,6 +352,7 @@ services:
   # ============================================================================
   banking-frontend:
     container_name: banking-frontend
+    profiles: ["frontend"]
     build:
       context: ../frontend
       dockerfile: Dockerfile
@@ -376,8 +375,8 @@ services:
     restart: unless-stopped
     ports:
       - "16686:16686" # Web UI
-      - "4317:4317"   # OTLP gRPC receiver
-      - "4318:4318"   # OTLP HTTP receiver
+      - "4317:4317" # OTLP gRPC receiver
+      - "4318:4318" # OTLP HTTP receiver
     environment:
       - COLLECTOR_OTLP_ENABLED=true
     networks:
@@ -447,8 +446,8 @@ services:
     image: registry.datadoghq.com/agent:7
     restart: unless-stopped
     ports:
-      - "8126:8126"       # APM trace receiver
-      - "8125:8125/udp"   # DogStatsD metrics
+      - "8126:8126" # APM trace receiver
+      - "8125:8125/udp" # DogStatsD metrics
     environment:
       - DD_API_KEY=38f78a4f829a542181926e4e9499146d
       - DD_SITE=datadoghq.com
@@ -494,5 +493,4 @@ volumes:
   postgres_data:
   prometheus_data:
   grafana_data:
-
 

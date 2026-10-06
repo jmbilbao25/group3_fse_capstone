@@ -31,6 +31,42 @@ public class NotificationController {
     public ResponseEntity<Map<String, Object>> sendOtpNotification(
             @RequestBody(required = false) Map<String, Object> request) {
 
+        boolean isLoginOtp = request != null && (
+                "LOGIN_OTP".equalsIgnoreCase(String.valueOf(request.get("type"))) ||
+                "LOGIN".equalsIgnoreCase(String.valueOf(request.get("type"))) ||
+                "LOGIN".equalsIgnoreCase(String.valueOf(request.get("purpose"))) ||
+                (request.get("transfer_id") == null && request.get("transferId") == null && request.get("amount") == null)
+        );
+
+        if (isLoginOtp) {
+            String recipientEmail = request != null && request.get("recipient_email") != null
+                    ? request.get("recipient_email").toString()
+                    : (request != null && request.get("recipientEmail") != null ? request.get("recipientEmail").toString() : "juan.dc@email.com");
+            String recipientName = request != null && request.get("recipient_name") != null
+                    ? request.get("recipient_name").toString()
+                    : (request != null && request.get("recipientName") != null ? request.get("recipientName").toString() : "Valued Customer");
+            String verificationCode = request != null && request.get("verification_code") != null
+                    ? request.get("verification_code").toString()
+                    : (request != null && request.get("verificationCode") != null
+                            ? request.get("verificationCode").toString()
+                            : (request != null && request.get("otp") != null ? request.get("otp").toString() : null));
+
+            if (verificationCode == null || verificationCode.isBlank()) {
+                verificationCode = String.format("%06d", new java.security.SecureRandom().nextInt(1000000));
+            }
+
+            log.info("Sending First-Time Login OTP verification email to recipient={}", recipientEmail);
+            boolean dispatched = emailService.sendLoginOtp(recipientEmail, recipientName, verificationCode);
+
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("status", dispatched ? "DISPATCHED" : "BUFFERED");
+            response.put("type", "LOGIN_OTP");
+            response.put("recipientEmail", recipientEmail);
+            response.put("verificationCode", verificationCode);
+            response.put("message", "First-Time Login Verification OTP email dispatched to " + recipientEmail + " via MailHog.");
+            return ResponseEntity.ok(response);
+        }
+
         String transferId = "TRX-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         String recipientEmail = "juan.dc@email.com";
         BigDecimal amount = new BigDecimal("90000.0000");

@@ -4,6 +4,7 @@ import com.fse.banking.account.dto.LoginRequest;
 import com.fse.banking.account.dto.LoginResponse;
 import com.fse.banking.account.dto.RegisterRequest;
 import com.fse.banking.account.dto.RegisterResponse;
+import com.fse.banking.account.dto.VerifyLoginOtpRequest;
 import com.fse.banking.account.model.UserEntity;
 import com.fse.banking.account.repository.UserRepository;
 import com.fse.banking.account.security.JwtProvider;
@@ -20,6 +21,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +40,9 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
     private final RedisSessionStore redisSessionStore;
+
+    @Value("${app.services.notification-service.url:${NOTIFICATION_SERVICE_URL:http://notification-service:8083}}")
+    private String notificationServiceUrl;
 
     private static final int MAX_FAILED_ATTEMPTS = 5;
     private static final Duration REFRESH_TOKEN_TTL = Duration.ofDays(7);
@@ -124,6 +129,57 @@ public class AuthService {
             userRepository.save(user);
         }
 
+        // Enforce First-Time Login MFA Verification
+        if (user.getLastLoginAt() == null) {
+            String otp = redisSessionStore.getLoginOtp(user.getUserId());
+            if (otp == null || otp.isBlank()) {
+                otp = String.format("%06d", ThreadLocalRandom.current().nextInt(1000000));
+                redisSessionStore.storeLoginOtp(user.getUserId(), otp, Duration.ofMinutes(5));
+                dispatchOtpEmail(user.getEmail(), user.getFirstName() + " " + user.getLastName(), otp);
+            }
+
+            LoginResponse mfaChallenge = LoginResponse.builder()
+                    .status("MFA_REQUIRED")
+                    .userId(user.getUserId())
+                    .maskedEmail(maskEmail(user.getEmail()))
+                    .build();
+
+            return LoginResult.builder()
+                    .response(mfaChallenge)
+                    .refreshTokenId(null)
+                    .build();
+        }
+
+        return createAuthenticatedSession(user, clientIp, userAgent);
+    }
+
+    @Transactional
+    public LoginResult verifyLoginOtp(VerifyLoginOtpRequest request, String clientIp, String userAgent) {
+        log.info("Processing login OTP verification for userId: {}", request.getUserId());
+
+        UserEntity user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new UnauthorizedException("User account not found."));
+
+        if (user.getStatus() == UserStatus.LOCKED || user.getStatus() == UserStatus.SUSPENDED) {
+            throw new UnauthorizedException("Account is inactive.");
+        }
+
+        String cachedOtp = redisSessionStore.getLoginOtp(user.getUserId());
+        if (cachedOtp == null || !cachedOtp.equals(request.getOtp().trim())) {
+            throw new UnauthorizedException("Invalid or expired verification code.");
+        }
+
+        // Invalidate OTP immediately to prevent replay attacks
+        redisSessionStore.clearLoginOtp(user.getUserId());
+
+        // Mark first-time login as complete
+        user.setLastLoginAt(Instant.now());
+        userRepository.save(user);
+
+        return createAuthenticatedSession(user, clientIp, userAgent);
+    }
+
+    private LoginResult createAuthenticatedSession(UserEntity user, String clientIp, String userAgent) {
         String jti = UUID.randomUUID().toString();
         String roleAuthority = user.getRole().getAuthority();
         String accessToken = jwtProvider.generateAccessToken(user.getUserId(), user.getEmail(), roleAuthority, jti);
@@ -158,6 +214,7 @@ public class AuthService {
         redisSessionStore.addToTokenFamily(sessionId, refreshTokenId);
 
         LoginResponse loginResponse = LoginResponse.builder()
+                .status("AUTHENTICATED")
                 .accessToken(accessToken)
                 .tokenType("Bearer")
                 .expiresInSeconds(jwtProvider.getAccessTokenExpirationSeconds())
@@ -169,6 +226,39 @@ public class AuthService {
                 .response(loginResponse)
                 .refreshTokenId(refreshTokenId)
                 .build();
+    }
+
+    private void dispatchOtpEmail(String email, String recipientName, String otp) {
+        try {
+            org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+            org.springframework.http.client.SimpleClientHttpRequestFactory factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+            factory.setConnectTimeout(3000);
+            factory.setReadTimeout(3000);
+            restTemplate.setRequestFactory(factory);
+
+            java.util.Map<String, Object> payload = java.util.Map.of(
+                    "recipient_email", email,
+                    "recipient_name", recipientName,
+                    "verification_code", otp,
+                    "type", "LOGIN_OTP"
+            );
+            String targetUrl = notificationServiceUrl + "/api/v1/notifications/send-otp";
+            restTemplate.postForEntity(targetUrl, payload, java.util.Map.class);
+            log.info("Dispatched first-time login OTP email via notification-service to {}", email);
+        } catch (Exception e) {
+            log.warn("Could not dispatch OTP email via notification-service: {}", e.getMessage());
+        }
+    }
+
+    private String maskEmail(String email) {
+        if (email == null || !email.contains("@")) return email;
+        String[] parts = email.split("@");
+        String username = parts[0];
+        String domain = parts[1];
+        if (username.length() <= 2) {
+            return username.charAt(0) + "***@" + domain;
+        }
+        return username.charAt(0) + "***" + username.charAt(username.length() - 1) + "@" + domain;
     }
 
     public void logout(String authHeader, String refreshTokenCookie) {

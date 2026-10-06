@@ -312,6 +312,47 @@ public class EmailNotificationServiceImpl implements EmailNotificationService {
     }
 
     @Override
+    public boolean sendLoginOtp(String recipientEmail, String recipientName, String verificationCode) {
+        String targetRecipient = recipientEmail != null && !recipientEmail.isBlank()
+                ? recipientEmail
+                : "juan.dc@email.com";
+
+        String code = verificationCode;
+        if (code == null || code.isBlank()) {
+            code = String.format("%06d", new java.security.SecureRandom().nextInt(1000000));
+        }
+
+        // Deduplication to prevent duplicate emails for the exact same code within 10 seconds
+        if (redisTemplate != null) {
+            Boolean first = redisTemplate.opsForValue().setIfAbsent("otp:sent:login:" + targetRecipient + ":" + code, "1", java.time.Duration.ofSeconds(10));
+            if (Boolean.FALSE.equals(first)) {
+                log.info("[LOGIN OTP DEDUP] Email already dispatched recently for recipient={} code={}", targetRecipient, code);
+                return true;
+            }
+        }
+
+        Context context = new Context();
+        context.setVariable("recipientEmail", targetRecipient);
+        context.setVariable("recipientName", recipientName != null && !recipientName.isBlank() ? recipientName : "Valued Customer");
+        context.setVariable("verificationCode", code);
+        context.setVariable("formattedDate", receiptGenerator.formatTimestamp(Instant.now()));
+        context.setVariable("isLoginOtp", true);
+
+        String htmlContent = templateEngine.process("email/login-otp.html", context);
+        String subject = String.format("Aura Bank: %s is your login verification code", code);
+
+        boolean dispatched = dispatchEmail(targetRecipient, subject, htmlContent, "LOGIN-OTP-" + code);
+
+        persistNotificationRecord(
+                "U1001",
+                "CUSTOMER_LOGIN_VERIFICATION",
+                String.format("First-time login verification OTP %s dispatched to %s", code, targetRecipient)
+        );
+
+        return dispatched;
+    }
+
+    @Override
     public boolean sendAmlaHighValueAlert(TransactionNotificationEvent event) {
         String transferId = event.getTransferId();
         String makerId = event.getMakerUserId() != null ? event.getMakerUserId() : (event.getUserId() != null ? event.getUserId() : "USR-CUSTOMER");

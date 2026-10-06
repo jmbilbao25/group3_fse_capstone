@@ -532,6 +532,61 @@ function handleMockFallback(config) {
         });
       }
 
+      // 3a. Accounts & 360 Customer Profile Inquiry (Oracle XE Accounts + Balance Master + Users JOIN)
+      if (url.includes('/accounts') && !url.includes('/status') && method === 'get') {
+        const targetAccId = url.split('/accounts/')[1]?.split('?')[0];
+        const searchParams = url.includes('?') ? new URLSearchParams(url.split('?')[1]) : null;
+        const userIdFilter = searchParams?.get('userId');
+
+        let accountsList = (mockState.registeredAccounts || initialMockState.registeredAccounts).map((acc) => {
+          const user = (mockState.users || initialMockState.users).find((u) => u.user_id === acc.user_id) || {};
+          let currentBalance = 5000000.00;
+          let availableBalance = 5000000.00;
+          let heldBalance = 0.00;
+
+          if (acc.account_number === '1000-2000-3001' || acc.account_id === 'A2001' || acc.account_number === '100020003001') {
+            currentBalance = mockState.account?.current_balance ?? 15000000.00;
+            availableBalance = mockState.account?.available_balance ?? 15000000.00;
+            heldBalance = mockState.account?.held_balance ?? 0.00;
+          } else if (acc.account_number === '1000-2000-3003' || acc.account_id === 'A2003' || acc.account_number === '100020003003') {
+            currentBalance = mockState.creditAccount?.current_balance ?? 2000.00;
+            availableBalance = mockState.creditAccount?.available_balance ?? 298000.00;
+            heldBalance = mockState.creditAccount?.held_balance ?? 0.00;
+          }
+
+          return {
+            ...acc,
+            account_id: acc.account_id || acc.account_number,
+            account_number: acc.account_number || acc.account_id,
+            account_name: acc.account_name || `${user.first_name || 'Retail'} ${user.last_name || 'Customer'}`,
+            user_name: `${user.first_name || 'Retail'} ${user.last_name || 'Customer'}`.trim(),
+            user_email: user.email || 'customer@retailbank.ph',
+            user_phone: user.phone_number || '09170000000',
+            government_id: user.government_id || 'PSA-0000-0000',
+            dob: user.dob || '1990-01-01',
+            location_name: user.last_known_location_name || 'Manila, Philippines',
+            ip_address: user.last_known_ip || '112.198.45.10',
+            currency: 'PHP',
+            current_balance: currentBalance,
+            available_balance: availableBalance,
+            held_balance: heldBalance,
+            created_at: acc.created_at || '2024-01-15T08:00:00Z',
+            user_profile: { ...user }
+          };
+        });
+
+        if (targetAccId && targetAccId !== 'accounts') {
+          const matched = accountsList.find(a => a.account_id === targetAccId || a.account_number === targetAccId);
+          return resolve({ data: matched || accountsList[0] });
+        }
+
+        if (userIdFilter) {
+          accountsList = accountsList.filter(a => a.user_id === userIdFilter);
+        }
+
+        return resolve({ data: accountsList });
+      }
+
       // 3b. Transaction Reversal / Rollback (T24 CBS Compensating Entry)
       if (url.includes('/reverse') && method === 'post') {
         const transferId = url.split('/transfers/')[1]?.split('/')[0] || payload?.transfer_id || payload?.transaction_id;

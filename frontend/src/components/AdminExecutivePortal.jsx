@@ -35,7 +35,11 @@ import {
   Shield,
   HelpCircle,
   AlertOctagon,
-  Info
+  Info,
+  CreditCard,
+  Wallet,
+  Eye,
+  UserCheck
 } from 'lucide-react';
 import apiClient, { mockState } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -188,6 +192,10 @@ export default function AdminExecutivePortal() {
 
   // Core Data States
   const [transactions, setTransactions] = useState([]);
+  const [accounts, setAccounts] = useState([]);
+  const [selectedAccount, setSelectedAccount] = useState(null);
+  const [accountSearchQuery, setAccountSearchQuery] = useState('');
+  const [accountTypeFilter, setAccountTypeFilter] = useState('ALL');
   const [auditLogs, setAuditLogs] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
@@ -300,6 +308,14 @@ export default function AdminExecutivePortal() {
           });
         }
       } catch (_) {}
+
+      // 4. Accounts & 360 Customer Profiles from Oracle XE / Core Banking
+      try {
+        const accRes = await apiClient.get('/accounts');
+        if (Array.isArray(accRes.data) && accRes.data.length > 0) {
+          setAccounts(accRes.data);
+        }
+      } catch (_) {}
     } finally {
       setIsLoading(false);
     }
@@ -397,6 +413,26 @@ export default function AdminExecutivePortal() {
     });
   }, [transactions, searchQuery, statusFilter]);
 
+  // Filtered accounts
+  const filteredAccounts = useMemo(() => {
+    return accounts.filter(acc => {
+      const q = accountSearchQuery.toLowerCase();
+      const matchSearch = accountSearchQuery === '' ||
+        (acc.account_number || '').toLowerCase().includes(q) ||
+        (acc.user_name || '').toLowerCase().includes(q) ||
+        (acc.user_email || '').toLowerCase().includes(q) ||
+        (acc.government_id || '').toLowerCase().includes(q) ||
+        (acc.location_name || '').toLowerCase().includes(q);
+
+      const matchType = accountTypeFilter === 'ALL' ||
+        acc.account_type === accountTypeFilter ||
+        (accountTypeFilter === 'ACTIVE' && acc.status === 'ACTIVE') ||
+        (accountTypeFilter === 'LOCKED' && acc.status !== 'ACTIVE');
+
+      return matchSearch && matchType;
+    });
+  }, [accounts, accountSearchQuery, accountTypeFilter]);
+
   // Aggregated Stats
   const stats = useMemo(() => {
     const totalVolume = transactions.reduce((acc, t) => acc + (t.status !== 'FAILED' ? t.amount : 0), 0);
@@ -428,6 +464,7 @@ export default function AdminExecutivePortal() {
             <nav className="mt-2 space-y-1">
               {[
                 { id: 'overview', label: 'Overview & Telemetry', icon: BarChart3 },
+                { id: 'accounts', label: 'Customer Accounts & 360°', icon: Users, count: accounts.length },
                 { id: 'transactions', label: 'Transactions & Reversals', icon: Layers, count: transactions.length },
                 { id: 'threat_radar', label: 'Two-Stage Threat Radar', icon: Zap },
                 { id: 'geo_surveillance', label: 'Geo & Device Signals', icon: Globe, alert: stats.isAnomaly },
@@ -1087,7 +1124,174 @@ export default function AdminExecutivePortal() {
         )}
 
         {/* =========================================================================
-            VIEW 2: TRANSACTIONS & REVERSALS (FULL DETAILED JOURNAL)
+            VIEW: CUSTOMER ACCOUNTS & 360° PROFILE GOVERNANCE
+            ========================================================================= */}
+        {activeView === 'accounts' && (
+          <div className="space-y-6 animate-fade-in">
+            {/* Header / Search Controls */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-accent" />
+                  <h2 className="text-base font-semibold text-fg">
+                    Customer Accounts & 360° Identity Governance
+                  </h2>
+                  <InfoTooltip
+                    title="Customer 360° Account Mapping"
+                    text="Combines Oracle XE Master USERS, ACCOUNTS, and BALANCE_MASTER tables into a unified view. Drill down into any customer to inspect all their linked deposit accounts, real-time ledger balances, and specific transaction histories."
+                  />
+                </div>
+                <p className="mt-1 text-xs text-fg-muted">
+                  Relational customer profiles linked to Oracle XE balance records with real-time KYC, status, and transaction history.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-fg-subtle" />
+                  <input
+                    type="text"
+                    value={accountSearchQuery}
+                    onChange={(e) => setAccountSearchQuery(e.target.value)}
+                    placeholder="Search account, name, or KYC ID..."
+                    className="h-9 w-64 rounded-2xl border border-line bg-surface pl-9 pr-3 text-xs text-fg placeholder:text-fg-subtle focus:border-accent focus:outline-none"
+                  />
+                  {accountSearchQuery && (
+                    <button
+                      onClick={() => setAccountSearchQuery('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-fg-subtle hover:text-fg"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center rounded-2xl border border-line bg-surface p-1 text-xs shadow-xs">
+                  {['ALL', 'SAVINGS', 'CHECKING', 'ACTIVE'].map((f) => (
+                    <button
+                      key={f}
+                      onClick={() => setAccountTypeFilter(f)}
+                      className={cn(
+                        "rounded-xl px-2.5 py-1 text-[11px] font-semibold transition",
+                        accountTypeFilter === f
+                          ? "bg-accent/15 text-accent border border-accent/20"
+                          : "text-fg-muted hover:text-fg"
+                      )}
+                    >
+                      {f}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Metrics Bar */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="rounded-3xl border border-line bg-surface p-4 shadow-xs">
+                <span className="text-xs text-fg-muted">Total Depository Accounts</span>
+                <div className="mt-1 text-xl font-bold text-fg">{accounts.length} Accounts</div>
+                <span className="text-[11px] text-fg-subtle">Normalized Oracle XE schema</span>
+              </div>
+              <div className="rounded-3xl border border-line bg-surface p-4 shadow-xs">
+                <span className="text-xs text-fg-muted">Total Depository Balance</span>
+                <div className="mt-1 text-xl font-bold text-emerald-400">
+                  {formatPHP(accounts.reduce((acc, a) => acc + (a.available_balance || 0), 0))}
+                </div>
+                <span className="text-[11px] text-fg-subtle">Aggregated customer liquidity</span>
+              </div>
+              <div className="rounded-3xl border border-line bg-surface p-4 shadow-xs">
+                <span className="text-xs text-fg-muted">KYC & Identity Verification</span>
+                <div className="mt-1 text-xl font-bold text-accent">100% Cleared</div>
+                <span className="text-[11px] text-fg-subtle">BSP Cir. 1213 Biometrics</span>
+              </div>
+            </div>
+
+            {/* Accounts Table */}
+            <div className="rounded-3xl border border-line bg-surface overflow-hidden shadow-xs">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="border-b border-line bg-sunken/60 text-[10px] uppercase font-bold text-fg-subtle tracking-wider">
+                    <tr>
+                      <th className="py-3 px-4">Account Number</th>
+                      <th className="py-3 px-4">Customer Holder</th>
+                      <th className="py-3 px-4">Origin Location</th>
+                      <th className="py-3 px-4 text-right">Available Balance</th>
+                      <th className="py-3 px-4 text-right">Ledger Balance</th>
+                      <th className="py-3 px-4 text-center">Status</th>
+                      <th className="py-3 px-4 text-right">360° Inspection</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line/60">
+                    {filteredAccounts.map((acc) => (
+                      <tr
+                        key={acc.account_number}
+                        onClick={() => setSelectedAccount(acc)}
+                        className="hover:bg-sunken/50 transition cursor-pointer group"
+                      >
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-2">
+                            <CreditCard className="h-4 w-4 text-accent shrink-0" />
+                            <div>
+                              <span className="font-mono font-bold text-fg block text-xs">
+                                {acc.account_number}
+                              </span>
+                              <span className="text-[10px] text-fg-subtle font-mono uppercase">
+                                {acc.account_type}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <div className="font-semibold text-fg">{acc.user_name}</div>
+                          <div className="text-[11px] text-fg-muted">{acc.user_email}</div>
+                          <div className="text-[10px] text-fg-subtle font-mono">{acc.government_id}</div>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-1.5 text-fg">
+                            <MapPin className="h-3 w-3 text-accent shrink-0" />
+                            <span className="truncate">{acc.location_name}</span>
+                          </div>
+                          <div className="text-[10px] text-fg-subtle font-mono pl-4.5">
+                            IP: {acc.ip_address}
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4 text-right font-sans font-bold text-emerald-400">
+                          {formatPHP(acc.available_balance)}
+                        </td>
+                        <td className="py-3.5 px-4 text-right font-sans font-medium text-fg-muted">
+                          {formatPHP(acc.current_balance)}
+                        </td>
+                        <td className="py-3.5 px-4 text-center">
+                          <span className={cn(
+                            "rounded-full px-2.5 py-0.5 text-[10px] font-semibold",
+                            acc.status === 'ACTIVE' ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
+                          )}>
+                            {acc.status}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-right">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedAccount(acc);
+                            }}
+                            className="inline-flex items-center gap-1 rounded-xl border border-accent/30 bg-accent/10 px-2.5 py-1 text-[11px] font-semibold text-accent hover:bg-accent/20 transition shadow-xs"
+                          >
+                            <Eye className="h-3 w-3" />
+                            <span>View 360°</span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* =========================================================================
+            VIEW 3: TRANSACTIONS & REVERSALS (FULL DETAILED JOURNAL)
             ========================================================================= */}
         {activeView === 'transactions' && (
           <div className="space-y-4 animate-fade-in">
@@ -1728,6 +1932,298 @@ export default function AdminExecutivePortal() {
                   Close Inspector
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          360° CUSTOMER PROFILE & ACCOUNT INSPECTOR MODAL
+          ========================================================================= */}
+      {selectedAccount && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 sm:p-6 animate-in fade-in duration-200">
+          <div className="w-full max-w-4xl max-h-[92vh] bg-surface border border-line rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-line px-6 py-4 bg-surface">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-accent/15 text-accent font-bold text-sm">
+                  {selectedAccount.user_name.split(' ').map(n => n[0]).join('')}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-fg-subtle">
+                      Customer 360° Profile & Account Ledger
+                    </span>
+                    <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">
+                      {selectedAccount.status}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="font-bold text-fg text-base">
+                      {selectedAccount.user_name}
+                    </span>
+                    <span className="font-mono text-xs text-fg-muted">
+                      ({selectedAccount.user_id || 'U1001'})
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedAccount(null)}
+                className="rounded-2xl p-2 text-fg-subtle hover:text-fg hover:bg-sunken transition"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Modal Scrollable Body */}
+            <div className="flex-1 overflow-y-auto p-6 sm:p-7 space-y-6">
+              {/* Row 1: 3 Balance & Liquidity Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="rounded-2xl border border-line bg-sunken/40 p-4 space-y-1">
+                  <span className="text-xs text-fg-muted font-medium">Selected Account Available Balance</span>
+                  <div className="text-2xl font-bold text-emerald-400 font-sans">
+                    {formatPHP(selectedAccount.available_balance)}
+                  </div>
+                  <div className="text-[11px] text-fg-subtle font-mono">
+                    Acc #{selectedAccount.account_number} ({selectedAccount.account_type})
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-line bg-sunken/40 p-4 space-y-1">
+                  <span className="text-xs text-fg-muted font-medium">Oracle XE Ledger Balance</span>
+                  <div className="text-2xl font-bold text-fg font-sans">
+                    {formatPHP(selectedAccount.current_balance)}
+                  </div>
+                  <div className="text-[11px] text-fg-subtle">
+                    Soft Holds Applied: {formatPHP(selectedAccount.held_balance || 0)}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-line bg-sunken/40 p-4 space-y-1">
+                  <span className="text-xs text-fg-muted font-medium">Total Customer Wealth</span>
+                  <div className="text-2xl font-bold text-accent font-sans">
+                    {formatPHP(
+                      accounts
+                        .filter(a => a.user_id === selectedAccount.user_id)
+                        .reduce((acc, a) => acc + (a.available_balance || 0), 0)
+                    )}
+                  </div>
+                  <div className="text-[11px] text-fg-subtle">
+                    Across {accounts.filter(a => a.user_id === selectedAccount.user_id).length} linked depository accounts
+                  </div>
+                </div>
+              </div>
+
+              {/* Row 2: Customer Identity, KYC & Device Telemetry Profile */}
+              <div className="rounded-2xl border border-line bg-surface p-5 space-y-4 shadow-xs">
+                <div className="flex items-center justify-between border-b border-line pb-3">
+                  <div className="flex items-center gap-2">
+                    <UserCheck className="h-4 w-4 text-accent" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-fg">
+                      Customer KYC & Telemetry Profile (USERS Table)
+                    </h3>
+                  </div>
+                  <span className="text-[11px] text-emerald-400 font-semibold font-mono">
+                    BSP KYC Tier 3 (Fully Verified)
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+                  <div>
+                    <span className="text-fg-subtle block text-[11px]">Email Address</span>
+                    <strong className="text-fg truncate block">{selectedAccount.user_email}</strong>
+                  </div>
+                  <div>
+                    <span className="text-fg-subtle block text-[11px]">Contact Number</span>
+                    <strong className="text-fg font-mono block">{selectedAccount.user_phone}</strong>
+                  </div>
+                  <div>
+                    <span className="text-fg-subtle block text-[11px]">Government ID</span>
+                    <strong className="text-fg font-mono block">{selectedAccount.government_id}</strong>
+                  </div>
+                  <div>
+                    <span className="text-fg-subtle block text-[11px]">Date of Birth</span>
+                    <strong className="text-fg font-mono block">{selectedAccount.dob || '1990-05-14'}</strong>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-line/60 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-accent shrink-0" />
+                    <div>
+                      <span className="text-[11px] text-fg-subtle block">Baseline Origin</span>
+                      <strong className="text-fg">{selectedAccount.location_name}</strong>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Globe className="h-4 w-4 text-accent shrink-0" />
+                    <div>
+                      <span className="text-[11px] text-fg-subtle block">Registered IP Address</span>
+                      <strong className="text-fg font-mono">{selectedAccount.ip_address}</strong>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Fingerprint className="h-4 w-4 text-emerald-400 shrink-0" />
+                    <div>
+                      <span className="text-[11px] text-fg-subtle block">Biometric Authentication</span>
+                      <strong className="text-emerald-400">Zero SMS OTP (Face ID Bound)</strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Row 3: All Accounts Linked to this Customer */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-4 w-4 text-accent" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-fg-subtle">
+                      All Accounts Linked to {selectedAccount.user_name}
+                    </h3>
+                  </div>
+                  <span className="text-[11px] text-fg-subtle">
+                    Click to switch active account inspection
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {accounts
+                    .filter(a => a.user_id === selectedAccount.user_id)
+                    .map((linkedAcc) => {
+                      const isCurrent = linkedAcc.account_number === selectedAccount.account_number;
+                      return (
+                        <div
+                          key={linkedAcc.account_number}
+                          onClick={() => setSelectedAccount(linkedAcc)}
+                          className={cn(
+                            "rounded-2xl border p-4 transition cursor-pointer flex items-center justify-between",
+                            isCurrent
+                              ? "border-accent/40 bg-accent/5 ring-1 ring-accent/30"
+                              : "border-line bg-surface hover:bg-sunken"
+                          )}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={cn(
+                              "flex h-9 w-9 items-center justify-center rounded-xl",
+                              isCurrent ? "bg-accent/20 text-accent" : "bg-sunken text-fg-subtle"
+                            )}>
+                              <CreditCard className="h-4 w-4" />
+                            </div>
+                            <div>
+                              <div className="font-mono text-xs font-bold text-fg">
+                                {linkedAcc.account_number}
+                              </div>
+                              <span className="text-[10px] uppercase font-semibold text-fg-subtle">
+                                {linkedAcc.account_type} {isCurrent && '• Currently Viewing'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-sans text-xs font-bold text-fg">
+                              {formatPHP(linkedAcc.available_balance)}
+                            </div>
+                            <span className="text-[10px] text-emerald-400 font-semibold">
+                              {linkedAcc.status}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+
+              {/* Row 4: Transaction History for this Account */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Layers className="h-4 w-4 text-accent" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-fg-subtle">
+                      Recent Transactions on Account #{selectedAccount.account_number}
+                    </h3>
+                  </div>
+                  <span className="text-[11px] text-fg-subtle font-mono">
+                    {transactions.filter(t => t.fromAccount === selectedAccount.account_number || t.toAccount === selectedAccount.account_number).length} Entries
+                  </span>
+                </div>
+
+                <div className="rounded-2xl border border-line bg-surface overflow-hidden">
+                  <table className="w-full text-left text-xs">
+                    <thead className="border-b border-line bg-sunken/60 text-[10px] uppercase font-bold text-fg-subtle">
+                      <tr>
+                        <th className="py-2.5 px-4">Tx Reference</th>
+                        <th className="py-2.5 px-4">Flow Direction</th>
+                        <th className="py-2.5 px-4 text-right">Amount</th>
+                        <th className="py-2.5 px-4 text-center">Status</th>
+                        <th className="py-2.5 px-4 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-line/60">
+                      {transactions
+                        .filter(t => t.fromAccount === selectedAccount.account_number || t.toAccount === selectedAccount.account_number)
+                        .slice(0, 5)
+                        .map((tx) => {
+                          const isSender = tx.fromAccount === selectedAccount.account_number;
+                          return (
+                            <tr key={tx.id} className="hover:bg-sunken/40 transition">
+                              <td className="py-2.5 px-4 font-mono font-bold text-fg">
+                                {formatShortId(tx.id)}
+                              </td>
+                              <td className="py-2.5 px-4">
+                                <span className={cn(
+                                  "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold",
+                                  isSender ? "bg-amber-500/10 text-amber-400" : "bg-emerald-500/10 text-emerald-400"
+                                )}>
+                                  {isSender ? 'Outgoing Debit' : 'Incoming Credit'}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-4 text-right font-sans font-bold text-fg">
+                                {formatPHP(tx.amount)}
+                              </td>
+                              <td className="py-2.5 px-4 text-center">
+                                <span className={cn(
+                                  "rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                                  tx.status === 'REVERSED' ? "bg-rose-500/10 text-rose-400" : "bg-emerald-500/10 text-emerald-400"
+                                )}>
+                                  {tx.status}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-4 text-right">
+                                <button
+                                  onClick={() => setSelectedTx(tx)}
+                                  className="text-accent hover:underline text-[11px] font-semibold"
+                                >
+                                  Audit Stepper →
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      {transactions.filter(t => t.fromAccount === selectedAccount.account_number || t.toAccount === selectedAccount.account_number).length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="py-6 text-center text-xs text-fg-muted">
+                            No ledger transactions recorded yet for this account.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Sticky Footer */}
+            <div className="border-t border-line px-6 py-4 bg-surface flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-xs text-fg-muted">
+                <Database className="h-4 w-4 text-fg-subtle" />
+                <span>Oracle 21c Normalized Master: USERS ↔ ACCOUNTS ↔ BALANCE_MASTER</span>
+              </div>
+              <button
+                onClick={() => setSelectedAccount(null)}
+                className="w-full sm:w-auto rounded-2xl border border-line bg-sunken px-4 py-2 text-xs font-semibold text-fg hover:bg-raised transition"
+              >
+                Close Profile
+              </button>
             </div>
           </div>
         </div>

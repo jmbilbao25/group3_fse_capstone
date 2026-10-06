@@ -52,30 +52,27 @@
 
 .dark,
 [data-theme='dark'] {
-  /* Dark is a genuine peer of light, not an inversion. Elevation still rises
-     toward the viewer, hierarchy holds, and the accent stays recognisable
-     rather than being desaturated into the background. */
-  --canvas: 16 18 21;
-  --surface: 26 29 33;
-  --raised: 31 34 39;
-  --sunken: 16 18 21;
+  /* Midnight Navy & Indigo Dark Palette inspired by reference fintech console */
+  --canvas: 11 15 25;
+  --surface: 17 24 39;
+  --raised: 26 34 54;
+  --sunken: 8 11 20;
 
-  --line: 42 46 52;
-  --line-strong: 63 68 75;
+  --line: 30 41 62;
+  --line-strong: 51 65 92;
 
-  /* Contrast on the dark surface: primary 14.2:1, muted 6.8:1, subtle 4.8:1. */
-  --fg: 241 242 244;
-  --fg-muted: 155 161 171;
-  --fg-subtle: 133 140 150;
-  --fg-inverse: 16 18 21;
+  /* Contrast on dark surface */
+  --fg: 243 244 246;
+  --fg-muted: 156 163 175;
+  --fg-subtle: 107 114 128;
+  --fg-inverse: 11 15 25;
 
-  /* Lifted two steps so the accent keeps its identity against a dark
-     surface while still holding AA against it. */
-  --accent: 113 137 242;
-  --accent-hover: 157 177 248;
-  --accent-soft: 26 32 80;
-  --accent-line: 41 52 143;
-  --accent-text: 157 177 248;
+  /* Electric Cyan / Sky Accent */
+  --accent: 56 189 248;
+  --accent-hover: 14 165 233;
+  --accent-soft: 14 38 66;
+  --accent-line: 30 58 138;
+  --accent-text: 56 189 248;
 
   --shadow: 0 0 0;
   color-scheme: dark;

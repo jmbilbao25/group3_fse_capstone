@@ -65,3 +65,8 @@ infrastructure/datadog/synthetics-location-config.json
 **/__pycache__/
 **/cache/*.json
 
+### Local Agent Skills ###
+.agents/
+docs/skills/
+
+

@@ -12,6 +12,7 @@ import 'package:aurabank_app/screens/security_gate_screen.dart';
 import 'package:aurabank_app/screens/profile_screen.dart';
 import 'package:aurabank_app/screens/analytics_screen.dart';
 import 'package:aurabank_app/screens/app_shell.dart';
+import 'package:aurabank_app/screens/login_screen.dart';
 import 'package:aurabank_app/services/bank_service.dart';
 
 void main() {
@@ -20,6 +21,37 @@ void main() {
     expect(find.text('Aura Bank'), findsOneWidget);
     expect(find.text('Interbank Network Ledger'), findsNothing);
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
+  });
+
+  testWidgets('Login screen renders credentials and toggles password visibility', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: LoginScreen(),
+      ),
+    );
+
+    expect(find.text('Welcome Back!'), findsOneWidget);
+    expect(find.text('elijahriley.montefalco@gmail.com'), findsOneWidget);
+    expect(find.text('Sign in'), findsOneWidget);
+
+    // Verify password field is obscured initially
+    final passwordFieldFinder = find.byType(TextField).last;
+    TextField passwordField = tester.widget(passwordFieldFinder);
+    expect(passwordField.obscureText, isTrue);
+
+    // Tap eye toggle to reveal password
+    await tester.tap(find.byKey(const ValueKey('passwordVisibilityToggle')));
+    await tester.pumpAndSettle();
+
+    passwordField = tester.widget(passwordFieldFinder);
+    expect(passwordField.obscureText, isFalse);
+
+    // Tap eye toggle again to hide password
+    await tester.tap(find.byKey(const ValueKey('passwordVisibilityToggle')));
+    await tester.pumpAndSettle();
+
+    passwordField = tester.widget(passwordFieldFinder);
+    expect(passwordField.obscureText, isTrue);
   });
 
   testWidgets('Statement of Account screen renders components and filters properly',

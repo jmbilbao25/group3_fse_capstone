@@ -14,7 +14,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _usernameController =
       TextEditingController(text: 'elijahriley.montefalco@gmail.com');
   final TextEditingController _passwordController =
-      TextEditingController(text: '••••••••••••');
+      TextEditingController(text: 'Montefalco@2026');
   bool _obscurePassword = true;
   bool _isLoading = false;
 
@@ -193,10 +193,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         hintStyle: const TextStyle(fontSize: 13, color: textGray),
                         border: InputBorder.none,
                         suffixIcon: IconButton(
+                          key: const ValueKey('passwordVisibilityToggle'),
+                          tooltip: _obscurePassword ? 'Show password' : 'Hide password',
                           icon: Icon(
                             _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                            color: textGray,
-                            size: 18,
+                            color: _obscurePassword ? textGray : brandViolet,
+                            size: 20,
                           ),
                           onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                         ),

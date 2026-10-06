@@ -112,6 +112,13 @@ public class AccountProvisioningService {
                 .toList();
     }
 
+    public List<AccountResponse> getAllAccounts() {
+        return accountRepository.findAll()
+                .stream()
+                .map(this::toAccountResponse)
+                .toList();
+    }
+
     public AccountResponse getAccountById(String accountId) {
         AccountEntity account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found: " + accountId));

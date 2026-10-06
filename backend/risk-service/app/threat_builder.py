@@ -103,28 +103,19 @@ def detect_threat_category(request: RiskAnalysisRequest) -> str:
     if dev and dev.interaction and dev.interaction.account_input_mode in ["PASTED_FROM_EXTERNAL_APP", "PASTED_FROM_CLIPBOARD"]:
         return "EXTERNAL_CLIPBOARD_PASTE"
 
-    # Priority 5: Memo Scam Phrasing
-    if memo:
-        scam_words = ["crypto", "release", "fee", "unlock", "prize", "raffle", "profit", "task", "commission"]
-        if any(w in memo for w in scam_words):
-            return "MEMO_SCAM_PATTERN"
-
     return "GENERAL_ADVISORY"
 
 
 def build_threat_narrative(request: RiskAnalysisRequest) -> Tuple[str, str]:
     """
     Builds a structured natural language threat narrative for NanoJev prompt injection.
+    Excludes free-form user memos, relying strictly on device, behavioral, and counterparty telemetry.
     Returns (threat_narrative, primary_threat_category).
     """
     lines: List[str] = []
     category = detect_threat_category(request)
 
     lines.append(f"Amount: PHP {request.amount:,.2f}")
-    if request.memo:
-        lines.append(f"Memo: \"{request.memo}\"")
-    else:
-        lines.append("Memo: [BLANK]")
 
     dev = request.device_context
     if dev:

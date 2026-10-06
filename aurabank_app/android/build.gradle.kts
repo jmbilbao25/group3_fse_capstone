@@ -1,6 +1,7 @@
 allprojects {
     repositories {
         google()
+        maven("https://mirrors.cloud.tencent.com/nexus/repository/maven-public/")
         mavenCentral()
     }
 }

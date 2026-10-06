@@ -63,23 +63,27 @@ export function AuthProvider({ children }) {
       setTokenState(access_token);
       localStorage.setItem(TOKEN_STORAGE_KEY, access_token);
       
-      const targetUserId = user_id || dbUser?.user_id || (email.includes('admin') ? 'U0001' : 'U1001');
-      const rawRole = role || dbUser?.role || (email.includes('admin') ? 'ROLE_ADMIN' : 'ROLE_CUSTOMER');
+      const isCarlos = email.toLowerCase().includes('carlos');
+      const targetUserId = user_id || dbUser?.user_id || (isCarlos ? 'usr-1006-mgr-002' : 'usr-1004-adm-001');
+      const rawRole = role || dbUser?.role || 'ADMIN';
       const targetRole = rawRole.startsWith('ROLE_') ? rawRole : `ROLE_${rawRole}`;
+
+      const adminName = isCarlos ? 'Carlos Mendoza' : 'Diana Vance';
+      const adminTitle = isCarlos ? 'Senior Operations Lead (Maker)' : 'Compliance & Audit Lead (Checker)';
 
       const authenticatedUser = {
         // Core DB 16 Columns (Oracle XE USERS table)
         user_id: targetUserId,
-        first_name: dbUser?.first_name || (targetUserId === 'U0001' ? 'Diana' : 'Juan'),
-        middle_name: dbUser?.middle_name || (targetUserId === 'U0001' ? 'Marie' : 'Reyes'),
-        last_name: dbUser?.last_name || (targetUserId === 'U0001' ? 'Vance' : 'Dela Cruz'),
+        first_name: dbUser?.first_name || (isCarlos ? 'Carlos' : 'Diana'),
+        middle_name: dbUser?.middle_name || (isCarlos ? 'Alberto' : 'Marie'),
+        last_name: dbUser?.last_name || (isCarlos ? 'Mendoza' : 'Vance'),
         email: dbUser?.email || email,
-        phone_number: dbUser?.phone_number || (targetUserId === 'U0001' ? '09190001122' : '09171234567'),
-        dob: dbUser?.dob || (targetUserId === 'U0001' ? '1985-03-12' : '1990-05-14'),
-        government_id: dbUser?.government_id || (targetUserId === 'U0001' ? 'GOV-1122-3344' : 'PSA-1234-5678'),
+        phone_number: dbUser?.phone_number || (isCarlos ? '09191234567' : '09190001122'),
+        dob: dbUser?.dob || (isCarlos ? '1982-08-20' : '1985-03-12'),
+        government_id: dbUser?.government_id || (isCarlos ? 'GOV-5566-7788' : 'GOV-1122-3344'),
         role: targetRole,
         password_hash: dbUser?.password_hash || '$2a$10$Yc8Pb5dWtINUdZYHEQ72fOX0g.GqUn1B3BkspBIiuTkmN.1Jwf1PC',
-        pin_hash: dbUser?.pin_hash || (targetRole === 'ROLE_CUSTOMER' ? '$2a$12$k4L9m1Wq2P8k4L9m1Wq2P8k4L9m1Wq2P8k4L9m1Wq2P8k4L9m1Wq2P8' : null),
+        pin_hash: null,
         max_concurrent_sessions: dbUser?.max_concurrent_sessions || 3,
         failed_login_attempts: dbUser?.failed_login_attempts || 0,
         status: dbUser?.status || 'ACTIVE',
@@ -87,8 +91,8 @@ export function AuthProvider({ children }) {
         updated_at: dbUser?.updated_at || new Date().toISOString(),
         
         // UI Presentation helpers
-        name: user_name || `${dbUser?.first_name || (targetUserId === 'U0001' ? 'Diana' : 'Juan')} ${dbUser?.last_name || (targetUserId === 'U0001' ? 'Vance' : 'Dela Cruz')}`,
-        title: user_title || (targetUserId === 'U0001' ? 'System Administrator & Auditor' : 'Retail Account Holder'),
+        name: user_name || adminName,
+        title: user_title || adminTitle,
       };
       
       setUser(authenticatedUser);

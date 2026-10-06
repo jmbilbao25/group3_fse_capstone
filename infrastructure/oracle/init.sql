@@ -49,6 +49,11 @@ CREATE TABLE users (
     max_concurrent_sessions NUMBER(3) DEFAULT 3 NOT NULL,
     failed_login_attempts   NUMBER(3) DEFAULT 0 NOT NULL,
     status                  VARCHAR2(20) DEFAULT 'ACTIVE' NOT NULL,
+    last_known_latitude     NUMBER(10, 6) DEFAULT 14.5995,
+    last_known_longitude    NUMBER(10, 6) DEFAULT 120.9842,
+    last_known_location_name VARCHAR2(100) DEFAULT 'Manila, Philippines',
+    last_known_ip           VARCHAR2(45)  DEFAULT '112.198.45.10',
+    last_geo_updated_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     created_at              TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at              TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     CONSTRAINT chk_usr_role CHECK (role IN ('CUSTOMER', 'TELLER', 'MANAGER', 'ADMIN')),
@@ -113,7 +118,7 @@ CREATE TABLE transactions (
     CONSTRAINT fk_tx_to_account FOREIGN KEY (to_account_id) REFERENCES accounts(account_id),
     CONSTRAINT fk_tx_approved_by FOREIGN KEY (approved_by_user_id) REFERENCES users(user_id),
     CONSTRAINT chk_tx_type CHECK (type IN ('DEPOSIT', 'WITHDRAWAL', 'TRANSFER')),
-    CONSTRAINT chk_tx_status CHECK (status IN ('PENDING_APPROVAL', 'COMMITTED', 'FAILED')),
+    CONSTRAINT chk_tx_status CHECK (status IN ('PENDING_APPROVAL', 'COMMITTED', 'FAILED', 'REJECTED_FRAUD', 'REVERSED', 'CANCELLED', 'POSTED', 'INITIATED', 'PROCESSING')),
     CONSTRAINT chk_tx_2fa_otp CHECK (requires_2fa_otp IN (0, 1)),
     CONSTRAINT chk_tx_amount CHECK (amount > 0)
 );

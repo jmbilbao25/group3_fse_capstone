@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface TransactionMasterRepository extends JpaRepository<TransactionMaster, String> {
     List<TransactionMaster> findByStatus(String status);
+    List<TransactionMaster> findAllByOrderByCreatedAtDesc();
 }

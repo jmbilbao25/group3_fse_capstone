@@ -25,6 +25,29 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
       TextEditingController(text: '50000.00');
   final TextEditingController _remarksController = TextEditingController();
 
+  int _selectedPartnerBankIndex = 0;
+
+  static const List<Map<String, dynamic>> _partnerBanks = [
+    {
+      'name': 'MeyBank',
+      'group': 'Group 2 Partner Bank • MEY-002',
+      'avatar': 'M',
+      'color': Color(0xFF701A75),
+    },
+    {
+      'name': 'Apex Digital Bank',
+      'group': 'Group 1 Partner Bank • APX-001',
+      'avatar': 'A',
+      'color': Color(0xFF047857),
+    },
+    {
+      'name': 'Nexus Core Bank',
+      'group': 'Group 4 Partner Bank • NEX-004',
+      'avatar': 'N',
+      'color': Color(0xFF1E3A8A),
+    },
+  ];
+
   String _selectedPurpose = 'Personal / Family';
   final List<String> _purposes = [
     'Personal / Family',
@@ -220,47 +243,58 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
 
                         const SizedBox(height: 18),
 
-                        // Partner Bank info card if Other Bank selected (PDF Page 8)
+                        // Partner Bank info card if Other Bank selected (Supports the 4 Banks)
                         if (!_isAuraToAura) ...[
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFDF4FF),
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: const Color(0xFFF0ABFC), width: 0.8),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 32,
-                                  height: 32,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF701A75),
-                                    borderRadius: BorderRadius.circular(8),
+                          GestureDetector(
+                            onTap: _showSelectPartnerBankSheet,
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFDF4FF),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: const Color(0xFFF0ABFC), width: 0.8),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 32,
+                                    height: 32,
+                                    decoration: BoxDecoration(
+                                      color: _partnerBanks[_selectedPartnerBankIndex]['color'] as Color,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        _partnerBanks[_selectedPartnerBankIndex]['avatar'] as String,
+                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
                                   ),
-                                  child: const Center(
-                                    child: Text('M', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          _partnerBanks[_selectedPartnerBankIndex]['name'] as String,
+                                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: textDark),
+                                        ),
+                                        const Text('Partner Bank • Tap to change', style: TextStyle(fontSize: 10, color: textGray)),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: const [
-                                      Text('MeyBank', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: textDark)),
-                                      Text('Partner Bank', style: TextStyle(fontSize: 10, color: textGray)),
-                                    ],
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFD1FAE5),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Text('Instapay', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: greenCredit)),
                                   ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFD1FAE5),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: const Text('Instapay', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: greenCredit)),
-                                ),
-                              ],
+                                  const SizedBox(width: 4),
+                                  const Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: textGray),
+                                ],
+                              ),
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -416,6 +450,66 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                 ),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSelectPartnerBankSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD1D5DB),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Select Destination Bank (4 Banks)',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: textDark),
+            ),
+            const SizedBox(height: 12),
+            for (int i = 0; i < _partnerBanks.length; i++)
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(vertical: 2),
+                leading: CircleAvatar(
+                  backgroundColor: _partnerBanks[i]['color'] as Color,
+                  child: Text(
+                    _partnerBanks[i]['avatar'] as String,
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                title: Text(
+                  _partnerBanks[i]['name'] as String,
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                ),
+                subtitle: Text(
+                  _partnerBanks[i]['group'] as String,
+                  style: const TextStyle(fontSize: 11, color: textGray),
+                ),
+                trailing: _selectedPartnerBankIndex == i
+                    ? const Icon(Icons.check_circle_rounded, color: brandViolet)
+                    : null,
+                onTap: () {
+                  setState(() => _selectedPartnerBankIndex = i);
+                  Navigator.of(ctx).pop();
+                },
+              ),
           ],
         ),
       ),

@@ -109,9 +109,9 @@ void main() {
 
     expect(find.text('Available Balance'), findsOneWidget);
     expect(find.text('Transfer'), findsOneWidget);
+    expect(find.text('4 Banks'), findsOneWidget);
     expect(find.text('Statement'), findsOneWidget);
     expect(find.text('Bills'), findsOneWidget);
-    expect(find.text('Deposit'), findsOneWidget);
     expect(find.text('More'), findsOneWidget);
     expect(find.text('Recent Transactions'), findsOneWidget);
   });

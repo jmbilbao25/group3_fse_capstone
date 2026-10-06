@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../models/bank_models.dart';
 import '../services/bank_service.dart';
 import '../theme/aura_theme.dart';
@@ -285,6 +284,11 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
             _buildActionItem(
+              icon: Icons.account_balance_rounded,
+              label: '4 Banks',
+              onTap: _showFourBanksTransferSheet,
+            ),
+            _buildActionItem(
               icon: Icons.receipt_long_rounded,
               label: 'Statement',
               onTap: () {
@@ -297,11 +301,6 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: Icons.receipt_outlined,
               label: 'Bills',
               onTap: _showPayBillsSheet,
-            ),
-            _buildActionItem(
-              icon: Icons.add_circle_outline_rounded,
-              label: 'Deposit',
-              onTap: _showDepositSheet,
             ),
             _buildActionItem(
               icon: Icons.grid_view_rounded,
@@ -496,6 +495,51 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 16),
+            const Text(
+              '4-Bank Group Settlement & Clearing',
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w800,
+                color: brandViolet,
+                letterSpacing: 0.3,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _buildBillerTile(
+              initial: 'M',
+              avatarColor: const Color(0xFF701A75),
+              name: 'MeyBank Clearing (Group 2)',
+              category: 'Interbank Settlement • Real-time Posting',
+            ),
+            _buildBillerTile(
+              initial: 'A',
+              avatarColor: const Color(0xFF047857),
+              name: 'Apex Digital Settlement (Group 1)',
+              category: 'Interbank Settlement • Real-time Posting',
+            ),
+            _buildBillerTile(
+              initial: 'N',
+              avatarColor: const Color(0xFF1E3A8A),
+              name: 'Nexus Core Settlement (Group 4)',
+              category: 'Interbank Settlement • Real-time Posting',
+            ),
+            _buildBillerTile(
+              initial: 'A',
+              avatarColor: brandViolet,
+              name: 'Aura Bank Internal Ledger (Group 3)',
+              category: 'Intra-Bank Clearing • Zero Fee',
+            ),
+            const SizedBox(height: 14),
+            const Text(
+              'Utility & Telecommunications Billers',
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w800,
+                color: textDark,
+                letterSpacing: 0.3,
+              ),
+            ),
+            const SizedBox(height: 8),
             _buildBillerTile(
               initial: 'M',
               avatarColor: const Color(0xFFEA580C),
@@ -532,7 +576,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _showDepositSheet() {
+  void _showFourBanksTransferSheet() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -569,7 +613,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(width: 8),
                 const Text(
-                  'Deposit & Cash In',
+                  '4-Bank Interbank Transfer',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
@@ -580,113 +624,145 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 6),
             const Text(
-              'InstaPay & PESONet accepted from any Philippine bank',
+              'Capstone Network Inter-Bank Settlement across the 4 Banks',
               style: TextStyle(fontSize: 12, color: textGray),
             ),
             const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFAF7FF),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFEDE9FE)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF3E8FF),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.account_balance_wallet_rounded, color: brandViolet, size: 22),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'AURA SAVINGS ACCOUNT',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.6,
-                            color: brandViolet,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _bankService.savingsAccountNumber,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
-                            fontFamily: 'monospace',
-                            color: textDark,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _bankService.user.name,
-                          style: const TextStyle(fontSize: 11, color: textGray),
-                        ),
-                      ],
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () {
-                      Clipboard.setData(ClipboardData(text: _bankService.savingsAccountNumber));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Account number copied to clipboard!'),
-                          duration: Duration(seconds: 2),
-                          backgroundColor: brandViolet,
-                        ),
-                      );
-                    },
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFDDD6FE)),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.copy_rounded, size: 13, color: brandViolet),
-                          SizedBox(width: 4),
-                          Text(
-                            'Copy',
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: brandViolet),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            _buildPartnerBankTile(
+              initial: 'A',
+              color: brandViolet,
+              name: 'Aura Bank',
+              group: 'Group 3 • Our Core Digital Bank (Intra-Bank)',
+              code: 'AUR-003',
+              fee: 'Free • Zero Fee • Instant',
+              onTap: () {
+                Navigator.of(ctx).pop();
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const SendMoneyScreen()),
+                );
+              },
             ),
-            const SizedBox(height: 16),
-            _buildDepositChannelTile(
-              icon: Icons.qr_code_2_rounded,
-              title: 'QR Ph Dynamic Inward',
-              subtitle: 'Scan to pay or receive via InstaPay QR standard',
+            _buildPartnerBankTile(
+              initial: 'M',
+              color: const Color(0xFF701A75),
+              name: 'MeyBank',
+              group: 'Group 2 • Partner Commercial Bank',
+              code: 'MEY-002',
+              fee: '₱10.00 • InstaPay Real-time',
+              onTap: () {
+                Navigator.of(ctx).pop();
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const SendMoneyScreen()),
+                );
+              },
             ),
-            _buildDepositChannelTile(
-              icon: Icons.account_balance_rounded,
-              title: 'Online Bank Transfer',
-              subtitle: 'BPI, BDO, UnionBank, Metrobank & RCBC',
+            _buildPartnerBankTile(
+              initial: 'A',
+              color: const Color(0xFF047857),
+              name: 'Apex Digital Bank',
+              group: 'Group 1 • Partner NeoBank',
+              code: 'APX-001',
+              fee: '₱10.00 • InstaPay Real-time',
+              onTap: () {
+                Navigator.of(ctx).pop();
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const SendMoneyScreen()),
+                );
+              },
             ),
-            _buildDepositChannelTile(
-              icon: Icons.storefront_rounded,
-              title: 'Over-the-Counter Partners',
-              subtitle: '7-Eleven Cliqq, Bayad Center, SM Bills Payment',
+            _buildPartnerBankTile(
+              initial: 'N',
+              color: const Color(0xFF1E3A8A),
+              name: 'Nexus Core Bank',
+              group: 'Group 4 • Partner Clearing Bank',
+              code: 'NEX-004',
+              fee: '₱10.00 • InstaPay Real-time',
+              onTap: () {
+                Navigator.of(ctx).pop();
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const SendMoneyScreen()),
+                );
+              },
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildPartnerBankTile({
+    required String initial,
+    required Color color,
+    required String name,
+    required String group,
+    required String code,
+    required String fee,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFEDE9FE)),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+        leading: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: Text(
+              initial,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ),
+        title: Row(
+          children: [
+            Text(
+              name,
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: textDark),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF3E8FF),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                code,
+                style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: brandViolet),
+              ),
+            ),
+          ],
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 2),
+            Text(group, style: const TextStyle(fontSize: 11, color: textGray)),
+            Text(fee, style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF059669))),
+          ],
+        ),
+        trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 13, color: textGray),
+        onTap: onTap,
       ),
     );
   }
@@ -720,44 +796,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Selected biller: $name. Ready for payment.'),
-              backgroundColor: brandViolet,
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildDepositChannelTile({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-      ),
-      child: ListTile(
-        leading: Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            color: const Color(0xFFF5EEFF),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: brandViolet, size: 20),
-        ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
-        subtitle: Text(subtitle, style: const TextStyle(fontSize: 11, color: textGray)),
-        trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 13, color: textGray),
-        onTap: () {
-          Navigator.of(context).pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('$title channel ready.'),
               backgroundColor: brandViolet,
             ),
           );

@@ -22,7 +22,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   static const Color textDark = AuraColors.textPrimary;
   static const Color textGray = AuraColors.textMuted;
   static const Color cardBorder = Color(0xFFE5E7EB);
-  static const Color darkMaroon = Color(0xFF5B062E);
 
   // Security Toggles State
   bool _faceIdEnabled = true;
@@ -233,15 +232,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Logout icon in soft red circle
+            // Logout icon in soft violet circle
             Container(
               width: 56,
               height: 56,
               decoration: const BoxDecoration(
-                color: Color(0xFFFEE2E2),
+                color: Color(0xFFF3E8FF),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.logout_rounded, color: Color(0xFF991B1B), size: 28),
+              child: const Icon(Icons.logout_rounded, color: brandViolet, size: 28),
             ),
 
             const SizedBox(height: 16),
@@ -275,7 +274,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               height: 48,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: darkMaroon,
+                  backgroundColor: brandViolet,
                   foregroundColor: Colors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -353,15 +352,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Warning icon in soft red circle
+            // Warning icon in soft violet circle
             Container(
               width: 56,
               height: 56,
               decoration: const BoxDecoration(
-                color: Color(0xFFFEE2E2),
+                color: Color(0xFFF3E8FF),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.warning_amber_rounded, color: Color(0xFF991B1B), size: 30),
+              child: const Icon(Icons.devices_other_rounded, color: brandViolet, size: 28),
             ),
 
             const SizedBox(height: 16),
@@ -414,7 +413,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               height: 48,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: darkMaroon,
+                  backgroundColor: brandViolet,
                   foregroundColor: Colors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -473,7 +472,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       children: [
         Row(
           children: [
-            Icon(icon, size: 18, color: const Color(0xFF991B1B)),
+            Icon(icon, size: 18, color: brandViolet),
             const SizedBox(width: 8),
             Text(
               name,
@@ -484,15 +483,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
-            color: const Color(0xFFFEE2E2),
+            color: const Color(0xFFF3E8FF),
             borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: const Color(0xFFDDD6FE), width: 0.8),
           ),
           child: Text(
             badge,
             style: const TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF991B1B),
+              color: brandViolet,
             ),
           ),
         ),
@@ -1123,24 +1123,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               const SizedBox(height: 20),
 
-              // 6. LOGOUT ACTIONS (Non-Redundant, Visually Appealing, Matches Mockup)
+              // 6. LOGOUT ACTIONS (Aligned with Deep Royal Aura Violet Palette)
               // Primary Button: Log Out of This Device
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFEF2F2),
-                    side: const BorderSide(color: Color(0xFFFECACA), width: 1.2),
+                    backgroundColor: const Color(0xFFFAF7FF),
+                    side: const BorderSide(color: Color(0xFFEDE9FE), width: 1.4),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+                    elevation: 0,
                   ),
-                  icon: const Icon(Icons.logout_rounded, size: 19, color: Color(0xFF991B1B)),
+                  icon: const Icon(Icons.logout_rounded, size: 19, color: brandViolet),
                   label: const Text(
                     'Log Out of This Device',
                     style: TextStyle(
                       fontSize: 14.5,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF991B1B),
+                      color: brandViolet,
+                      letterSpacing: 0.2,
                     ),
                   ),
                   onPressed: _showLogoutSessionsBottomSheet,
@@ -1157,8 +1159,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     'Log Out of All Devices',
                     style: TextStyle(
                       fontSize: 13.5,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFFB91C1C),
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF7C3AED),
+                      letterSpacing: 0.2,
                     ),
                   ),
                 ),

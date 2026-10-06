@@ -82,6 +82,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   int _selectedMonthOfYear = 9; // Defaults to October 2026 (Index 9 in Jan..Dec)
   int _selectedWeekIndex = 3; // Defaults to Week 4 (matches Page 11 design)
   int _selectedMonthIndex = 3; // Defaults to April in Yearly mode
+  int _selectedYear = 2026; // Defaults to 2026 (options: 2026, 2025)
+  int _selectedQuarterIndex = 0; // 0 = All (12M), 1 = Q1, 2 = Q2, 3 = Q3, 4 = Q4
   bool _showAllTotals = false;
 
   late AnimationController _animController;
@@ -97,8 +99,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   // Catalog of all 12 Months in 2026 with weekly data
   late final List<MonthFlowData> _monthsCatalog;
 
-  // Yearly Dataset (12 Months in 2026)
-  late final List<FlowPointData> _yearlyMonths;
+  // Yearly Datasets
+  late final List<FlowPointData> _yearlyMonths2026;
+  late final List<FlowPointData> _yearlyMonths2025;
 
   @override
   void initState() {
@@ -866,7 +869,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     ];
 
     // Yearly Dataset (12 Months in 2026)
-    _yearlyMonths = [
+    _yearlyMonths2026 = [
       FlowPointData(
         label: 'January',
         shortLabel: 'Jan',
@@ -988,6 +991,130 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
         transactions: const [],
       ),
     ];
+
+    // Yearly Dataset (12 Months in 2025)
+    _yearlyMonths2025 = [
+      FlowPointData(
+        label: 'January',
+        shortLabel: 'Jan',
+        dateSubtitle: 'Jan 01 - Jan 31, 2025',
+        received: 12000.0,
+        sent: 38000.0,
+        inTransfers: 2,
+        outTransfers: 12,
+        transactions: const [],
+      ),
+      FlowPointData(
+        label: 'February',
+        shortLabel: 'Feb',
+        dateSubtitle: 'Feb 01 - Feb 28, 2025',
+        received: 20000.0,
+        sent: 32000.0,
+        inTransfers: 3,
+        outTransfers: 11,
+        transactions: const [],
+      ),
+      FlowPointData(
+        label: 'March',
+        shortLabel: 'Mar',
+        dateSubtitle: 'Mar 01 - Mar 31, 2025',
+        received: 9000.0,
+        sent: 36000.0,
+        inTransfers: 2,
+        outTransfers: 14,
+        transactions: const [],
+      ),
+      FlowPointData(
+        label: 'April',
+        shortLabel: 'Apr',
+        dateSubtitle: 'Apr 01 - Apr 30, 2025',
+        received: 52000.0,
+        sent: 14000.0,
+        inTransfers: 4,
+        outTransfers: 10,
+        transactions: const [],
+      ),
+      FlowPointData(
+        label: 'May',
+        shortLabel: 'May',
+        dateSubtitle: 'May 01 - May 31, 2025',
+        received: 18000.0,
+        sent: 30000.0,
+        inTransfers: 3,
+        outTransfers: 12,
+        transactions: const [],
+      ),
+      FlowPointData(
+        label: 'June',
+        shortLabel: 'Jun',
+        dateSubtitle: 'Jun 01 - Jun 30, 2025',
+        received: 13000.0,
+        sent: 42000.0,
+        inTransfers: 2,
+        outTransfers: 8,
+        transactions: const [],
+      ),
+      FlowPointData(
+        label: 'July',
+        shortLabel: 'Jul',
+        dateSubtitle: 'Jul 01 - Jul 31, 2025',
+        received: 21000.0,
+        sent: 35000.0,
+        inTransfers: 4,
+        outTransfers: 18,
+        transactions: const [],
+      ),
+      FlowPointData(
+        label: 'August',
+        shortLabel: 'Aug',
+        dateSubtitle: 'Aug 01 - Aug 31, 2025',
+        received: 11500.0,
+        sent: 32000.0,
+        inTransfers: 3,
+        outTransfers: 15,
+        transactions: const [],
+      ),
+      FlowPointData(
+        label: 'September',
+        shortLabel: 'Sep',
+        dateSubtitle: 'Sep 01 - Sep 30, 2025',
+        received: 15000.0,
+        sent: 39000.0,
+        inTransfers: 3,
+        outTransfers: 14,
+        transactions: const [],
+      ),
+      FlowPointData(
+        label: 'October',
+        shortLabel: 'Oct',
+        dateSubtitle: 'Oct 01 - Oct 31, 2025',
+        received: 45000.0,
+        sent: 85000.0,
+        inTransfers: 3,
+        outTransfers: 15,
+        transactions: const [],
+      ),
+      FlowPointData(
+        label: 'November',
+        shortLabel: 'Nov',
+        dateSubtitle: 'Nov 01 - Nov 30, 2025',
+        received: 16000.0,
+        sent: 40000.0,
+        inTransfers: 2,
+        outTransfers: 14,
+        transactions: const [],
+      ),
+      FlowPointData(
+        label: 'December',
+        shortLabel: 'Dec',
+        dateSubtitle: 'Dec 01 - Dec 31, 2025',
+        received: 25000.0,
+        sent: 52000.0,
+        inTransfers: 3,
+        outTransfers: 18,
+        transactions: const [],
+      ),
+    ];
   }
 
   @override
@@ -1036,13 +1163,41 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     _animateToTarget(_selectedWeekIndex.toDouble());
   }
 
+  void _onSelectYear(int newYear) {
+    if (_selectedYear == newYear) return;
+    setState(() {
+      _selectedYear = newYear;
+      final list = _currentYearlyFilteredMonths;
+      _selectedMonthIndex = _selectedMonthIndex.clamp(0, list.length - 1);
+      _currentScrubFraction = _selectedMonthIndex.toDouble();
+    });
+    _animateToTarget(_selectedMonthIndex.toDouble());
+  }
+
+  void _onSelectQuarter(int quarterIdx) {
+    if (_selectedQuarterIndex == quarterIdx) return;
+    setState(() {
+      _selectedQuarterIndex = quarterIdx;
+      if (quarterIdx == 0) {
+        _selectedMonthIndex = 3; // April default in full year
+      } else {
+        _selectedMonthIndex = 0; // First month of selected quarter
+      }
+      _currentScrubFraction = _selectedMonthIndex.toDouble();
+    });
+    _animateToTarget(_selectedMonthIndex.toDouble());
+  }
+
   void _onToggleMode(bool monthly) {
     if (_isMonthly == monthly) return;
     setState(() {
       _isMonthly = monthly;
       _showAllTotals = false;
-      final target = (monthly ? _selectedWeekIndex : _selectedMonthIndex).toDouble();
-      _currentScrubFraction = target;
+      final maxLen = (monthly ? _currentMonthlyWeeks : _currentYearlyFilteredMonths).length;
+      final activeIdx = monthly
+          ? _selectedWeekIndex.clamp(0, maxLen - 1)
+          : _selectedMonthIndex.clamp(0, maxLen - 1);
+      _currentScrubFraction = activeIdx.toDouble();
     });
     _animateToTarget(
       (monthly ? _selectedWeekIndex : _selectedMonthIndex).toDouble(),
@@ -1052,8 +1207,27 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   List<FlowPointData> get _currentMonthlyWeeks =>
       _monthsCatalog[_selectedMonthOfYear].weeks;
 
+  List<FlowPointData> get _currentFullYearMonths =>
+      _selectedYear == 2026 ? _yearlyMonths2026 : _yearlyMonths2025;
+
+  List<FlowPointData> get _currentYearlyFilteredMonths {
+    final full = _currentFullYearMonths;
+    switch (_selectedQuarterIndex) {
+      case 1:
+        return full.sublist(0, 3);
+      case 2:
+        return full.sublist(3, 6);
+      case 3:
+        return full.sublist(6, 9);
+      case 4:
+        return full.sublist(9, 12);
+      default:
+        return full;
+    }
+  }
+
   List<FlowPointData> get _currentDataset =>
-      _isMonthly ? _currentMonthlyWeeks : _yearlyMonths;
+      _isMonthly ? _currentMonthlyWeeks : _currentYearlyFilteredMonths;
 
   FlowPointData get _activePointData {
     final list = _currentDataset;
@@ -1064,6 +1238,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   String get _currentMonthName => _monthsCatalog[_selectedMonthOfYear].monthName;
+
+  String get _currentPeriodLabel {
+    if (_isMonthly) return _currentMonthName;
+    if (_selectedQuarterIndex == 0) return '$_selectedYear';
+    return 'Q$_selectedQuarterIndex $_selectedYear';
+  }
 
   // Grand totals
   double get _totalSentMonth {
@@ -1098,10 +1278,49 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     return sum;
   }
 
-  double get _totalSentYear => 508000.0;
-  double get _totalReceivedYear => 160000.0;
-  int get _transfersOutYear => 185;
-  int get _transfersInYear => 43;
+  double get _totalSentPeriod {
+    if (_selectedQuarterIndex == 0 && _selectedYear == 2026) {
+      return 508000.0;
+    }
+    double sum = 0;
+    for (final m in _currentYearlyFilteredMonths) {
+      sum += m.sent;
+    }
+    return sum;
+  }
+
+  double get _totalReceivedPeriod {
+    if (_selectedQuarterIndex == 0 && _selectedYear == 2026) {
+      return 160000.0;
+    }
+    double sum = 0;
+    for (final m in _currentYearlyFilteredMonths) {
+      sum += m.received;
+    }
+    return sum;
+  }
+
+  int get _transfersOutPeriod {
+    if (_selectedQuarterIndex == 0 && _selectedYear == 2026) {
+      return 185;
+    }
+    int sum = 0;
+    for (final m in _currentYearlyFilteredMonths) {
+      sum += m.outTransfers;
+    }
+    return sum;
+  }
+
+  int get _transfersInPeriod {
+    if (_selectedQuarterIndex == 0 && _selectedYear == 2026) {
+      return 43;
+    }
+    int sum = 0;
+    for (final m in _currentYearlyFilteredMonths) {
+      sum += m.inTransfers;
+    }
+    return sum;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1201,10 +1420,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 ),
               ),
 
-              // Agency-Grade Month Dropdown Selector (Active in Monthly Mode)
+              // Mode-specific selector card:
+              // - Monthly Mode: Month Dropdown Selector
+              // - Yearly Mode: Fiscal Year & Quarter Filter Card
               if (_isMonthly) ...[
                 const SizedBox(height: 14),
                 _buildMonthDropdownSelector(),
+              ] else ...[
+                const SizedBox(height: 14),
+                _buildYearAndQuarterFilterCard(),
               ],
 
               const SizedBox(height: 16),
@@ -1389,6 +1613,225 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     );
   }
 
+  Widget _buildYearAndQuarterFilterCard() {
+    final canGoPrevYear = _selectedYear > 2025;
+    final canGoNextYear = _selectedYear < 2026;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFEDE9FE), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: brandViolet.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Row 1: Year selection with icon and quick-nav chevrons
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3E8FF),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.calendar_today_rounded, color: brandViolet, size: 18),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'FISCAL YEAR',
+                      style: TextStyle(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w800,
+                        color: brandViolet,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    DropdownButtonHideUnderline(
+                      child: DropdownButton<int>(
+                        key: const ValueKey('yearDropdownButton'),
+                        value: _selectedYear,
+                        isDense: true,
+                        icon: const Icon(Icons.keyboard_arrow_down_rounded, color: brandViolet, size: 20),
+                        dropdownColor: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        elevation: 8,
+                        style: const TextStyle(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w800,
+                          color: textDark,
+                        ),
+                        items: const [
+                          DropdownMenuItem<int>(
+                            value: 2026,
+                            child: Text(
+                              '2026 (Current)',
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w800,
+                                color: textDark,
+                              ),
+                            ),
+                          ),
+                          DropdownMenuItem<int>(
+                            value: 2025,
+                            child: Text(
+                              '2025 (Previous)',
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700,
+                                color: textDark,
+                              ),
+                            ),
+                          ),
+                        ],
+                        onChanged: (newYear) {
+                          if (newYear != null) {
+                            _onSelectYear(newYear);
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Chevron buttons for Year navigation
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    key: const ValueKey('prevYearBtn'),
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                    icon: Icon(
+                      Icons.chevron_left_rounded,
+                      size: 20,
+                      color: canGoPrevYear ? brandViolet : const Color(0xFFD1D5DB),
+                    ),
+                    onPressed: canGoPrevYear ? () => _onSelectYear(2025) : null,
+                  ),
+                  const SizedBox(width: 2),
+                  IconButton(
+                    key: const ValueKey('nextYearBtn'),
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                    icon: Icon(
+                      Icons.chevron_right_rounded,
+                      size: 20,
+                      color: canGoNextYear ? brandViolet : const Color(0xFFD1D5DB),
+                    ),
+                    onPressed: canGoNextYear ? () => _onSelectYear(2026) : null,
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 8),
+
+          // Subtle Divider
+          Container(
+            height: 1,
+            color: const Color(0xFFF3F4F6),
+          ),
+
+          const SizedBox(height: 8),
+
+          // Row 2: Quarter Filter segmented pill bar
+          Row(
+            children: [
+              const Text(
+                'QUARTER',
+                style: TextStyle(
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w800,
+                  color: textGray,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Container(
+                  height: 32,
+                  padding: const EdgeInsets.all(2.5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF7F5FA),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFEDE9FE), width: 1.0),
+                  ),
+                  child: Row(
+                    children: [
+                      _buildQuarterPill(0, 'All'),
+                      _buildQuarterPill(1, 'Q1'),
+                      _buildQuarterPill(2, 'Q2'),
+                      _buildQuarterPill(3, 'Q3'),
+                      _buildQuarterPill(4, 'Q4'),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuarterPill(int index, String label) {
+    final isSelected = _selectedQuarterIndex == index;
+    return Expanded(
+      child: GestureDetector(
+        key: ValueKey('quarterPill_$label'),
+        onTap: () => _onSelectQuarter(index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          decoration: BoxDecoration(
+            color: isSelected ? brandViolet : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: brandViolet.withValues(alpha: 0.25),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                color: isSelected ? Colors.white : textDark,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildSelectionBanner() {
     final active = _activePointData;
     return Container(
@@ -1416,7 +1859,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 Expanded(
                   child: Text(
                     _showAllTotals
-                        ? (_isMonthly ? 'Full Month Summary ($_currentMonthName)' : 'Full Year Summary (2026)')
+                        ? (_isMonthly
+                            ? 'Full Month Summary ($_currentMonthName)'
+                            : (_selectedQuarterIndex == 0
+                                ? 'Full Year Summary ($_selectedYear)'
+                                : 'Quarter $_selectedQuarterIndex Summary ($_selectedYear)'))
                         : '${active.label} Selected (${active.dateSubtitle})',
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -1453,24 +1900,24 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     final active = _activePointData;
 
     final sentAmount = _showAllTotals
-        ? (_isMonthly ? _totalSentMonth : _totalSentYear)
+        ? (_isMonthly ? _totalSentMonth : _totalSentPeriod)
         : active.sent;
     final sentCount = _showAllTotals
-        ? (_isMonthly ? _transfersOutMonth : _transfersOutYear)
+        ? (_isMonthly ? _transfersOutMonth : _transfersOutPeriod)
         : active.outTransfers;
 
     final receivedAmount = _showAllTotals
-        ? (_isMonthly ? _totalReceivedMonth : _totalReceivedYear)
+        ? (_isMonthly ? _totalReceivedMonth : _totalReceivedPeriod)
         : active.received;
     final receivedCount = _showAllTotals
-        ? (_isMonthly ? _transfersInMonth : _transfersInYear)
+        ? (_isMonthly ? _transfersInMonth : _transfersInPeriod)
         : active.inTransfers;
 
     final sentTitle = _showAllTotals
-        ? (_isMonthly ? 'Total Sent' : 'Total Sent (2026)')
+        ? (_isMonthly ? 'Total Sent' : 'Total Sent ($_currentPeriodLabel)')
         : 'Sent (${active.shortLabel})';
     final receivedTitle = _showAllTotals
-        ? (_isMonthly ? 'Total Received' : 'Total Received (2026)')
+        ? (_isMonthly ? 'Total Received' : 'Total Received ($_currentPeriodLabel)')
         : 'Received (${active.shortLabel})';
 
     return Row(
@@ -1781,13 +2228,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   Widget _buildMonthClickablePills() {
+    final dataset = _currentYearlyFilteredMonths;
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       physics: const BouncingScrollPhysics(),
       child: Row(
-        children: List.generate(_yearlyMonths.length, (index) {
+        children: List.generate(dataset.length, (index) {
           final isSelected = _selectedMonthIndex == index;
-          final item = _yearlyMonths[index];
+          final item = dataset[index];
           return Padding(
             padding: const EdgeInsets.only(right: 6.0),
             child: GestureDetector(
@@ -2096,7 +2544,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Highlighted: ${active.label} 2026',
+                      'Highlighted: ${active.label} $_selectedYear',
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontSize: 11, color: textGray),
                     ),
@@ -2153,7 +2601,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             ),
             child: _buildQuarterRow(
               initial: active.shortLabel,
-              monthTitle: '${active.label} 2026 (Selected)',
+              monthTitle: '${active.label} $_selectedYear (Selected)',
               transfers: '${active.inTransfers + active.outTransfers} Transfers • + ${_formatCurrency(active.received)}',
               gross: 'PHP ${_formatCurrency(active.sent)}',
               net: '${active.net >= 0 ? '+' : '-'} PHP ${_formatCompactK(active.net.abs())} net',
@@ -2163,46 +2611,67 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
 
           const SizedBox(height: 16),
 
-          const Text(
-            'Quarter 3',
-            style: TextStyle(fontSize: 12, color: textGray, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 10),
+          if (_selectedQuarterIndex == 0) ...[
+            const Text(
+              'Quarter 3',
+              style: TextStyle(fontSize: 12, color: textGray, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 10),
 
-          _buildQuarterRow(
-            initial: 'Jul',
-            monthTitle: 'July 2026',
-            transfers: '24 transfers • + 38,000.00',
-            gross: 'PHP 42,000.00',
-            net: '+ PHP 25.5k net',
-            avatarBg: const Color(0xFF6200EA),
-          ),
-          const SizedBox(height: 10),
-          _buildQuarterRow(
-            initial: 'Aug',
-            monthTitle: 'August 2026',
-            transfers: '19 Transfers • + 38,000.00',
-            gross: 'PHP 38,200.00',
-            net: '+ PHP 13.8k net',
-            avatarBg: const Color(0xFF9C27B0),
-          ),
+            _buildQuarterRow(
+              initial: 'Jul',
+              monthTitle: 'July $_selectedYear',
+              transfers: '24 transfers • + 38,000.00',
+              gross: 'PHP 42,000.00',
+              net: '+ PHP 25.5k net',
+              avatarBg: const Color(0xFF6200EA),
+            ),
+            const SizedBox(height: 10),
+            _buildQuarterRow(
+              initial: 'Aug',
+              monthTitle: 'August $_selectedYear',
+              transfers: '19 Transfers • + 38,000.00',
+              gross: 'PHP 38,200.00',
+              net: '+ PHP 13.8k net',
+              avatarBg: const Color(0xFF9C27B0),
+            ),
 
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-          const Text(
-            'Quarter 2',
-            style: TextStyle(fontSize: 12, color: textGray, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 10),
+            const Text(
+              'Quarter 2',
+              style: TextStyle(fontSize: 12, color: textGray, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 10),
 
-          _buildQuarterRow(
-            initial: 'Jun',
-            monthTitle: 'June 2026',
-            transfers: '10 Transfers • + 38,000.00',
-            gross: 'PHP 50,000.00',
-            net: '+ PHP 15.2k net',
-            avatarBg: const Color(0xFFBA68C8),
-          ),
+            _buildQuarterRow(
+              initial: 'Jun',
+              monthTitle: 'June $_selectedYear',
+              transfers: '10 Transfers • + 38,000.00',
+              gross: 'PHP 50,000.00',
+              net: '+ PHP 15.2k net',
+              avatarBg: const Color(0xFFBA68C8),
+            ),
+          ] else ...[
+            Text(
+              'Quarter $_selectedQuarterIndex Overview ($_selectedYear)',
+              style: const TextStyle(fontSize: 12, color: textGray, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 10),
+            for (final m in _currentYearlyFilteredMonths) ...[
+              if (m != active) ...[
+                _buildQuarterRow(
+                  initial: m.shortLabel,
+                  monthTitle: '${m.label} $_selectedYear',
+                  transfers: '${m.inTransfers + m.outTransfers} Transfers • + ${_formatCurrency(m.received)}',
+                  gross: 'PHP ${_formatCurrency(m.sent)}',
+                  net: '${m.net >= 0 ? '+' : '-'} PHP ${_formatCompactK(m.net.abs())} net',
+                  avatarBg: const Color(0xFF6200EA),
+                ),
+                const SizedBox(height: 10),
+              ],
+            ],
+          ],
         ],
       ),
     );

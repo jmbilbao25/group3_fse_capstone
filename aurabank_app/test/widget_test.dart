@@ -379,5 +379,37 @@ void main() {
     expect(find.textContaining('January Selected'), findsOneWidget);
     expect(find.text('PHP 45,000.00'), findsWidgets); // Sent for Jan (KPI card + summary card)
     expect(find.text('PHP 15,000.00'), findsWidgets); // Received for Jan
+
+    // Verify Fiscal Year & Quarter selector in Yearly mode
+    expect(find.text('FISCAL YEAR'), findsOneWidget);
+    expect(find.text('2026 (Current)'), findsOneWidget);
+    expect(find.text('QUARTER'), findsOneWidget);
+    expect(find.byKey(const ValueKey('quarterPill_All')), findsOneWidget);
+    expect(find.byKey(const ValueKey('quarterPill_Q1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('quarterPill_Q2')), findsOneWidget);
+    expect(find.byKey(const ValueKey('quarterPill_Q3')), findsOneWidget);
+    expect(find.byKey(const ValueKey('quarterPill_Q4')), findsOneWidget);
+
+    // Tap Q1 Quarter filter
+    await tester.tap(find.byKey(const ValueKey('quarterPill_Q1')));
+    await tester.pumpAndSettle();
+
+    // In Q1, only Jan, Feb, Mar are shown
+    expect(find.text('January'), findsOneWidget);
+    expect(find.text('February'), findsOneWidget);
+    expect(find.text('March'), findsOneWidget);
+    expect(find.text('April'), findsNothing);
+
+    // Switch Year to 2025 using previous year button
+    await tester.tap(find.byKey(const ValueKey('prevYearBtn')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('2025 (Previous)'), findsOneWidget);
+    expect(find.textContaining('2025'), findsWidgets);
+
+    // Switch Year back to 2026
+    await tester.tap(find.byKey(const ValueKey('nextYearBtn')));
+    await tester.pumpAndSettle();
+    expect(find.text('2026 (Current)'), findsOneWidget);
   });
 }

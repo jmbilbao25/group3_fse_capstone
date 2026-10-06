@@ -1,8 +1,54 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../theme/aura_theme.dart';
 import '../widgets/aura_logo.dart';
 import 'statement_screen.dart';
 import 'annual_report_screen.dart';
+
+/// Data point model for transfer flow points
+class FlowPointData {
+  final String label;
+  final String shortLabel;
+  final String dateSubtitle;
+  final double received;
+  final double sent;
+  final int inTransfers;
+  final int outTransfers;
+  final List<AnalyticsTxItem> transactions;
+
+  const FlowPointData({
+    required this.label,
+    required this.shortLabel,
+    required this.dateSubtitle,
+    required this.received,
+    required this.sent,
+    required this.inTransfers,
+    required this.outTransfers,
+    required this.transactions,
+  });
+
+  double get net => received - sent;
+}
+
+class AnalyticsTxItem {
+  final String name;
+  final String initial;
+  final Color avatarBg;
+  final String time;
+  final double amount;
+  final bool isReceived;
+  final String status;
+
+  const AnalyticsTxItem({
+    required this.name,
+    required this.initial,
+    required this.avatarBg,
+    required this.time,
+    required this.amount,
+    required this.isReceived,
+    this.status = 'COMPLETED',
+  });
+}
 
 class AnalyticsScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -13,14 +59,418 @@ class AnalyticsScreen extends StatefulWidget {
   State<AnalyticsScreen> createState() => _AnalyticsScreenState();
 }
 
-class _AnalyticsScreenState extends State<AnalyticsScreen> {
+class _AnalyticsScreenState extends State<AnalyticsScreen>
+    with SingleTickerProviderStateMixin {
   bool _isMonthly = true;
+
+  // Selected indices
+  int _selectedWeekIndex = 3; // Defaults to Week 4 (matches Page 11 design)
+  int _selectedMonthIndex = 3; // Defaults to April (matches Page 12 design)
+  bool _showAllTotals = false;
+
+  late AnimationController _animController;
+  late Animation<double> _scrubAnimation;
+  double _currentScrubFraction = 3.0; // Current floating position in index space
 
   static const Color brandViolet = AuraColors.primary;
   static const Color accentGreen = AuraColors.creditGreen;
   static const Color lightGreen = Color(0xFF10B981);
   static const Color textDark = AuraColors.textPrimary;
   static const Color textGray = AuraColors.textMuted;
+
+  // Monthly Dataset (5 Weeks in October 2026)
+  late final List<FlowPointData> _monthlyWeeks;
+
+  // Yearly Dataset (12 Months in 2026)
+  late final List<FlowPointData> _yearlyMonths;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 320),
+    );
+
+    _scrubAnimation = Tween<double>(begin: 3.0, end: 3.0).animate(
+      CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
+    )..addListener(() {
+        setState(() {
+          _currentScrubFraction = _scrubAnimation.value;
+        });
+      });
+
+    _initDatasets();
+  }
+
+  void _initDatasets() {
+    _monthlyWeeks = [
+      FlowPointData(
+        label: 'Week 1',
+        shortLabel: 'W1',
+        dateSubtitle: 'Oct 01 - Oct 07, 2026',
+        received: 8000.0,
+        sent: 14500.0,
+        inTransfers: 1,
+        outTransfers: 3,
+        transactions: const [
+          AnalyticsTxItem(
+            name: 'Angel Lou F. Yabut',
+            initial: 'A',
+            avatarBg: Color(0xFF7C4DFF),
+            time: 'Oct 03, 2:45 pm',
+            amount: 2500.0,
+            isReceived: false,
+          ),
+          AnalyticsTxItem(
+            name: 'Meralco Utility Bill',
+            initial: 'M',
+            avatarBg: Color(0xFFE65100),
+            time: 'Oct 04, 9:15 am',
+            amount: 4500.0,
+            isReceived: false,
+          ),
+          AnalyticsTxItem(
+            name: 'Direct Deposit',
+            initial: 'D',
+            avatarBg: Color(0xFF00897B),
+            time: 'Oct 02, 10:00 am',
+            amount: 8000.0,
+            isReceived: true,
+            status: 'RECEIVED',
+          ),
+        ],
+      ),
+      FlowPointData(
+        label: 'Week 2',
+        shortLabel: 'W2',
+        dateSubtitle: 'Oct 08 - Oct 14, 2026',
+        received: 26500.0,
+        sent: 18500.0,
+        inTransfers: 1,
+        outTransfers: 4,
+        transactions: const [
+          AnalyticsTxItem(
+            name: 'Drake Montefalco',
+            initial: 'D',
+            avatarBg: Color(0xFF220055),
+            time: 'Oct 14, 2:45 pm',
+            amount: 2500.0,
+            isReceived: false,
+          ),
+          AnalyticsTxItem(
+            name: 'Klare Riego',
+            initial: 'K',
+            avatarBg: Color(0xFFBA68C8),
+            time: 'Oct 14, 1:45 pm',
+            amount: 26500.0,
+            isReceived: true,
+            status: 'RECEIVED',
+          ),
+          AnalyticsTxItem(
+            name: 'Business Supplies',
+            initial: 'B',
+            avatarBg: Color(0xFF3949AB),
+            time: 'Oct 11, 4:20 pm',
+            amount: 16000.0,
+            isReceived: false,
+          ),
+        ],
+      ),
+      FlowPointData(
+        label: 'Week 3',
+        shortLabel: 'W3',
+        dateSubtitle: 'Oct 15 - Oct 21, 2026',
+        received: 5000.0,
+        sent: 32500.0,
+        inTransfers: 1,
+        outTransfers: 5,
+        transactions: const [
+          AnalyticsTxItem(
+            name: 'Jessie Mae Dela Paz',
+            initial: 'J',
+            avatarBg: Color(0xFF00ACC1),
+            time: 'Oct 16, 11:30 am',
+            amount: 5000.0,
+            isReceived: true,
+            status: 'RECEIVED',
+          ),
+          AnalyticsTxItem(
+            name: 'Hardware Reorder',
+            initial: 'H',
+            avatarBg: Color(0xFF5E35B1),
+            time: 'Oct 18, 3:15 pm',
+            amount: 27500.0,
+            isReceived: false,
+          ),
+          AnalyticsTxItem(
+            name: 'Cloud Services',
+            initial: 'C',
+            avatarBg: Color(0xFF43A047),
+            time: 'Oct 20, 8:40 am',
+            amount: 5000.0,
+            isReceived: false,
+          ),
+        ],
+      ),
+      FlowPointData(
+        label: 'Week 4',
+        shortLabel: 'W4',
+        dateSubtitle: 'Oct 22 - Oct 28, 2026',
+        received: 18500.0,
+        sent: 10500.0,
+        inTransfers: 1,
+        outTransfers: 2,
+        transactions: const [
+          AnalyticsTxItem(
+            name: 'Mae G. Mercado',
+            initial: 'M',
+            avatarBg: Color(0xFF5E17EB),
+            time: 'Oct 24, 10:15 am',
+            amount: 18500.0,
+            isReceived: true,
+            status: 'RECEIVED',
+          ),
+          AnalyticsTxItem(
+            name: 'Office Lease Share',
+            initial: 'O',
+            avatarBg: Color(0xFFD81B60),
+            time: 'Oct 26, 4:00 pm',
+            amount: 10500.0,
+            isReceived: false,
+          ),
+        ],
+      ),
+      FlowPointData(
+        label: 'Week 5',
+        shortLabel: 'W5',
+        dateSubtitle: 'Oct 29 - Oct 31, 2026',
+        received: 5000.0,
+        sent: 29000.0,
+        inTransfers: 1,
+        outTransfers: 4,
+        transactions: const [
+          AnalyticsTxItem(
+            name: 'Payroll Reimbursement',
+            initial: 'P',
+            avatarBg: Color(0xFF1E88E5),
+            time: 'Oct 30, 2:00 pm',
+            amount: 25000.0,
+            isReceived: false,
+          ),
+          AnalyticsTxItem(
+            name: 'Consulting Honorarium',
+            initial: 'C',
+            avatarBg: Color(0xFF2ECC71),
+            time: 'Oct 31, 5:30 pm',
+            amount: 5000.0,
+            isReceived: true,
+            status: 'RECEIVED',
+          ),
+          AnalyticsTxItem(
+            name: 'Petty Cash',
+            initial: 'P',
+            avatarBg: Color(0xFF8E24AA),
+            time: 'Oct 31, 6:00 pm',
+            amount: 4000.0,
+            isReceived: false,
+          ),
+        ],
+      ),
+    ];
+
+    _yearlyMonths = [
+      FlowPointData(
+        label: 'January',
+        shortLabel: 'Jan',
+        dateSubtitle: 'Jan 01 - Jan 31, 2026',
+        received: 15000.0,
+        sent: 45000.0,
+        inTransfers: 3,
+        outTransfers: 16,
+        transactions: const [],
+      ),
+      FlowPointData(
+        label: 'February',
+        shortLabel: 'Feb',
+        dateSubtitle: 'Feb 01 - Feb 28, 2026',
+        received: 25000.0,
+        sent: 38000.0,
+        inTransfers: 4,
+        outTransfers: 14,
+        transactions: const [],
+      ),
+      FlowPointData(
+        label: 'March',
+        shortLabel: 'Mar',
+        dateSubtitle: 'Mar 01 - Mar 31, 2026',
+        received: 10000.0,
+        sent: 42000.0,
+        inTransfers: 2,
+        outTransfers: 19,
+        transactions: const [],
+      ),
+      FlowPointData(
+        label: 'April',
+        shortLabel: 'Apr',
+        dateSubtitle: 'Apr 01 - Apr 30, 2026',
+        received: 68500.0,
+        sent: 16500.0,
+        inTransfers: 6,
+        outTransfers: 12,
+        transactions: const [],
+      ),
+      FlowPointData(
+        label: 'May',
+        shortLabel: 'May',
+        dateSubtitle: 'May 01 - May 31, 2026',
+        received: 22000.0,
+        sent: 35000.0,
+        inTransfers: 3,
+        outTransfers: 15,
+        transactions: const [],
+      ),
+      FlowPointData(
+        label: 'June',
+        shortLabel: 'Jun',
+        dateSubtitle: 'Jun 01 - Jun 30, 2026',
+        received: 15200.0,
+        sent: 50000.0,
+        inTransfers: 3,
+        outTransfers: 10,
+        transactions: const [],
+      ),
+      FlowPointData(
+        label: 'July',
+        shortLabel: 'Jul',
+        dateSubtitle: 'Jul 01 - Jul 31, 2026',
+        received: 25500.0,
+        sent: 42000.0,
+        inTransfers: 5,
+        outTransfers: 24,
+        transactions: const [],
+      ),
+      FlowPointData(
+        label: 'August',
+        shortLabel: 'Aug',
+        dateSubtitle: 'Aug 01 - Aug 31, 2026',
+        received: 13800.0,
+        sent: 38200.0,
+        inTransfers: 3,
+        outTransfers: 19,
+        transactions: const [],
+      ),
+      FlowPointData(
+        label: 'September',
+        shortLabel: 'Sep',
+        dateSubtitle: 'Sep 01 - Sep 30, 2026',
+        received: 18000.0,
+        sent: 45000.0,
+        inTransfers: 4,
+        outTransfers: 18,
+        transactions: const [],
+      ),
+      FlowPointData(
+        label: 'October',
+        shortLabel: 'Oct',
+        dateSubtitle: 'Oct 01 - Oct 31, 2026',
+        received: 58000.0,
+        sent: 105000.0,
+        inTransfers: 4,
+        outTransfers: 18,
+        transactions: const [],
+      ),
+      FlowPointData(
+        label: 'November',
+        shortLabel: 'Nov',
+        dateSubtitle: 'Nov 01 - Nov 30, 2026',
+        received: 20000.0,
+        sent: 48000.0,
+        inTransfers: 3,
+        outTransfers: 17,
+        transactions: const [],
+      ),
+      FlowPointData(
+        label: 'December',
+        shortLabel: 'Dec',
+        dateSubtitle: 'Dec 01 - Dec 31, 2026',
+        received: 30000.0,
+        sent: 63300.0,
+        inTransfers: 4,
+        outTransfers: 22,
+        transactions: const [],
+      ),
+    ];
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
+
+  void _animateToTarget(double targetIndex) {
+    _animController.stop();
+    _scrubAnimation = Tween<double>(
+      begin: _currentScrubFraction,
+      end: targetIndex,
+    ).animate(
+      CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
+    );
+    _animController.forward(from: 0.0);
+  }
+
+  void _onSelectWeek(int index) {
+    setState(() {
+      _selectedWeekIndex = index;
+      _showAllTotals = false;
+    });
+    _animateToTarget(index.toDouble());
+  }
+
+  void _onSelectMonth(int index) {
+    setState(() {
+      _selectedMonthIndex = index;
+      _showAllTotals = false;
+    });
+    _animateToTarget(index.toDouble());
+  }
+
+  void _onToggleMode(bool monthly) {
+    if (_isMonthly == monthly) return;
+    setState(() {
+      _isMonthly = monthly;
+      _showAllTotals = false;
+      final target = (monthly ? _selectedWeekIndex : _selectedMonthIndex).toDouble();
+      _currentScrubFraction = target;
+    });
+    _animateToTarget(
+      (monthly ? _selectedWeekIndex : _selectedMonthIndex).toDouble(),
+    );
+  }
+
+  List<FlowPointData> get _currentDataset =>
+      _isMonthly ? _monthlyWeeks : _yearlyMonths;
+
+  FlowPointData get _activePointData {
+    final list = _currentDataset;
+    final index = _isMonthly
+        ? _selectedWeekIndex.clamp(0, list.length - 1)
+        : _selectedMonthIndex.clamp(0, list.length - 1);
+    return list[index];
+  }
+
+  // Grand totals
+  double get _totalSentMonth => 105000.0;
+  double get _totalReceivedMonth => 58000.0;
+  int get _transfersOutMonth => 18;
+  int get _transfersInMonth => 4;
+
+  double get _totalSentYear => 508000.0;
+  double get _totalReceivedYear => 160000.0;
+  int get _transfersOutYear => 185;
+  int get _transfersInYear => 43;
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +522,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   children: [
                     Expanded(
                       child: GestureDetector(
-                        onTap: () => setState(() => _isMonthly = true),
+                        onTap: () => _onToggleMode(true),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
                           padding: const EdgeInsets.symmetric(vertical: 10),
@@ -95,7 +545,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     ),
                     Expanded(
                       child: GestureDetector(
-                        onTap: () => setState(() => _isMonthly = false),
+                        onTap: () => _onToggleMode(false),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
                           padding: const EdgeInsets.symmetric(vertical: 10),
@@ -120,22 +570,32 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 ),
               ),
 
+              const SizedBox(height: 16),
+
+              // Active filter pill indicator
+              _buildSelectionBanner(),
+
+              const SizedBox(height: 12),
+
+              // 3. KPI Cards: Total Sent & Total Received (Dynamic with selected week/month)
+              _buildDynamicKpiCards(),
+
               const SizedBox(height: 18),
 
-              // 3. KPI Cards: Total Sent & Total Received
-              _isMonthly ? _buildMonthlyKpiCards() : _buildYearlyKpiCards(),
+              // 4. Interactive Movable Transfer Flow with Pointed Lines & Callouts
+              _buildInteractiveTransferFlowSection(),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
 
-              // 4. Transfer Flow Chart
-              _buildTransferFlowSection(),
+              // 5. Flow Cashflow Delta Card
+              _buildFlowBreakdownCard(),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
 
-              // 5. History Section (Monthly History vs Monthly Summaries)
+              // 6. History Section (Monthly History vs Yearly Summaries)
               _isMonthly ? _buildMonthlyHistorySection() : _buildYearlySummariesSection(),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
             ],
           ),
         ),
@@ -143,10 +603,93 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  Widget _buildMonthlyKpiCards() {
+  Widget _buildSelectionBanner() {
+    final active = _activePointData;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFAF7FF),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE9D5FF)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: brandViolet,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _showAllTotals
+                        ? (_isMonthly ? 'Full Month Summary (October 2026)' : 'Full Year Summary (2026)')
+                        : '${active.label} Selected (${active.dateSubtitle})',
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: brandViolet,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () {
+              setState(() => _showAllTotals = !_showAllTotals);
+            },
+            child: Text(
+              _showAllTotals ? 'Filter by Flow' : 'Show All',
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF7C3AED),
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDynamicKpiCards() {
+    final active = _activePointData;
+
+    final sentAmount = _showAllTotals
+        ? (_isMonthly ? _totalSentMonth : _totalSentYear)
+        : active.sent;
+    final sentCount = _showAllTotals
+        ? (_isMonthly ? _transfersOutMonth : _transfersOutYear)
+        : active.outTransfers;
+
+    final receivedAmount = _showAllTotals
+        ? (_isMonthly ? _totalReceivedMonth : _totalReceivedYear)
+        : active.received;
+    final receivedCount = _showAllTotals
+        ? (_isMonthly ? _transfersInMonth : _transfersInYear)
+        : active.inTransfers;
+
+    final sentTitle = _showAllTotals
+        ? (_isMonthly ? 'Total Sent' : 'Total Sent (2026)')
+        : 'Sent (${active.shortLabel})';
+    final receivedTitle = _showAllTotals
+        ? (_isMonthly ? 'Total Received' : 'Total Received (2026)')
+        : 'Received (${active.shortLabel})';
+
     return Row(
       children: [
-        // Total Sent Card (Violet)
+        // Total Sent Card (Deep Royal Violet)
         Expanded(
           child: Container(
             padding: const EdgeInsets.all(16),
@@ -164,21 +707,32 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Total Sent',
-                  style: TextStyle(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.w500),
+                Text(
+                  sentTitle,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.white70,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'PHP 105,000.00',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                Text(
+                  'PHP ${_formatCurrency(sentAmount)}',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(height: 14),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
-                    Text('18 Transfers Out', style: TextStyle(fontSize: 10, color: Colors.white70)),
-                    Icon(Icons.arrow_downward, color: Colors.white, size: 14),
+                  children: [
+                    Text(
+                      '$sentCount Transfers Out',
+                      style: const TextStyle(fontSize: 10, color: Colors.white70),
+                    ),
+                    const Icon(Icons.arrow_downward, color: Colors.white, size: 14),
                   ],
                 ),
               ],
@@ -186,7 +740,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           ),
         ),
         const SizedBox(width: 14),
-        // Total Received Card (White)
+        // Total Received Card (White with Green Accents)
         Expanded(
           child: Container(
             padding: const EdgeInsets.all(16),
@@ -205,21 +759,32 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Total Received',
-                  style: TextStyle(fontSize: 12, color: textGray, fontWeight: FontWeight.w500),
+                Text(
+                  receivedTitle,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: textGray,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'PHP 58,000.00',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textDark),
+                Text(
+                  'PHP ${_formatCurrency(receivedAmount)}',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: textDark,
+                  ),
                 ),
                 const SizedBox(height: 14),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
-                    Text('4 Transfers In', style: TextStyle(fontSize: 10, color: textGray)),
-                    Icon(Icons.arrow_upward, color: accentGreen, size: 14),
+                  children: [
+                    Text(
+                      '$receivedCount Transfers In',
+                      style: const TextStyle(fontSize: 10, color: textGray),
+                    ),
+                    const Icon(Icons.arrow_upward, color: accentGreen, size: 14),
                   ],
                 ),
               ],
@@ -230,105 +795,18 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  Widget _buildYearlyKpiCards() {
-    return Row(
-      children: [
-        // Total Sent (2026)
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: brandViolet,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: brandViolet.withValues(alpha: 0.25),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Total Sent (2026)',
-                  style: TextStyle(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.w500),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'PHP 508,000.00',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
-                    Text('185 Transfers Out', style: TextStyle(fontSize: 10, color: Colors.white70)),
-                    Icon(Icons.arrow_downward, color: Colors.white, size: 14),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(width: 14),
-        // Total Received (2026)
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE5E7EB)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Total Received (2026)',
-                  style: TextStyle(fontSize: 12, color: textGray, fontWeight: FontWeight.w500),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'PHP 160,000.00',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textDark),
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
-                    Text('43 Transfers In', style: TextStyle(fontSize: 10, color: textGray)),
-                    Icon(Icons.arrow_upward, color: accentGreen, size: 14),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTransferFlowSection() {
+  Widget _buildInteractiveTransferFlowSection() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: const Color(0xFFE5E7EB)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
+            blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
@@ -336,48 +814,326 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header with Legend
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Transfer Flow',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark),
+              Flexible(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Flexible(
+                      child: Text(
+                        'Transfer Flow',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: textDark,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEDE9FE),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text(
+                        'Drag / Tap',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: brandViolet,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   _buildLegendDot(lightGreen, 'Received'),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   _buildLegendDot(brandViolet, 'Sent'),
                 ],
               ),
             ],
           ),
+
           const SizedBox(height: 16),
-          SizedBox(
-            height: 140,
-            width: double.infinity,
-            child: CustomPaint(
-              painter: _TransferFlowPainter(isMonthly: _isMonthly),
+
+          // Interactive Movable Chart Canvas with GestureDetector
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final chartWidth = constraints.maxWidth;
+              const chartHeight = 180.0;
+              final dataset = _currentDataset;
+
+              return GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTapDown: (details) {
+                  _handleScrubGesture(details.localPosition.dx, chartWidth, dataset.length);
+                },
+                onHorizontalDragUpdate: (details) {
+                  _handleScrubGesture(details.localPosition.dx, chartWidth, dataset.length);
+                },
+                onHorizontalDragEnd: (details) {
+                  // Snap cleanly to nearest integer index
+                  final targetIndex = _currentScrubFraction.round().clamp(0, dataset.length - 1);
+                  if (_isMonthly) {
+                    _onSelectWeek(targetIndex);
+                  } else {
+                    _onSelectMonth(targetIndex);
+                  }
+                },
+                child: SizedBox(
+                  height: chartHeight,
+                  width: chartWidth,
+                  child: CustomPaint(
+                    painter: _PointedTransferFlowPainter(
+                      dataset: dataset,
+                      scrubFraction: _currentScrubFraction,
+                      isMonthly: _isMonthly,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+
+          const SizedBox(height: 12),
+
+          // Clickable Week / Month Pills Bar
+          _isMonthly ? _buildWeekClickablePills() : _buildMonthClickablePills(),
+        ],
+      ),
+    );
+  }
+
+  void _handleScrubGesture(double localX, double totalWidth, int count) {
+    const double paddingX = 24.0;
+    final usableWidth = totalWidth - (2 * paddingX);
+    if (usableWidth <= 0 || count <= 1) return;
+
+    final normalized = (localX - paddingX) / usableWidth;
+    final indexFraction = (normalized * (count - 1)).clamp(0.0, (count - 1).toDouble());
+
+    setState(() {
+      _currentScrubFraction = indexFraction;
+      final nearest = indexFraction.round().clamp(0, count - 1);
+      if (_isMonthly) {
+        _selectedWeekIndex = nearest;
+      } else {
+        _selectedMonthIndex = nearest;
+      }
+      _showAllTotals = false;
+    });
+  }
+
+  Widget _buildWeekClickablePills() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: List.generate(_monthlyWeeks.length, (index) {
+        final isSelected = _selectedWeekIndex == index;
+        return Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2.0),
+            child: GestureDetector(
+              onTap: () => _onSelectWeek(index),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? brandViolet : const Color(0xFFF9FAFB),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isSelected ? brandViolet : const Color(0xFFE5E7EB),
+                    width: isSelected ? 1.5 : 1.0,
+                  ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: brandViolet.withValues(alpha: 0.25),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      'Week ${index + 1}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                        color: isSelected ? Colors.white : textDark,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Container(
+                      width: 4,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: isSelected ? accentGreen : Colors.transparent,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: _isMonthly
-                ? const [
-                    Text('Week 1', style: TextStyle(fontSize: 10, color: textGray)),
-                    Text('Week 2', style: TextStyle(fontSize: 10, color: textGray)),
-                    Text('Week 3', style: TextStyle(fontSize: 10, color: textGray)),
-                    Text('Week 4', style: TextStyle(fontSize: 10, color: textGray)),
-                    Text('Week 5', style: TextStyle(fontSize: 10, color: textGray)),
-                  ]
-                : const [
-                    Text('January', style: TextStyle(fontSize: 10, color: textGray)),
-                    Text('February', style: TextStyle(fontSize: 10, color: textGray)),
-                    Text('March', style: TextStyle(fontSize: 10, color: textGray)),
-                    Text('April', style: TextStyle(fontSize: 10, color: textGray)),
-                    Text('May', style: TextStyle(fontSize: 10, color: textGray)),
+        );
+      }),
+    );
+  }
+
+  Widget _buildMonthClickablePills() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: List.generate(_yearlyMonths.length, (index) {
+          final isSelected = _selectedMonthIndex == index;
+          final item = _yearlyMonths[index];
+          return Padding(
+            padding: const EdgeInsets.only(right: 6.0),
+            child: GestureDetector(
+              onTap: () => _onSelectMonth(index),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? brandViolet : const Color(0xFFF9FAFB),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isSelected ? brandViolet : const Color(0xFFE5E7EB),
+                    width: isSelected ? 1.5 : 1.0,
+                  ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: brandViolet.withValues(alpha: 0.25),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      item.label,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                        color: isSelected ? Colors.white : textDark,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Container(
+                      width: 4,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: isSelected ? accentGreen : Colors.transparent,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
                   ],
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildFlowBreakdownCard() {
+    final active = _activePointData;
+    final isPositive = active.net >= 0;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFAF7FF),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE9D5FF)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: isPositive ? const Color(0xFFE8F8EE) : const Color(0xFFFEE2E2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    isPositive ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+                    color: isPositive ? accentGreen : const Color(0xFFDC2626),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${active.label} Net Flow',
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: textDark,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        isPositive ? 'Surplus / Positive Cash In' : 'Deficit / High Outflow',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: isPositive ? accentGreen : const Color(0xFFDC2626),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '${isPositive ? '+' : '-'} PHP ${_formatCurrency(active.net.abs())}',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: isPositive ? accentGreen : const Color(0xFFDC2626),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '${active.inTransfers} In • ${active.outTransfers} Out',
+                style: const TextStyle(fontSize: 10, color: textGray),
+              ),
+            ],
           ),
         ],
       ),
@@ -402,6 +1158,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   Widget _buildMonthlyHistorySection() {
+    final active = _activePointData;
+    final txList = active.transactions;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -424,20 +1183,24 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
-                    'Monthly History',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark),
-                  ),
-                  SizedBox(height: 2),
-                  Text(
-                    'Transfers settled in October 2026',
-                    style: TextStyle(fontSize: 11, color: textGray),
-                  ),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Monthly History',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Showing ${active.label} (${active.dateSubtitle})',
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 11, color: textGray),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               // Prominent "View Statement" Button
               GestureDetector(
                 onTap: () {
@@ -477,55 +1240,43 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
           const SizedBox(height: 16),
 
-          const Text(
-            'October 14, 2026',
-            style: TextStyle(fontSize: 12, color: textGray, fontWeight: FontWeight.w500),
-          ),
-          const SizedBox(height: 10),
-
-          _buildTransactionItem(
-            avatarBg: const Color(0xFF220055),
-            initial: 'D',
-            name: 'Drake Montefalco',
-            time: 'Today, 2:45 pm',
-            amount: '- Php 2,500.00',
-            status: 'COMPLETED',
-            statusColor: accentGreen,
-          ),
-          const SizedBox(height: 12),
-          _buildTransactionItem(
-            avatarBg: const Color(0xFFBA68C8),
-            initial: 'K',
-            name: 'Klare Riego',
-            time: 'Today, 1:45 pm',
-            amount: '+ Php 26,500.00',
-            status: 'RECEIVED',
-            statusColor: accentGreen,
-          ),
-
-          const SizedBox(height: 16),
-
-          const Text(
-            'October 03, 2026',
-            style: TextStyle(fontSize: 12, color: textGray, fontWeight: FontWeight.w500),
-          ),
-          const SizedBox(height: 10),
-
-          _buildTransactionItem(
-            avatarBg: const Color(0xFF7C4DFF),
-            initial: 'A',
-            name: 'Angel Lou',
-            time: 'Today, 2:45 pm',
-            amount: '- Php 2,500.00',
-            status: 'COMPLETED',
-            statusColor: accentGreen,
-          ),
+          if (txList.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Center(
+                child: Text(
+                  'No transactions recorded for ${active.label}.',
+                  style: const TextStyle(fontSize: 12, color: textGray),
+                ),
+              ),
+            )
+          else ...[
+            Text(
+              active.dateSubtitle,
+              style: const TextStyle(fontSize: 12, color: textGray, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 10),
+            for (int i = 0; i < txList.length; i++) ...[
+              if (i > 0) const SizedBox(height: 12),
+              _buildTransactionItem(
+                avatarBg: txList[i].avatarBg,
+                initial: txList[i].initial,
+                name: txList[i].name,
+                time: txList[i].time,
+                amount: '${txList[i].isReceived ? '+' : '-'} Php ${_formatCurrency(txList[i].amount)}',
+                status: txList[i].status,
+                statusColor: txList[i].isReceived ? accentGreen : accentGreen,
+              ),
+            ],
+          ],
         ],
       ),
     );
   }
 
   Widget _buildYearlySummariesSection() {
+    final active = _activePointData;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -548,20 +1299,24 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
-                    'Monthly Summaries',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark),
-                  ),
-                  SizedBox(height: 2),
-                  Text(
-                    'Quarterly disbursement (2026)',
-                    style: TextStyle(fontSize: 11, color: textGray),
-                  ),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Monthly Summaries',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Highlighted: ${active.label} 2026',
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 11, color: textGray),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               // "Annual Report" Button
               GestureDetector(
                 onTap: () {
@@ -597,6 +1352,26 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 ),
               ),
             ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Active Month Highlight
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFAF7FF),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFD8B4FE)),
+            ),
+            child: _buildQuarterRow(
+              initial: active.shortLabel,
+              monthTitle: '${active.label} 2026 (Selected)',
+              transfers: '${active.inTransfers + active.outTransfers} Transfers • + ${_formatCurrency(active.received)}',
+              gross: 'PHP ${_formatCurrency(active.sent)}',
+              net: '${active.net >= 0 ? '+' : '-'} PHP ${_formatCompactK(active.net.abs())} net',
+              avatarBg: brandViolet,
+            ),
           ),
 
           const SizedBox(height: 16),
@@ -657,32 +1432,39 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: avatarBg,
-              child: Text(
-                initial,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
+        Expanded(
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: avatarBg,
+                child: Text(
+                  initial,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  monthTitle,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: textDark),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      monthTitle,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: textDark),
+                    ),
+                    Text(
+                      transfers,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 11, color: textGray),
+                    ),
+                  ],
                 ),
-                Text(
-                  transfers,
-                  style: const TextStyle(fontSize: 11, color: textGray),
-                ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
+        const SizedBox(width: 8),
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
@@ -712,32 +1494,39 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: avatarBg,
-              child: Text(
-                initial,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+        Expanded(
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: avatarBg,
+                child: Text(
+                  initial,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: textDark),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: textDark),
+                    ),
+                    Text(
+                      time,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 11, color: textGray),
+                    ),
+                  ],
                 ),
-                Text(
-                  time,
-                  style: const TextStyle(fontSize: 11, color: textGray),
-                ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
+        const SizedBox(width: 8),
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
@@ -754,87 +1543,358 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       ],
     );
   }
+
+  String _formatCurrency(double val) {
+    final parts = val.toStringAsFixed(2).split('.');
+    final integerPart = parts[0].replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]},',
+    );
+    return '$integerPart.${parts[1]}';
+  }
+
+  String _formatCompactK(double val) {
+    if (val >= 1000) {
+      return '${(val / 1000).toStringAsFixed(1)}k';
+    }
+    return val.toStringAsFixed(0);
+  }
 }
 
-class _TransferFlowPainter extends CustomPainter {
+/// Custom painter for pointed transfer flow with pointed callout badges,
+/// node vertices, vertical guideline scrubber, and smooth gradients.
+class _PointedTransferFlowPainter extends CustomPainter {
+  final List<FlowPointData> dataset;
+  final double scrubFraction;
   final bool isMonthly;
-  _TransferFlowPainter({required this.isMonthly});
+
+  _PointedTransferFlowPainter({
+    required this.dataset,
+    required this.scrubFraction,
+    required this.isMonthly,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
+    if (dataset.isEmpty || w <= 0 || h <= 0) return;
 
+    const double paddingX = 24.0;
+    const double paddingTop = 38.0; // Space for pointed callout badge above
+    const double paddingBottom = 38.0; // Space for pointed callout badge below
+    final usableW = w - (2 * paddingX);
+    final usableH = h - paddingTop - paddingBottom;
+
+    // Baseline axis
     final axisPaint = Paint()
-      ..color = const Color(0xFFE5E7EB)
-      ..strokeWidth = 1.5;
+      ..color = const Color(0xFFF3F4F6)
+      ..strokeWidth = 1.0;
+    canvas.drawLine(Offset(0, h - 8), Offset(w, h - 8), axisPaint);
 
-    canvas.drawLine(Offset(0, h - 10), Offset(w, h - 10), axisPaint);
+    // Subtle horizontal grid guides
+    final gridPaint = Paint()
+      ..color = const Color(0xFFF9FAFB)
+      ..strokeWidth = 1.0;
+    canvas.drawLine(Offset(paddingX, paddingTop + usableH * 0.33), Offset(w - paddingX, paddingTop + usableH * 0.33), gridPaint);
+    canvas.drawLine(Offset(paddingX, paddingTop + usableH * 0.66), Offset(w - paddingX, paddingTop + usableH * 0.66), gridPaint);
 
-    // Green Line (Received)
-    final greenPaint = Paint()
+    final n = dataset.length;
+    final xStep = n > 1 ? usableW / (n - 1) : 0.0;
+
+    // Determine max value for normalization
+    double maxVal = 10000.0;
+    for (final p in dataset) {
+      maxVal = math.max(maxVal, math.max(p.received, p.sent));
+    }
+    maxVal *= 1.25; // 25% overhead for visual breathing room
+
+    // Compute coordinate points for Received (In, Green) and Sent (Out, Violet)
+    final greenPoints = <Offset>[];
+    final violetPoints = <Offset>[];
+
+    for (int i = 0; i < n; i++) {
+      final x = paddingX + (i * xStep);
+      final greenNorm = (dataset[i].received / maxVal).clamp(0.05, 0.95);
+      final violetNorm = (dataset[i].sent / maxVal).clamp(0.05, 0.95);
+
+      final yGreen = (paddingTop + usableH) - (greenNorm * usableH);
+      final yViolet = (paddingTop + usableH) - (violetNorm * usableH);
+
+      greenPoints.add(Offset(x, yGreen));
+      violetPoints.add(Offset(x, yViolet));
+    }
+
+    // Build smooth Catmull-Rom / Bezier curves
+    final greenPath = _buildSmoothSpline(greenPoints);
+    final violetPath = _buildSmoothSpline(violetPoints);
+
+    // 1. Draw subtle area gradients under curves
+    final greenAreaPath = Path.from(greenPath)
+      ..lineTo(greenPoints.last.dx, h - 8)
+      ..lineTo(greenPoints.first.dx, h - 8)
+      ..close();
+    final greenShader = LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        const Color(0xFF2ECC71).withValues(alpha: 0.14),
+        const Color(0xFF2ECC71).withValues(alpha: 0.0),
+      ],
+    ).createShader(Rect.fromLTWH(0, paddingTop, w, usableH));
+    canvas.drawPath(greenAreaPath, Paint()..shader = greenShader);
+
+    final violetAreaPath = Path.from(violetPath)
+      ..lineTo(violetPoints.last.dx, h - 8)
+      ..lineTo(violetPoints.first.dx, h - 8)
+      ..close();
+    final violetShader = LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        const Color(0xFF5E17EB).withValues(alpha: 0.12),
+        const Color(0xFF5E17EB).withValues(alpha: 0.0),
+      ],
+    ).createShader(Rect.fromLTWH(0, paddingTop, w, usableH));
+    canvas.drawPath(violetAreaPath, Paint()..shader = violetShader);
+
+    // 2. Draw Main Spline Strokes
+    final greenStrokePaint = Paint()
       ..color = const Color(0xFF2ECC71)
-      ..strokeWidth = 2.4
+      ..strokeWidth = 2.8
       ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    canvas.drawPath(greenPath, greenStrokePaint);
 
-    final greenPath = Path();
-    greenPath.moveTo(0, h * 0.65);
-    greenPath.cubicTo(w * 0.12, h * 0.58, w * 0.18, h * 0.72, w * 0.28, h * 0.45);
-    greenPath.cubicTo(w * 0.35, h * 0.35, w * 0.45, h * 0.68, w * 0.55, h * 0.55);
-    greenPath.cubicTo(w * 0.65, h * 0.40, w * 0.75, h * 0.20, w * 0.85, h * 0.30);
-    greenPath.cubicTo(w * 0.90, h * 0.35, w * 0.95, h * 0.50, w, h * 0.45);
-
-    canvas.drawPath(greenPath, greenPaint);
-
-    // Violet Line (Sent)
-    final violetPaint = Paint()
+    final violetStrokePaint = Paint()
       ..color = const Color(0xFF5E17EB)
-      ..strokeWidth = 2.4
+      ..strokeWidth = 2.8
       ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    canvas.drawPath(violetPath, violetStrokePaint);
 
-    final violetPath = Path();
-    violetPath.moveTo(0, h * 0.75);
-    violetPath.cubicTo(w * 0.12, h * 0.70, w * 0.18, h * 0.82, w * 0.28, h * 0.58);
-    violetPath.cubicTo(w * 0.35, h * 0.48, w * 0.45, h * 0.80, w * 0.55, h * 0.70);
-    violetPath.cubicTo(w * 0.65, h * 0.60, w * 0.75, h * 0.38, w * 0.85, h * 0.48);
-    violetPath.cubicTo(w * 0.90, h * 0.52, w * 0.95, h * 0.65, w, h * 0.55);
+    // 3. Draw All Pointed Vertices / Nodes on both lines
+    final greenNodePaint = Paint()
+      ..color = const Color(0xFF2ECC71)
+      ..style = PaintingStyle.fill;
+    final violetNodePaint = Paint()
+      ..color = const Color(0xFF5E17EB)
+      ..style = PaintingStyle.fill;
+    final whiteInnerPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
 
-    canvas.drawPath(violetPath, violetPaint);
+    for (int i = 0; i < n; i++) {
+      // Received vertex
+      canvas.drawCircle(greenPoints[i], 4.5, greenNodePaint);
+      canvas.drawCircle(greenPoints[i], 2.2, whiteInnerPaint);
 
-    // Callout labels
-    final greenLabel = isMonthly ? '+18.5k' : '+68.5k';
-    final violetLabel = isMonthly ? '-10.5k' : '-16.5k';
+      // Sent vertex
+      canvas.drawCircle(violetPoints[i], 4.5, violetNodePaint);
+      canvas.drawCircle(violetPoints[i], 2.2, whiteInnerPaint);
+    }
 
-    final textPainterGreen = TextPainter(
+    // 4. Calculate Interpolated Active Scrubber Coordinates
+    final scrubClamped = scrubFraction.clamp(0.0, (n - 1).toDouble());
+    final lowerIdx = scrubClamped.floor();
+    final upperIdx = math.min(lowerIdx + 1, n - 1);
+    final t = scrubClamped - lowerIdx;
+
+    final scrubX = paddingX + (scrubClamped * xStep);
+    final activeGreenY = _lerpDouble(greenPoints[lowerIdx].dy, greenPoints[upperIdx].dy, t);
+    final activeVioletY = _lerpDouble(violetPoints[lowerIdx].dy, violetPoints[upperIdx].dy, t);
+
+    // 5. Vertical Dashed Guideline Scrubber through active point
+    final guidePaint = Paint()
+      ..color = const Color(0xFF5E17EB).withValues(alpha: 0.35)
+      ..strokeWidth = 1.2
+      ..style = PaintingStyle.stroke;
+    _drawDashedVerticalLine(canvas, scrubX, 10, h - 8, guidePaint);
+
+    // 6. Glowing Halos on the Active Nodes
+    // Active Green Vertex Halo
+    final greenHaloPaint = Paint()
+      ..color = const Color(0xFF2ECC71).withValues(alpha: 0.28)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(Offset(scrubX, activeGreenY), 10.0, greenHaloPaint);
+    canvas.drawCircle(Offset(scrubX, activeGreenY), 5.5, greenNodePaint);
+    canvas.drawCircle(Offset(scrubX, activeGreenY), 2.5, whiteInnerPaint);
+
+    // Active Violet Vertex Halo
+    final violetHaloPaint = Paint()
+      ..color = const Color(0xFF5E17EB).withValues(alpha: 0.28)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(Offset(scrubX, activeVioletY), 10.0, violetHaloPaint);
+    canvas.drawCircle(Offset(scrubX, activeVioletY), 5.5, violetNodePaint);
+    canvas.drawCircle(Offset(scrubX, activeVioletY), 2.5, whiteInnerPaint);
+
+    // 7. Interpolate Values for Callout Tooltips
+    final activeRecVal = _lerpDouble(dataset[lowerIdx].received, dataset[upperIdx].received, t);
+    final activeSentVal = _lerpDouble(dataset[lowerIdx].sent, dataset[upperIdx].sent, t);
+
+    final greenText = '+${_formatCompactK(activeRecVal)} In';
+    final violetText = '-${_formatCompactK(activeSentVal)} Out';
+
+    // 8. Render Pointed Callout Badges with Triangle Carets
+    // Green Callout (Pointing Down to Green Vertex)
+    _drawPointedBadge(
+      canvas: canvas,
+      targetX: scrubX,
+      targetY: activeGreenY,
+      text: greenText,
+      bgColor: const Color(0xFF10B981),
+      textColor: Colors.white,
+      pointingDown: true, // Caret points down to vertex
+      canvasWidth: w,
+    );
+
+    // Violet Callout (Pointing Up to Violet Vertex)
+    _drawPointedBadge(
+      canvas: canvas,
+      targetX: scrubX,
+      targetY: activeVioletY,
+      text: violetText,
+      bgColor: const Color(0xFF380084),
+      textColor: Colors.white,
+      pointingDown: false, // Caret points up to vertex
+      canvasWidth: w,
+    );
+  }
+
+  void _drawPointedBadge({
+    required Canvas canvas,
+    required double targetX,
+    required double targetY,
+    required String text,
+    required Color bgColor,
+    required Color textColor,
+    required bool pointingDown,
+    required double canvasWidth,
+  }) {
+    final textPainter = TextPainter(
       text: TextSpan(
-        text: greenLabel,
-        style: const TextStyle(
-          color: Color(0xFF2ECC71),
-          fontWeight: FontWeight.bold,
-          fontSize: 14,
+        text: text,
+        style: TextStyle(
+          color: textColor,
+          fontWeight: FontWeight.w800,
+          fontSize: 10.5,
+          letterSpacing: 0.2,
         ),
       ),
       textDirection: TextDirection.ltr,
     )..layout();
-    textPainterGreen.paint(canvas, Offset(w * 0.65, h * 0.10));
 
-    final textPainterViolet = TextPainter(
-      text: TextSpan(
-        text: violetLabel,
-        style: const TextStyle(
-          color: Color(0xFF380084),
-          fontWeight: FontWeight.bold,
-          fontSize: 14,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    textPainterViolet.paint(canvas, Offset(w * 0.75, h * 0.82));
+    const double hPadding = 8.0;
+    const double vPadding = 4.0;
+    const double caretH = 5.0;
+    const double caretW = 8.0;
+
+    final badgeW = textPainter.width + (2 * hPadding);
+    final badgeH = textPainter.height + (2 * vPadding);
+
+    // Clamp badge body x so it doesn't clip screen boundaries
+    final clampedBadgeX = (targetX - (badgeW / 2)).clamp(6.0, canvasWidth - badgeW - 6.0);
+
+    final badgeY = pointingDown
+        ? (targetY - caretH - badgeH - 4.0) // Positioned above vertex
+        : (targetY + caretH + 4.0); // Positioned below vertex
+
+    // Draw Drop Shadow
+    final shadowPaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.12)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4.0);
+    final badgeRRect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(clampedBadgeX, badgeY, badgeW, badgeH),
+      const Radius.circular(7.0),
+    );
+    canvas.drawRRect(badgeRRect, shadowPaint);
+
+    // Draw Main Badge Background
+    final bgPaint = Paint()..color = bgColor;
+    canvas.drawRRect(badgeRRect, bgPaint);
+
+    // Draw Pointed Caret Triangle pointing to vertex target
+    final caretPath = Path();
+    if (pointingDown) {
+      // Caret base at bottom of badge, point at (targetX, targetY - 4)
+      caretPath.moveTo(targetX - (caretW / 2), badgeY + badgeH);
+      caretPath.lineTo(targetX + (caretW / 2), badgeY + badgeH);
+      caretPath.lineTo(targetX, targetY - 4.0);
+      caretPath.close();
+    } else {
+      // Caret base at top of badge, point at (targetX, targetY + 4)
+      caretPath.moveTo(targetX - (caretW / 2), badgeY);
+      caretPath.lineTo(targetX + (caretW / 2), badgeY);
+      caretPath.lineTo(targetX, targetY + 4.0);
+      caretPath.close();
+    }
+    canvas.drawPath(caretPath, bgPaint);
+
+    // Paint Text
+    textPainter.paint(
+      canvas,
+      Offset(clampedBadgeX + hPadding, badgeY + vPadding),
+    );
+  }
+
+  Path _buildSmoothSpline(List<Offset> points) {
+    final path = Path();
+    if (points.isEmpty) return path;
+    path.moveTo(points.first.dx, points.first.dy);
+
+    for (int i = 0; i < points.length - 1; i++) {
+      final p0 = i > 0 ? points[i - 1] : points[i];
+      final p1 = points[i];
+      final p2 = points[i + 1];
+      final p3 = i < points.length - 2 ? points[i + 2] : p2;
+
+      // Catmull-Rom to Cubic Bezier control points
+      final cp1x = p1.dx + (p2.dx - p0.dx) / 6.0;
+      final cp1y = p1.dy + (p2.dy - p0.dy) / 6.0;
+      final cp2x = p2.dx - (p3.dx - p1.dx) / 6.0;
+      final cp2y = p2.dy - (p3.dy - p1.dy) / 6.0;
+
+      path.cubicTo(cp1x, cp1y, cp2x, cp2y, p2.dx, p2.dy);
+    }
+    return path;
+  }
+
+  void _drawDashedVerticalLine(
+    Canvas canvas,
+    double x,
+    double startY,
+    double endY,
+    Paint paint,
+  ) {
+    const double dashHeight = 4.0;
+    const double dashSpace = 3.0;
+    double currentY = startY;
+
+    while (currentY < endY) {
+      canvas.drawLine(
+        Offset(x, currentY),
+        Offset(x, math.min(currentY + dashHeight, endY)),
+        paint,
+      );
+      currentY += dashHeight + dashSpace;
+    }
+  }
+
+  double _lerpDouble(double a, double b, double t) => a + (b - a) * t;
+
+  String _formatCompactK(double val) {
+    if (val >= 1000) {
+      return '${(val / 1000).toStringAsFixed(1)}k';
+    }
+    return val.toStringAsFixed(0);
   }
 
   @override
-  bool shouldRepaint(covariant _TransferFlowPainter oldDelegate) =>
-      oldDelegate.isMonthly != isMonthly;
+  bool shouldRepaint(covariant _PointedTransferFlowPainter oldDelegate) {
+    return oldDelegate.scrubFraction != scrubFraction ||
+        oldDelegate.isMonthly != isMonthly ||
+        oldDelegate.dataset != dataset;
+  }
 }

@@ -10,6 +10,7 @@ import 'package:aurabank_app/screens/otp_verification_screen.dart';
 import 'package:aurabank_app/screens/devices_sessions_screen.dart';
 import 'package:aurabank_app/screens/security_gate_screen.dart';
 import 'package:aurabank_app/screens/profile_screen.dart';
+import 'package:aurabank_app/screens/analytics_screen.dart';
 import 'package:aurabank_app/services/bank_service.dart';
 
 void main() {
@@ -260,5 +261,68 @@ void main() {
     await tester.tap(find.text('Save Changes'));
     await tester.pumpAndSettle();
     expect(find.text('Edit Profile'), findsNothing);
+  });
+
+  testWidgets('Interactive Analytics Transfer Flow renders pointed flow, week/month clicks, and KPI updates',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: AnalyticsScreen(),
+      ),
+    );
+
+    // Initial render in Monthly mode
+    expect(find.text('Transfer Flow'), findsOneWidget);
+    expect(find.text('Received'), findsOneWidget);
+    expect(find.text('Sent'), findsOneWidget);
+    expect(find.text('Week 1'), findsOneWidget);
+    expect(find.text('Week 2'), findsOneWidget);
+    expect(find.text('Week 3'), findsOneWidget);
+    expect(find.text('Week 4'), findsOneWidget);
+    expect(find.text('Week 5'), findsOneWidget);
+
+    // Tap Week 2 pill
+    await tester.tap(find.text('Week 2'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Week 2 Selected'), findsOneWidget);
+    expect(find.text('Sent (W2)'), findsOneWidget);
+    expect(find.text('Received (W2)'), findsOneWidget);
+    expect(find.text('PHP 18,500.00'), findsOneWidget); // Sent for Week 2
+    expect(find.text('PHP 26,500.00'), findsOneWidget); // Received for Week 2
+    expect(find.text('Drake Montefalco'), findsOneWidget);
+    expect(find.text('Klare Riego'), findsOneWidget);
+
+    // Tap Week 4 pill
+    await tester.tap(find.text('Week 4'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Week 4 Selected'), findsOneWidget);
+    expect(find.text('Sent (W4)'), findsOneWidget);
+    expect(find.text('Received (W4)'), findsOneWidget);
+    expect(find.text('PHP 10,500.00'), findsOneWidget); // Sent for Week 4
+    expect(find.text('PHP 18,500.00'), findsOneWidget); // Received for Week 4
+
+    // Switch to Yearly mode
+    await tester.tap(find.text('Yearly'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Monthly Summaries'), findsOneWidget);
+    expect(find.text('January'), findsOneWidget);
+    expect(find.text('April'), findsOneWidget);
+    expect(find.text('July'), findsOneWidget);
+
+    // Tap January pill in Yearly mode
+    await tester.tap(find.text('January'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('January Selected'), findsOneWidget);
+    expect(find.text('PHP 45,000.00'), findsWidgets); // Sent for Jan (KPI card + summary card)
+    expect(find.text('PHP 15,000.00'), findsWidgets); // Received for Jan
   });
 }

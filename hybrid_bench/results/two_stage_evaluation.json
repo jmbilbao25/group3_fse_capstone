@@ -1,0 +1,1250 @@
+{
+  "benchmark_timestamp": "2026-10-05 09:01:58",
+  "typology_config": {
+    "temperature": 7.12,
+    "nll_before": 3.3429,
+    "nll_after": 1.8858,
+    "ece_before": 0.5824,
+    "ece_after": 0.0919,
+    "macro_f1_v": 0.0636,
+    "theta_medium": 0.35,
+    "theta_high": 0.5,
+    "classes": [
+      "prize_or_fee_scam",
+      "investment_scam",
+      "romance_scam",
+      "impersonation",
+      "fake_invoice_or_selling_scam",
+      "other_suspicious",
+      "none"
+    ],
+    "calibrated_at": "2026-10-05 16:48:23"
+  },
+  "step_2_1_s2_baseline_verification": {
+    "C1": {
+      "n_samples": 300,
+      "n_fraud": 45,
+      "roc_auc": 0.9997,
+      "pr_auc": 0.9986,
+      "macro_f1": 0.5414,
+      "false_block_rate": 0.0,
+      "missed_fraud_rate": 0.0444,
+      "matches_preregistered_p5": true
+    },
+    "C2": {
+      "n_samples": 300,
+      "n_fraud": 45,
+      "roc_auc": 0.9995,
+      "pr_auc": 0.9974,
+      "macro_f1": 0.4548,
+      "false_block_rate": 0.0,
+      "missed_fraud_rate": 0.0222,
+      "matches_preregistered_p5": true
+    },
+    "C3": {
+      "n_samples": 1000,
+      "n_fraud": 15,
+      "roc_auc": 0.999,
+      "pr_auc": 0.8487,
+      "macro_f1": 0.4732,
+      "false_block_rate": 0.001,
+      "missed_fraud_rate": 0.0667,
+      "matches_preregistered_p5": true
+    },
+    "C4": {
+      "n_samples": 100,
+      "n_fraud": 15,
+      "roc_auc": 1.0,
+      "pr_auc": 1.0,
+      "macro_f1": 0.4222,
+      "false_block_rate": 0.0,
+      "missed_fraud_rate": 0.0,
+      "matches_preregistered_p5": true
+    }
+  },
+  "step_2_2_multi_split_typology": {
+    "C1": {
+      "n_memo_transactions": 89,
+      "tfidf_baseline": {
+        "macro_f1": 0.9151,
+        "ece": 0.2845,
+        "nll": 0.3464,
+        "latency_per_sample_ms": 0.216,
+        "per_class": {
+          "prize_or_fee_scam": {
+            "precision": 0.5,
+            "recall": 1.0,
+            "f1": 0.6667,
+            "support": 1
+          },
+          "investment_scam": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "support": 6
+          },
+          "romance_scam": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "impersonation": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "fake_invoice_or_selling_scam": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "other_suspicious": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "support": 1
+          },
+          "none": {
+            "precision": 1.0,
+            "recall": 0.9877,
+            "f1": 0.9938,
+            "support": 81
+          }
+        },
+        "confusion_matrix": [
+          [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            6,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0
+          ],
+          [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            80
+          ]
+        ]
+      },
+      "nanojev": {
+        "macro_f1": 0.0723,
+        "ece": 0.1819,
+        "nll": 1.8832,
+        "latency_p50_ms": 0.4,
+        "latency_p95_ms": 0.81,
+        "per_class": {
+          "prize_or_fee_scam": {
+            "precision": 0.0143,
+            "recall": 1.0,
+            "f1": 0.0282,
+            "support": 1
+          },
+          "investment_scam": {
+            "precision": 0.1111,
+            "recall": 0.1667,
+            "f1": 0.1333,
+            "support": 6
+          },
+          "romance_scam": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "impersonation": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "fake_invoice_or_selling_scam": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "other_suspicious": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 1
+          },
+          "none": {
+            "precision": 1.0,
+            "recall": 0.1111,
+            "f1": 0.2,
+            "support": 81
+          }
+        },
+        "confusion_matrix": [
+          [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            5,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            63,
+            8,
+            0,
+            1,
+            0,
+            0,
+            9
+          ]
+        ]
+      }
+    },
+    "C2": {
+      "n_memo_transactions": 94,
+      "tfidf_baseline": {
+        "macro_f1": 0.2698,
+        "ece": 0.2986,
+        "nll": 0.89,
+        "latency_per_sample_ms": 0.171,
+        "per_class": {
+          "prize_or_fee_scam": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "investment_scam": {
+            "precision": 0.5,
+            "recall": 1.0,
+            "f1": 0.6667,
+            "support": 2
+          },
+          "romance_scam": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 1
+          },
+          "impersonation": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 1
+          },
+          "fake_invoice_or_selling_scam": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "other_suspicious": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 6
+          },
+          "none": {
+            "precision": 0.9524,
+            "recall": 0.9524,
+            "f1": 0.9524,
+            "support": 84
+          }
+        },
+        "confusion_matrix": [
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            2,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1
+          ],
+          [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            2,
+            1,
+            0,
+            0,
+            0,
+            0,
+            3
+          ],
+          [
+            3,
+            1,
+            0,
+            0,
+            0,
+            0,
+            80
+          ]
+        ]
+      },
+      "nanojev": {
+        "macro_f1": 0.0159,
+        "ece": 0.1865,
+        "nll": 1.9386,
+        "latency_p50_ms": 0.31,
+        "latency_p95_ms": 0.83,
+        "per_class": {
+          "prize_or_fee_scam": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "investment_scam": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 2
+          },
+          "romance_scam": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 1
+          },
+          "impersonation": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 1
+          },
+          "fake_invoice_or_selling_scam": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "other_suspicious": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 6
+          },
+          "none": {
+            "precision": 0.8333,
+            "recall": 0.0595,
+            "f1": 0.1111,
+            "support": 84
+          }
+        },
+        "confusion_matrix": [
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            4,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1
+          ],
+          [
+            64,
+            14,
+            0,
+            0,
+            1,
+            0,
+            5
+          ]
+        ]
+      }
+    },
+    "C4": {
+      "n_memo_transactions": 33,
+      "tfidf_baseline": {
+        "macro_f1": 0.4938,
+        "ece": 0.2852,
+        "nll": 0.7175,
+        "latency_per_sample_ms": 0.16,
+        "per_class": {
+          "prize_or_fee_scam": {
+            "precision": 0.625,
+            "recall": 1.0,
+            "f1": 0.7692,
+            "support": 5
+          },
+          "investment_scam": {
+            "precision": 0.6,
+            "recall": 1.0,
+            "f1": 0.75,
+            "support": 3
+          },
+          "romance_scam": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "impersonation": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 2
+          },
+          "fake_invoice_or_selling_scam": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "other_suspicious": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 3
+          },
+          "none": {
+            "precision": 0.95,
+            "recall": 0.95,
+            "f1": 0.95,
+            "support": 20
+          }
+        },
+        "confusion_matrix": [
+          [
+            5,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            3,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            2,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1
+          ],
+          [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            19
+          ]
+        ]
+      },
+      "nanojev": {
+        "macro_f1": 0.0999,
+        "ece": 0.1167,
+        "nll": 1.8796,
+        "latency_p50_ms": 0.3,
+        "latency_p95_ms": 0.56,
+        "per_class": {
+          "prize_or_fee_scam": {
+            "precision": 0.1,
+            "recall": 0.4,
+            "f1": 0.16,
+            "support": 5
+          },
+          "investment_scam": {
+            "precision": 0.25,
+            "recall": 0.3333,
+            "f1": 0.2857,
+            "support": 3
+          },
+          "romance_scam": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "impersonation": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 2
+          },
+          "fake_invoice_or_selling_scam": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "other_suspicious": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 3
+          },
+          "none": {
+            "precision": 0.3333,
+            "recall": 0.1,
+            "f1": 0.1538,
+            "support": 20
+          }
+        },
+        "confusion_matrix": [
+          [
+            2,
+            1,
+            0,
+            1,
+            0,
+            0,
+            1
+          ],
+          [
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            2
+          ],
+          [
+            16,
+            1,
+            0,
+            0,
+            1,
+            0,
+            2
+          ]
+        ]
+      }
+    }
+  },
+  "step_2_3_warning_behavior": {
+    "all": {
+      "n_samples": 216,
+      "n_legit": 175,
+      "n_scam": 41,
+      "false_warning_rate": 0.0,
+      "scam_warning_recall": 0.0244,
+      "tier_distribution": {
+        "NONE_pct": 99.54,
+        "MEDIUM_pct": 0.46,
+        "HIGH_pct": 0.0
+      },
+      "escalated_from_allow_pct": 0.46
+    },
+    "en": {
+      "n_samples": 197,
+      "n_legit": 159,
+      "n_scam": 38,
+      "false_warning_rate": 0.0,
+      "scam_warning_recall": 0.0263,
+      "tier_distribution": {
+        "NONE_pct": 99.49,
+        "MEDIUM_pct": 0.51,
+        "HIGH_pct": 0.0
+      },
+      "escalated_from_allow_pct": 0.51
+    },
+    "tl": {
+      "n_samples": 10,
+      "n_legit": 9,
+      "n_scam": 1,
+      "false_warning_rate": 0.0,
+      "scam_warning_recall": 0.0,
+      "tier_distribution": {
+        "NONE_pct": 100.0,
+        "MEDIUM_pct": 0.0,
+        "HIGH_pct": 0.0
+      },
+      "escalated_from_allow_pct": 0.0
+    },
+    "taglish": {
+      "n_samples": 9,
+      "n_legit": 7,
+      "n_scam": 2,
+      "false_warning_rate": 0.0,
+      "scam_warning_recall": 0.0,
+      "tier_distribution": {
+        "NONE_pct": 100.0,
+        "MEDIUM_pct": 0.0,
+        "HIGH_pct": 0.0
+      },
+      "escalated_from_allow_pct": 0.0
+    }
+  },
+  "step_2_4_stress_slices": {
+    "total_stress_scams": 15,
+    "scams_caught_by_stage_b": 0,
+    "scam_catch_rate_pct": 0.0,
+    "s2_standalone_miss_count": 15,
+    "total_benign_controls": 15,
+    "false_warnings_on_benign": 0,
+    "false_warning_rate_pct": 0.0,
+    "scam_details": [
+      {
+        "memo": "Claiming fee for approved GCash lucky draw reward",
+        "lang": "en",
+        "expected_typology": "prize_or_fee_scam",
+        "pred_typology": "prize_or_fee_scam",
+        "typology_prob": 0.2685,
+        "s2_action": "ALLOW",
+        "s2_score": 0.2,
+        "tier": "NONE",
+        "final_action": "ALLOW",
+        "caught_by_warning": false
+      },
+      {
+        "memo": "Guaranteed 25% daily crypto trading profit deposit",
+        "lang": "en",
+        "expected_typology": "investment_scam",
+        "pred_typology": "prize_or_fee_scam",
+        "typology_prob": 0.1934,
+        "s2_action": "ALLOW",
+        "s2_score": 0.2,
+        "tier": "NONE",
+        "final_action": "ALLOW",
+        "caught_by_warning": false
+      },
+      {
+        "memo": "Emergency hospital surgery payment for overseas fiance",
+        "lang": "en",
+        "expected_typology": "romance_scam",
+        "pred_typology": "prize_or_fee_scam",
+        "typology_prob": 0.2578,
+        "s2_action": "ALLOW",
+        "s2_score": 0.2,
+        "tier": "NONE",
+        "final_action": "ALLOW",
+        "caught_by_warning": false
+      },
+      {
+        "memo": "PNP Cybercrime bail bond release fee payment",
+        "lang": "en",
+        "expected_typology": "impersonation",
+        "pred_typology": "prize_or_fee_scam",
+        "typology_prob": 0.2845,
+        "s2_action": "ALLOW",
+        "s2_score": 0.2,
+        "tier": "NONE",
+        "final_action": "ALLOW",
+        "caught_by_warning": false
+      },
+      {
+        "memo": "Downpayment for rush sale iPhone 15 pro delivery",
+        "lang": "en",
+        "expected_typology": "fake_invoice_or_selling_scam",
+        "pred_typology": "impersonation",
+        "typology_prob": 0.2173,
+        "s2_action": "ALLOW",
+        "s2_score": 0.2,
+        "tier": "NONE",
+        "final_action": "ALLOW",
+        "caught_by_warning": false
+      },
+      {
+        "memo": "Bayad sa processing fee para sa napanalunang raffle",
+        "lang": "tl",
+        "expected_typology": "prize_or_fee_scam",
+        "pred_typology": "investment_scam",
+        "typology_prob": 0.2029,
+        "s2_action": "ALLOW",
+        "s2_score": 0.2,
+        "tier": "NONE",
+        "final_action": "ALLOW",
+        "caught_by_warning": false
+      },
+      {
+        "memo": "Pang-invest sa paluwagan may garantisadong balik bukas",
+        "lang": "tl",
+        "expected_typology": "investment_scam",
+        "pred_typology": "investment_scam",
+        "typology_prob": 0.1918,
+        "s2_action": "ALLOW",
+        "s2_score": 0.2,
+        "tier": "NONE",
+        "final_action": "ALLOW",
+        "caught_by_warning": false
+      },
+      {
+        "memo": "Padala para sa visa fee ng aking nobyo sa London",
+        "lang": "tl",
+        "expected_typology": "romance_scam",
+        "pred_typology": "prize_or_fee_scam",
+        "typology_prob": 0.2357,
+        "s2_action": "ALLOW",
+        "s2_score": 0.2,
+        "tier": "NONE",
+        "final_action": "ALLOW",
+        "caught_by_warning": false
+      },
+      {
+        "memo": "Pambayad sa NBI settlement para hindi maaresto",
+        "lang": "tl",
+        "expected_typology": "impersonation",
+        "pred_typology": "investment_scam",
+        "typology_prob": 0.2241,
+        "s2_action": "ALLOW",
+        "s2_score": 0.2,
+        "tier": "NONE",
+        "final_action": "ALLOW",
+        "caught_by_warning": false
+      },
+      {
+        "memo": "Paunang bayad sa seller bago ipadala ang motor",
+        "lang": "tl",
+        "expected_typology": "fake_invoice_or_selling_scam",
+        "pred_typology": "prize_or_fee_scam",
+        "typology_prob": 0.3098,
+        "s2_action": "ALLOW",
+        "s2_score": 0.2,
+        "tier": "NONE",
+        "final_action": "ALLOW",
+        "caught_by_warning": false
+      },
+      {
+        "memo": "Claim fee para sa official Shopee 100k prize reward",
+        "lang": "taglish",
+        "expected_typology": "prize_or_fee_scam",
+        "pred_typology": "prize_or_fee_scam",
+        "typology_prob": 0.2808,
+        "s2_action": "ALLOW",
+        "s2_score": 0.2,
+        "tier": "NONE",
+        "final_action": "ALLOW",
+        "caught_by_warning": false
+      },
+      {
+        "memo": "Trading bot investment top-up double your money in 3 days",
+        "lang": "taglish",
+        "expected_typology": "investment_scam",
+        "pred_typology": "prize_or_fee_scam",
+        "typology_prob": 0.2566,
+        "s2_action": "ALLOW",
+        "s2_score": 0.2,
+        "tier": "NONE",
+        "final_action": "ALLOW",
+        "caught_by_warning": false
+      },
+      {
+        "memo": "Airfare ticket padala for my online bf meet-up",
+        "lang": "taglish",
+        "expected_typology": "romance_scam",
+        "pred_typology": "prize_or_fee_scam",
+        "typology_prob": 0.2107,
+        "s2_action": "ALLOW",
+        "s2_score": 0.2,
+        "tier": "NONE",
+        "final_action": "ALLOW",
+        "caught_by_warning": false
+      },
+      {
+        "memo": "Bank compliance officer urgent verification security fee",
+        "lang": "taglish",
+        "expected_typology": "impersonation",
+        "pred_typology": "investment_scam",
+        "typology_prob": 0.2368,
+        "s2_action": "ALLOW",
+        "s2_score": 0.2,
+        "tier": "NONE",
+        "final_action": "ALLOW",
+        "caught_by_warning": false
+      },
+      {
+        "memo": "Reservation deposit for branded bag seller sa Facebook",
+        "lang": "taglish",
+        "expected_typology": "fake_invoice_or_selling_scam",
+        "pred_typology": "prize_or_fee_scam",
+        "typology_prob": 0.2862,
+        "s2_action": "ALLOW",
+        "s2_score": 0.2,
+        "tier": "NONE",
+        "final_action": "ALLOW",
+        "caught_by_warning": false
+      }
+    ],
+    "benign_details": [
+      {
+        "memo": "College semester tuition fee and laboratory supplies",
+        "lang": "en",
+        "pred_typology": "prize_or_fee_scam",
+        "typology_prob": 0.2729,
+        "tier": "NONE",
+        "final_action": "ALLOW",
+        "false_warning": false
+      },
+      {
+        "memo": "Meralco electric bill payment for October",
+        "lang": "en",
+        "pred_typology": "prize_or_fee_scam",
+        "typology_prob": 0.2085,
+        "tier": "NONE",
+        "final_action": "ALLOW",
+        "false_warning": false
+      },
+      {
+        "memo": "Monthly apartment rent payment unit 4B",
+        "lang": "en",
+        "pred_typology": "prize_or_fee_scam",
+        "typology_prob": 0.2454,
+        "tier": "NONE",
+        "final_action": "ALLOW",
+        "false_warning": false
+      },
+      {
+        "memo": "Allowance for kids school snacks and books",
+        "lang": "en",
+        "pred_typology": "prize_or_fee_scam",
+        "typology_prob": 0.1995,
+        "tier": "NONE",
+        "final_action": "ALLOW",
+        "false_warning": false
+      },
+      {
+        "memo": "Mercury Drug maintenance medicine for mother",
+        "lang": "en",
+        "pred_typology": "impersonation",
+        "typology_prob": 0.1698,
+        "tier": "NONE",
+        "final_action": "ALLOW",
+        "false_warning": false
+      },
+      {
+        "memo": "Pambili ng bigas at ulam para sa pamilya ngayong linggo",
+        "lang": "tl",
+        "pred_typology": "prize_or_fee_scam",
+        "typology_prob": 0.2543,
+        "tier": "NONE",
+        "final_action": "ALLOW",
+        "false_warning": false
+      },
+      {
+        "memo": "Bayad sa matrikula sa kolehiyo ni bunso",
+        "lang": "tl",
+        "pred_typology": "prize_or_fee_scam",
+        "typology_prob": 0.2402,
+        "tier": "NONE",
+        "final_action": "ALLOW",
+        "false_warning": false
+      },
+      {
+        "memo": "Pang-upa sa bahay para sa buwan ng Oktubre",
+        "lang": "tl",
+        "pred_typology": "prize_or_fee_scam",
+        "typology_prob": 0.2375,
+        "tier": "NONE",
+        "final_action": "ALLOW",
+        "false_warning": false
+      },
+      {
+        "memo": "Padala kay nanay pambili ng gamot sa alta-presyon",
+        "lang": "tl",
+        "pred_typology": "prize_or_fee_scam",
+        "typology_prob": 0.2446,
+        "tier": "NONE",
+        "final_action": "ALLOW",
+        "false_warning": false
+      },
+      {
+        "memo": "Bayad sa tubero at materyales para sa sirang lababo",
+        "lang": "tl",
+        "pred_typology": "prize_or_fee_scam",
+        "typology_prob": 0.2269,
+        "tier": "NONE",
+        "final_action": "ALLOW",
+        "false_warning": false
+      },
+      {
+        "memo": "Pang-grocery sa Puregold and school supplies ni kuya",
+        "lang": "taglish",
+        "pred_typology": "prize_or_fee_scam",
+        "typology_prob": 0.2393,
+        "tier": "NONE",
+        "final_action": "ALLOW",
+        "false_warning": false
+      },
+      {
+        "memo": "Share sa monthly wifi bill and Netflix subscription",
+        "lang": "taglish",
+        "pred_typology": "fake_invoice_or_selling_scam",
+        "typology_prob": 0.184,
+        "tier": "NONE",
+        "final_action": "ALLOW",
+        "false_warning": false
+      },
+      {
+        "memo": "Birthday pamasko and gift for my inaanak",
+        "lang": "taglish",
+        "pred_typology": "prize_or_fee_scam",
+        "typology_prob": 0.2074,
+        "tier": "NONE",
+        "final_action": "ALLOW",
+        "false_warning": false
+      },
+      {
+        "memo": "Dentist cleaning and consultation fee payment",
+        "lang": "taglish",
+        "pred_typology": "prize_or_fee_scam",
+        "typology_prob": 0.2994,
+        "tier": "NONE",
+        "final_action": "ALLOW",
+        "false_warning": false
+      },
+      {
+        "memo": "GrabFood group order share for team lunch",
+        "lang": "taglish",
+        "pred_typology": "prize_or_fee_scam",
+        "typology_prob": 0.2588,
+        "tier": "NONE",
+        "final_action": "ALLOW",
+        "false_warning": false
+      }
+    ]
+  },
+  "step_2_5_concurrency_and_latency": {
+    "10_tps": {
+      "target_tps": 10,
+      "actual_tps": 9.96,
+      "total_requests": 40,
+      "stage_a": {
+        "p50_ms": 30.1,
+        "p95_ms": 39.7,
+        "p99_ms": 41.62,
+        "budget_met": true
+      },
+      "stage_b_fresh": {
+        "p50_ms": 3.68,
+        "p95_ms": 4.51,
+        "p99_ms": 4.79
+      },
+      "stage_b_cached": {
+        "p50_ms": 3.01,
+        "p95_ms": 3.79,
+        "p99_ms": 4.33
+      },
+      "timeouts_count": 0,
+      "fallbacks_count": 0,
+      "timeout_rate_pct": 0.0
+    },
+    "25_tps": {
+      "target_tps": 25,
+      "actual_tps": 23.12,
+      "total_requests": 100,
+      "stage_a": {
+        "p50_ms": 203.28,
+        "p95_ms": 289.41,
+        "p99_ms": 307.76,
+        "budget_met": false
+      },
+      "stage_b_fresh": {
+        "p50_ms": 31.56,
+        "p95_ms": 54.13,
+        "p99_ms": 65.77
+      },
+      "stage_b_cached": {
+        "p50_ms": 28.68,
+        "p95_ms": 44.3,
+        "p99_ms": 48.43
+      },
+      "timeouts_count": 0,
+      "fallbacks_count": 0,
+      "timeout_rate_pct": 0.0
+    }
+  },
+  "step_2_6_adversarial_robustness": {
+    "total_vectors_tested": 60,
+    "total_downgrades": 0,
+    "invariant_preservation_rate_pct": 100.0,
+    "zero_downgrades_verified": true,
+    "by_category": {
+      "direct_override": {
+        "total": 6,
+        "downgrades": 0
+      },
+      "authority_impersonation": {
+        "total": 6,
+        "downgrades": 0
+      },
+      "delimiter_escape": {
+        "total": 6,
+        "downgrades": 0
+      },
+      "roleplay_jailbreak": {
+        "total": 6,
+        "downgrades": 0
+      },
+      "social_engineering": {
+        "total": 6,
+        "downgrades": 0
+      },
+      "multilingual_tagalog": {
+        "total": 6,
+        "downgrades": 0
+      },
+      "obfuscation": {
+        "total": 6,
+        "downgrades": 0
+      },
+      "markdown_spoof": {
+        "total": 6,
+        "downgrades": 0
+      },
+      "paradox_logic": {
+        "total": 6,
+        "downgrades": 0
+      },
+      "whitelist_bypass": {
+        "total": 6,
+        "downgrades": 0
+      }
+    }
+  },
+  "total_benchmark_duration_seconds": 39.33
+}

@@ -1,5 +1,5 @@
 # Benchmark report: hybrid risk engine evaluation
-**Document timestamp**: 2026-10-04 18:21:05 UTC
+**Document timestamp**: 2026-10-05 14:08:01 UTC
 **Preregistration SHA256**: `0f546de2f9cd3b0fad44ebf92279b5d738cbc2b2e0d58f8c2bd2ffe9a5db5620`
 
 ## Executive summary and verdict

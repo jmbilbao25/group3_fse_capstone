@@ -38,6 +38,7 @@ Thumbs.db
 *.log
 *.tmp
 *.bak
+~$*
 
 ### Node / Frontend ###
 node_modules/
@@ -64,4 +65,5 @@ infrastructure/datadog/synthetics-location-config.json
 .venv/
 **/__pycache__/
 **/cache/*.json
+hybrid_bench/cache/
 

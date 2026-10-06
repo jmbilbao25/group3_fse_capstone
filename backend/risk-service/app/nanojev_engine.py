@@ -206,14 +206,6 @@ class NanoJevEngine:
             flags.append("SLIGHT_AMOUNT_ELEVATION")
 
         # ---------------------------------------------------------------------
-        # 3. Natural Language Memo Semantic Analysis
-        # ---------------------------------------------------------------------
-        memo_lower = memo.lower() if memo else ""
-        for pattern, flag_name, _ in HIGH_RISK_MEMO_PATTERNS:
-            if re.search(pattern, memo_lower):
-                flags.append(flag_name)
-
-        # ---------------------------------------------------------------------
         # Gate 0: Deterministic Fast-Path (< 0.1ms)
         # ---------------------------------------------------------------------
         # Fast Block: Physically impossible travel velocity (> 1,000 km/h)
@@ -292,7 +284,7 @@ class NanoJevEngine:
                         f"<|im_start|>system\n"
                         f"You are NanoJev banking risk model. Classify verdict: ALLOW, REQUIRE_2FA, or BLOCK.<|im_end|>\n"
                         f"<|im_start|>user\n"
-                        f"Spike: {spike_ratio:.1f}x | Speed: {velocity_kmh:.1f}km/h | VPN: {is_vpn} | Memo: \"{memo}\"\n"
+                        f"Spike: {spike_ratio:.1f}x | Speed: {velocity_kmh:.1f}km/h | VPN: {is_vpn} | Telemetry: Standard Retail Transfer\n"
                         f"Verdict:<|im_end|>\n"
                         f"<|im_start|>assistant\n"
                     )

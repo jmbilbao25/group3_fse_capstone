@@ -375,7 +375,7 @@ class RiskRequestHandler(BaseHTTPRequestHandler):
                     status = "REQUIRE_2FA"
                 else:
                     decision = "ALLOW"
-                    status = "PENDING_SETTLEMENT" if (memo and memo.strip()) else "SETTLED"
+                    status = "SETTLED"
 
                 fraud_score = int(p_fraud * 100)
                 is_anomaly = p_fraud >= TAU_2FA
@@ -383,33 +383,11 @@ class RiskRequestHandler(BaseHTTPRequestHandler):
                 primary_flag = "NONE" if decision == "ALLOW" else ("ELEVATED_S2_SCORE" if decision == "REQUIRE_2FA" else "CRITICAL_FRAUD_RISK")
                 all_flags = [primary_flag] if primary_flag != "NONE" else []
 
-                # Enqueue Async Reviewer for memo-present non-blocked transfers
-                review_enqueued = False
-                if memo and memo.strip() and decision != "BLOCK":
-                    transfer_store.save_transfer(
-                        transaction_id=tx_id,
-                        user_id=user_id,
-                        account_id=account_id,
-                        target_account_id=target_account_id,
-                        amount=amount,
-                        memo=memo,
-                        s2_action=decision,
-                        s2_score=p_fraud,
-                        tabular_features=row_dict if 'row_dict' in locals() else {}
-                    )
-                    review_enqueued = worker_pool.enqueue_review(
-                        transaction_id=tx_id,
-                        s2_action=decision,
-                        s2_score=p_fraud,
-                        memo=memo,
-                        amount=amount,
-                        tabular_data=row_dict if 'row_dict' in locals() else {}
-                    )
-
             # 3. Contextual Device Threat & Advisory Warning Analysis
             advisory_tier = "NONE"
             warning_dialog = None
             threat_narrative = None
+            req_model = None
 
             is_primary_device = req.get("is_primary_device", True)
             if isinstance(req.get("device_context"), dict):
@@ -436,6 +414,30 @@ class RiskRequestHandler(BaseHTTPRequestHandler):
                             all_flags.append(f"DEVICE_THREAT_{threat_cat}")
                 except Exception as e:
                     print(f"[THREAT EVAL ERROR] {e}", flush=True)
+
+            # Enqueue Async Reviewer for enriched threat context or elevated S2 risk (ignoring memo)
+            review_enqueued = False
+            if decision != "BLOCK" and (threat_narrative is not None or p_fraud >= 0.15):
+                narrative_payload = threat_narrative or f"Amount: PHP {amount:,.2f} | Spike: {spike_ratio:.1f}x"
+                transfer_store.save_transfer(
+                    transaction_id=tx_id,
+                    user_id=user_id,
+                    account_id=account_id,
+                    target_account_id=target_account_id,
+                    amount=amount,
+                    memo=narrative_payload,
+                    s2_action=decision,
+                    s2_score=p_fraud,
+                    tabular_features=row_dict if 'row_dict' in locals() else {}
+                )
+                review_enqueued = worker_pool.enqueue_review(
+                    transaction_id=tx_id,
+                    s2_action=decision,
+                    s2_score=p_fraud,
+                    memo=narrative_payload,
+                    amount=amount,
+                    tabular_data=row_dict if 'row_dict' in locals() else {}
+                )
 
             # 4. Out-of-band & Biometric Authorization Mapping (Zero SMS OTP for Transactions)
             if decision == "BLOCK":

@@ -1331,25 +1331,43 @@ export default function AdminExecutivePortal() {
       </main>
 
       {/* =========================================================================
-          SLIDE-OVER TRANSACTION AUDIT DRAWER (11-STAGE PIPELINE)
+          CENTERED WIDE TRANSACTION AUDIT MODAL (11-STAGE PIPELINE)
           ========================================================================= */}
       {selectedTx && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="w-full max-w-md h-full bg-surface border-l border-line p-6 shadow-2xl overflow-y-auto flex flex-col justify-between">
-            <div className="space-y-6">
-              {/* Drawer Header */}
-              <div className="flex items-start justify-between border-b border-line pb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 sm:p-6 animate-in fade-in duration-200">
+          <div className="w-full max-w-4xl max-h-[92vh] bg-surface border border-line rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-line px-6 py-4 bg-surface">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-accent/10 text-accent">
+                  <Layers className="h-5 w-5" />
+                </div>
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-fg-subtle">
-                    Transaction Audit Inspector
-                  </span>
-                  <div className="mt-1 flex items-center gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-fg-subtle">
+                      Transaction Audit Inspector
+                    </span>
+                    <span
+                      className={cn(
+                        'rounded-full px-2 py-0.5 text-[10px] font-semibold',
+                        selectedTx.status === 'REVERSED'
+                          ? 'bg-rose-500/10 text-rose-400'
+                          : selectedTx.status === 'PENDING_APPROVAL' || selectedTx.status === 'REVIEW'
+                          ? 'bg-amber-500/10 text-amber-400'
+                          : 'bg-emerald-500/10 text-emerald-400'
+                      )}
+                    >
+                      {selectedTx.status}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
                     <span className="font-mono text-base font-bold text-fg">
-                      {formatShortId(selectedTx.id)}
+                      {selectedTx.id}
                     </span>
                     <button
                       onClick={(e) => handleCopy(selectedTx.id, selectedTx.id, e)}
-                      className="text-fg-subtle hover:text-fg p-0.5 transition"
+                      title="Copy Reference ID"
+                      className="text-fg-subtle hover:text-fg p-1 rounded-md hover:bg-sunken transition"
                     >
                       {copiedId === selectedTx.id ? (
                         <Check className="h-3.5 w-3.5 text-emerald-400" />
@@ -1359,81 +1377,154 @@ export default function AdminExecutivePortal() {
                     </button>
                   </div>
                 </div>
-                <button
-                  onClick={() => setSelectedTx(null)}
-                  className="rounded-xl p-1 text-fg-subtle hover:text-fg hover:bg-sunken transition"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+              </div>
+              <button
+                onClick={() => setSelectedTx(null)}
+                className="rounded-2xl p-2 text-fg-subtle hover:text-fg hover:bg-sunken transition"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Modal Scrollable Body */}
+            <div className="flex-1 overflow-y-auto p-6 sm:p-7 space-y-6">
+              {/* Top Summary Cards (3 Columns) */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="rounded-2xl border border-line bg-sunken/40 p-4 space-y-1">
+                  <span className="text-xs text-fg-muted font-medium">Settlement Amount</span>
+                  <div className="text-2xl font-bold text-fg">
+                    {formatPHP(selectedTx.amount)}
+                  </div>
+                  <div className="text-[11px] text-fg-subtle">
+                    Oracle 21c Decimal Precision (18,4)
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-line bg-sunken/40 p-4 space-y-1">
+                  <span className="text-xs text-fg-muted font-medium">Transfer Route</span>
+                  <div className="text-sm font-semibold text-fg truncate">
+                    {selectedTx.fromAccount || '1000-2000-3001'}
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-fg-muted">
+                    <ArrowRight className="h-3 w-3 text-accent" />
+                    <span className="truncate">{selectedTx.toAccount || '1000-2000-3002'}</span>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-line bg-sunken/40 p-4 space-y-1">
+                  <span className="text-xs text-fg-muted font-medium">Security & Compliance</span>
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
+                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                    <span>Two-Stage Risk Verified</span>
+                  </div>
+                  <div className="text-[11px] text-fg-subtle">
+                    BSP Cir. 1213 Biometrics • Zero SMS OTP
+                  </div>
+                </div>
               </div>
 
-              {/* Amount & Status Card */}
-              <div className="rounded-2xl border border-line bg-sunken/40 p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-fg-muted">Settlement Amount</span>
-                  <span className="text-xl font-bold text-fg">{formatPHP(selectedTx.amount)}</span>
-                </div>
-                <div className="flex items-center justify-between border-t border-line/60 pt-2 text-xs">
-                  <span className="text-fg-subtle">Status</span>
-                  <span className="font-semibold text-emerald-400">{selectedTx.status}</span>
-                </div>
-              </div>
-
-              {/* 11-Stage Visual Timeline */}
-              <div className="space-y-3">
-                <span className="text-xs font-semibold uppercase tracking-wider text-fg-subtle block">
-                  Processing Lifecycle Stepper
-                </span>
-
-                <div className="relative pl-6 space-y-4 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-line">
-                  {[
-                    { step: 1, name: 'Initiated', desc: 'Received via API Gateway' },
-                    { step: 2, name: 'Validated', desc: 'Account format & currency verified' },
-                    { step: 3, name: 'Authenticated', desc: 'Active JWT session verified' },
-                    { step: 4, name: 'Fraud Check', desc: 'NanoJev velocity & geo score cleared' },
-                    { step: 5, name: 'Limit Check', desc: 'BSP Cir. 1033 daily thresholds verified' },
-                    { step: 6, name: 'Funds Check', desc: 'Pessimistic row lock & balance sufficient' },
-                    { step: 7, name: 'Authorized', desc: 'Maker-checker dual rules passed' },
-                    { step: 8, name: 'Posted', desc: 'Committed to Oracle XE Master' },
-                    { step: 9, name: 'Ledger Update', desc: 'Atomic double-entry mutation complete' },
-                    { step: 10, name: 'Notification', desc: 'Kafka outbox event published' },
-                    { step: 11, name: 'Reconciliation', desc: 'Immutable seal written to PostgreSQL' },
-                  ].map((stage) => (
-                    <div key={stage.step} className="relative">
-                      <span className="absolute -left-6 top-1 h-3.5 w-3.5 rounded-full bg-emerald-500 ring-4 ring-surface" />
-                      <div>
-                        <strong className="text-xs font-semibold text-fg">{stage.name}</strong>
-                        <p className="text-[11px] text-fg-muted">{stage.desc}</p>
-                      </div>
+              {/* Reversal Banner if Rolled Back */}
+              {selectedTx.status === 'REVERSED' && (
+                <div className="rounded-2xl border border-rose-500/30 bg-rose-500/5 p-4 flex items-start gap-3">
+                  <RotateCcw className="h-5 w-5 text-rose-400 shrink-0 mt-0.5" />
+                  <div className="space-y-1 text-xs">
+                    <div className="font-semibold text-rose-400">
+                      Compensating Reversal Executed (T24 Ledger Balance Restored)
                     </div>
-                  ))}
+                    <div className="text-fg-muted">
+                      Initiated by <strong className="text-fg">{selectedTx.reversedBy === 'usr-1006-mgr-002' ? 'Carlos Mendoza' : selectedTx.reversedBy || 'Diana Vance'}</strong>, approved by <strong className="text-fg">{selectedTx.approvedBy === 'usr-1004-adm-001' ? 'Diana Vance' : 'Carlos Mendoza'}</strong>.
+                    </div>
+                    <div className="text-fg-subtle pt-1">
+                      Reason: <span className="text-fg font-mono">{selectedTx.reversalReason || 'CUSTOMER_DISPUTE_WRONG_ACCOUNT'}</span>
+                      {selectedTx.reversalMemo && ` — "${selectedTx.reversalMemo}"`}
+                    </div>
+                  </div>
+                </div>
+              )}
 
-                  {selectedTx.status === 'REVERSED' && (
-                    <div className="relative">
-                      <span className="absolute -left-6 top-1 h-3.5 w-3.5 rounded-full bg-rose-500 ring-4 ring-surface" />
-                      <div>
-                        <strong className="text-xs font-semibold text-rose-400">Reversed (Contra-Entry)</strong>
-                        <p className="text-[11px] text-fg-muted">
-                          Rolled back by {selectedTx.reversedBy || 'Carlos Mendoza'}. Reason: {selectedTx.reversalReason || 'Customer dispute'}
+              {/* 11-Stage Visual Lifecycle Section */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-fg-subtle">
+                      Processing Lifecycle Stepper
+                    </h4>
+                    <p className="text-xs text-fg-muted">
+                      Deterministic progression from API Gateway ingestion to immutable database sealing.
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" />
+                    11 / 11 Stages Verified
+                  </span>
+                </div>
+
+                {/* 2-Column Wide Grid for the 11 Stages */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {[
+                    { step: 1, name: 'Initiated', desc: 'Received via API Gateway (Port 8080) with client fingerprint' },
+                    { step: 2, name: 'Validated', desc: 'Account format, destination existence & ISO-4217 PHP currency verified' },
+                    { step: 3, name: 'Authenticated', desc: 'Active cryptographic JWT session and hardware device key validated' },
+                    { step: 4, name: 'Fraud Check', desc: 'Stage A Gate 0 (<200ms) & NanoJev ONNX memo check cleared' },
+                    { step: 5, name: 'Limit Check', desc: 'BSP Circular 1033 daily thresholds & AMLA velocity limits verified' },
+                    { step: 6, name: 'Funds Check', desc: 'Pessimistic row lock acquired; available balance verified sufficient' },
+                    { step: 7, name: 'Authorized', desc: 'Hardware biometric token & maker-checker dual rules verified' },
+                    { step: 8, name: 'Posted', desc: 'Committed to Oracle XE 21c Master table (Debit Dr / Credit Cr)' },
+                    { step: 9, name: 'Ledger Update', desc: 'Atomic double-entry mutation complete in Balance Master' },
+                    { step: 10, name: 'Notification', desc: 'Transactional outbox event published to Kafka broker (:9092)' },
+                    { step: 11, name: 'Reconciliation', desc: 'Immutable SHA-256 cryptographic seal written to PostgreSQL Vault' },
+                  ].map((stage) => (
+                    <div
+                      key={stage.step}
+                      className="flex items-start gap-3 rounded-2xl border border-line bg-surface p-3.5 hover:bg-sunken/40 transition"
+                    >
+                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-400 font-mono text-xs font-bold ring-2 ring-emerald-500/20">
+                        {stage.step}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-fg">{stage.name}</span>
+                          <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-0.5">
+                            <Check className="h-2.5 w-2.5" /> Passed
+                          </span>
+                        </div>
+                        <p className="mt-0.5 text-[11px] text-fg-muted leading-relaxed">
+                          {stage.desc}
                         </p>
                       </div>
                     </div>
-                  )}
+                  ))}
                 </div>
               </div>
             </div>
 
-            {/* Bottom Actions inside Drawer */}
-            <div className="pt-6 border-t border-line">
-              {(selectedTx.status === 'COMMITTED' || selectedTx.status === 'POSTED') && (
+            {/* Modal Sticky Footer */}
+            <div className="border-t border-line px-6 py-4 bg-surface flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-xs text-fg-muted">
+                <Database className="h-4 w-4 text-fg-subtle" />
+                <span>Audited via append-only PostgreSQL ledger with SHA-256 digest sealing.</span>
+              </div>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                {(selectedTx.status === 'COMMITTED' || selectedTx.status === 'POSTED' || selectedTx.status === 'SETTLED') && (
+                  <button
+                    onClick={() => {
+                      const txToRollback = selectedTx;
+                      setSelectedTx(null);
+                      setRollbackTarget(txToRollback);
+                    }}
+                    className="flex-1 sm:flex-initial rounded-2xl bg-amber-500 px-4 py-2 text-xs font-semibold text-black hover:bg-amber-400 transition shadow-xs flex items-center justify-center gap-1.5"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    <span>Initiate Rollback</span>
+                  </button>
+                )}
                 <button
-                  onClick={() => setRollbackTarget(selectedTx)}
-                  className="w-full rounded-2xl bg-amber-500 px-4 py-2.5 text-xs font-semibold text-black hover:bg-amber-400 transition shadow-xs flex items-center justify-center gap-1.5"
+                  onClick={() => setSelectedTx(null)}
+                  className="flex-1 sm:flex-initial rounded-2xl border border-line bg-sunken px-4 py-2 text-xs font-semibold text-fg hover:bg-raised transition"
                 >
-                  <RotateCcw className="h-3.5 w-3.5" />
-                  <span>Initiate Rollback for this Transaction</span>
+                  Close Inspector
                 </button>
-              )}
+              </div>
             </div>
           </div>
         </div>

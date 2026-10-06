@@ -155,31 +155,30 @@ class _StatementScreenState extends State<StatementScreen> {
                         // E-Statement Card
                         _buildEStatementCard(statement),
 
-                        const SizedBox(height: 20),
-
-                        // Transfers Record Section Header & Tabs
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              recordCountLabel,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.5,
-                                color: textMuted,
-                              ),
-                            ),
-                            _buildFilterTabs(),
-                          ],
-                        ),
-
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 18),
 
                         // Search Bar
                         _buildSearchBar(),
 
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 16),
+
+                        // Filter Tabs: All, In, Out (with item counts)
+                        _buildFilterTabs(statement.allCount, statement.inCount, statement.outCount),
+
+                        const SizedBox(height: 16),
+
+                        // Transfers Record Section Header
+                        Text(
+                          recordCountLabel,
+                          style: const TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.6,
+                            color: textMuted,
+                          ),
+                        ),
+
+                        const SizedBox(height: 12),
 
                         // Transactions List
                         if (transactions.isEmpty)
@@ -634,6 +633,62 @@ class _StatementScreenState extends State<StatementScreen> {
               ],
             ),
           ),
+
+          const SizedBox(height: 12),
+
+          // Monthly Net Performance Pill
+          Builder(
+            builder: (context) {
+              final netMonthly = statement.totalReceived - statement.totalSent;
+              final isPositive = netMonthly >= 0;
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                decoration: BoxDecoration(
+                  color: isPositive ? const Color(0xFFF0FDF4) : const Color(0xFFFEF2F2),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isPositive ? const Color(0xFFBBF7D0) : const Color(0xFFFCA5A5),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Icon(
+                            isPositive ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+                            color: isPositive ? greenCredit : debitRed,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 6),
+                          const Flexible(
+                            child: Text(
+                              'Monthly Net Performance',
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: textDark,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${isPositive ? '+' : '-'} ${_formatCurrency(netMonthly.abs())}',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w800,
+                        color: isPositive ? greenCredit : debitRed,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -673,45 +728,73 @@ class _StatementScreenState extends State<StatementScreen> {
     );
   }
 
-  Widget _buildFilterTabs() {
+  Widget _buildFilterTabs(int allCount, int inCount, int outCount) {
     return Container(
-      padding: const EdgeInsets.all(3),
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0EFF2),
-        borderRadius: BorderRadius.circular(10),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE9D5FF), width: 1.2),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: ['All', 'In', 'Out'].map((tab) {
-          final isSelected = _filterTab == tab;
-          return GestureDetector(
-            onTap: () => setState(() => _filterTab = tab),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        children: [
+          Expanded(child: _buildTabButton('All', allCount)),
+          Expanded(child: _buildTabButton('In', inCount)),
+          Expanded(child: _buildTabButton('Out', outCount)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabButton(String label, int count) {
+    final isSelected = _filterTab == label;
+    return GestureDetector(
+      onTap: () => setState(() => _filterTab = label),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? brandPrimary : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: brandPrimary.withValues(alpha: 0.25),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                color: isSelected ? Colors.white : textMuted,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
               decoration: BoxDecoration(
-                color: isSelected ? Colors.white : Colors.transparent,
-                borderRadius: BorderRadius.circular(7),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 4,
-                          offset: const Offset(0, 1),
-                        ),
-                      ]
-                    : null,
+                color: isSelected ? Colors.white.withValues(alpha: 0.2) : const Color(0xFFF3F4F6),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                tab,
+                '$count',
                 style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                  color: isSelected ? brandPrimary : textMuted,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  color: isSelected ? Colors.white : textMuted,
                 ),
               ),
             ),
-          );
-        }).toList(),
+          ],
+        ),
       ),
     );
   }
@@ -720,23 +803,30 @@ class _StatementScreenState extends State<StatementScreen> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: cardBorder, width: 1.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: TextField(
         controller: _searchController,
         style: const TextStyle(fontSize: 13, color: textDark),
         decoration: InputDecoration(
-          hintText: 'Search recipient or reference (e.g. Maria, AUR-...',
-          hintStyle: const TextStyle(fontSize: 12, color: textMuted),
-          prefixIcon: const Icon(Icons.search_rounded, size: 18, color: textMuted),
+          hintText: 'Search recipient or reference (e.g. Maria, AUR-...)',
+          hintStyle: const TextStyle(fontSize: 12.5, color: textMuted),
+          prefixIcon: const Icon(Icons.search_rounded, size: 20, color: textMuted),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
                   icon: const Icon(Icons.close_rounded, size: 16, color: textMuted),
                   onPressed: () => _searchController.clear(),
                 )
               : null,
-          contentPadding: const EdgeInsets.symmetric(vertical: 10),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           border: InputBorder.none,
         ),
       ),

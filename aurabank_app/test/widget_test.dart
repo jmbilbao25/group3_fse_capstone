@@ -246,7 +246,7 @@ void main() {
     expect(find.text('Biometric Login (Face ID)'), findsOneWidget);
     expect(find.text('Trusted Devices & Sessions'), findsOneWidget);
     expect(find.text('Instant Push Alerts'), findsOneWidget);
-    expect(find.text('Logout of Session'), findsOneWidget);
+    expect(find.text('Log Out of This Device'), findsOneWidget);
     expect(find.text('Log Out of All Devices'), findsOneWidget);
 
     // Tap Edit button to open Edit Profile bottom sheet

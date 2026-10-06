@@ -1,5 +1,6 @@
 package com.fse.banking.account.service;
 
+import com.fse.banking.account.dto.DeviceInfoDto;
 import com.fse.banking.account.dto.LoginRequest;
 import com.fse.banking.account.dto.LoginResponse;
 import com.fse.banking.account.dto.RegisterRequest;
@@ -28,6 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -150,7 +153,7 @@ public class AuthService {
                     .build();
         }
 
-        return createAuthenticatedSession(user, clientIp, userAgent);
+        return createAuthenticatedSession(user, clientIp, userAgent, request.getDeviceId(), request.getDeviceName());
     }
 
     @Transactional
@@ -176,10 +179,53 @@ public class AuthService {
         user.setLastLoginAt(Instant.now());
         userRepository.save(user);
 
-        return createAuthenticatedSession(user, clientIp, userAgent);
+        return createAuthenticatedSession(user, clientIp, userAgent, request.getDeviceId(), request.getDeviceName());
     }
 
-    private LoginResult createAuthenticatedSession(UserEntity user, String clientIp, String userAgent) {
+    public LoginResult createAuthenticatedSession(UserEntity user, String clientIp, String userAgent) {
+        return createAuthenticatedSession(user, clientIp, userAgent, null, null);
+    }
+
+    public LoginResult createAuthenticatedSession(UserEntity user, String clientIp, String userAgent, String rawDeviceId, String rawDeviceName) {
+        String resolvedDeviceId = resolveDeviceId(rawDeviceId, clientIp, userAgent);
+        String resolvedDeviceName = resolveDeviceName(rawDeviceName, userAgent);
+
+        String primaryDeviceId = redisSessionStore.getPrimaryDeviceId(user.getUserId());
+        boolean isPrimary;
+        if (primaryDeviceId == null || primaryDeviceId.isBlank()) {
+            redisSessionStore.setPrimaryDeviceId(user.getUserId(), resolvedDeviceId);
+            primaryDeviceId = resolvedDeviceId;
+            isPrimary = true;
+            log.info("Registered initial primary device {} for user {}", resolvedDeviceId, user.getUserId());
+        } else {
+            isPrimary = resolvedDeviceId.equals(primaryDeviceId);
+        }
+
+        boolean isApproved = isPrimary;
+        if (!isPrimary) {
+            Optional<DeviceInfoDto> existing = redisSessionStore.getDevice(user.getUserId(), resolvedDeviceId);
+            if (existing.isPresent() && existing.get().isApproved()) {
+                isApproved = true;
+            }
+        }
+
+        DeviceInfoDto deviceInfoDto = DeviceInfoDto.builder()
+                .deviceId(resolvedDeviceId)
+                .deviceName(resolvedDeviceName)
+                .isPrimary(isPrimary)
+                .isApproved(isApproved)
+                .status(isApproved ? "APPROVED" : "PENDING_APPROVAL")
+                .clientIp(clientIp)
+                .userAgent(userAgent)
+                .registeredAt(Instant.now())
+                .lastLoginAt(Instant.now())
+                .build();
+        redisSessionStore.saveUserDevice(user.getUserId(), deviceInfoDto);
+
+        if (!isPrimary && !isApproved) {
+            dispatchSecondaryDeviceLoginAlert(user.getUserId(), resolvedDeviceName, clientIp, primaryDeviceId, resolvedDeviceId);
+        }
+
         String jti = UUID.randomUUID().toString();
         String roleAuthority = user.getRole().getAuthority();
         String accessToken = jwtProvider.generateAccessToken(user.getUserId(), user.getEmail(), roleAuthority, jti);
@@ -196,6 +242,8 @@ public class AuthService {
                 .activeRefreshTokenId(refreshTokenId)
                 .clientIp(clientIp)
                 .userAgent(userAgent)
+                .deviceId(resolvedDeviceId)
+                .deviceName(resolvedDeviceName)
                 .createdAt(Instant.now())
                 .build();
         redisSessionStore.saveSession(user.getUserId(), sessionId, sessionMetadata, REFRESH_TOKEN_TTL);
@@ -220,12 +268,112 @@ public class AuthService {
                 .expiresInSeconds(jwtProvider.getAccessTokenExpirationSeconds())
                 .role(roleAuthority)
                 .userId(user.getUserId())
+                .deviceId(resolvedDeviceId)
+                .deviceName(resolvedDeviceName)
+                .isPrimaryDevice(isPrimary)
+                .isApproved(isApproved)
+                .primaryDeviceId(primaryDeviceId)
                 .build();
 
         return LoginResult.builder()
                 .response(loginResponse)
                 .refreshTokenId(refreshTokenId)
                 .build();
+    }
+
+    public List<DeviceInfoDto> getUserDevices(String userId) {
+        return redisSessionStore.getUserDevices(userId);
+    }
+
+    public void setPrimaryDevice(String userId, String deviceId) {
+        redisSessionStore.setPrimaryDeviceId(userId, deviceId);
+        log.info("Primary device for user {} updated to {}", userId, deviceId);
+    }
+
+    public void approveDevice(String userId, String deviceId) {
+        redisSessionStore.getDevice(userId, deviceId).ifPresent(device -> {
+            device.setApproved(true);
+            device.setStatus("APPROVED");
+            redisSessionStore.saveUserDevice(userId, device);
+            log.info("Device {} for user {} marked as APPROVED", deviceId, userId);
+            dispatchDeviceApprovalEvent(userId, deviceId, "device-approved");
+        });
+    }
+
+    public void revokeDevice(String userId, String deviceId) {
+        redisSessionStore.deleteUserDevice(userId, deviceId);
+        log.info("Device {} for user {} deleted/revoked", deviceId, userId);
+        dispatchDeviceApprovalEvent(userId, deviceId, "device-revoked");
+    }
+
+    private void dispatchDeviceApprovalEvent(String userId, String deviceId, String endpoint) {
+        try {
+            org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+            org.springframework.http.client.SimpleClientHttpRequestFactory factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+            factory.setConnectTimeout(3000);
+            factory.setReadTimeout(3000);
+            restTemplate.setRequestFactory(factory);
+
+            java.util.Map<String, Object> payload = java.util.Map.of(
+                    "user_id", userId,
+                    "device_id", deviceId
+            );
+            restTemplate.postForEntity(notificationServiceUrl + "/api/v1/notifications/" + endpoint, payload, java.util.Map.class);
+        } catch (Exception e) {
+            log.warn("Could not dispatch {} to notification-service: {}", endpoint, e.getMessage());
+        }
+    }
+
+    private String resolveDeviceId(String requestedId, String clientIp, String userAgent) {
+        if (requestedId != null && !requestedId.isBlank()) {
+            return requestedId.trim();
+        }
+        String seed = (clientIp != null ? clientIp : "127.0.0.1") + ":" + (userAgent != null ? userAgent : "app");
+        return "dev_" + UUID.nameUUIDFromBytes(seed.getBytes()).toString().substring(0, 12);
+    }
+
+    private String resolveDeviceName(String requestedName, String userAgent) {
+        if (requestedName != null && !requestedName.isBlank()) {
+            return requestedName.trim();
+        }
+        if (userAgent == null || userAgent.isBlank()) {
+            return "Primary Mobile Device";
+        }
+        if (userAgent.contains("iPhone")) return "iPhone";
+        if (userAgent.contains("iPad")) return "iPad";
+        if (userAgent.contains("Android")) return "Android Device";
+        if (userAgent.contains("Macintosh")) return "MacBook Pro";
+        if (userAgent.contains("Windows")) return "Windows PC";
+        if (userAgent.contains("Chrome")) return "Chrome Browser";
+        if (userAgent.contains("Dart") || userAgent.contains("Flutter")) return "Mobile Device";
+        return "Mobile Device";
+    }
+
+    private void dispatchSecondaryDeviceLoginAlert(String userId, String newDeviceName, String clientIp, String targetPrimaryDeviceId, String newDeviceId) {
+        try {
+            org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+            org.springframework.http.client.SimpleClientHttpRequestFactory factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+            factory.setConnectTimeout(3000);
+            factory.setReadTimeout(3000);
+            restTemplate.setRequestFactory(factory);
+
+            java.util.Map<String, Object> payload = java.util.Map.of(
+                    "user_id", userId,
+                    "title", "Security Alert: New Device Login",
+                    "message", "A new device (" + newDeviceName + ") just logged into your account from IP " + clientIp + ".",
+                    "type", "SECURITY_ALERT",
+                    "device_name", newDeviceName,
+                    "device_id", newDeviceId != null ? newDeviceId : "",
+                    "client_ip", clientIp,
+                    "target_device_id", targetPrimaryDeviceId != null ? targetPrimaryDeviceId : "",
+                    "status", "PENDING_APPROVAL"
+            );
+            String targetUrl = notificationServiceUrl + "/api/v1/notifications/security-alert";
+            restTemplate.postForEntity(targetUrl, payload, java.util.Map.class);
+            log.info("Dispatched secondary device login alert for user {} (device: {}) to notification-service", userId, newDeviceName);
+        } catch (Exception e) {
+            log.warn("Could not dispatch secondary device alert to notification-service: {}", e.getMessage());
+        }
     }
 
     private void dispatchOtpEmail(String email, String recipientName, String otp) {

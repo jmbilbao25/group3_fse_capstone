@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
 public class VerifyLoginOtpRequest {
 
     @NotBlank(message = "User ID is required.")
@@ -22,4 +23,10 @@ public class VerifyLoginOtpRequest {
     @Pattern(regexp = "^\\d{6}$", message = "OTP code must be exactly 6 digits.")
     @JsonProperty("otp")
     private String otp;
+
+    @JsonProperty("device_id")
+    private String deviceId;
+
+    @JsonProperty("device_name")
+    private String deviceName;
 }

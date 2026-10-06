@@ -202,6 +202,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=fse_password
       - SPRING_DATA_REDIS_HOST=redis-cache
       - SPRING_DATA_REDIS_PORT=6379
+      - NOTIFICATION_SERVICE_URL=http://notification-service:8083
     networks:
       - banking-net
     depends_on:

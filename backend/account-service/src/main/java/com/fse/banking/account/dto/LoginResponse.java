@@ -35,4 +35,19 @@ public class LoginResponse {
 
     @JsonProperty("masked_email")
     private String maskedEmail;
+
+    @JsonProperty("device_id")
+    private String deviceId;
+
+    @JsonProperty("device_name")
+    private String deviceName;
+
+    @JsonProperty("is_primary_device")
+    private Boolean isPrimaryDevice;
+
+    @JsonProperty("is_approved")
+    private Boolean isApproved;
+
+    @JsonProperty("primary_device_id")
+    private String primaryDeviceId;
 }

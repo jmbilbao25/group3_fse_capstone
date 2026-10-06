@@ -1,16 +1,9 @@
 import 'dart:convert';
-import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'auth_api_service.dart' show defaultBackendHost;
 
-String get defaultMailHogHost {
-  if (!kIsWeb) {
-    try {
-      if (Platform.isAndroid) return '10.0.2.2';
-    } catch (_) {}
-  }
-  return 'localhost';
-}
+String get defaultMailHogHost => defaultBackendHost;
 
 class MailHogEmail {
   final String id;

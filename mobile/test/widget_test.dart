@@ -6,6 +6,7 @@ import 'package:http/testing.dart';
 
 import 'package:bank_mobile_security_test/main.dart';
 import 'package:bank_mobile_security_test/services/auth_api_service.dart';
+import 'package:bank_mobile_security_test/services/notification_stream_service.dart';
 import 'package:bank_mobile_security_test/services/otp_service.dart';
 
 void main() {
@@ -110,11 +111,15 @@ void main() {
 
     AuthApiService().httpClient = mockClient;
     OtpService().httpClient = mockClient;
+    NotificationStreamService().httpClient = mockClient;
+    NotificationStreamService().enableAutoReconnect = false;
+    NotificationStreamService().enablePollingFallback = false;
   });
 
   tearDown(() {
     AuthApiService().httpClient = null;
     OtpService().httpClient = null;
+    NotificationStreamService().disconnect();
   });
 
   testWidgets('Strict backend: First-time login triggers MFA OTP and auto-fills MailHog code',
@@ -257,6 +262,89 @@ void main() {
     expect(email, isNotNull);
     expect(email!.otpCode, equals('908151'));
     service.httpClient = null;
+  });
+
+  testWidgets('Multi-device: User can select secondary device preset on login screen',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await tester.pumpWidget(const AuraBankApp());
+    await tester.pumpAndSettle();
+
+    final settingsBtn = find.byTooltip('Device & Network Settings');
+    expect(settingsBtn, findsOneWidget);
+    await tester.tap(settingsBtn);
+    await tester.pumpAndSettle();
+
+    final secondaryChip = find.widgetWithText(ChoiceChip, 'Device 2 (Secondary - iPad)');
+    expect(secondaryChip, findsOneWidget);
+
+    await tester.tap(secondaryChip);
+    await tester.pumpAndSettle();
+
+    expect(AuthApiService().currentDeviceId, equals('dev-ipad-secondary'));
+    expect(AuthApiService().currentDeviceName, equals('iPad Air'));
+  });
+
+  testWidgets('Multi-device: Primary device receives real-time security push alert modal',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await tester.pumpWidget(const AuraBankApp());
+    await tester.pumpAndSettle();
+
+    // Authenticate returning user directly
+    final emailField = find.widgetWithText(TextFormField, 'Email Address');
+    final passwordField = find.widgetWithText(TextFormField, 'Password');
+
+    await tester.enterText(emailField, 'diana.admin@bank.com');
+    await tester.enterText(passwordField, 'password123');
+    await tester.pumpAndSettle();
+
+    final signInButton = find.widgetWithText(FilledButton, 'Sign In');
+    await tester.tap(signInButton);
+    await tester.pumpAndSettle();
+
+    // Check that we are on the dashboard with device badge
+    expect(find.text('Primary Device Protected'), findsOneWidget);
+
+    // Simulate real-time SSE push alert coming in from backend
+    NotificationStreamService().injectAlert(
+      SecurityAlertEvent(
+        title: 'Security Push Alert',
+        message: 'A new device (iPad Air) just logged in from 192.168.1.88',
+        deviceName: 'iPad Air (Secondary)',
+        clientIp: '192.168.1.88',
+        timestamp: DateTime.now().toIso8601String(),
+        targetDeviceId: 'dev-iphone-primary',
+        notificationId: 'NOTIF-TEST-1001',
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify modal appeared with security details
+    expect(find.text('Security Push Alert'), findsOneWidget);
+    expect(find.text('iPad Air (Secondary)'), findsOneWidget);
+    expect(find.text('192.168.1.88'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Approve Access'), findsOneWidget);
+    expect(find.widgetWithText(OutlinedButton, 'Revoke Access'), findsOneWidget);
+
+    // Tap Approve Access
+    await tester.tap(find.widgetWithText(FilledButton, 'Approve Access'));
+    await tester.pumpAndSettle();
+
+    // Modal is dismissed
+    expect(find.text('Security Push Alert'), findsNothing);
   });
 }
 

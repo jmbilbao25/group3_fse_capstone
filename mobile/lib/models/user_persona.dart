@@ -1,3 +1,7 @@
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
+import '../services/device_storage.dart';
+
 class UserPersona {
   final String name;
   final String role;
@@ -42,3 +46,101 @@ class UserPersona {
     ),
   ];
 }
+
+class DevicePreset {
+  final String id;
+  final String name;
+  final String label;
+  final String platform;
+
+  const DevicePreset({
+    required this.id,
+    required this.name,
+    required this.label,
+    this.platform = 'Generic',
+  });
+
+  static const List<DevicePreset> presets = [
+    DevicePreset(
+      id: 'dev-laptop-primary',
+      name: 'Laptop Workstation (Web)',
+      label: 'Laptop (Primary)',
+      platform: 'Web / Desktop',
+    ),
+    DevicePreset(
+      id: 'dev-phone-secondary',
+      name: 'Physical Mobile Phone',
+      label: 'Mobile Phone (Secondary)',
+      platform: 'Mobile (Android / iOS)',
+    ),
+    DevicePreset(
+      id: 'dev-iphone-primary',
+      name: 'iPhone 15 Pro',
+      label: 'Device 1 (Primary - iPhone)',
+      platform: 'iOS',
+    ),
+    DevicePreset(
+      id: 'dev-ipad-secondary',
+      name: 'iPad Air',
+      label: 'Device 2 (Secondary - iPad)',
+      platform: 'iPadOS',
+    ),
+  ];
+
+  static DevicePreset get defaultPreset => presets.first;
+}
+
+class DeviceIdentity {
+  static final DeviceIdentity _instance = DeviceIdentity._internal();
+  factory DeviceIdentity() => _instance;
+  DeviceIdentity._internal() {
+    _id = _defaultId();
+    _name = _defaultName(_id);
+  }
+
+  static String _defaultId() {
+    if (kIsWeb) {
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        return DeviceStorage.getOrCreateDeviceId('android-phone');
+      }
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        return DeviceStorage.getOrCreateDeviceId('iphone');
+      }
+      return DeviceStorage.getOrCreateDeviceId('laptop-chrome');
+    }
+    try {
+      if (Platform.isAndroid) return DeviceStorage.getOrCreateDeviceId('android-apk');
+      if (Platform.isIOS) return DeviceStorage.getOrCreateDeviceId('ios-app');
+    } catch (_) {}
+    return DeviceStorage.getOrCreateDeviceId('client-device');
+  }
+
+  static String _defaultName(String deviceId) {
+    final parts = deviceId.split('-');
+    final suffix = parts.length > 1 ? parts.last.toUpperCase() : '';
+    final code = suffix.isNotEmpty ? ' (#$suffix)' : '';
+
+    if (kIsWeb) {
+      if (defaultTargetPlatform == TargetPlatform.android) return 'Android Phone$code';
+      if (defaultTargetPlatform == TargetPlatform.iOS) return 'iPhone (Safari)$code';
+      return 'Windows Laptop (Chrome)$code';
+    }
+    try {
+      if (Platform.isAndroid) return 'Android Device$code';
+      if (Platform.isIOS) return 'Apple iPhone$code';
+    } catch (_) {}
+    return 'Windows PC$code';
+  }
+
+  late String _id;
+  late String _name;
+
+  String get id => _id;
+  String get name => _name;
+
+  void setDevice(String newId, String newName) {
+    _id = newId;
+    _name = newName;
+  }
+}
+

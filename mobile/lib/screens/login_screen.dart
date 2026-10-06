@@ -34,12 +34,228 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _errorMessage;
 
   @override
+  void initState() {
+    super.initState();
+    // Hardware device identity is automatically detected based on platform
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     _emailFocusNode.dispose();
     _passwordFocusNode.dispose();
     super.dispose();
+  }
+
+  void _showServerConfigDialog() {
+    final hostController = TextEditingController(text: BackendConfig().host);
+    bool? testPassed;
+    bool isTesting = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        return StatefulBuilder(
+          builder: (modalCtx, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.wifi_tethering_rounded, color: Color(0xFF3A4CD6)),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          'Backend Server Network Host',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () => Navigator.of(ctx).pop(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'When testing from a physical phone on your local Wi-Fi, enter your laptop\'s IP address so the phone can reach the backend services.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? Colors.grey[400] : Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: hostController,
+                    decoration: const InputDecoration(
+                      labelText: 'Host / IP Address',
+                      hintText: 'e.g. 172.20.10.2 or localhost',
+                      prefixIcon: Icon(Icons.lan_outlined),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      ActionChip(
+                        avatar: const Icon(Icons.laptop_mac_rounded, size: 14),
+                        label: const Text('Laptop IP (172.20.10.2)', style: TextStyle(fontSize: 11)),
+                        onPressed: () {
+                          setSheetState(() {
+                            hostController.text = BackendConfig.defaultLanIp;
+                            testPassed = null;
+                          });
+                        },
+                      ),
+                      ActionChip(
+                        avatar: const Icon(Icons.computer_rounded, size: 14),
+                        label: const Text('Localhost (127.0.0.1)', style: TextStyle(fontSize: 11)),
+                        onPressed: () {
+                          setSheetState(() {
+                            hostController.text = 'localhost';
+                            testPassed = null;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  if (testPassed != null)
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: testPassed!
+                            ? Colors.green.withAlpha(24)
+                            : Colors.red.withAlpha(24),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            testPassed! ? Icons.check_circle_outline : Icons.error_outline,
+                            size: 16,
+                            color: testPassed! ? Colors.green : Colors.red,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              testPassed!
+                                  ? 'Connected successfully to Account Service (:8081)!'
+                                  : 'Could not connect. Ensure backend is running and phone is on the same Wi-Fi.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: testPassed! ? Colors.green : Colors.red,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const Divider(height: 24),
+                  Row(
+                    children: [
+                      const Icon(Icons.devices_rounded, size: 16, color: Color(0xFF3A4CD6)),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          'Device Profile (Simulation / Override)',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'In real life, your device is auto-detected. In simulation tests on a single machine, you can override identity here:',
+                    style: TextStyle(fontSize: 11, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: DevicePreset.presets.map((preset) {
+                      final isSelected = DeviceIdentity().id == preset.id;
+                      return ChoiceChip(
+                        selected: isSelected,
+                        label: Text(preset.label, style: const TextStyle(fontSize: 11)),
+                        onSelected: (selected) {
+                          if (selected) {
+                            setSheetState(() {
+                              AuthApiService().switchDevice(preset);
+                            });
+                            setState(() {});
+                          }
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: isTesting
+                              ? null
+                              : () async {
+                                  setSheetState(() => isTesting = true);
+                                  BackendConfig().host = hostController.text.trim();
+                                  final ok = await BackendConfig().testConnection();
+                                  setSheetState(() {
+                                    isTesting = false;
+                                    testPassed = ok;
+                                  });
+                                },
+                          child: isTesting
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Text('Test Connection'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: () {
+                            BackendConfig().host = hostController.text.trim();
+                            Navigator.of(ctx).pop();
+                            setState(() {});
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Backend host configured: ${BackendConfig().host}'),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                          child: const Text('Apply'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   void _fillPersona(UserPersona persona) {
@@ -77,10 +293,12 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
 
-    // Call AuthApiService to authenticate against backend account-service or demo fallback
+    // Call AuthApiService to authenticate against backend account-service
     final authResult = await AuthApiService().login(
       email: email,
       password: password,
+      deviceId: DeviceIdentity().id,
+      deviceName: DeviceIdentity().name,
     );
 
     if (!mounted) return;
@@ -244,6 +462,11 @@ class _LoginScreenState extends State<LoginScreen> {
         elevation: 0,
         actions: [
           IconButton(
+            tooltip: 'Server Connection Settings',
+            icon: const Icon(Icons.wifi_tethering_rounded),
+            onPressed: _showServerConfigDialog,
+          ),
+          IconButton(
             tooltip: widget.isDarkMode ? 'Switch to Light mode' : 'Switch to Dark mode',
             icon: Icon(
               widget.isDarkMode ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
@@ -310,6 +533,58 @@ class _LoginScreenState extends State<LoginScreen> {
                               onPressed: () => _fillPersona(persona),
                             );
                           }).toList(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Automatic Hardware Device Identity Banner (Realistic Real-World)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1E2229) : const Color(0xFFF1F3F6),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isDark ? const Color(0xFF2C323D) : const Color(0xFFE4E6EA),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          DeviceIdentity().id.contains('laptop') || DeviceIdentity().id.contains('desktop')
+                              ? Icons.laptop_mac_rounded
+                              : Icons.smartphone_rounded,
+                          size: 20,
+                          color: const Color(0xFF3A4CD6),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'This Device: ${DeviceIdentity().name}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark ? Colors.grey[200] : const Color(0xFF1A1D21),
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '1st device to log in binds as Primary; 2nd device triggers push notification.',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.tune_rounded, size: 16),
+                          tooltip: 'Device & Network Settings',
+                          color: Colors.grey[500],
+                          onPressed: _showServerConfigDialog,
                         ),
                       ],
                     ),

@@ -1,5 +1,6 @@
 package com.fse.banking.account.controller;
 
+import com.fse.banking.account.dto.DeviceInfoDto;
 import com.fse.banking.account.dto.LoginRequest;
 import com.fse.banking.account.dto.LoginResponse;
 import com.fse.banking.account.dto.LogoutResponse;
@@ -7,6 +8,7 @@ import com.fse.banking.account.dto.RegisterRequest;
 import com.fse.banking.account.dto.RegisterResponse;
 import com.fse.banking.account.dto.TokenRefreshResponse;
 import com.fse.banking.account.dto.VerifyLoginOtpRequest;
+import com.fse.banking.account.security.JwtProvider;
 import com.fse.banking.account.service.AuthService;
 import com.fse.banking.account.service.TokenRotationService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,13 +22,17 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -37,6 +43,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final TokenRotationService tokenRotationService;
+    private final JwtProvider jwtProvider;
 
     @Value("${jwt.cookie.secure:false}")
     private boolean cookieSecure;
@@ -117,6 +124,80 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
                 .body(response);
+    }
+
+    @GetMapping("/devices")
+    public ResponseEntity<List<DeviceInfoDto>> getDevices(
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+            @RequestParam(value = "userId", required = false) String paramUserId) {
+        String userId = paramUserId;
+        if ((userId == null || userId.isBlank()) && authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            if (jwtProvider.validateToken(token)) {
+                userId = jwtProvider.getUserId(token);
+            }
+        }
+        if (userId == null || userId.isBlank()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return ResponseEntity.ok(authService.getUserDevices(userId));
+    }
+
+    @PostMapping("/devices/primary")
+    public ResponseEntity<Map<String, Object>> setPrimaryDevice(
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+            @RequestBody Map<String, String> request) {
+        String userId = request.get("user_id");
+        String deviceId = request.get("device_id");
+        if ((userId == null || userId.isBlank()) && authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            if (jwtProvider.validateToken(token)) {
+                userId = jwtProvider.getUserId(token);
+            }
+        }
+        if (userId == null || deviceId == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "user_id and device_id are required"));
+        }
+        authService.setPrimaryDevice(userId, deviceId);
+        return ResponseEntity.ok(Map.of("status", "SUCCESS", "primary_device_id", deviceId));
+    }
+
+    @PostMapping("/devices/approve")
+    public ResponseEntity<Map<String, Object>> approveDevice(
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+            @RequestBody Map<String, String> request) {
+        String userId = request.get("user_id");
+        String deviceId = request.get("device_id");
+        if ((userId == null || userId.isBlank()) && authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            if (jwtProvider.validateToken(token)) {
+                userId = jwtProvider.getUserId(token);
+            }
+        }
+        if (userId == null || deviceId == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "user_id and device_id are required"));
+        }
+        authService.approveDevice(userId, deviceId);
+        return ResponseEntity.ok(Map.of("status", "SUCCESS", "approved_device_id", deviceId));
+    }
+
+    @PostMapping("/devices/revoke")
+    public ResponseEntity<Map<String, Object>> revokeDevice(
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+            @RequestBody Map<String, String> request) {
+        String userId = request.get("user_id");
+        String deviceId = request.get("device_id");
+        if ((userId == null || userId.isBlank()) && authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            if (jwtProvider.validateToken(token)) {
+                userId = jwtProvider.getUserId(token);
+            }
+        }
+        if (userId == null || deviceId == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "user_id and device_id are required"));
+        }
+        authService.revokeDevice(userId, deviceId);
+        return ResponseEntity.ok(Map.of("status", "SUCCESS", "revoked_device_id", deviceId));
     }
 
     private ResponseCookie createRefreshTokenCookie(String value, Duration maxAge) {

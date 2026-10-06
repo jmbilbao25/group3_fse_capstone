@@ -22,8 +22,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import com.fse.banking.account.dto.DeviceInfoDto;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -273,5 +275,81 @@ class AuthServiceTest {
 
         verify(redisSessionStore).blacklistToken("jti-12345", 600L);
         verify(redisSessionStore).removeSessionToken("USR-100001", "jti-12345");
+    }
+
+    @Test
+    @DisplayName("Should register first device as primary device on login")
+    void testFirstLoginRegistersPrimaryDevice() {
+        activeUser.setLastLoginAt(Instant.now());
+        LoginRequest loginRequest = LoginRequest.builder()
+                .email("juan.delacruz@example.ph")
+                .password("Password123!")
+                .deviceId("device-iphone-1")
+                .deviceName("Juan's iPhone")
+                .build();
+
+        when(userRepository.findByEmail("juan.delacruz@example.ph")).thenReturn(Optional.of(activeUser));
+        when(passwordEncoder.matches("Password123!", activeUser.getPasswordHash())).thenReturn(true);
+        when(redisSessionStore.getPrimaryDeviceId("USR-100001")).thenReturn(null);
+        when(jwtProvider.generateAccessToken(any(), any(), any(), any())).thenReturn("mock.jwt.token");
+        when(jwtProvider.getAccessTokenExpirationSeconds()).thenReturn(900L);
+
+        AuthService.LoginResult result = authService.login(loginRequest, "192.168.1.10", "Mozilla/5.0 (iPhone)");
+
+        assertThat(result.getResponse().getDeviceId()).isEqualTo("device-iphone-1");
+        assertThat(result.getResponse().getDeviceName()).isEqualTo("Juan's iPhone");
+        assertThat(result.getResponse().getIsPrimaryDevice()).isTrue();
+        assertThat(result.getResponse().getPrimaryDeviceId()).isEqualTo("device-iphone-1");
+
+        verify(redisSessionStore).setPrimaryDeviceId("USR-100001", "device-iphone-1");
+        verify(redisSessionStore).saveUserDevice(eq("USR-100001"), any(DeviceInfoDto.class));
+    }
+
+    @Test
+    @DisplayName("Should detect secondary device and mark is_primary=false when primary device exists")
+    void testSecondaryDeviceLoginIdentifiedAndTriggersAlert() {
+        activeUser.setLastLoginAt(Instant.now());
+        LoginRequest loginRequest = LoginRequest.builder()
+                .email("juan.delacruz@example.ph")
+                .password("Password123!")
+                .deviceId("device-ipad-2")
+                .deviceName("Juan's iPad")
+                .build();
+
+        when(userRepository.findByEmail("juan.delacruz@example.ph")).thenReturn(Optional.of(activeUser));
+        when(passwordEncoder.matches("Password123!", activeUser.getPasswordHash())).thenReturn(true);
+        when(redisSessionStore.getPrimaryDeviceId("USR-100001")).thenReturn("device-iphone-1");
+        when(jwtProvider.generateAccessToken(any(), any(), any(), any())).thenReturn("mock.jwt.token");
+        when(jwtProvider.getAccessTokenExpirationSeconds()).thenReturn(900L);
+
+        AuthService.LoginResult result = authService.login(loginRequest, "192.168.1.25", "Mozilla/5.0 (iPad)");
+
+        assertThat(result.getResponse().getDeviceId()).isEqualTo("device-ipad-2");
+        assertThat(result.getResponse().getDeviceName()).isEqualTo("Juan's iPad");
+        assertThat(result.getResponse().getIsPrimaryDevice()).isFalse();
+        assertThat(result.getResponse().getPrimaryDeviceId()).isEqualTo("device-iphone-1");
+
+        verify(redisSessionStore).saveUserDevice(eq("USR-100001"), any(DeviceInfoDto.class));
+    }
+
+    @Test
+    @DisplayName("Should return registered devices for user from RedisSessionStore")
+    void testGetUserDevices() {
+        DeviceInfoDto d1 = DeviceInfoDto.builder().deviceId("dev-1").deviceName("iPhone").isPrimary(true).build();
+        DeviceInfoDto d2 = DeviceInfoDto.builder().deviceId("dev-2").deviceName("iPad").isPrimary(false).build();
+        when(redisSessionStore.getUserDevices("USR-100001")).thenReturn(List.of(d1, d2));
+
+        List<DeviceInfoDto> devices = authService.getUserDevices("USR-100001");
+
+        assertThat(devices).hasSize(2);
+        assertThat(devices.get(0).getDeviceId()).isEqualTo("dev-1");
+        assertThat(devices.get(0).isPrimary()).isTrue();
+    }
+
+    @Test
+    @DisplayName("Should set primary device in RedisSessionStore")
+    void testSetPrimaryDevice() {
+        authService.setPrimaryDevice("USR-100001", "dev-2");
+        verify(redisSessionStore).setPrimaryDeviceId("USR-100001", "dev-2");
     }
 }

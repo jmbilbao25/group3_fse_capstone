@@ -314,12 +314,31 @@ void main() {
 
     // Initial render in Monthly mode
     expect(find.text('Transfer Flow'), findsOneWidget);
+    expect(find.text('STATEMENT PERIOD'), findsOneWidget);
+    expect(find.text('October 2026'), findsOneWidget);
     expect(find.text('Received'), findsOneWidget);
     expect(find.text('Sent'), findsOneWidget);
     expect(find.text('Week 1'), findsOneWidget);
     expect(find.text('Week 2'), findsOneWidget);
     expect(find.text('Week 3'), findsOneWidget);
     expect(find.text('Week 4'), findsOneWidget);
+    expect(find.text('Week 5'), findsOneWidget);
+
+    // Switch month to September using previous month chevron button
+    await tester.tap(find.byKey(const ValueKey('prevMonthBtn')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('September 2026'), findsOneWidget);
+    // September has 4 weeks
+    expect(find.text('Week 1'), findsOneWidget);
+    expect(find.text('Week 4'), findsOneWidget);
+    expect(find.text('Week 5'), findsNothing);
+
+    // Switch back to October using next month chevron button
+    await tester.tap(find.byKey(const ValueKey('nextMonthBtn')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('October 2026'), findsOneWidget);
     expect(find.text('Week 5'), findsOneWidget);
 
     // Tap Week 2 pill

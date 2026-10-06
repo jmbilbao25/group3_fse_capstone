@@ -30,6 +30,21 @@ class FlowPointData {
   double get net => received - sent;
 }
 
+/// Model for a calendar month containing its weekly flow points
+class MonthFlowData {
+  final String monthName;
+  final String shortName;
+  final int monthIndex;
+  final List<FlowPointData> weeks;
+
+  const MonthFlowData({
+    required this.monthName,
+    required this.shortName,
+    required this.monthIndex,
+    required this.weeks,
+  });
+}
+
 class AnalyticsTxItem {
   final String name;
   final String initial;
@@ -64,8 +79,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   bool _isMonthly = true;
 
   // Selected indices
+  int _selectedMonthOfYear = 9; // Defaults to October 2026 (Index 9 in Jan..Dec)
   int _selectedWeekIndex = 3; // Defaults to Week 4 (matches Page 11 design)
-  int _selectedMonthIndex = 3; // Defaults to April (matches Page 12 design)
+  int _selectedMonthIndex = 3; // Defaults to April in Yearly mode
   bool _showAllTotals = false;
 
   late AnimationController _animController;
@@ -78,8 +94,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   static const Color textDark = AuraColors.textPrimary;
   static const Color textGray = AuraColors.textMuted;
 
-  // Monthly Dataset (5 Weeks in October 2026)
-  late final List<FlowPointData> _monthlyWeeks;
+  // Catalog of all 12 Months in 2026 with weekly data
+  late final List<MonthFlowData> _monthsCatalog;
 
   // Yearly Dataset (12 Months in 2026)
   late final List<FlowPointData> _yearlyMonths;
@@ -105,181 +121,751 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   void _initDatasets() {
-    _monthlyWeeks = [
-      FlowPointData(
-        label: 'Week 1',
-        shortLabel: 'W1',
-        dateSubtitle: 'Oct 01 - Oct 07, 2026',
-        received: 8000.0,
-        sent: 14500.0,
-        inTransfers: 1,
-        outTransfers: 3,
-        transactions: const [
-          AnalyticsTxItem(
-            name: 'Angel Lou F. Yabut',
-            initial: 'A',
-            avatarBg: Color(0xFF7C4DFF),
-            time: 'Oct 03, 2:45 pm',
-            amount: 2500.0,
-            isReceived: false,
+    // 12 Months Catalog for 2026 with realistic weekly breakdown
+    _monthsCatalog = [
+      MonthFlowData(
+        monthName: 'January 2026',
+        shortName: 'Jan',
+        monthIndex: 0,
+        weeks: [
+          FlowPointData(
+            label: 'Week 1',
+            shortLabel: 'W1',
+            dateSubtitle: 'Jan 01 - Jan 07, 2026',
+            received: 8000.0,
+            sent: 18000.0,
+            inTransfers: 1,
+            outTransfers: 3,
+            transactions: const [
+              AnalyticsTxItem(name: 'Annual Software License', initial: 'S', avatarBg: Color(0xFF3949AB), time: 'Jan 03, 11:30 am', amount: 12000.0, isReceived: false),
+              AnalyticsTxItem(name: 'Client Retainer', initial: 'C', avatarBg: Color(0xFF00897B), time: 'Jan 05, 2:15 pm', amount: 8000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Office Supplies', initial: 'O', avatarBg: Color(0xFFE65100), time: 'Jan 06, 4:00 pm', amount: 6000.0, isReceived: false),
+            ],
           ),
-          AnalyticsTxItem(
-            name: 'Meralco Utility Bill',
-            initial: 'M',
-            avatarBg: Color(0xFFE65100),
-            time: 'Oct 04, 9:15 am',
-            amount: 4500.0,
-            isReceived: false,
+          FlowPointData(
+            label: 'Week 2',
+            shortLabel: 'W2',
+            dateSubtitle: 'Jan 08 - Jan 14, 2026',
+            received: 10000.0,
+            sent: 15000.0,
+            inTransfers: 2,
+            outTransfers: 2,
+            transactions: const [
+              AnalyticsTxItem(name: 'Direct Credit', initial: 'D', avatarBg: Color(0xFF5E17EB), time: 'Jan 10, 10:00 am', amount: 10000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Operational Expenses', initial: 'O', avatarBg: Color(0xFFD81B60), time: 'Jan 12, 1:45 pm', amount: 15000.0, isReceived: false),
+            ],
           ),
-          AnalyticsTxItem(
-            name: 'Direct Deposit',
-            initial: 'D',
-            avatarBg: Color(0xFF00897B),
-            time: 'Oct 02, 10:00 am',
-            amount: 8000.0,
-            isReceived: true,
-            status: 'RECEIVED',
+          FlowPointData(
+            label: 'Week 3',
+            shortLabel: 'W3',
+            dateSubtitle: 'Jan 15 - Jan 21, 2026',
+            received: 12000.0,
+            sent: 22000.0,
+            inTransfers: 1,
+            outTransfers: 4,
+            transactions: const [
+              AnalyticsTxItem(name: 'Consultancy Inward', initial: 'C', avatarBg: Color(0xFF2ECC71), time: 'Jan 18, 9:20 am', amount: 12000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Marketing Campaign', initial: 'M', avatarBg: Color(0xFF8E24AA), time: 'Jan 19, 3:30 pm', amount: 22000.0, isReceived: false),
+            ],
           ),
-        ],
-      ),
-      FlowPointData(
-        label: 'Week 2',
-        shortLabel: 'W2',
-        dateSubtitle: 'Oct 08 - Oct 14, 2026',
-        received: 26500.0,
-        sent: 18500.0,
-        inTransfers: 1,
-        outTransfers: 4,
-        transactions: const [
-          AnalyticsTxItem(
-            name: 'Drake Montefalco',
-            initial: 'D',
-            avatarBg: Color(0xFF220055),
-            time: 'Oct 14, 2:45 pm',
-            amount: 2500.0,
-            isReceived: false,
-          ),
-          AnalyticsTxItem(
-            name: 'Klare Riego',
-            initial: 'K',
-            avatarBg: Color(0xFFBA68C8),
-            time: 'Oct 14, 1:45 pm',
-            amount: 26500.0,
-            isReceived: true,
-            status: 'RECEIVED',
-          ),
-          AnalyticsTxItem(
-            name: 'Business Supplies',
-            initial: 'B',
-            avatarBg: Color(0xFF3949AB),
-            time: 'Oct 11, 4:20 pm',
-            amount: 16000.0,
-            isReceived: false,
+          FlowPointData(
+            label: 'Week 4',
+            shortLabel: 'W4',
+            dateSubtitle: 'Jan 22 - Jan 31, 2026',
+            received: 15000.0,
+            sent: 19000.0,
+            inTransfers: 2,
+            outTransfers: 3,
+            transactions: const [
+              AnalyticsTxItem(name: 'Direct Settlement', initial: 'S', avatarBg: Color(0xFF00ACC1), time: 'Jan 25, 2:00 pm', amount: 15000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Utility Clearing', initial: 'U', avatarBg: Color(0xFFE53935), time: 'Jan 28, 5:15 pm', amount: 19000.0, isReceived: false),
+            ],
           ),
         ],
       ),
-      FlowPointData(
-        label: 'Week 3',
-        shortLabel: 'W3',
-        dateSubtitle: 'Oct 15 - Oct 21, 2026',
-        received: 5000.0,
-        sent: 32500.0,
-        inTransfers: 1,
-        outTransfers: 5,
-        transactions: const [
-          AnalyticsTxItem(
-            name: 'Jessie Mae Dela Paz',
-            initial: 'J',
-            avatarBg: Color(0xFF00ACC1),
-            time: 'Oct 16, 11:30 am',
-            amount: 5000.0,
-            isReceived: true,
-            status: 'RECEIVED',
+      MonthFlowData(
+        monthName: 'February 2026',
+        shortName: 'Feb',
+        monthIndex: 1,
+        weeks: [
+          FlowPointData(
+            label: 'Week 1',
+            shortLabel: 'W1',
+            dateSubtitle: 'Feb 01 - Feb 07, 2026',
+            received: 14000.0,
+            sent: 11000.0,
+            inTransfers: 1,
+            outTransfers: 2,
+            transactions: const [
+              AnalyticsTxItem(name: 'Consulting Honorarium', initial: 'C', avatarBg: Color(0xFF7C4DFF), time: 'Feb 03, 10:15 am', amount: 14000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Internet & Telecom', initial: 'T', avatarBg: Color(0xFFE65100), time: 'Feb 05, 3:20 pm', amount: 11000.0, isReceived: false),
+            ],
           ),
-          AnalyticsTxItem(
-            name: 'Hardware Reorder',
-            initial: 'H',
-            avatarBg: Color(0xFF5E35B1),
-            time: 'Oct 18, 3:15 pm',
-            amount: 27500.0,
-            isReceived: false,
+          FlowPointData(
+            label: 'Week 2',
+            shortLabel: 'W2',
+            dateSubtitle: 'Feb 08 - Feb 14, 2026',
+            received: 18000.0,
+            sent: 16000.0,
+            inTransfers: 2,
+            outTransfers: 3,
+            transactions: const [
+              AnalyticsTxItem(name: 'Commercial Inward', initial: 'M', avatarBg: Color(0xFF00897B), time: 'Feb 10, 1:15 pm', amount: 18000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Supplier Settlement', initial: 'S', avatarBg: Color(0xFF3949AB), time: 'Feb 12, 4:40 pm', amount: 16000.0, isReceived: false),
+            ],
           ),
-          AnalyticsTxItem(
-            name: 'Cloud Services',
-            initial: 'C',
-            avatarBg: Color(0xFF43A047),
-            time: 'Oct 20, 8:40 am',
-            amount: 5000.0,
-            isReceived: false,
+          FlowPointData(
+            label: 'Week 3',
+            shortLabel: 'W3',
+            dateSubtitle: 'Feb 15 - Feb 21, 2026',
+            received: 20000.0,
+            sent: 12000.0,
+            inTransfers: 1,
+            outTransfers: 2,
+            transactions: const [
+              AnalyticsTxItem(name: 'Direct Wire', initial: 'W', avatarBg: Color(0xFF5E17EB), time: 'Feb 17, 11:00 am', amount: 20000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Software Upgrade', initial: 'S', avatarBg: Color(0xFFD81B60), time: 'Feb 19, 2:50 pm', amount: 12000.0, isReceived: false),
+            ],
           ),
-        ],
-      ),
-      FlowPointData(
-        label: 'Week 4',
-        shortLabel: 'W4',
-        dateSubtitle: 'Oct 22 - Oct 28, 2026',
-        received: 18500.0,
-        sent: 10500.0,
-        inTransfers: 1,
-        outTransfers: 2,
-        transactions: const [
-          AnalyticsTxItem(
-            name: 'Mae G. Mercado',
-            initial: 'M',
-            avatarBg: Color(0xFF5E17EB),
-            time: 'Oct 24, 10:15 am',
-            amount: 18500.0,
-            isReceived: true,
-            status: 'RECEIVED',
-          ),
-          AnalyticsTxItem(
-            name: 'Office Lease Share',
-            initial: 'O',
-            avatarBg: Color(0xFFD81B60),
-            time: 'Oct 26, 4:00 pm',
-            amount: 10500.0,
-            isReceived: false,
+          FlowPointData(
+            label: 'Week 4',
+            shortLabel: 'W4',
+            dateSubtitle: 'Feb 22 - Feb 28, 2026',
+            received: 15000.0,
+            sent: 13000.0,
+            inTransfers: 1,
+            outTransfers: 2,
+            transactions: const [
+              AnalyticsTxItem(name: 'Service Deposit', initial: 'S', avatarBg: Color(0xFF2ECC71), time: 'Feb 24, 9:30 am', amount: 15000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Facility Lease', initial: 'F', avatarBg: Color(0xFF8E24AA), time: 'Feb 27, 4:10 pm', amount: 13000.0, isReceived: false),
+            ],
           ),
         ],
       ),
-      FlowPointData(
-        label: 'Week 5',
-        shortLabel: 'W5',
-        dateSubtitle: 'Oct 29 - Oct 31, 2026',
-        received: 5000.0,
-        sent: 29000.0,
-        inTransfers: 1,
-        outTransfers: 4,
-        transactions: const [
-          AnalyticsTxItem(
-            name: 'Payroll Reimbursement',
-            initial: 'P',
-            avatarBg: Color(0xFF1E88E5),
-            time: 'Oct 30, 2:00 pm',
-            amount: 25000.0,
-            isReceived: false,
+      MonthFlowData(
+        monthName: 'March 2026',
+        shortName: 'Mar',
+        monthIndex: 2,
+        weeks: [
+          FlowPointData(
+            label: 'Week 1',
+            shortLabel: 'W1',
+            dateSubtitle: 'Mar 01 - Mar 07, 2026',
+            received: 8000.0,
+            sent: 16000.0,
+            inTransfers: 1,
+            outTransfers: 3,
+            transactions: const [
+              AnalyticsTxItem(name: 'Apex Digital Wire', initial: 'A', avatarBg: Color(0xFF047857), time: 'Mar 04, 11:20 am', amount: 8000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Q1 Compliance Filing', initial: 'C', avatarBg: Color(0xFFE65100), time: 'Mar 06, 2:10 pm', amount: 16000.0, isReceived: false),
+            ],
           ),
-          AnalyticsTxItem(
-            name: 'Consulting Honorarium',
-            initial: 'C',
-            avatarBg: Color(0xFF2ECC71),
-            time: 'Oct 31, 5:30 pm',
-            amount: 5000.0,
-            isReceived: true,
-            status: 'RECEIVED',
+          FlowPointData(
+            label: 'Week 2',
+            shortLabel: 'W2',
+            dateSubtitle: 'Mar 08 - Mar 14, 2026',
+            received: 12000.0,
+            sent: 21000.0,
+            inTransfers: 1,
+            outTransfers: 3,
+            transactions: const [
+              AnalyticsTxItem(name: 'Project Payout', initial: 'P', avatarBg: Color(0xFF5E17EB), time: 'Mar 11, 1:45 pm', amount: 12000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Marketing Campaign', initial: 'M', avatarBg: Color(0xFF3949AB), time: 'Mar 13, 3:30 pm', amount: 21000.0, isReceived: false),
+            ],
           ),
-          AnalyticsTxItem(
-            name: 'Petty Cash',
-            initial: 'P',
-            avatarBg: Color(0xFF8E24AA),
-            time: 'Oct 31, 6:00 pm',
-            amount: 4000.0,
-            isReceived: false,
+          FlowPointData(
+            label: 'Week 3',
+            shortLabel: 'W3',
+            dateSubtitle: 'Mar 15 - Mar 21, 2026',
+            received: 15000.0,
+            sent: 18000.0,
+            inTransfers: 1,
+            outTransfers: 2,
+            transactions: const [
+              AnalyticsTxItem(name: 'Client Honorarium', initial: 'C', avatarBg: Color(0xFF00897B), time: 'Mar 18, 10:00 am', amount: 15000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Server Infrastructure', initial: 'S', avatarBg: Color(0xFFD81B60), time: 'Mar 20, 4:15 pm', amount: 18000.0, isReceived: false),
+            ],
+          ),
+          FlowPointData(
+            label: 'Week 4',
+            shortLabel: 'W4',
+            dateSubtitle: 'Mar 22 - Mar 31, 2026',
+            received: 10000.0,
+            sent: 14000.0,
+            inTransfers: 1,
+            outTransfers: 2,
+            transactions: const [
+              AnalyticsTxItem(name: 'Settlement Credit', initial: 'S', avatarBg: Color(0xFF2ECC71), time: 'Mar 25, 2:20 pm', amount: 10000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Office Maintenance', initial: 'O', avatarBg: Color(0xFF8E24AA), time: 'Mar 29, 5:00 pm', amount: 14000.0, isReceived: false),
+            ],
+          ),
+        ],
+      ),
+      MonthFlowData(
+        monthName: 'April 2026',
+        shortName: 'Apr',
+        monthIndex: 3,
+        weeks: [
+          FlowPointData(
+            label: 'Week 1',
+            shortLabel: 'W1',
+            dateSubtitle: 'Apr 01 - Apr 07, 2026',
+            received: 25000.0,
+            sent: 8000.0,
+            inTransfers: 2,
+            outTransfers: 1,
+            transactions: const [
+              AnalyticsTxItem(name: 'Enterprise Contract', initial: 'E', avatarBg: Color(0xFF5E17EB), time: 'Apr 03, 9:45 am', amount: 25000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Cloud Maintenance', initial: 'C', avatarBg: Color(0xFFE65100), time: 'Apr 05, 3:30 pm', amount: 8000.0, isReceived: false),
+            ],
+          ),
+          FlowPointData(
+            label: 'Week 2',
+            shortLabel: 'W2',
+            dateSubtitle: 'Apr 08 - Apr 14, 2026',
+            received: 32000.0,
+            sent: 14000.0,
+            inTransfers: 2,
+            outTransfers: 2,
+            transactions: const [
+              AnalyticsTxItem(name: 'Partner Bank Settlement', initial: 'P', avatarBg: Color(0xFF00897B), time: 'Apr 10, 11:15 am', amount: 32000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Vendor Clearing', initial: 'V', avatarBg: Color(0xFF3949AB), time: 'Apr 12, 2:40 pm', amount: 14000.0, isReceived: false),
+            ],
+          ),
+          FlowPointData(
+            label: 'Week 3',
+            shortLabel: 'W3',
+            dateSubtitle: 'Apr 15 - Apr 21, 2026',
+            received: 18000.0,
+            sent: 6500.0,
+            inTransfers: 1,
+            outTransfers: 1,
+            transactions: const [
+              AnalyticsTxItem(name: 'Project Milestone B', initial: 'P', avatarBg: Color(0xFF2ECC71), time: 'Apr 17, 10:20 am', amount: 18000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Telecom Provider', initial: 'T', avatarBg: Color(0xFFD81B60), time: 'Apr 19, 4:10 pm', amount: 6500.0, isReceived: false),
+            ],
+          ),
+          FlowPointData(
+            label: 'Week 4',
+            shortLabel: 'W4',
+            dateSubtitle: 'Apr 22 - Apr 30, 2026',
+            received: 28500.0,
+            sent: 12000.0,
+            inTransfers: 2,
+            outTransfers: 2,
+            transactions: const [
+              AnalyticsTxItem(name: 'Retainer Inflow', initial: 'R', avatarBg: Color(0xFF8E24AA), time: 'Apr 25, 1:30 pm', amount: 28500.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Facility Lease Share', initial: 'F', avatarBg: Color(0xFF00ACC1), time: 'Apr 28, 5:00 pm', amount: 12000.0, isReceived: false),
+            ],
+          ),
+        ],
+      ),
+      MonthFlowData(
+        monthName: 'May 2026',
+        shortName: 'May',
+        monthIndex: 4,
+        weeks: [
+          FlowPointData(
+            label: 'Week 1',
+            shortLabel: 'W1',
+            dateSubtitle: 'May 01 - May 07, 2026',
+            received: 9000.0,
+            sent: 12000.0,
+            inTransfers: 1,
+            outTransfers: 2,
+            transactions: const [
+              AnalyticsTxItem(name: 'Advisory Inflow', initial: 'A', avatarBg: Color(0xFF7C4DFF), time: 'May 03, 11:00 am', amount: 9000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Office Supplies', initial: 'O', avatarBg: Color(0xFFE65100), time: 'May 05, 2:15 pm', amount: 12000.0, isReceived: false),
+            ],
+          ),
+          FlowPointData(
+            label: 'Week 2',
+            shortLabel: 'W2',
+            dateSubtitle: 'May 08 - May 14, 2026',
+            received: 14000.0,
+            sent: 10000.0,
+            inTransfers: 1,
+            outTransfers: 1,
+            transactions: const [
+              AnalyticsTxItem(name: 'Client Deposit', initial: 'C', avatarBg: Color(0xFF00897B), time: 'May 11, 10:45 am', amount: 14000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Logistics Fee', initial: 'L', avatarBg: Color(0xFF3949AB), time: 'May 13, 3:30 pm', amount: 10000.0, isReceived: false),
+            ],
+          ),
+          FlowPointData(
+            label: 'Week 3',
+            shortLabel: 'W3',
+            dateSubtitle: 'May 15 - May 21, 2026',
+            received: 22000.0,
+            sent: 25000.0,
+            inTransfers: 2,
+            outTransfers: 3,
+            transactions: const [
+              AnalyticsTxItem(name: 'Settlement Inward', initial: 'S', avatarBg: Color(0xFF5E17EB), time: 'May 18, 1:20 pm', amount: 22000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Equipment Maintenance', initial: 'E', avatarBg: Color(0xFFD81B60), time: 'May 20, 4:50 pm', amount: 25000.0, isReceived: false),
+            ],
+          ),
+          FlowPointData(
+            label: 'Week 4',
+            shortLabel: 'W4',
+            dateSubtitle: 'May 22 - May 31, 2026',
+            received: 16000.0,
+            sent: 13000.0,
+            inTransfers: 1,
+            outTransfers: 2,
+            transactions: const [
+              AnalyticsTxItem(name: 'Contract Payout', initial: 'C', avatarBg: Color(0xFF2ECC71), time: 'May 26, 11:30 am', amount: 16000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Rent Allocation', initial: 'R', avatarBg: Color(0xFF8E24AA), time: 'May 29, 2:10 pm', amount: 13000.0, isReceived: false),
+            ],
+          ),
+        ],
+      ),
+      MonthFlowData(
+        monthName: 'June 2026',
+        shortName: 'Jun',
+        monthIndex: 5,
+        weeks: [
+          FlowPointData(
+            label: 'Week 1',
+            shortLabel: 'W1',
+            dateSubtitle: 'Jun 01 - Jun 07, 2026',
+            received: 12000.0,
+            sent: 15000.0,
+            inTransfers: 1,
+            outTransfers: 2,
+            transactions: const [
+              AnalyticsTxItem(name: 'Inward Wire', initial: 'I', avatarBg: Color(0xFF00ACC1), time: 'Jun 04, 10:15 am', amount: 12000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Software Licensing', initial: 'S', avatarBg: Color(0xFFE65100), time: 'Jun 06, 3:45 pm', amount: 15000.0, isReceived: false),
+            ],
+          ),
+          FlowPointData(
+            label: 'Week 2',
+            shortLabel: 'W2',
+            dateSubtitle: 'Jun 08 - Jun 14, 2026',
+            received: 28000.0,
+            sent: 12500.0,
+            inTransfers: 2,
+            outTransfers: 2,
+            transactions: const [
+              AnalyticsTxItem(name: 'Apex Digital Wire', initial: 'A', avatarBg: Color(0xFF047857), time: 'Jun 10, 1:30 pm', amount: 28000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Supplier Order', initial: 'S', avatarBg: Color(0xFF3949AB), time: 'Jun 12, 4:20 pm', amount: 12500.0, isReceived: false),
+            ],
+          ),
+          FlowPointData(
+            label: 'Week 3',
+            shortLabel: 'W3',
+            dateSubtitle: 'Jun 15 - Jun 21, 2026',
+            received: 14000.0,
+            sent: 18000.0,
+            inTransfers: 1,
+            outTransfers: 2,
+            transactions: const [
+              AnalyticsTxItem(name: 'Service Fee', initial: 'S', avatarBg: Color(0xFF5E17EB), time: 'Jun 17, 11:10 am', amount: 14000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Insurance Premium', initial: 'I', avatarBg: Color(0xFFD81B60), time: 'Jun 19, 2:50 pm', amount: 18000.0, isReceived: false),
+            ],
+          ),
+          FlowPointData(
+            label: 'Week 4',
+            shortLabel: 'W4',
+            dateSubtitle: 'Jun 22 - Jun 30, 2026',
+            received: 19000.0,
+            sent: 16500.0,
+            inTransfers: 1,
+            outTransfers: 2,
+            transactions: const [
+              AnalyticsTxItem(name: 'Professional Fee', initial: 'P', avatarBg: Color(0xFF2ECC71), time: 'Jun 25, 9:40 am', amount: 19000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Utilities & Power', initial: 'U', avatarBg: Color(0xFF8E24AA), time: 'Jun 28, 5:15 pm', amount: 16500.0, isReceived: false),
+            ],
+          ),
+        ],
+      ),
+      MonthFlowData(
+        monthName: 'July 2026',
+        shortName: 'Jul',
+        monthIndex: 6,
+        weeks: [
+          FlowPointData(
+            label: 'Week 1',
+            shortLabel: 'W1',
+            dateSubtitle: 'Jul 01 - Jul 07, 2026',
+            received: 10000.0,
+            sent: 8000.0,
+            inTransfers: 1,
+            outTransfers: 1,
+            transactions: const [
+              AnalyticsTxItem(name: 'Inward Remittance', initial: 'I', avatarBg: Color(0xFF7C4DFF), time: 'Jul 03, 10:30 am', amount: 10000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Utility Payout', initial: 'U', avatarBg: Color(0xFFE65100), time: 'Jul 06, 2:15 pm', amount: 8000.0, isReceived: false),
+            ],
+          ),
+          FlowPointData(
+            label: 'Week 2',
+            shortLabel: 'W2',
+            dateSubtitle: 'Jul 08 - Jul 14, 2026',
+            received: 16000.0,
+            sent: 19000.0,
+            inTransfers: 1,
+            outTransfers: 3,
+            transactions: const [
+              AnalyticsTxItem(name: 'Service Contract', initial: 'S', avatarBg: Color(0xFF00897B), time: 'Jul 10, 1:45 pm', amount: 16000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Hardware Maintenance', initial: 'H', avatarBg: Color(0xFF3949AB), time: 'Jul 12, 4:30 pm', amount: 19000.0, isReceived: false),
+            ],
+          ),
+          FlowPointData(
+            label: 'Week 3',
+            shortLabel: 'W3',
+            dateSubtitle: 'Jul 15 - Jul 21, 2026',
+            received: 21000.0,
+            sent: 14000.0,
+            inTransfers: 2,
+            outTransfers: 2,
+            transactions: const [
+              AnalyticsTxItem(name: 'Commercial Inflow', initial: 'C', avatarBg: Color(0xFF5E17EB), time: 'Jul 17, 11:20 am', amount: 21000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Office Supplies', initial: 'O', avatarBg: Color(0xFFD81B60), time: 'Jul 19, 3:15 pm', amount: 14000.0, isReceived: false),
+            ],
+          ),
+          FlowPointData(
+            label: 'Week 4',
+            shortLabel: 'W4',
+            dateSubtitle: 'Jul 22 - Jul 31, 2026',
+            received: 25000.0,
+            sent: 11000.0,
+            inTransfers: 2,
+            outTransfers: 1,
+            transactions: const [
+              AnalyticsTxItem(name: 'Retainer Payment', initial: 'R', avatarBg: Color(0xFF2ECC71), time: 'Jul 26, 10:00 am', amount: 25000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Tax Withholding', initial: 'T', avatarBg: Color(0xFF8E24AA), time: 'Jul 29, 4:45 pm', amount: 11000.0, isReceived: false),
+            ],
+          ),
+        ],
+      ),
+      MonthFlowData(
+        monthName: 'August 2026',
+        shortName: 'Aug',
+        monthIndex: 7,
+        weeks: [
+          FlowPointData(
+            label: 'Week 1',
+            shortLabel: 'W1',
+            dateSubtitle: 'Aug 01 - Aug 07, 2026',
+            received: 18000.0,
+            sent: 11000.0,
+            inTransfers: 1,
+            outTransfers: 2,
+            transactions: const [
+              AnalyticsTxItem(name: 'Project Milestone', initial: 'P', avatarBg: Color(0xFF00ACC1), time: 'Aug 03, 11:15 am', amount: 18000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Internet Fiber', initial: 'I', avatarBg: Color(0xFFE65100), time: 'Aug 05, 3:20 pm', amount: 11000.0, isReceived: false),
+            ],
+          ),
+          FlowPointData(
+            label: 'Week 2',
+            shortLabel: 'W2',
+            dateSubtitle: 'Aug 08 - Aug 14, 2026',
+            received: 9500.0,
+            sent: 20500.0,
+            inTransfers: 1,
+            outTransfers: 3,
+            transactions: const [
+              AnalyticsTxItem(name: 'Apex Digital Transfer', initial: 'A', avatarBg: Color(0xFF047857), time: 'Aug 10, 10:45 am', amount: 9500.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Vendor Payout', initial: 'V', avatarBg: Color(0xFF3949AB), time: 'Aug 12, 2:50 pm', amount: 20500.0, isReceived: false),
+            ],
+          ),
+          FlowPointData(
+            label: 'Week 3',
+            shortLabel: 'W3',
+            dateSubtitle: 'Aug 15 - Aug 21, 2026',
+            received: 34000.0,
+            sent: 15000.0,
+            inTransfers: 2,
+            outTransfers: 2,
+            transactions: const [
+              AnalyticsTxItem(name: 'Customer Wire Settlement', initial: 'C', avatarBg: Color(0xFF5E17EB), time: 'Aug 17, 1:15 pm', amount: 34000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Cloud Hosting Subscription', initial: 'C', avatarBg: Color(0xFFD81B60), time: 'Aug 19, 4:10 pm', amount: 15000.0, isReceived: false),
+            ],
+          ),
+          FlowPointData(
+            label: 'Week 4',
+            shortLabel: 'W4',
+            dateSubtitle: 'Aug 22 - Aug 31, 2026',
+            received: 12500.0,
+            sent: 16500.0,
+            inTransfers: 1,
+            outTransfers: 2,
+            transactions: const [
+              AnalyticsTxItem(name: 'Consultation Fee', initial: 'C', avatarBg: Color(0xFF2ECC71), time: 'Aug 25, 9:30 am', amount: 12500.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Operational Expenses', initial: 'O', avatarBg: Color(0xFF8E24AA), time: 'Aug 28, 5:00 pm', amount: 16500.0, isReceived: false),
+            ],
+          ),
+        ],
+      ),
+      MonthFlowData(
+        monthName: 'September 2026',
+        shortName: 'Sep',
+        monthIndex: 8,
+        weeks: [
+          FlowPointData(
+            label: 'Week 1',
+            shortLabel: 'W1',
+            dateSubtitle: 'Sep 01 - Sep 07, 2026',
+            received: 14000.0,
+            sent: 9500.0,
+            inTransfers: 1,
+            outTransfers: 2,
+            transactions: const [
+              AnalyticsTxItem(name: 'Client Retainer', initial: 'C', avatarBg: Color(0xFF7C4DFF), time: 'Sep 03, 10:15 am', amount: 14000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Software Licenses', initial: 'S', avatarBg: Color(0xFFE65100), time: 'Sep 05, 3:30 pm', amount: 9500.0, isReceived: false),
+            ],
+          ),
+          FlowPointData(
+            label: 'Week 2',
+            shortLabel: 'W2',
+            dateSubtitle: 'Sep 08 - Sep 14, 2026',
+            received: 22500.0,
+            sent: 18000.0,
+            inTransfers: 2,
+            outTransfers: 3,
+            transactions: const [
+              AnalyticsTxItem(name: 'MeyBank Inward Clearing', initial: 'M', avatarBg: Color(0xFF701A75), time: 'Sep 10, 1:40 pm', amount: 22500.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Supplier Clearing Payout', initial: 'S', avatarBg: Color(0xFF3949AB), time: 'Sep 12, 4:15 pm', amount: 18000.0, isReceived: false),
+            ],
+          ),
+          FlowPointData(
+            label: 'Week 3',
+            shortLabel: 'W3',
+            dateSubtitle: 'Sep 15 - Sep 21, 2026',
+            received: 16000.0,
+            sent: 24500.0,
+            inTransfers: 1,
+            outTransfers: 4,
+            transactions: const [
+              AnalyticsTxItem(name: 'Direct Settlement', initial: 'D', avatarBg: Color(0xFF00897B), time: 'Sep 17, 11:20 am', amount: 16000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Office Equipment Refresh', initial: 'O', avatarBg: Color(0xFF5E17EB), time: 'Sep 19, 2:50 pm', amount: 24500.0, isReceived: false),
+            ],
+          ),
+          FlowPointData(
+            label: 'Week 4',
+            shortLabel: 'W4',
+            dateSubtitle: 'Sep 22 - Sep 30, 2026',
+            received: 28000.0,
+            sent: 12000.0,
+            inTransfers: 2,
+            outTransfers: 2,
+            transactions: const [
+              AnalyticsTxItem(name: 'Dividend Credit', initial: 'D', avatarBg: Color(0xFF2ECC71), time: 'Sep 25, 9:50 am', amount: 28000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Telecom Utility', initial: 'T', avatarBg: Color(0xFFD81B60), time: 'Sep 28, 4:30 pm', amount: 12000.0, isReceived: false),
+            ],
+          ),
+        ],
+      ),
+      // October 2026 (Default - 5 Weeks)
+      MonthFlowData(
+        monthName: 'October 2026',
+        shortName: 'Oct',
+        monthIndex: 9,
+        weeks: [
+          FlowPointData(
+            label: 'Week 1',
+            shortLabel: 'W1',
+            dateSubtitle: 'Oct 01 - Oct 07, 2026',
+            received: 8000.0,
+            sent: 14500.0,
+            inTransfers: 1,
+            outTransfers: 3,
+            transactions: const [
+              AnalyticsTxItem(name: 'Angel Lou F. Yabut', initial: 'A', avatarBg: Color(0xFF7C4DFF), time: 'Oct 03, 2:45 pm', amount: 2500.0, isReceived: false),
+              AnalyticsTxItem(name: 'Meralco Utility Bill', initial: 'M', avatarBg: Color(0xFFE65100), time: 'Oct 04, 9:15 am', amount: 4500.0, isReceived: false),
+              AnalyticsTxItem(name: 'Direct Deposit', initial: 'D', avatarBg: Color(0xFF00897B), time: 'Oct 02, 10:00 am', amount: 8000.0, isReceived: true, status: 'RECEIVED'),
+            ],
+          ),
+          FlowPointData(
+            label: 'Week 2',
+            shortLabel: 'W2',
+            dateSubtitle: 'Oct 08 - Oct 14, 2026',
+            received: 26500.0,
+            sent: 18500.0,
+            inTransfers: 1,
+            outTransfers: 4,
+            transactions: const [
+              AnalyticsTxItem(name: 'Drake Montefalco', initial: 'D', avatarBg: Color(0xFF220055), time: 'Oct 14, 2:45 pm', amount: 2500.0, isReceived: false),
+              AnalyticsTxItem(name: 'Klare Riego', initial: 'K', avatarBg: Color(0xFFBA68C8), time: 'Oct 14, 1:45 pm', amount: 26500.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Business Supplies', initial: 'B', avatarBg: Color(0xFF3949AB), time: 'Oct 11, 4:20 pm', amount: 16000.0, isReceived: false),
+            ],
+          ),
+          FlowPointData(
+            label: 'Week 3',
+            shortLabel: 'W3',
+            dateSubtitle: 'Oct 15 - Oct 21, 2026',
+            received: 5000.0,
+            sent: 32500.0,
+            inTransfers: 1,
+            outTransfers: 5,
+            transactions: const [
+              AnalyticsTxItem(name: 'Jessie Mae Dela Paz', initial: 'J', avatarBg: Color(0xFF00ACC1), time: 'Oct 16, 11:30 am', amount: 5000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Hardware Reorder', initial: 'H', avatarBg: Color(0xFF5E35B1), time: 'Oct 18, 3:15 pm', amount: 27500.0, isReceived: false),
+              AnalyticsTxItem(name: 'Cloud Services', initial: 'C', avatarBg: Color(0xFF43A047), time: 'Oct 20, 8:40 am', amount: 5000.0, isReceived: false),
+            ],
+          ),
+          FlowPointData(
+            label: 'Week 4',
+            shortLabel: 'W4',
+            dateSubtitle: 'Oct 22 - Oct 28, 2026',
+            received: 18500.0,
+            sent: 10500.0,
+            inTransfers: 1,
+            outTransfers: 2,
+            transactions: const [
+              AnalyticsTxItem(name: 'Mae G. Mercado', initial: 'M', avatarBg: Color(0xFF5E17EB), time: 'Oct 24, 10:15 am', amount: 18500.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Office Lease Share', initial: 'O', avatarBg: Color(0xFFD81B60), time: 'Oct 26, 4:00 pm', amount: 10500.0, isReceived: false),
+            ],
+          ),
+          FlowPointData(
+            label: 'Week 5',
+            shortLabel: 'W5',
+            dateSubtitle: 'Oct 29 - Oct 31, 2026',
+            received: 5000.0,
+            sent: 29000.0,
+            inTransfers: 1,
+            outTransfers: 4,
+            transactions: const [
+              AnalyticsTxItem(name: 'Payroll Reimbursement', initial: 'P', avatarBg: Color(0xFF1E88E5), time: 'Oct 30, 2:00 pm', amount: 25000.0, isReceived: false),
+              AnalyticsTxItem(name: 'Consulting Honorarium', initial: 'C', avatarBg: Color(0xFF2ECC71), time: 'Oct 31, 5:30 pm', amount: 5000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Petty Cash', initial: 'P', avatarBg: Color(0xFF8E24AA), time: 'Oct 31, 6:00 pm', amount: 4000.0, isReceived: false),
+            ],
+          ),
+        ],
+      ),
+      MonthFlowData(
+        monthName: 'November 2026',
+        shortName: 'Nov',
+        monthIndex: 10,
+        weeks: [
+          FlowPointData(
+            label: 'Week 1',
+            shortLabel: 'W1',
+            dateSubtitle: 'Nov 01 - Nov 07, 2026',
+            received: 16000.0,
+            sent: 14000.0,
+            inTransfers: 1,
+            outTransfers: 2,
+            transactions: const [
+              AnalyticsTxItem(name: 'Retainer Credit', initial: 'R', avatarBg: Color(0xFF7C4DFF), time: 'Nov 03, 10:20 am', amount: 16000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Operations Reserve', initial: 'O', avatarBg: Color(0xFFE65100), time: 'Nov 05, 3:15 pm', amount: 14000.0, isReceived: false),
+            ],
+          ),
+          FlowPointData(
+            label: 'Week 2',
+            shortLabel: 'W2',
+            dateSubtitle: 'Nov 08 - Nov 14, 2026',
+            received: 21000.0,
+            sent: 11000.0,
+            inTransfers: 2,
+            outTransfers: 2,
+            transactions: const [
+              AnalyticsTxItem(name: 'Client Settlement', initial: 'C', avatarBg: Color(0xFF00897B), time: 'Nov 10, 1:45 pm', amount: 21000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Hardware Upgrade', initial: 'H', avatarBg: Color(0xFF3949AB), time: 'Nov 12, 4:20 pm', amount: 11000.0, isReceived: false),
+            ],
+          ),
+          FlowPointData(
+            label: 'Week 3',
+            shortLabel: 'W3',
+            dateSubtitle: 'Nov 15 - Nov 21, 2026',
+            received: 15000.0,
+            sent: 25000.0,
+            inTransfers: 1,
+            outTransfers: 3,
+            transactions: const [
+              AnalyticsTxItem(name: 'Direct Deposit', initial: 'D', avatarBg: Color(0xFF5E17EB), time: 'Nov 17, 11:30 am', amount: 15000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Vendor Clearing', initial: 'V', avatarBg: Color(0xFFD81B60), time: 'Nov 19, 3:00 pm', amount: 25000.0, isReceived: false),
+            ],
+          ),
+          FlowPointData(
+            label: 'Week 4',
+            shortLabel: 'W4',
+            dateSubtitle: 'Nov 22 - Nov 30, 2026',
+            received: 24000.0,
+            sent: 18000.0,
+            inTransfers: 2,
+            outTransfers: 2,
+            transactions: const [
+              AnalyticsTxItem(name: 'Inward Wire', initial: 'I', avatarBg: Color(0xFF2ECC71), time: 'Nov 25, 10:00 am', amount: 24000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Facility Share', initial: 'F', avatarBg: Color(0xFF8E24AA), time: 'Nov 28, 4:40 pm', amount: 18000.0, isReceived: false),
+            ],
+          ),
+        ],
+      ),
+      MonthFlowData(
+        monthName: 'December 2026',
+        shortName: 'Dec',
+        monthIndex: 11,
+        weeks: [
+          FlowPointData(
+            label: 'Week 1',
+            shortLabel: 'W1',
+            dateSubtitle: 'Dec 01 - Dec 07, 2026',
+            received: 18000.0,
+            sent: 12000.0,
+            inTransfers: 1,
+            outTransfers: 2,
+            transactions: const [
+              AnalyticsTxItem(name: 'Holiday Retainer', initial: 'H', avatarBg: Color(0xFF7C4DFF), time: 'Dec 03, 11:15 am', amount: 18000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Holiday Corporate Event', initial: 'C', avatarBg: Color(0xFFE65100), time: 'Dec 05, 3:30 pm', amount: 12000.0, isReceived: false),
+            ],
+          ),
+          FlowPointData(
+            label: 'Week 2',
+            shortLabel: 'W2',
+            dateSubtitle: 'Dec 08 - Dec 14, 2026',
+            received: 24000.0,
+            sent: 19000.0,
+            inTransfers: 2,
+            outTransfers: 3,
+            transactions: const [
+              AnalyticsTxItem(name: 'Project Bonus Release', initial: 'P', avatarBg: Color(0xFF00897B), time: 'Dec 10, 1:20 pm', amount: 24000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Operational Reserve', initial: 'O', avatarBg: Color(0xFF3949AB), time: 'Dec 12, 4:10 pm', amount: 19000.0, isReceived: false),
+            ],
+          ),
+          FlowPointData(
+            label: 'Week 3',
+            shortLabel: 'W3',
+            dateSubtitle: 'Dec 15 - Dec 21, 2026',
+            received: 35000.0,
+            sent: 28000.0,
+            inTransfers: 2,
+            outTransfers: 3,
+            transactions: const [
+              AnalyticsTxItem(name: 'Client Wire', initial: 'C', avatarBg: Color(0xFF5E17EB), time: 'Dec 17, 10:45 am', amount: 35000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Annual Vendor Settlement', initial: 'V', avatarBg: Color(0xFFD81B60), time: 'Dec 19, 2:50 pm', amount: 28000.0, isReceived: false),
+            ],
+          ),
+          FlowPointData(
+            label: 'Week 4',
+            shortLabel: 'W4',
+            dateSubtitle: 'Dec 22 - Dec 28, 2026',
+            received: 42000.0,
+            sent: 34000.0,
+            inTransfers: 3,
+            outTransfers: 4,
+            transactions: const [
+              AnalyticsTxItem(name: '13th Month Settlement', initial: 'M', avatarBg: Color(0xFF2ECC71), time: 'Dec 24, 9:30 am', amount: 42000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Year-End Clearing', initial: 'Y', avatarBg: Color(0xFF8E24AA), time: 'Dec 27, 4:00 pm', amount: 34000.0, isReceived: false),
+            ],
+          ),
+          FlowPointData(
+            label: 'Week 5',
+            shortLabel: 'W5',
+            dateSubtitle: 'Dec 29 - Dec 31, 2026',
+            received: 20000.0,
+            sent: 15000.0,
+            inTransfers: 1,
+            outTransfers: 2,
+            transactions: const [
+              AnalyticsTxItem(name: 'Final Inward Settlement', initial: 'F', avatarBg: Color(0xFF00ACC1), time: 'Dec 30, 2:15 pm', amount: 20000.0, isReceived: true, status: 'RECEIVED'),
+              AnalyticsTxItem(name: 'Year-End Reserve', initial: 'R', avatarBg: Color(0xFF5E35B1), time: 'Dec 31, 5:00 pm', amount: 15000.0, isReceived: false),
+            ],
           ),
         ],
       ),
     ];
 
+    // Yearly Dataset (12 Months in 2026)
     _yearlyMonths = [
       FlowPointData(
         label: 'January',
@@ -437,6 +1023,19 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     _animateToTarget(index.toDouble());
   }
 
+  void _onSelectMonthOfYear(int newIdx) {
+    if (newIdx < 0 || newIdx >= _monthsCatalog.length) return;
+    if (_selectedMonthOfYear == newIdx) return;
+    setState(() {
+      _selectedMonthOfYear = newIdx;
+      final weeks = _currentMonthlyWeeks;
+      _selectedWeekIndex = _selectedWeekIndex.clamp(0, weeks.length - 1);
+      _showAllTotals = false;
+      _currentScrubFraction = _selectedWeekIndex.toDouble();
+    });
+    _animateToTarget(_selectedWeekIndex.toDouble());
+  }
+
   void _onToggleMode(bool monthly) {
     if (_isMonthly == monthly) return;
     setState(() {
@@ -450,8 +1049,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     );
   }
 
+  List<FlowPointData> get _currentMonthlyWeeks =>
+      _monthsCatalog[_selectedMonthOfYear].weeks;
+
   List<FlowPointData> get _currentDataset =>
-      _isMonthly ? _monthlyWeeks : _yearlyMonths;
+      _isMonthly ? _currentMonthlyWeeks : _yearlyMonths;
 
   FlowPointData get _activePointData {
     final list = _currentDataset;
@@ -461,11 +1063,40 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     return list[index];
   }
 
+  String get _currentMonthName => _monthsCatalog[_selectedMonthOfYear].monthName;
+
   // Grand totals
-  double get _totalSentMonth => 105000.0;
-  double get _totalReceivedMonth => 58000.0;
-  int get _transfersOutMonth => 18;
-  int get _transfersInMonth => 4;
+  double get _totalSentMonth {
+    double sum = 0;
+    for (final w in _currentMonthlyWeeks) {
+      sum += w.sent;
+    }
+    return sum;
+  }
+
+  double get _totalReceivedMonth {
+    double sum = 0;
+    for (final w in _currentMonthlyWeeks) {
+      sum += w.received;
+    }
+    return sum;
+  }
+
+  int get _transfersOutMonth {
+    int sum = 0;
+    for (final w in _currentMonthlyWeeks) {
+      sum += w.outTransfers;
+    }
+    return sum;
+  }
+
+  int get _transfersInMonth {
+    int sum = 0;
+    for (final w in _currentMonthlyWeeks) {
+      sum += w.inTransfers;
+    }
+    return sum;
+  }
 
   double get _totalSentYear => 508000.0;
   double get _totalReceivedYear => 160000.0;
@@ -570,6 +1201,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 ),
               ),
 
+              // Agency-Grade Month Dropdown Selector (Active in Monthly Mode)
+              if (_isMonthly) ...[
+                const SizedBox(height: 14),
+                _buildMonthDropdownSelector(),
+              ],
+
               const SizedBox(height: 16),
 
               // Active filter pill indicator
@@ -603,6 +1240,155 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     );
   }
 
+  Widget _buildMonthDropdownSelector() {
+    final canGoPrev = _selectedMonthOfYear > 0;
+    final canGoNext = _selectedMonthOfYear < _monthsCatalog.length - 1;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFEDE9FE), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: brandViolet.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Calendar Icon Badge in soft lavender
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3E8FF),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.calendar_month_rounded, color: brandViolet, size: 20),
+          ),
+          const SizedBox(width: 12),
+          // Month Dropdown Trigger & Label
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'STATEMENT PERIOD',
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w800,
+                    color: brandViolet,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+                const SizedBox(height: 1),
+                DropdownButtonHideUnderline(
+                  child: DropdownButton<int>(
+                    key: const ValueKey('monthDropdownButton'),
+                    value: _selectedMonthOfYear,
+                    isDense: true,
+                    icon: const Icon(Icons.keyboard_arrow_down_rounded, color: brandViolet, size: 22),
+                    dropdownColor: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    elevation: 8,
+                    style: const TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w800,
+                      color: textDark,
+                    ),
+                    items: List.generate(_monthsCatalog.length, (idx) {
+                      final item = _monthsCatalog[idx];
+                      final isSelected = idx == _selectedMonthOfYear;
+                      return DropdownMenuItem<int>(
+                        value: idx,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              item.monthName,
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                color: isSelected ? brandViolet : textDark,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                              decoration: BoxDecoration(
+                                color: isSelected ? const Color(0xFFF3E8FF) : const Color(0xFFF9FAFB),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: isSelected ? const Color(0xFFDDD6FE) : const Color(0xFFE5E7EB),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Text(
+                                '${item.weeks.length} Weeks',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: isSelected ? brandViolet : textGray,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                    onChanged: (newIdx) {
+                      if (newIdx != null) {
+                        _onSelectMonthOfYear(newIdx);
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Micro Navigation Chevrons (< and >)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                key: const ValueKey('prevMonthBtn'),
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                icon: Icon(
+                  Icons.chevron_left_rounded,
+                  size: 20,
+                  color: canGoPrev ? brandViolet : const Color(0xFFD1D5DB),
+                ),
+                onPressed: canGoPrev ? () => _onSelectMonthOfYear(_selectedMonthOfYear - 1) : null,
+              ),
+              const SizedBox(width: 2),
+              IconButton(
+                key: const ValueKey('nextMonthBtn'),
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                icon: Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: canGoNext ? brandViolet : const Color(0xFFD1D5DB),
+                ),
+                onPressed: canGoNext ? () => _onSelectMonthOfYear(_selectedMonthOfYear + 1) : null,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSelectionBanner() {
     final active = _activePointData;
     return Container(
@@ -630,7 +1416,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 Expanded(
                   child: Text(
                     _showAllTotals
-                        ? (_isMonthly ? 'Full Month Summary (October 2026)' : 'Full Year Summary (2026)')
+                        ? (_isMonthly ? 'Full Month Summary ($_currentMonthName)' : 'Full Year Summary (2026)')
                         : '${active.label} Selected (${active.dateSubtitle})',
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -935,9 +1721,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   Widget _buildWeekClickablePills() {
+    final weeks = _currentMonthlyWeeks;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: List.generate(_monthlyWeeks.length, (index) {
+      children: List.generate(weeks.length, (index) {
         final isSelected = _selectedWeekIndex == index;
         return Expanded(
           child: Padding(
@@ -1474,7 +2261,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             ),
             Text(
               net,
-              style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: accentGreen),
+              style: TextStyle(
+                fontSize: 11,
+                color: net.startsWith('+') ? accentGreen : const Color(0xFFDC2626),
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),
@@ -1610,8 +2401,7 @@ class _PointedTransferFlowPainter extends CustomPainter {
     maxVal *= 1.25; // 25% overhead for visual breathing room
 
     // Compute coordinate points for Received (In, Green) and Sent (Out, Violet)
-    // Exactly n points: 5 points for the 5 weeks in Monthly mode, 12 points for the 12 months in Yearly mode.
-    // "kung ilan lang weeks yun lang yung spikes line"
+    // Exactly n points: weeks in Monthly mode, 12 months in Yearly mode.
     final greenPoints = <Offset>[];
     final violetPoints = <Offset>[];
 
@@ -1628,7 +2418,7 @@ class _PointedTransferFlowPainter extends CustomPainter {
     }
 
     // Build path:
-    // For Monthly: draw clean straight pointed segments connecting the exact week vertices (5 weeks = 5 spikes)
+    // For Monthly: draw clean straight pointed segments connecting the exact week vertices
     // For Yearly: retain smooth spline across the 12 months
     final greenPath = _buildPath(greenPoints, isMonthly: isMonthly);
     final violetPath = _buildPath(violetPoints, isMonthly: isMonthly);
@@ -1679,7 +2469,7 @@ class _PointedTransferFlowPainter extends CustomPainter {
       ..strokeJoin = StrokeJoin.round;
     canvas.drawPath(violetPath, violetStrokePaint);
 
-    // 3. Draw All Pointed Vertices / Nodes on both lines (exactly 1 per week / month)
+    // 3. Draw All Pointed Vertices / Nodes on both lines
     final greenNodePaint = Paint()
       ..color = const Color(0xFF2ECC71)
       ..style = PaintingStyle.fill;
@@ -1700,198 +2490,110 @@ class _PointedTransferFlowPainter extends CustomPainter {
       canvas.drawCircle(violetPoints[i], 2.2, whiteInnerPaint);
     }
 
-    // 4. Calculate Interpolated Active Scrubber Coordinates
-    final scrubClamped = scrubFraction.clamp(0.0, (n - 1).toDouble());
-    final lowerIdx = scrubClamped.floor().clamp(0, n - 1);
-    final upperIdx = math.min(lowerIdx + 1, n - 1);
-    final t = scrubClamped - lowerIdx;
+    // 4. Calculate Current Animated Scrub Position
+    final clampedScrub = scrubFraction.clamp(0.0, (n - 1).toDouble());
+    final scrubX = paddingX + (clampedScrub * xStep);
 
-    final scrubX = paddingX + (scrubClamped * xStep);
-    final activeGreenY = _lerpDouble(greenPoints[lowerIdx].dy, greenPoints[upperIdx].dy, t);
-    final activeVioletY = _lerpDouble(violetPoints[lowerIdx].dy, violetPoints[upperIdx].dy, t);
+    // Interpolate Y positions at the exact scrub position
+    final scrubYGreen = _interpolateY(greenPoints, clampedScrub);
+    final scrubYViolet = _interpolateY(violetPoints, clampedScrub);
 
-    // 5. Vertical Dashed Guideline Scrubber through active point
-    final guidePaint = Paint()
-      ..color = const Color(0xFF5E17EB).withValues(alpha: 0.35)
+    // Interpolate Value amounts at scrub position
+    final scrubValGreen = _interpolateValue(dataset.map((d) => d.received).toList(), clampedScrub);
+    final scrubValViolet = _interpolateValue(dataset.map((d) => d.sent).toList(), clampedScrub);
+
+    // 5. Draw Vertical Guideline
+    final dashPaint = Paint()
+      ..color = const Color(0xFF8B5CF6).withValues(alpha: 0.40)
       ..strokeWidth = 1.2
       ..style = PaintingStyle.stroke;
-    _drawDashedVerticalLine(canvas, scrubX, 10, h - 8, guidePaint);
+    _drawDashedVerticalLine(canvas, scrubX, paddingTop - 12, h - 8, dashPaint);
 
-    // 6. Glowing Halos on the Active Nodes
-    // Active Green Vertex Halo
-    final greenHaloPaint = Paint()
-      ..color = const Color(0xFF2ECC71).withValues(alpha: 0.28)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset(scrubX, activeGreenY), 10.0, greenHaloPaint);
-    canvas.drawCircle(Offset(scrubX, activeGreenY), 5.5, greenNodePaint);
-    canvas.drawCircle(Offset(scrubX, activeGreenY), 2.5, whiteInnerPaint);
+    // 6. Draw Highlighted Active Scrub Rings
+    // Active Green Ring
+    canvas.drawCircle(Offset(scrubX, scrubYGreen), 8.0, Paint()..color = const Color(0xFF2ECC71).withValues(alpha: 0.25));
+    canvas.drawCircle(Offset(scrubX, scrubYGreen), 5.5, greenNodePaint);
+    canvas.drawCircle(Offset(scrubX, scrubYGreen), 3.0, whiteInnerPaint);
 
-    // Active Violet Vertex Halo
-    final violetHaloPaint = Paint()
-      ..color = const Color(0xFF5E17EB).withValues(alpha: 0.28)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset(scrubX, activeVioletY), 10.0, violetHaloPaint);
-    canvas.drawCircle(Offset(scrubX, activeVioletY), 5.5, violetNodePaint);
-    canvas.drawCircle(Offset(scrubX, activeVioletY), 2.5, whiteInnerPaint);
+    // Active Violet Ring
+    canvas.drawCircle(Offset(scrubX, scrubYViolet), 8.0, Paint()..color = const Color(0xFF5E17EB).withValues(alpha: 0.25));
+    canvas.drawCircle(Offset(scrubX, scrubYViolet), 5.5, violetNodePaint);
+    canvas.drawCircle(Offset(scrubX, scrubYViolet), 3.0, whiteInnerPaint);
 
-    // 7. Interpolate Values for Callout Tooltips
-    final activeRecVal = _lerpDouble(dataset[lowerIdx].received, dataset[upperIdx].received, t);
-    final activeSentVal = _lerpDouble(dataset[lowerIdx].sent, dataset[upperIdx].sent, t);
-
-    final greenText = '+${_formatCompactK(activeRecVal)} In';
-    final violetText = '-${_formatCompactK(activeSentVal)} Out';
-
-    // 8. Render Pointed Callout Badges with Triangle Carets
-    // Green Callout (Pointing Down to Green Vertex)
+    // 7. Draw Floating Pointed Callout Badges
     _drawPointedBadge(
       canvas: canvas,
-      targetX: scrubX,
-      targetY: activeGreenY,
-      text: greenText,
-      bgColor: const Color(0xFF10B981),
-      textColor: Colors.white,
-      pointingDown: true, // Caret points down to vertex
-      canvasWidth: w,
+      center: Offset(scrubX, scrubYGreen - 18),
+      text: '+${_formatCompactK(scrubValGreen)} In',
+      bgColor: const Color(0xFF059669),
+      pointDown: true,
     );
 
-    // Violet Callout (Pointing Up to Violet Vertex)
     _drawPointedBadge(
       canvas: canvas,
-      targetX: scrubX,
-      targetY: activeVioletY,
-      text: violetText,
-      bgColor: const Color(0xFF380084),
-      textColor: Colors.white,
-      pointingDown: false, // Caret points up to vertex
-      canvasWidth: w,
-    );
-  }
-
-  void _drawPointedBadge({
-    required Canvas canvas,
-    required double targetX,
-    required double targetY,
-    required String text,
-    required Color bgColor,
-    required Color textColor,
-    required bool pointingDown,
-    required double canvasWidth,
-  }) {
-    final textPainter = TextPainter(
-      text: TextSpan(
-        text: text,
-        style: TextStyle(
-          color: textColor,
-          fontWeight: FontWeight.w800,
-          fontSize: 10.5,
-          letterSpacing: 0.2,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-
-    const double hPadding = 8.0;
-    const double vPadding = 4.0;
-    const double caretH = 5.0;
-    const double caretW = 8.0;
-
-    final badgeW = textPainter.width + (2 * hPadding);
-    final badgeH = textPainter.height + (2 * vPadding);
-
-    // Clamp badge body x so it doesn't clip screen boundaries
-    final clampedBadgeX = (targetX - (badgeW / 2)).clamp(6.0, canvasWidth - badgeW - 6.0);
-
-    final badgeY = pointingDown
-        ? (targetY - caretH - badgeH - 4.0) // Positioned above vertex
-        : (targetY + caretH + 4.0); // Positioned below vertex
-
-    // Draw Drop Shadow
-    final shadowPaint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.12)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4.0);
-    final badgeRRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(clampedBadgeX, badgeY, badgeW, badgeH),
-      const Radius.circular(7.0),
-    );
-    canvas.drawRRect(badgeRRect, shadowPaint);
-
-    // Draw Main Badge Background
-    final bgPaint = Paint()..color = bgColor;
-    canvas.drawRRect(badgeRRect, bgPaint);
-
-    // Draw Pointed Caret Triangle pointing to vertex target
-    final caretPath = Path();
-    if (pointingDown) {
-      // Caret base at bottom of badge, point at (targetX, targetY - 4)
-      caretPath.moveTo(targetX - (caretW / 2), badgeY + badgeH);
-      caretPath.lineTo(targetX + (caretW / 2), badgeY + badgeH);
-      caretPath.lineTo(targetX, targetY - 4.0);
-      caretPath.close();
-    } else {
-      // Caret base at top of badge, point at (targetX, targetY + 4)
-      caretPath.moveTo(targetX - (caretW / 2), badgeY);
-      caretPath.lineTo(targetX + (caretW / 2), badgeY);
-      caretPath.lineTo(targetX, targetY + 4.0);
-      caretPath.close();
-    }
-    canvas.drawPath(caretPath, bgPaint);
-
-    // Paint Text
-    textPainter.paint(
-      canvas,
-      Offset(clampedBadgeX + hPadding, badgeY + vPadding),
+      center: Offset(scrubX, scrubYViolet + 18),
+      text: '-${_formatCompactK(scrubValViolet)} Out',
+      bgColor: const Color(0xFF220055),
+      pointDown: false,
     );
   }
 
   Path _buildPath(List<Offset> points, {required bool isMonthly}) {
     final path = Path();
     if (points.isEmpty) return path;
+    path.moveTo(points[0].dx, points[0].dy);
+
     if (isMonthly) {
-      // Connect exactly the week points with straight segments, producing crisp pointed spikes at each week
-      // (kung ilan lang ang weeks, yun lang ang spikes line)
-      path.moveTo(points.first.dx, points.first.dy);
       for (int i = 1; i < points.length; i++) {
         path.lineTo(points[i].dx, points[i].dy);
       }
-      return path;
     } else {
-      return _buildSmoothSpline(points, tensionDivisor: 6.5);
+      for (int i = 0; i < points.length - 1; i++) {
+        final p0 = i > 0 ? points[i - 1] : points[i];
+        final p1 = points[i];
+        final p2 = points[i + 1];
+        final p3 = (i + 2 < points.length) ? points[i + 2] : p2;
+
+        final cp1x = p1.dx + (p2.dx - p0.dx) / 6;
+        final cp1y = p1.dy + (p2.dy - p0.dy) / 6;
+        final cp2x = p2.dx - (p3.dx - p1.dx) / 6;
+        final cp2y = p2.dy - (p3.dy - p1.dy) / 6;
+
+        path.cubicTo(cp1x, cp1y, cp2x, cp2y, p2.dx, p2.dy);
+      }
     }
-  }
 
-  Path _buildSmoothSpline(List<Offset> points, {double tensionDivisor = 6.0}) {
-    final path = Path();
-    if (points.isEmpty) return path;
-    path.moveTo(points.first.dx, points.first.dy);
-
-    for (int i = 0; i < points.length - 1; i++) {
-      final p0 = i > 0 ? points[i - 1] : points[i];
-      final p1 = points[i];
-      final p2 = points[i + 1];
-      final p3 = i < points.length - 2 ? points[i + 2] : p2;
-
-      // Catmull-Rom with tighter tension for spiky peaks
-      final cp1x = p1.dx + (p2.dx - p0.dx) / tensionDivisor;
-      final cp1y = p1.dy + (p2.dy - p0.dy) / tensionDivisor;
-      final cp2x = p2.dx - (p3.dx - p1.dx) / tensionDivisor;
-      final cp2y = p2.dy - (p3.dy - p1.dy) / tensionDivisor;
-
-      path.cubicTo(cp1x, cp1y, cp2x, cp2y, p2.dx, p2.dy);
-    }
     return path;
   }
 
-  void _drawDashedVerticalLine(
-    Canvas canvas,
-    double x,
-    double startY,
-    double endY,
-    Paint paint,
-  ) {
-    const double dashHeight = 4.0;
-    const double dashSpace = 3.0;
-    double currentY = startY;
+  double _interpolateY(List<Offset> points, double fraction) {
+    if (points.isEmpty) return 0;
+    if (points.length == 1) return points.first.dy;
 
+    final lower = fraction.floor().clamp(0, points.length - 1);
+    final upper = fraction.ceil().clamp(0, points.length - 1);
+    if (lower == upper) return points[lower].dy;
+
+    final t = fraction - lower;
+    return points[lower].dy + (points[upper].dy - points[lower].dy) * t;
+  }
+
+  double _interpolateValue(List<double> vals, double fraction) {
+    if (vals.isEmpty) return 0;
+    if (vals.length == 1) return vals.first;
+
+    final lower = fraction.floor().clamp(0, vals.length - 1);
+    final upper = fraction.ceil().clamp(0, vals.length - 1);
+    if (lower == upper) return vals[lower];
+
+    final t = fraction - lower;
+    return vals[lower] + (vals[upper] - vals[lower]) * t;
+  }
+
+  void _drawDashedVerticalLine(Canvas canvas, double x, double startY, double endY, Paint paint) {
+    const dashHeight = 4.0;
+    const dashSpace = 3.5;
+    double currentY = startY;
     while (currentY < endY) {
       canvas.drawLine(
         Offset(x, currentY),
@@ -1902,7 +2604,51 @@ class _PointedTransferFlowPainter extends CustomPainter {
     }
   }
 
-  double _lerpDouble(double a, double b, double t) => a + (b - a) * t;
+  void _drawPointedBadge({
+    required Canvas canvas,
+    required Offset center,
+    required String text,
+    required Color bgColor,
+    required bool pointDown,
+  }) {
+    const textStyle = TextStyle(
+      color: Colors.white,
+      fontSize: 10,
+      fontWeight: FontWeight.w800,
+      letterSpacing: 0.2,
+    );
+    final textSpan = TextSpan(text: text, style: textStyle);
+    final textPainter = TextPainter(
+      text: textSpan,
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    const paddingH = 9.0;
+    const paddingV = 4.0;
+    final badgeW = textPainter.width + (2 * paddingH);
+    final badgeH = textPainter.height + (2 * paddingV);
+
+    final left = center.dx - (badgeW / 2);
+    final top = center.dy - (badgeH / 2);
+    final rrect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(left, top, badgeW, badgeH),
+      const Radius.circular(8),
+    );
+
+    canvas.drawRRect(rrect, Paint()..color = bgColor);
+
+    final borderPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.35)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+    canvas.drawRRect(rrect, borderPaint);
+
+    final textOffset = Offset(
+      left + paddingH,
+      top + paddingV,
+    );
+    textPainter.paint(canvas, textOffset);
+  }
 
   String _formatCompactK(double val) {
     if (val >= 1000) {
@@ -1914,7 +2660,7 @@ class _PointedTransferFlowPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _PointedTransferFlowPainter oldDelegate) {
     return oldDelegate.scrubFraction != scrubFraction ||
-        oldDelegate.isMonthly != isMonthly ||
-        oldDelegate.dataset != dataset;
+        oldDelegate.dataset != dataset ||
+        oldDelegate.isMonthly != isMonthly;
   }
 }

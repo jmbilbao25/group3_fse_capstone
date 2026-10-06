@@ -102,13 +102,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 14),
 
-                _buildFormField(label: 'Full Name', controller: nameCtrl, icon: Icons.person_outline_rounded),
+                _buildFormField(label: 'Full Name', controller: nameCtrl, icon: Icons.badge_rounded),
                 const SizedBox(height: 12),
-                _buildFormField(label: 'Phone Number', controller: phoneCtrl, icon: Icons.phone_outlined),
+                _buildFormField(label: 'Phone Number', controller: phoneCtrl, icon: Icons.phone_iphone_rounded),
                 const SizedBox(height: 12),
-                _buildFormField(label: 'Email', controller: emailCtrl, icon: Icons.email_outlined),
+                _buildFormField(label: 'Email', controller: emailCtrl, icon: Icons.mark_email_read_rounded),
                 const SizedBox(height: 12),
-                _buildFormField(label: 'Date of Birth', controller: dobCtrl, icon: Icons.calendar_today_outlined),
+                _buildFormField(label: 'Date of Birth', controller: dobCtrl, icon: Icons.calendar_month_rounded),
                 const SizedBox(height: 12),
 
                 // Gender Selector
@@ -163,7 +163,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 12),
 
-                _buildFormField(label: 'Address', controller: addressCtrl, icon: Icons.location_on_outlined),
+                _buildFormField(label: 'Address', controller: addressCtrl, icon: Icons.location_on_rounded),
                 const SizedBox(height: 22),
 
                 // Save Button
@@ -854,7 +854,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               children: [
                                 Row(
                                   children: const [
-                                    Icon(Icons.badge_outlined, size: 12, color: brandViolet),
+                                    Icon(Icons.badge_rounded, size: 12, color: brandViolet),
                                     SizedBox(width: 5),
                                     Text(
                                       'AURA CLIENT ID',
@@ -895,7 +895,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               children: [
                                 Row(
                                   children: const [
-                                    Icon(Icons.mail_outline_rounded, size: 12, color: brandViolet),
+                                    Icon(Icons.mark_email_read_rounded, size: 12, color: brandViolet),
                                     SizedBox(width: 5),
                                     Text(
                                       'REGISTERED EMAIL',
@@ -994,7 +994,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildNavigationTile(
                     title: 'Trusted Devices & Sessions',
                     subtitle: 'Manage active logins and trusted hardware',
-                    icon: Icons.devices_rounded,
+                    icon: Icons.phonelink_lock_rounded,
                     badgeText: '2 Active',
                     onTap: () {
                       Navigator.of(context).push(
@@ -1006,14 +1006,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildNavigationTile(
                     title: 'Change Email',
                     subtitle: 'Update registered email address',
-                    icon: Icons.alternate_email_rounded,
+                    icon: Icons.mark_email_read_rounded,
                     onTap: _showChangeEmailDialog,
                   ),
                   const Divider(color: Color(0xFFF3F4F6), height: 1),
                   _buildNavigationTile(
                     title: 'Change Password',
                     subtitle: 'Update account security password',
-                    icon: Icons.lock_outline_rounded,
+                    icon: Icons.password_rounded,
                     onTap: _showChangePasswordDialog,
                   ),
                 ],
@@ -1030,7 +1030,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildSwitchTile(
                     title: 'Instant Push Alerts',
                     subtitle: 'Real-time alerts for all transfers',
-                    icon: Icons.notifications_active_outlined,
+                    icon: Icons.notifications_active_rounded,
                     value: _pushAlertsEnabled,
                     onChanged: (val) {
                       setState(() => _pushAlertsEnabled = val);
@@ -1046,7 +1046,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildSwitchTile(
                     title: 'E-Statement Delivery',
                     subtitle: 'Monthly auto-email on 1st of month',
-                    icon: Icons.mark_email_read_outlined,
+                    icon: Icons.receipt_long_rounded,
                     value: _statementEmailEnabled,
                     onChanged: (val) {
                       setState(() => _statementEmailEnabled = val);
@@ -1066,7 +1066,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildNavigationTile(
                     title: 'Help & Contact Support',
                     subtitle: '24/7 Priority Aura Concierge',
-                    icon: Icons.headset_mic_outlined,
+                    icon: Icons.support_agent_rounded,
                     onTap: () {
                       showDialog(
                         context: context,
@@ -1087,7 +1087,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildNavigationTile(
                     title: 'Terms & Privacy Policy',
                     subtitle: 'BSP Circulars & Data Privacy Act compliance',
-                    icon: Icons.gavel_rounded,
+                    icon: Icons.verified_user_rounded,
                     onTap: () {
                       showDialog(
                         context: context,

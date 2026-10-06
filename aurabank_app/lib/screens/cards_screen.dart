@@ -304,7 +304,7 @@ class _CardsScreenState extends State<CardsScreen> {
                 initial: 'M',
                 avatarBgColor: const Color(0xFF8B5CF6),
                 name: 'Mae G. Mercado',
-                subtitle: 'Intrabank Inward',
+                subtitle: 'Interbank Inward',
                 amount: '+ 25,000',
                 amountColor: const Color(0xFF059669),
               ),

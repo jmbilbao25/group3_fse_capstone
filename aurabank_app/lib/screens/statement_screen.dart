@@ -473,7 +473,7 @@ class _StatementScreenState extends State<StatementScreen> {
                       ),
                     ),
                     Text(
-                      'Intra-Bank Network Ledger',
+                      'Interbank Network Ledger',
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w500,

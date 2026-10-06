@@ -60,7 +60,7 @@ class BankTransaction {
       case TransactionStatus.completed:
         return 'COMPLETED';
       case TransactionStatus.inward:
-        return 'Intrabank Inward';
+        return 'Interbank Inward';
       case TransactionStatus.failed:
         return 'Failed';
     }

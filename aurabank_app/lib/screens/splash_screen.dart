@@ -87,7 +87,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                     ),
                     SizedBox(height: 6),
                     Text(
-                      'Intra-Bank Network Ledger',
+                      'Interbank Network Ledger',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,

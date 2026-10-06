@@ -571,7 +571,7 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
                       style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800, color: textDark),
                     ),
                     Text(
-                      'Intra-Bank Network Ledger',
+                      'Interbank Network Ledger',
                       style: TextStyle(fontSize: 10, color: textMuted),
                     ),
                   ],

@@ -285,7 +285,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             _buildActionItem(
               icon: Icons.account_balance_rounded,
-              label: '4 Banks',
+              label: 'Banks',
               onTap: _showFourBanksTransferSheet,
             ),
             _buildActionItem(
@@ -298,7 +298,7 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
             _buildActionItem(
-              icon: Icons.receipt_outlined,
+              icon: Icons.payments_rounded,
               label: 'Bills',
               onTap: _showPayBillsSheet,
             ),
@@ -496,7 +496,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 16),
             const Text(
-              '4-Bank Group Settlement & Clearing',
+              'Bank Group Settlement & Clearing',
               style: TextStyle(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w800,
@@ -526,8 +526,8 @@ class _HomeScreenState extends State<HomeScreen> {
             _buildBillerTile(
               initial: 'A',
               avatarColor: brandViolet,
-              name: 'Aura Bank Internal Ledger (Group 3)',
-              category: 'Intra-Bank Clearing • Zero Fee',
+              name: 'Aura Bank Settlement (Group 3)',
+              category: 'Interbank Settlement • Real-time Posting',
             ),
             const SizedBox(height: 14),
             const Text(
@@ -613,7 +613,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(width: 8),
                 const Text(
-                  '4-Bank Interbank Transfer',
+                  'Bank Interbank Transfer',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
@@ -624,7 +624,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 6),
             const Text(
-              'Capstone Network Inter-Bank Settlement across the 4 Banks',
+              'Capstone Network Interbank Settlement & Clearing',
               style: TextStyle(fontSize: 12, color: textGray),
             ),
             const SizedBox(height: 16),
@@ -632,7 +632,7 @@ class _HomeScreenState extends State<HomeScreen> {
               initial: 'A',
               color: brandViolet,
               name: 'Aura Bank',
-              group: 'Group 3 • Our Core Digital Bank (Intra-Bank)',
+              group: 'Group 3 • Our Core Digital Bank (Interbank)',
               code: 'AUR-003',
               fee: 'Free • Zero Fee • Instant',
               onTap: () {

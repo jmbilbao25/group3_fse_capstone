@@ -18,7 +18,7 @@ void main() {
   testWidgets('Aura Bank splash screen test', (WidgetTester tester) async {
     await tester.pumpWidget(const AuraBankApp());
     expect(find.text('Aura Bank'), findsOneWidget);
-    expect(find.text('Intra-Bank Network Ledger'), findsOneWidget);
+    expect(find.text('Interbank Network Ledger'), findsOneWidget);
   });
 
   testWidgets('Statement of Account screen renders components and filters properly',
@@ -109,7 +109,7 @@ void main() {
 
     expect(find.text('Available Balance'), findsOneWidget);
     expect(find.text('Transfer'), findsOneWidget);
-    expect(find.text('4 Banks'), findsOneWidget);
+    expect(find.text('Banks'), findsOneWidget);
     expect(find.text('Statement'), findsOneWidget);
     expect(find.text('Bills'), findsOneWidget);
     expect(find.text('More'), findsOneWidget);

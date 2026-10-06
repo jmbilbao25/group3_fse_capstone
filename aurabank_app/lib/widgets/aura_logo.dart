@@ -174,7 +174,7 @@ class AuraBrandHeader extends StatelessWidget {
   const AuraBrandHeader({
     super.key,
     this.title = 'Aura Bank',
-    this.subtitle = 'Intra-Bank Network Ledger',
+    this.subtitle = 'Interbank Network Ledger',
     this.style = AuraLogoStyle.violet,
     this.trailing,
     this.onBack,

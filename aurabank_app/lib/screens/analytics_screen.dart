@@ -1610,65 +1610,28 @@ class _PointedTransferFlowPainter extends CustomPainter {
     maxVal *= 1.25; // 25% overhead for visual breathing room
 
     // Compute coordinate points for Received (In, Green) and Sent (Out, Violet)
+    // Exactly n points: 5 points for the 5 weeks in Monthly mode, 12 points for the 12 months in Yearly mode.
+    // "kung ilan lang weeks yun lang yung spikes line"
     final greenPoints = <Offset>[];
     final violetPoints = <Offset>[];
 
-    // For Monthly mode, expand the 5 weeks into 13 high-density intra-month nodes
-    // with sharp, alternating financial peaks and dips so it's spiky like the yearly view!
-    if (isMonthly && n == 5) {
-      const subN = 13;
-      final subXStep = usableW / (subN - 1);
+    for (int i = 0; i < n; i++) {
+      final x = paddingX + (i * xStep);
+      final greenNorm = (dataset[i].received / maxVal).clamp(0.05, 0.95);
+      final violetNorm = (dataset[i].sent / maxVal).clamp(0.05, 0.95);
 
-      for (int k = 0; k < subN; k++) {
-        final x = paddingX + (k * subXStep);
-        double recVal;
-        double sentVal;
+      final yGreen = (paddingTop + usableH) - (greenNorm * usableH);
+      final yViolet = (paddingTop + usableH) - (violetNorm * usableH);
 
-        if (k % 3 == 0) {
-          final wIdx = k ~/ 3;
-          recVal = dataset[wIdx].received;
-          sentVal = dataset[wIdx].sent;
-        } else if (k % 3 == 1) {
-          final wA = k ~/ 3;
-          final wB = math.min(wA + 1, n - 1);
-          final baseRec = _lerpDouble(dataset[wA].received, dataset[wB].received, 0.33);
-          final baseSent = _lerpDouble(dataset[wA].sent, dataset[wB].sent, 0.33);
-          // High-frequency financial volatility spike/trough
-          recVal = baseRec * (wA % 2 == 0 ? 1.52 : 0.58);
-          sentVal = baseSent * (wA % 2 == 0 ? 0.55 : 1.48);
-        } else {
-          final wA = k ~/ 3;
-          final wB = math.min(wA + 1, n - 1);
-          final baseRec = _lerpDouble(dataset[wA].received, dataset[wB].received, 0.67);
-          final baseSent = _lerpDouble(dataset[wA].sent, dataset[wB].sent, 0.67);
-          recVal = baseRec * (wA % 2 == 0 ? 0.62 : 1.45);
-          sentVal = baseSent * (wA % 2 == 0 ? 1.48 : 0.58);
-        }
-
-        final greenNorm = (recVal / maxVal).clamp(0.05, 0.95);
-        final violetNorm = (sentVal / maxVal).clamp(0.05, 0.95);
-
-        greenPoints.add(Offset(x, (paddingTop + usableH) - (greenNorm * usableH)));
-        violetPoints.add(Offset(x, (paddingTop + usableH) - (violetNorm * usableH)));
-      }
-    } else {
-      for (int i = 0; i < n; i++) {
-        final x = paddingX + (i * xStep);
-        final greenNorm = (dataset[i].received / maxVal).clamp(0.05, 0.95);
-        final violetNorm = (dataset[i].sent / maxVal).clamp(0.05, 0.95);
-
-        final yGreen = (paddingTop + usableH) - (greenNorm * usableH);
-        final yViolet = (paddingTop + usableH) - (violetNorm * usableH);
-
-        greenPoints.add(Offset(x, yGreen));
-        violetPoints.add(Offset(x, yViolet));
-      }
+      greenPoints.add(Offset(x, yGreen));
+      violetPoints.add(Offset(x, yViolet));
     }
 
-    // Build smooth Catmull-Rom / Bezier curves with tighter tension for spiky peaks
-    final tension = isMonthly ? 9.5 : 6.5;
-    final greenPath = _buildSmoothSpline(greenPoints, tensionDivisor: tension);
-    final violetPath = _buildSmoothSpline(violetPoints, tensionDivisor: tension);
+    // Build path:
+    // For Monthly: draw clean straight pointed segments connecting the exact week vertices (5 weeks = 5 spikes)
+    // For Yearly: retain smooth spline across the 12 months
+    final greenPath = _buildPath(greenPoints, isMonthly: isMonthly);
+    final violetPath = _buildPath(violetPoints, isMonthly: isMonthly);
 
     // 1. Draw subtle area gradients under curves
     final greenAreaPath = Path.from(greenPath)
@@ -1699,7 +1662,7 @@ class _PointedTransferFlowPainter extends CustomPainter {
     ).createShader(Rect.fromLTWH(0, paddingTop, w, usableH));
     canvas.drawPath(violetAreaPath, Paint()..shader = violetShader);
 
-    // 2. Draw Main Spline Strokes
+    // 2. Draw Main Spline / Line Strokes
     final greenStrokePaint = Paint()
       ..color = const Color(0xFF2ECC71)
       ..strokeWidth = 2.8
@@ -1716,7 +1679,7 @@ class _PointedTransferFlowPainter extends CustomPainter {
       ..strokeJoin = StrokeJoin.round;
     canvas.drawPath(violetPath, violetStrokePaint);
 
-    // 3. Draw All Pointed Vertices / Nodes on both lines
+    // 3. Draw All Pointed Vertices / Nodes on both lines (exactly 1 per week / month)
     final greenNodePaint = Paint()
       ..color = const Color(0xFF2ECC71)
       ..style = PaintingStyle.fill;
@@ -1743,23 +1706,9 @@ class _PointedTransferFlowPainter extends CustomPainter {
     final upperIdx = math.min(lowerIdx + 1, n - 1);
     final t = scrubClamped - lowerIdx;
 
-    final double scrubX;
-    final double activeGreenY;
-    final double activeVioletY;
-
-    if (isMonthly && n == 5) {
-      scrubX = paddingX + (scrubClamped / 4.0) * usableW;
-      final mappedFraction = (scrubClamped * 3.0).clamp(0.0, 12.0);
-      final lowerK = mappedFraction.floor().clamp(0, 12);
-      final upperK = math.min(lowerK + 1, 12);
-      final subT = mappedFraction - lowerK;
-      activeGreenY = _lerpDouble(greenPoints[lowerK].dy, greenPoints[upperK].dy, subT);
-      activeVioletY = _lerpDouble(violetPoints[lowerK].dy, violetPoints[upperK].dy, subT);
-    } else {
-      scrubX = paddingX + (scrubClamped * xStep);
-      activeGreenY = _lerpDouble(greenPoints[lowerIdx].dy, greenPoints[upperIdx].dy, t);
-      activeVioletY = _lerpDouble(violetPoints[lowerIdx].dy, violetPoints[upperIdx].dy, t);
-    }
+    final scrubX = paddingX + (scrubClamped * xStep);
+    final activeGreenY = _lerpDouble(greenPoints[lowerIdx].dy, greenPoints[upperIdx].dy, t);
+    final activeVioletY = _lerpDouble(violetPoints[lowerIdx].dy, violetPoints[upperIdx].dy, t);
 
     // 5. Vertical Dashed Guideline Scrubber through active point
     final guidePaint = Paint()
@@ -1892,6 +1841,22 @@ class _PointedTransferFlowPainter extends CustomPainter {
       canvas,
       Offset(clampedBadgeX + hPadding, badgeY + vPadding),
     );
+  }
+
+  Path _buildPath(List<Offset> points, {required bool isMonthly}) {
+    final path = Path();
+    if (points.isEmpty) return path;
+    if (isMonthly) {
+      // Connect exactly the week points with straight segments, producing crisp pointed spikes at each week
+      // (kung ilan lang ang weeks, yun lang ang spikes line)
+      path.moveTo(points.first.dx, points.first.dy);
+      for (int i = 1; i < points.length; i++) {
+        path.lineTo(points[i].dx, points[i].dy);
+      }
+      return path;
+    } else {
+      return _buildSmoothSpline(points, tensionDivisor: 6.5);
+    }
   }
 
   Path _buildSmoothSpline(List<Offset> points, {double tensionDivisor = 6.0}) {

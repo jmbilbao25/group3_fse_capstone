@@ -57,15 +57,7 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
 
   void _revokeDevice(int index) {
     final dev = _trustedDevices[index];
-    if (dev['isPrimary'] == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Cannot revoke primary device while logged in. Demote or switch device first.'),
-          backgroundColor: brandViolet,
-        ),
-      );
-      return;
-    }
+    final isPrimary = dev['isPrimary'] == true;
 
     showDialog(
       context: context,
@@ -87,15 +79,17 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Revoke ${dev['name']}?',
+              isPrimary ? 'Revoke Primary Device?' : 'Revoke ${dev['name']}?',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: textDark),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 10),
-            const Text(
-              'This hardware cryptographic trust key will be invalidated. Any biometric authorization from this device will be blocked until re-authenticated with OTP.',
+            Text(
+              isPrimary
+                  ? 'This hardware cryptographic trust key will be invalidated. Any biometric authorization from primary device (${dev['name']}) will be blocked until re-authenticated with OTP.'
+                  : 'This hardware cryptographic trust key will be invalidated. Any biometric authorization from this device will be blocked until re-authenticated with OTP.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12.5, color: textGray, height: 1.4),
+              style: const TextStyle(fontSize: 12.5, color: textGray, height: 1.4),
             ),
             const SizedBox(height: 20),
             Row(
@@ -125,15 +119,26 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                       Navigator.of(ctx).pop();
                       setState(() {
                         _trustedDevices.removeAt(index);
+                        // If primary was revoked and another device remains, promote it to primary
+                        if (isPrimary && _trustedDevices.isNotEmpty) {
+                          _trustedDevices[0]['isPrimary'] = true;
+                          _trustedDevices[0]['status'] = 'Active Now';
+                          _trustedDevices[0]['isActive'] = true;
+                        }
                       });
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('${dev['name']} hardware trust revoked.'),
+                          content: Text(isPrimary
+                              ? '${dev['name']} primary hardware trust revoked.'
+                              : '${dev['name']} hardware trust revoked.'),
                           backgroundColor: brandViolet,
                         ),
                       );
                     },
-                    child: const Text('Revoke Device', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                    child: Text(
+                      isPrimary ? 'Revoke Primary' : 'Revoke Device',
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                    ),
                   ),
                 ),
               ],
@@ -570,164 +575,167 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
               const SizedBox(height: 12),
 
               // Trusted Devices Cards
-              ..._trustedDevices.asMap().entries.map((entry) {
-                final index = entry.key;
-                final dev = entry.value;
-
-                return Container(
+              if (_trustedDevices.isEmpty)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
                   margin: const EdgeInsets.only(bottom: 14),
-                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: dev['isPrimary'] == true
-                          ? brandViolet.withValues(alpha: 0.25)
-                          : borderLavender,
-                      width: 1.2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: brandViolet.withValues(alpha: 0.05),
-                        blurRadius: 14,
-                        offset: const Offset(0, 4),
+                    border: Border.all(color: borderLavender),
+                  ),
+                  child: Column(
+                    children: const [
+                      Icon(Icons.phonelink_lock_rounded, size: 36, color: brandViolet),
+                      SizedBox(height: 10),
+                      Text(
+                        'No Trusted Devices Enrolled',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: textDark),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Register a new hardware device using biometric enrollment.',
+                        style: TextStyle(fontSize: 11.5, color: textGray),
+                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),
-                  child: Column(
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF3E8FF),
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: const Color(0xFFDDD6FE)),
-                            ),
-                            child: Icon(
-                              dev['icon'] as IconData,
-                              color: brandViolet,
-                              size: 24,
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  dev['name'] as String,
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w800,
-                                    color: textDark,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  dev['os'] as String,
-                                  style: const TextStyle(
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w600,
-                                    color: textGray,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    const Icon(Icons.location_on_outlined, size: 12, color: textGray),
-                                    const SizedBox(width: 3),
-                                    Text(
-                                      dev['location'] as String,
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        color: textGray,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: dev['isPrimary'] == true
-                                  ? brandViolet
-                                  : const Color(0xFFF3E8FF),
-                              borderRadius: BorderRadius.circular(10),
-                              border: dev['isPrimary'] == true
-                                  ? null
-                                  : Border.all(color: const Color(0xFFDDD6FE), width: 0.8),
-                            ),
-                            child: Text(
-                              dev['isPrimary'] == true ? 'PRIMARY' : 'SECONDARY',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.8,
-                                color: dev['isPrimary'] == true ? Colors.white : brandViolet,
-                              ),
-                            ),
-                          ),
-                        ],
+                )
+              else
+                ..._trustedDevices.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final dev = entry.value;
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 14),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: dev['isPrimary'] == true
+                            ? brandViolet.withValues(alpha: 0.25)
+                            : borderLavender,
+                        width: 1.2,
                       ),
-                      const SizedBox(height: 14),
-                      const Divider(color: Color(0xFFF3F4F6), height: 1),
-                      const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.circle,
-                                size: 8,
-                                color: dev['isActive'] == true
-                                    ? const Color(0xFF10B981)
-                                    : const Color(0xFF9CA3AF),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                dev['status'] as String,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: dev['isActive'] == true
-                                      ? const Color(0xFF059669)
-                                      : const Color(0xFF6B7280),
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (dev['isPrimary'] == true)
+                      boxShadow: [
+                        BoxShadow(
+                          color: brandViolet.withValues(alpha: 0.05),
+                          blurRadius: 14,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              width: 44,
+                              height: 44,
                               decoration: BoxDecoration(
-                                color: const Color(0xFFECFDF5),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: const Color(0xFFA7F3D0)),
+                                color: const Color(0xFFF3E8FF),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: const Color(0xFFDDD6FE)),
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: const [
-                                  Icon(Icons.shield_rounded, size: 12, color: Color(0xFF059669)),
-                                  SizedBox(width: 4),
+                              child: Icon(
+                                dev['icon'] as IconData,
+                                color: brandViolet,
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
                                   Text(
-                                    'Hardware Protected',
-                                    style: TextStyle(
-                                      fontSize: 10.5,
-                                      fontWeight: FontWeight.w700,
-                                      color: Color(0xFF059669),
+                                    dev['name'] as String,
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w800,
+                                      color: textDark,
                                     ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    dev['os'] as String,
+                                    style: const TextStyle(
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: textGray,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.location_on_outlined, size: 12, color: textGray),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        dev['location'] as String,
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: textGray,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
-                            )
-                          else
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: dev['isPrimary'] == true
+                                    ? brandViolet
+                                    : const Color(0xFFF3E8FF),
+                                borderRadius: BorderRadius.circular(10),
+                                border: dev['isPrimary'] == true
+                                    ? null
+                                    : Border.all(color: const Color(0xFFDDD6FE), width: 0.8),
+                              ),
+                              child: Text(
+                                dev['isPrimary'] == true ? 'PRIMARY' : 'SECONDARY',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.8,
+                                  color: dev['isPrimary'] == true ? Colors.white : brandViolet,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        const Divider(color: Color(0xFFF3F4F6), height: 1),
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.circle,
+                                  size: 8,
+                                  color: dev['isActive'] == true
+                                      ? const Color(0xFF10B981)
+                                      : const Color(0xFF9CA3AF),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  dev['status'] as String,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: dev['isActive'] == true
+                                        ? const Color(0xFF059669)
+                                        : const Color(0xFF6B7280),
+                                  ),
+                                ),
+                              ],
+                            ),
                             InkWell(
                               onTap: () => _revokeDevice(index),
                               borderRadius: BorderRadius.circular(8),
@@ -755,12 +763,12 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                                 ),
                               ),
                             ),
-                        ],
-                      ),
-                    ],
-                  ),
-                );
-              }),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                }),
 
               const SizedBox(height: 18),
 

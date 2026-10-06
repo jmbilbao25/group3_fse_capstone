@@ -210,6 +210,25 @@ void main() {
     expect(find.text('Chrome • macOS'), findsOneWidget);
     expect(find.text('Log Out All Sessions'), findsOneWidget);
     expect(find.text('Log Out of All Devices'), findsOneWidget);
+
+    // Verify both primary and secondary devices have a Revoke button
+    expect(find.text('Revoke'), findsNWidgets(2));
+
+    // Tap first Revoke button for primary device
+    await tester.tap(find.text('Revoke').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Revoke Primary Device?'), findsOneWidget);
+    expect(find.text('Revoke Primary'), findsOneWidget);
+
+    // Confirm revocation of primary device
+    await tester.tap(find.text('Revoke Primary'));
+    await tester.pumpAndSettle();
+
+    // Primary device is removed, iPad Air promoted to PRIMARY
+    expect(find.text('iPhone 15 Pro'), findsNothing);
+    expect(find.text('iPad Air'), findsOneWidget);
+    expect(find.text('PRIMARY'), findsOneWidget);
   });
 
   testWidgets('Security Gate screen cycles scan, screen share warning, and fraud block',

@@ -8,7 +8,7 @@ Definitive Architecture Specification, Engineering Decisions, and Developer Sour
 
 The platform is an enterprise-grade omnichannel remittance pipeline featuring perimeter edge routing, asynchronous fraud risk screening, simulated core banking settlement, dual-storage relational accounting, and distributed telemetry.
 
-Customers submit transactions through a unified **Flutter multiplatform client** running on mobile (with hardware-backed KeyStore and Keychain encryption) or desktop web browsers (compiled via CanvasKit / Wasm for 100% visual and functional parity). Inbound traffic is scrubbed at the perimeter gateway, evaluated against real-time fraud heuristics in Python within a strict 200 ms SLA, routed through transaction value thresholds (including 2FA email verification for transfers above PHP 50,000.00), and committed under deterministic row locks before appending write-once compliance records.
+Customers submit transactions through a unified **Flutter multiplatform client** running on mobile (with hardware-backed KeyStore and Keychain encryption) or desktop web browsers (compiled via CanvasKit / Wasm for 100% visual and functional parity). Inbound traffic is scrubbed at the perimeter gateway, evaluated against real-time fraud heuristics in Python within a strict 200 ms SLA, routed through transaction value thresholds (including bound hardware biometrics or out-of-band push authorization under BSP Circular 1213), and committed under deterministic row locks before appending write-once compliance records.
 
 In local development, the platform runs via Docker Compose with Oracle XE and PostgreSQL. In cloud production, the architecture deploys natively to Microsoft Azure using **Azure Kubernetes Service (AKS)**, **Azure SQL Database with Ledger tables** (consolidating live state and cryptographic audit trails into a single engine), **Azure Container Registry (ACR)**, **Azure Event Hubs**, and an automated **GitHub Actions CI/CD pipeline**.
 
@@ -43,16 +43,16 @@ In local development, the platform runs via Docker Compose with Oracle XE and Po
   * Refresh calls (`POST /api/v1/auth/refresh`) revoke the presented refresh token immediately and issue a new pair, recording the rotation inside the session's token family set (`token_family:<sessionId>`).
   * If an attacker attempts to replay a previously revoked refresh token, Redis triggers immediate breach detection (`purgeEntireTokenFamily`). The system purges all active refresh tokens associated with that session family, terminates the compromised session, and returns HTTP 401 Unauthorized.
 
-### ADR-04: Decoupled Fraud Risk Screening Engine (Synchronous S2 and Asynchronous NanoJev Reviewer)
-* **Decision:** Deploy an independent Python risk microservice (`risk-service`) on port 8084 utilizing a decoupled evaluation architecture:
-  * **Synchronous Path (< 2 ms):** Evaluates deterministic Gate 0 rules (impossible travel velocity, hardware tampering) and an XGBoost tabular model (S2) assessing 40+ behavioral and velocity features. Decisions (`ALLOW`, `REQUIRE_2FA`, or `BLOCK`) return immediately within a strict p99 < 200 ms SLA under 25 TPS load.
-  * **Asynchronous Path (Background Worker Pool):** When a transfer includes a memo and is not blocked, it is enqueued for second-look review using a quantized language model (NanoJev, based on Qwen2.5-0.5B INT8 ONNX with 8 intra-op threads). The reviewer detects social engineering, scam typologies, and memo inconsistencies.
-  * **Escalate-Only Invariant:** Enforced via `enforce_escalate_only()`, guaranteeing `RiskTier(final) >= RiskTier(S2)`. The reviewer can escalate an `ALLOW` to `REQUIRE_2FA` or `BLOCK`, but can never weaken an S2 decision or release held funds.
-  * **Simulated Settlement Window:** Transfers with memos hold a 60-second settlement clearing window (`PENDING_SETTLEMENT`). If the background reviewer flags fraud within the window, status transitions to `HELD` and an analyst case card is generated. If the window elapses, the transfer remains settled and is flagged for retrospective analyst review.
+### ADR-04: Two-Stage Transfer Risk Engine (S2 Tabular and NanoJev Threat Synthesis)
+* **Decision:** Deploy an independent Python risk microservice (`risk-service`) on port 8084 utilizing a two-stage evaluation pipeline:
+  * **Stage A (Synchronous < 30 ms):** Evaluates deterministic Gate 0 rules (impossible travel velocity > 1,000 km/h, device tampering, mock location) and an XGBoost tabular model (S2) assessing 40+ behavioral and velocity features. Decisions (`ALLOW`, `ADVISORY_WARNING`, or `BLOCK`) return within a strict p99 < 200 ms SLA under load.
+  * **Stage B (Synchronous-Bounded, 1500 ms Timeout):** When a transfer presents device threat telemetry (remote-access tools like AnyDesk, active voice call state, purpose-payee mismatch) or a user memo and is not blocked, the orchestrator triggers threat synthesis. A quantized language model (NanoJev, based on Qwen2.5-0.5B INT8 ONNX with calibrated temperature T*=7.12) synthesizes the threat narrative and assigns an advisory warning modal with customer friction options (Cancel, 10-Minute Hold, or Proceed).
+  * **Escalate-Only Safety Invariant:** Enforced via `enforce_escalate_only()`, guaranteeing $\text{RiskTier}(a_1) \ge \text{RiskTier}(a_0)$ where `ALLOW` (0) < `ADVISORY_WARNING` (1) < `REQUIRE_2FA` (2) < `BLOCK` (3). The language model can escalate to friction or step-up authentication, but can never weaken an S2 decision or bypass security blocks.
+  * **Asynchronous Audit & AMLC Reporting:** The orchestrator fires event records (`POST /risk/events`) asynchronously. The service logs immutable JSONL audit records, populates the analyst triage queue, and automatically drafts Suspicious Transaction Reports (STR/SAR) in Markdown for Anti-Money Laundering Council (AMLC) compliance review.
 
-#### Orchestrator to Risk Engine Service Contract (`POST /api/v1/risk/analyze`)
+#### Orchestrator to Risk Engine Service Contract (`POST /risk/stage-a`)
 
-To evaluate transfers accurately, the orchestrator (`ledger-mutation-engine`) supplies transaction details, client geolocation, device integrity indicators, and relationship context:
+To evaluate transfers, the orchestrator (`ledger-mutation-engine`) supplies transaction parameters, client telemetry, device binding identity, and threat indicators:
 
 ```json
 {
@@ -63,18 +63,18 @@ To evaluate transfers accurately, the orchestrator (`ledger-mutation-engine`) su
   "amount": 15000.00,
   "currency": "PHP",
   "memo": "Payment for goods",
+  "device_id": "DEV-IPHONE-01",
+  "is_primary_device": true,
 
   "latitude": 14.5995,
   "longitude": 120.9842,
   "ip_address": "120.28.0.1",
-  "ip_latitude": 14.6000,
-  "ip_longitude": 120.9800,
+  "remote_app_active": true,
+  "active_call": true,
 
   "rooted": false,
   "hooking": false,
   "emulator": false,
-  "tampered": false,
-  "attestation_verdict": "PASS",
   "mock_location": false,
   "is_vpn": false,
 
@@ -84,24 +84,26 @@ To evaluate transfers accurately, the orchestrator (`ledger-mutation-engine`) su
 ```
 
 The Risk Engine returns:
-- `decision`: `ALLOW`, `REQUIRE_2FA`, or `BLOCK`.
-- `status`: `SETTLED` (no memo), `PENDING_SETTLEMENT` (memo present, 60s holding window), `REQUIRE_2FA`, or `BLOCKED`.
-- `fraud_score`: Calibrated integer score (0 to 100).
-- `review_enqueued`: Boolean indicating whether background second-look review was scheduled.
-- `metrics`: Geolocation velocity, distance from home, VPN detection, and amount spike ratio.
+- `decision_id`: Unique correlation reference string.
+- `a0`: Base tabular decision (`ALLOW`, `ADVISORY_WARNING`, or `BLOCK`).
+- `threat_context_present`: Boolean indicating whether remote tools, active calls, or mismatches were detected.
+- `memo_check_required`: Boolean indicating whether Stage B threat evaluation should be invoked.
+- `auth_method`: Assigned authorization method (`BIOMETRIC_PRIMARY`, `PUSH_NOTIFICATION_PRIMARY`, `STEP_UP_BIOMETRIC_PLUS_MPIN`, `STEP_UP_PUSH_PLUS_MPIN`, or `NONE_BLOCKED`).
 
 Orchestrator integration rules:
-1. When `decision == "BLOCK"`, abort mutation and reject the transfer.
-2. When `decision == "REQUIRE_2FA"`, place soft hold on balance and dispatch email OTP.
-3. When `decision == "ALLOW"` and `status == "PENDING_SETTLEMENT"`, approve transaction and maintain the 60-second clearing interval. If the risk engine escalates status to `HELD`, halt outbound clearing.
-4. On timeout (recommended 1,500 ms limit), fall back safely to static rule thresholds without dropping valid customer transactions.
+1. When `a0 == "BLOCK"`, abort mutation immediately and reject the transfer with zero bypass permitted.
+2. When `threat_context_present` or `memo_check_required` is true, invoke `POST /risk/stage-b`. If Stage B assigns `ADVISORY_WARNING`, render the contextual friction modal.
+3. When `a0 == "ALLOW"` and context is clean, execute local hardware biometric verification on Primary Device (or push notification on Secondary Device) before ledger settlement.
+4. On timeout (1,500 ms limit), fall back safely to Stage A action $a_0$ without dropping customer transactions.
 
-
-### ADR-05: Regulatory Transfer Value Thresholds & High-Value OTP
-* **Decision:** Enforce tiered transaction verification rules:
-  * **PHP 0.01 to PHP 50,000.00:** Straight-through processing (STP) with immediate atomic settlement.
-  * **Above PHP 50,000.00:** Soft hold placed on sender available balance. A cryptographically random 6-digit OTP is generated and cached in Redis with a strict 300-second (5-minute) TTL, then dispatched to the customer registered email via MailHog. Settlement executes only when the customer verifies the OTP code.
-  * **PHP 500,000.00 and above (AMLA Covered):** Same 2FA OTP flow, plus an automated Covered Transaction Report (CTR) regulatory notification generated for compliance records.
+### ADR-05: Regulatory Authentication Controls & Cryptographic Device Binding (BSP Circular 1213: Zero SMS OTP)
+* **Decision:** Enforce multi-tier authentication with cryptographic device binding and strictly zero SMS OTP for transactions:
+  * **Zero SMS OTP for Transactions:** In accordance with Bangko Sentral ng Pilipinas (BSP) Circular 1213, SMS OTP is restricted strictly to initial user onboarding and new device registration. No payment or risk decision may be verified or bypassed via SMS OTP.
+  * **Primary Device Authorization:** Transfers initiated on the customer's cryptographically bound Primary Device require local hardware Biometrics (Face ID or Fingerprint via native KeyStore / Keychain).
+  * **Secondary Device Authorization:** Transfers initiated on an unbound Secondary Device (Web Banking or Tablet) trigger an Out-of-Band (OOB) Push Notification to the registered Primary Device for biometric confirmation.
+  * **Routine Transfers (PHP 0.01 to PHP 50,000.00):** Clean transfers (`ALLOW`) require local hardware biometric confirmation before committing the ledger mutation.
+  * **Elevated Value / Step-Up (Above PHP 50,000.00):** Enforces step-up authentication requiring hardware biometric confirmation plus transaction MPIN.
+  * **PHP 500,000.00 and above (AMLA Covered):** Same step-up flow, plus an automated Covered Transaction Report (CTR) regulatory notification generated for compliance records.
 
 ### ADR-06: Simulated Core Banking Hook (Temenos T24 OFSCore)
 * **Decision:** Model legacy core banking mainframe interoperability by serializing approved transactions into authentic raw OFSCore protocol strings:
@@ -173,7 +175,7 @@ Every container attaches to the internal bridge network `banking-net`. Only peri
 | **Account Service** | `account-service` | *Internal* | `8081` | HTTP / REST | KYC onboarding, user profiles, JWT issuance, Refresh Token Rotation |
 | **Orchestration Engine** | `ledger-mutation-engine`| *Internal* | `8082` | HTTP / REST | Transaction orchestration, row locks, soft holds, outbox relay |
 | **Notification Service** | `notification-service` | *Internal* | `8083` | HTTP / REST | Kafka event listener, email receipts, 2FA OTP generation and dispatch |
-| **Fraud Risk Engine** | `risk-service` | *Internal* | `8084` | HTTP / REST | Decoupled S2 XGBoost (sync <2ms) + NanoJev INT8 ONNX reviewer (async) |
+| **Fraud Risk Engine** | `risk-service` | *Internal* | `8084` | HTTP / REST | Two-stage S2 XGBoost (Stage A) + NanoJev threat synthesis & advisory modal (Stage B) |
 | **Redis Cache** | `redis-cache` | `6379` | `6379` | RESP / TCP | RTR token families, JWT blacklist, 5-minute OTP, rate limiting |
 | **Oracle Database XE** | `oracle-xe-master` | `1521` | `1521` | Oracle TNS | Operational relational state (`XEPDB1`), row locks, outbox events |
 | **PostgreSQL Audit** | `postgres-audit-vault`| `5433` | `5432` | PostgreSQL | Write-once append-only compliance audit journal (`banking_audit`) |
@@ -196,7 +198,7 @@ Every container attaches to the internal bridge network `banking-net`. Only peri
 | **API Gateway Pods** | Spring Cloud Gateway (:8080) | AKS Deployment (`gateway-service`) | HPA: 2 to 10 pods on CPU > 70% or request rate |
 | **Account Pods** | Identity & Auth (:8081) | AKS Deployment (`account-service`) | HPA: 2 to 6 pods with JWT/RTR key rotation |
 | **Orchestration Pods** | Core Remittance (:8082) | AKS Deployment (`ledger-mutation-engine`) | HPA: 2 to 8 pods with SLA ≤ 200 ms timeout |
-| **Risk Engine Pods** | Python Fraud Analytics (:8084) | AKS Deployment (`risk-service`) | HPA: 2 to 6 pods with decoupled S2 + NanoJev reviewer |
+| **Risk Engine Pods** | Python Fraud Analytics (:8084) | AKS Deployment (`risk-service`) | HPA: 2 to 6 pods with two-stage S2 + NanoJev threat synthesis |
 | **Notification Pods** | Email & 2FA OTP (:8083) | AKS Deployment (`notification-service`) | KEDA scaled by Event Hubs topic consumer lag |
 | **Database & Ledger** | Operational State & Audit Vault | Azure SQL Database (General Purpose) | Pessimistic `UPDLOCK, ROWLOCK` + Azure SQL Ledger |
 | **In-Memory Cache** | RTR, Token Blacklist & OTP | Azure Cache for Redis (Standard C1 :6380) | Managed TLS in-memory cache with sub-5ms latency |
@@ -212,7 +214,7 @@ The project is executed across three official Capstone tracks mapped to a 100-po
 | Member | Track & Specialization | Key Codebase Ownership & Deliverables | Evaluation Pillar |
 | :--- | :--- | :--- | :--- |
 | **Zel** | Technical Lead, Core Mutation Engine & Ledger Testing | `BalanceMutationService.java`: row locking (Oracle XE & Azure SQL `UPDLOCK, ROWLOCK`), soft holds, transactional outbox, concurrency test harnesses, **Chaos Scenario 1** (DB degradation). | **Pillar 2 & 4** (Backend Logic & Chaos 1) |
-| **Maye** | Lead Risk Analytics Engineer & Scrum Backlog Lead | `backend/risk-service`: Gate 0 + S2 sync scoring (p99 < 200ms SLA), NanoJev INT8 async reviewer, prompt caching, JIRA backlog tracking, **Chaos Scenario 2** (Risk service kill). | **Pillar 1 & 4** (JIRA & Chaos 2) |
+| **Maye** | Lead Risk Analytics Engineer & Scrum Backlog Lead | `backend/risk-service`: Gate 0 + S2 sync scoring (p99 < 200ms SLA), NanoJev INT8 threat synthesis, prompt caching, JIRA backlog tracking, **Chaos Scenario 2** (Risk service kill). | **Pillar 1 & 4** (JIRA & Chaos 2) |
 | **JM** | Lead Flutter Architect & Datadog Observability | `flutter_client`: cross-platform Web/Mobile parity, client circuit breaker, Datadog APM Agent integration, W3C trace waterfalls, E2E testing passes. | **Pillar 3 & 4** (UI & Observability) |
 | **Wax** | Lead Core Banking Integration Engineer (Temenos T24) | `OfsMessageBuilder.java`, `TemenosLoopbackClient.java`: raw OFSCore serialization (`FUNDS.TRANSFER...`), local loopback simulation server. | **Pillar 2** (T24 Core Banking Hook) |
 | **Mae** | Flutter Mobile Engineer & Agile Scrum Coordinator | `flutter_client`: native KeyStore/Keychain encryption (`flutter_secure_storage`), responsive forms, JIRA sprint burn-down, evaluation demo runbook. | **Pillar 1 & 3** (JIRA & Mobile Client) |

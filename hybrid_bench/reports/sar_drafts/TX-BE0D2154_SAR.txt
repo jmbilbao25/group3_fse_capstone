@@ -1,0 +1,59 @@
+================================================================================
+SUSPICIOUS TRANSACTION REPORT (STR / SAR)
+Anti-Money Laundering Council (AMLC) - Republic Act No. 9160 / 11521
+Status: PENDING_HUMAN_SIGN_OFF | Priority: HIGH_CONFIDENCE_FRAUD
+================================================================================
+
+1. INCIDENT REFERENCE
+- Report Number: SAR-20261006-TX-BE0D2154
+- Transaction ID: TX-BE0D2154
+- Interception Timestamp: 2026-10-06 02:33:42 UTC
+- Triage Gate: TWO_STAGE_RISK_ENGINE
+- Automated Action: BLOCK
+- Primary Reason Code: RISK_ENGINE_BLOCK
+- Fraud Risk Score: 100.0 / 100.0
+
+2. SUBJECT IDENTIFICATION & BASELINE
+- Subject Account ID: USR-1001
+- Channel: mobile_banking
+- 30-Day Historical Average: PHP 25,000.00
+- Current Transaction Amount: PHP 25,000.00
+- Spike Ratio: 10.00x
+- Balance Drain Ratio: 33.0%
+
+3. TECHNICAL AND PHYSICAL TELEMETRY
+- Device Attestation: PASS
+- Rooted: False | Hooking: False | Emulator: False | Tampered: False
+- Distance from Registered Home: 0.0 km
+- Elapsed Time Since Prior Activity: 0.0 minutes
+- Calculated Velocity: 2.7 km/h
+- VPN / Proxy Masking Detected: False
+
+4. BENEFICIARY COUNTERPARTY & TRANSACTION PURPOSE
+- Declared Purpose: Funds Transfer
+- Payee Classification: third_party_individual
+- Payee Account Status: ESTABLISHED_BENEFICIARY
+- Beneficiary Velocity: 1 inbound senders in last 24h (Mule Risk Factor)
+
+5. NATURAL LANGUAGE MEMO SEMANTIC ANALYSIS
+- Submitted Memo: "payment"
+- Semantic Risk Category: NONE
+
+6. PRIMARY RED FLAG INDICATORS
+  - Anomalous transaction spike (10.0x baseline) with 33.0% total balance drain.
+  - Natural language memo reflects known social engineering or extortion pattern: "payment".
+
+7. FORENSIC COMPLIANCE NARRATIVE
+On 2026-10-06 02:33:42 UTC, the automated risk monitoring system intercepted and blocked a high-value transfer request of PHP 25,000.00 initiated under customer account USR-1001. The transaction represents a 10.0x surge above the customer's established baseline of PHP 25,000.00, resulting in an acute balance liquidation of 33.0%.
+
+Forensic telemetry revealed immediate indicators of compromise: the originating endpoint reported an attestation verdict of 'PASS' with device tampering indicators (Hooking=False, Emulator=False, Rooted=False). Furthermore, semantic analysis of the memo string "payment" identified predatory advance-fee or account-unlock fraud semantics. The destination account (third_party_individual) exhibits mule routing characteristics with 1 distinct originating transfers within a 24-hour window, inconsistent with stated transfer purpose 'Funds Transfer'. Pursuant to Bangko Sentral ng Pilipinas (BSP) Circular No. 1108 and Republic Act No. 9160, this transaction has been quarantined and referred for formal regulatory STR submission.
+
+8. RECOMMENDED REMEDIATION & NEXT STEPS
+- [X] Immediate Transaction Rejection (Executed in real-time)
+- [X] Beneficiary Account Temporary Credit Freeze (P.O. Request to Receiving Bank)
+- [X] Customer Account Step-up Verification (Mandatory in-branch biometric KYC)
+- [ ] AMLC Official STR Electronic Dispatch (Pending Compliance Officer Sign-off)
+
+Investigator Sign-off: [  ] APPROVED FOR FILING    [  ] REJECT / FALSE POSITIVE
+Compliance Officer Name: _____________________ Date: _________________
+================================================================================

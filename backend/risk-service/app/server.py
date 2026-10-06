@@ -29,6 +29,9 @@ if _SERVICE_ROOT not in sys.path:
 
 from app.seed_data import get_customer_profile
 from app.geo_math import analyze_location_signals
+from app.models import RiskAnalysisRequest
+from app.threat_builder import has_threat_context, build_threat_narrative
+from app.warning_catalog import get_warning_dialog
 from app.reviewer import (
     NanoJevSecondLookEngine,
     AsyncReviewWorkerPool,
@@ -403,6 +406,45 @@ class RiskRequestHandler(BaseHTTPRequestHandler):
                         tabular_data=row_dict if 'row_dict' in locals() else {}
                     )
 
+            # 3. Contextual Device Threat & Advisory Warning Analysis
+            advisory_tier = "NONE"
+            warning_dialog = None
+            threat_narrative = None
+
+            is_primary_device = req.get("is_primary_device", True)
+            if isinstance(req.get("device_context"), dict):
+                if "is_primary_device" in req["device_context"]:
+                    is_primary_device = req["device_context"]["is_primary_device"]
+
+            if decision != "BLOCK":
+                try:
+                    req_model = RiskAnalysisRequest(**req)
+                    if has_threat_context(req_model):
+                        threat_narrative, threat_cat = build_threat_narrative(req_model)
+                        if decision == "ALLOW":
+                            decision = "ADVISORY_WARNING"
+                            status = "ADVISORY_PENDING"
+                            advisory_tier = "ADVISORY_WARNING"
+                            wd = get_warning_dialog(threat_cat)
+                            warning_dialog = wd.model_dump() if hasattr(wd, "model_dump") else wd.dict()
+                            primary_flag = f"DEVICE_THREAT_{threat_cat}"
+                            all_flags.append(primary_flag)
+                        elif decision == "REQUIRE_2FA":
+                            advisory_tier = "ADVISORY_WARNING"
+                            wd = get_warning_dialog(threat_cat)
+                            warning_dialog = wd.model_dump() if hasattr(wd, "model_dump") else wd.dict()
+                            all_flags.append(f"DEVICE_THREAT_{threat_cat}")
+                except Exception as e:
+                    print(f"[THREAT EVAL ERROR] {e}", flush=True)
+
+            # 4. Out-of-band & Biometric Authorization Mapping (Zero SMS OTP for Transactions)
+            if decision == "BLOCK":
+                auth_method = "NONE_BLOCKED"
+            elif decision == "REQUIRE_2FA":
+                auth_method = "STEP_UP_BIOMETRIC_PLUS_MPIN" if is_primary_device else "STEP_UP_PUSH_PLUS_MPIN"
+            else:  # ALLOW or ADVISORY_WARNING
+                auth_method = "BIOMETRIC_PRIMARY" if is_primary_device else "PUSH_NOTIFICATION_PRIMARY"
+
             elapsed_ms = (time.perf_counter() - start_time) * 1000.0
 
             # Attach tags to Datadog APM span
@@ -455,6 +497,10 @@ class RiskRequestHandler(BaseHTTPRequestHandler):
                 "anomaly_probability": anomaly_prob,
                 "primary_flag": primary_flag,
                 "all_flags": all_flags,
+                "advisory_tier": advisory_tier,
+                "warning_dialog": warning_dialog,
+                "threat_narrative": threat_narrative,
+                "auth_method": auth_method,
                 "metrics": {
                     "distance_from_home_km": geo_signals["distance_from_home_km"],
                     "velocity_kmh": geo_signals["velocity_kmh"],

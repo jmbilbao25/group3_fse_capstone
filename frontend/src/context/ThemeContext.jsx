@@ -18,9 +18,9 @@ const ThemeContext = React.createContext(null);
 const read = () => {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    return saved === 'light' || saved === 'dark' || saved === 'system' ? saved : 'system';
+    return saved === 'dark' ? 'dark' : 'light';
   } catch {
-    return 'system';
+    return 'light';
   }
 };
 

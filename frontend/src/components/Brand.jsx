@@ -19,41 +19,39 @@ export function Mark({ className }) {
   return (
     <span
       className={cn(
-        'inline-flex shrink-0 items-center justify-center bg-accent text-fg-inverse',
+        'inline-flex shrink-0 items-center justify-center rounded-xl bg-[#311075] text-white shadow-xs',
         className
       )}
       aria-hidden="true"
     >
-      <svg viewBox="0 0 32 32" className="h-[62%] w-[62%]" fill="currentColor">
-        <rect x="7" y="9" width="18" height="3" />
-        <rect x="7" y="15" width="13" height="3" opacity="0.72" />
-        <rect x="7" y="21" width="8" height="3" opacity="0.48" />
-      </svg>
+      <span className="font-bold text-sm tracking-tight flex flex-col items-center leading-none select-none">
+        <span className="leading-none">A</span>
+        <span className="w-2.5 h-[1.5px] bg-white mt-[1px] rounded-full" />
+      </span>
     </span>
   );
 }
 
 /*
- * Wordmark. One weight, one colour, real letterspacing. No coloured full stop,
- * no gradient text, no pill beside it.
+ * Wordmark: "Aura Bank" matching mobile/web client branding
  */
 export function Wordmark({ size = 'md', className }) {
   return (
     <span
       className={cn(
-        'font-semibold tracking-tight text-fg',
+        'font-bold tracking-tight text-fg font-sans',
         size === 'lg' ? 'text-xl' : 'text-base',
         className
       )}
     >
-      AuraBank
+      Aura Bank
     </span>
   );
 }
 
 /** Mark plus wordmark, the default lockup used in the header and on login. */
 export default function Brand({ size = 'md', className }) {
-  const box = size === 'lg' ? 'h-9 w-9' : 'h-7 w-7';
+  const box = size === 'lg' ? 'h-9 w-9' : 'h-8 w-8';
 
   return (
     <span className={cn('inline-flex items-center gap-2.5', className)}>

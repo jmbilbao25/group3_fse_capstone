@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/bank_models.dart';
 import '../services/bank_service.dart';
 import '../theme/aura_theme.dart';
 import 'send_money_screen.dart';
+import 'statement_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final Function(int)? onNavigateTab;
@@ -283,22 +285,26 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
             _buildActionItem(
-              icon: Icons.qr_code_scanner_rounded,
-              label: 'Scan',
-              onTap: () => widget.onNavigateTab?.call(2),
+              icon: Icons.receipt_long_rounded,
+              label: 'Statement',
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const StatementScreen()),
+                );
+              },
             ),
             _buildActionItem(
-              icon: Icons.credit_card_rounded,
-              label: 'Cards',
-              onTap: () => widget.onNavigateTab?.call(1),
+              icon: Icons.receipt_outlined,
+              label: 'Bills',
+              onTap: _showPayBillsSheet,
             ),
             _buildActionItem(
-              icon: Icons.show_chart_rounded,
-              label: 'Analytics',
-              onTap: () => widget.onNavigateTab?.call(3),
+              icon: Icons.add_circle_outline_rounded,
+              label: 'Deposit',
+              onTap: _showDepositSheet,
             ),
             _buildActionItem(
-              icon: Icons.more_horiz_rounded,
+              icon: Icons.grid_view_rounded,
               label: 'More',
               onTap: _showMoreServicesSheet,
             ),
@@ -413,6 +419,349 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showPayBillsSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.65,
+        minChildSize: 0.4,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (sheetContext, scrollController) => ListView(
+          controller: scrollController,
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD1D5DB),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Container(
+                  width: 3.5,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: brandViolet,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Pay Bills & Utilities',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AuraColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Zero processing fees on enrolled utility billers',
+              style: TextStyle(fontSize: 12, color: textGray),
+            ),
+            const SizedBox(height: 16),
+            // Search field
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF9FAFB),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE5E7EB)),
+              ),
+              child: const TextField(
+                decoration: InputDecoration(
+                  icon: Icon(Icons.search, size: 20, color: textGray),
+                  hintText: 'Search biller (e.g. Meralco, Maynilad, Globe)',
+                  hintStyle: TextStyle(fontSize: 12.5, color: textGray),
+                  border: InputBorder.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildBillerTile(
+              initial: 'M',
+              avatarColor: const Color(0xFFEA580C),
+              name: 'Meralco',
+              category: 'Electricity • Direct Connect',
+            ),
+            _buildBillerTile(
+              initial: 'W',
+              avatarColor: const Color(0xFF0284C7),
+              name: 'Maynilad Water',
+              category: 'Water Utility • Real-time Posting',
+            ),
+            _buildBillerTile(
+              initial: 'G',
+              avatarColor: const Color(0xFF2563EB),
+              name: 'Globe Telecom & Postpaid',
+              category: 'Telecom & Fiber Broadband',
+            ),
+            _buildBillerTile(
+              initial: 'P',
+              avatarColor: const Color(0xFFDC2626),
+              name: 'PLDT Home Fiber',
+              category: 'Broadband & Landline',
+            ),
+            _buildBillerTile(
+              initial: 'B',
+              avatarColor: const Color(0xFF1E3A8A),
+              name: 'BDO Credit Cards',
+              category: 'Credit Cards & Finance',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDepositSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD1D5DB),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Container(
+                  width: 3.5,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: brandViolet,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Deposit & Cash In',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AuraColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'InstaPay & PESONet accepted from any Philippine bank',
+              style: TextStyle(fontSize: 12, color: textGray),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFAF7FF),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFEDE9FE)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3E8FF),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.account_balance_wallet_rounded, color: brandViolet, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'AURA SAVINGS ACCOUNT',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.6,
+                            color: brandViolet,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _bankService.savingsAccountNumber,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            fontFamily: 'monospace',
+                            color: textDark,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _bankService.user.name,
+                          style: const TextStyle(fontSize: 11, color: textGray),
+                        ),
+                      ],
+                    ),
+                  ),
+                  InkWell(
+                    onTap: () {
+                      Clipboard.setData(ClipboardData(text: _bankService.savingsAccountNumber));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Account number copied to clipboard!'),
+                          duration: Duration(seconds: 2),
+                          backgroundColor: brandViolet,
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFDDD6FE)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.copy_rounded, size: 13, color: brandViolet),
+                          SizedBox(width: 4),
+                          Text(
+                            'Copy',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: brandViolet),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildDepositChannelTile(
+              icon: Icons.qr_code_2_rounded,
+              title: 'QR Ph Dynamic Inward',
+              subtitle: 'Scan to pay or receive via InstaPay QR standard',
+            ),
+            _buildDepositChannelTile(
+              icon: Icons.account_balance_rounded,
+              title: 'Online Bank Transfer',
+              subtitle: 'BPI, BDO, UnionBank, Metrobank & RCBC',
+            ),
+            _buildDepositChannelTile(
+              icon: Icons.storefront_rounded,
+              title: 'Over-the-Counter Partners',
+              subtitle: '7-Eleven Cliqq, Bayad Center, SM Bills Payment',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBillerTile({
+    required String initial,
+    required Color avatarColor,
+    required String name,
+    required String category,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: avatarColor,
+          child: Text(
+            initial,
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+        ),
+        title: Text(name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
+        subtitle: Text(category, style: const TextStyle(fontSize: 11, color: textGray)),
+        trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 13, color: textGray),
+        onTap: () {
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Selected biller: $name. Ready for payment.'),
+              backgroundColor: brandViolet,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildDepositChannelTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: ListTile(
+        leading: Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: const Color(0xFFF5EEFF),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: brandViolet, size: 20),
+        ),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
+        subtitle: Text(subtitle, style: const TextStyle(fontSize: 11, color: textGray)),
+        trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 13, color: textGray),
+        onTap: () {
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('$title channel ready.'),
+              backgroundColor: brandViolet,
+            ),
+          );
+        },
       ),
     );
   }

@@ -11,6 +11,7 @@ import 'package:aurabank_app/screens/devices_sessions_screen.dart';
 import 'package:aurabank_app/screens/security_gate_screen.dart';
 import 'package:aurabank_app/screens/profile_screen.dart';
 import 'package:aurabank_app/screens/analytics_screen.dart';
+import 'package:aurabank_app/screens/app_shell.dart';
 import 'package:aurabank_app/services/bank_service.dart';
 
 void main() {
@@ -108,10 +109,26 @@ void main() {
 
     expect(find.text('Available Balance'), findsOneWidget);
     expect(find.text('Transfer'), findsOneWidget);
-    expect(find.text('Scan'), findsOneWidget);
-    expect(find.text('Cards'), findsOneWidget);
-    expect(find.text('Analytics'), findsOneWidget);
+    expect(find.text('Statement'), findsOneWidget);
+    expect(find.text('Bills'), findsOneWidget);
+    expect(find.text('Deposit'), findsOneWidget);
+    expect(find.text('More'), findsOneWidget);
     expect(find.text('Recent Transactions'), findsOneWidget);
+  });
+
+  testWidgets('AppShell renders luxury floating navbar with elevated scan action',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: AppShell(),
+      ),
+    );
+
+    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Cards'), findsOneWidget);
+    expect(find.text('Scan'), findsOneWidget);
+    expect(find.text('Analytics'), findsOneWidget);
+    expect(find.text('Profile'), findsOneWidget);
   });
 
   testWidgets('Cards screen displays cards and toggles card lock state',

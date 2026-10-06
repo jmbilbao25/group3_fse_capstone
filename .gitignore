@@ -71,4 +71,7 @@ hybrid_bench/cache/
 .agents/
 docs/skills/
 
-
+### Scratch & Temp ###
+scratch/
+scratch_*.txt
+package-lock.json

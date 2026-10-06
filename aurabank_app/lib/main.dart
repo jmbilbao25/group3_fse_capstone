@@ -11,6 +11,7 @@ import 'screens/settings_screen.dart';
 import 'screens/otp_verification_screen.dart';
 import 'screens/devices_sessions_screen.dart';
 import 'screens/security_gate_screen.dart';
+import 'screens/risk_showcase_screen.dart';
 import 'theme/aura_theme.dart';
 
 void main() {
@@ -61,6 +62,7 @@ class AuraBankApp extends StatelessWidget {
         '/otp': (context) => const OtpVerificationScreen(),
         '/devices': (context) => const DevicesSessionsScreen(),
         '/security_gate': (context) => const SecurityGateScreen(),
+        '/risk_showcase': (context) => const RiskEngineShowcaseScreen(),
       },
     );
   }

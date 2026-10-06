@@ -85,14 +85,13 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                         letterSpacing: -0.5,
                       ),
                     ),
-                    SizedBox(height: 6),
-                    Text(
-                      'Interbank Network Ledger',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF8A92A6),
-                        letterSpacing: 0.2,
+                    SizedBox(height: 32),
+                    SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF5E17EB)),
                       ),
                     ),
                   ],

@@ -18,7 +18,8 @@ void main() {
   testWidgets('Aura Bank splash screen test', (WidgetTester tester) async {
     await tester.pumpWidget(const AuraBankApp());
     expect(find.text('Aura Bank'), findsOneWidget);
-    expect(find.text('Interbank Network Ledger'), findsOneWidget);
+    expect(find.text('Interbank Network Ledger'), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
   });
 
   testWidgets('Statement of Account screen renders components and filters properly',

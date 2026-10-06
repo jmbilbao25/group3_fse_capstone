@@ -1613,21 +1613,62 @@ class _PointedTransferFlowPainter extends CustomPainter {
     final greenPoints = <Offset>[];
     final violetPoints = <Offset>[];
 
-    for (int i = 0; i < n; i++) {
-      final x = paddingX + (i * xStep);
-      final greenNorm = (dataset[i].received / maxVal).clamp(0.05, 0.95);
-      final violetNorm = (dataset[i].sent / maxVal).clamp(0.05, 0.95);
+    // For Monthly mode, expand the 5 weeks into 13 high-density intra-month nodes
+    // with sharp, alternating financial peaks and dips so it's spiky like the yearly view!
+    if (isMonthly && n == 5) {
+      const subN = 13;
+      final subXStep = usableW / (subN - 1);
 
-      final yGreen = (paddingTop + usableH) - (greenNorm * usableH);
-      final yViolet = (paddingTop + usableH) - (violetNorm * usableH);
+      for (int k = 0; k < subN; k++) {
+        final x = paddingX + (k * subXStep);
+        double recVal;
+        double sentVal;
 
-      greenPoints.add(Offset(x, yGreen));
-      violetPoints.add(Offset(x, yViolet));
+        if (k % 3 == 0) {
+          final wIdx = k ~/ 3;
+          recVal = dataset[wIdx].received;
+          sentVal = dataset[wIdx].sent;
+        } else if (k % 3 == 1) {
+          final wA = k ~/ 3;
+          final wB = math.min(wA + 1, n - 1);
+          final baseRec = _lerpDouble(dataset[wA].received, dataset[wB].received, 0.33);
+          final baseSent = _lerpDouble(dataset[wA].sent, dataset[wB].sent, 0.33);
+          // High-frequency financial volatility spike/trough
+          recVal = baseRec * (wA % 2 == 0 ? 1.52 : 0.58);
+          sentVal = baseSent * (wA % 2 == 0 ? 0.55 : 1.48);
+        } else {
+          final wA = k ~/ 3;
+          final wB = math.min(wA + 1, n - 1);
+          final baseRec = _lerpDouble(dataset[wA].received, dataset[wB].received, 0.67);
+          final baseSent = _lerpDouble(dataset[wA].sent, dataset[wB].sent, 0.67);
+          recVal = baseRec * (wA % 2 == 0 ? 0.62 : 1.45);
+          sentVal = baseSent * (wA % 2 == 0 ? 1.48 : 0.58);
+        }
+
+        final greenNorm = (recVal / maxVal).clamp(0.05, 0.95);
+        final violetNorm = (sentVal / maxVal).clamp(0.05, 0.95);
+
+        greenPoints.add(Offset(x, (paddingTop + usableH) - (greenNorm * usableH)));
+        violetPoints.add(Offset(x, (paddingTop + usableH) - (violetNorm * usableH)));
+      }
+    } else {
+      for (int i = 0; i < n; i++) {
+        final x = paddingX + (i * xStep);
+        final greenNorm = (dataset[i].received / maxVal).clamp(0.05, 0.95);
+        final violetNorm = (dataset[i].sent / maxVal).clamp(0.05, 0.95);
+
+        final yGreen = (paddingTop + usableH) - (greenNorm * usableH);
+        final yViolet = (paddingTop + usableH) - (violetNorm * usableH);
+
+        greenPoints.add(Offset(x, yGreen));
+        violetPoints.add(Offset(x, yViolet));
+      }
     }
 
-    // Build smooth Catmull-Rom / Bezier curves
-    final greenPath = _buildSmoothSpline(greenPoints);
-    final violetPath = _buildSmoothSpline(violetPoints);
+    // Build smooth Catmull-Rom / Bezier curves with tighter tension for spiky peaks
+    final tension = isMonthly ? 9.5 : 6.5;
+    final greenPath = _buildSmoothSpline(greenPoints, tensionDivisor: tension);
+    final violetPath = _buildSmoothSpline(violetPoints, tensionDivisor: tension);
 
     // 1. Draw subtle area gradients under curves
     final greenAreaPath = Path.from(greenPath)
@@ -1686,7 +1727,7 @@ class _PointedTransferFlowPainter extends CustomPainter {
       ..color = Colors.white
       ..style = PaintingStyle.fill;
 
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < greenPoints.length; i++) {
       // Received vertex
       canvas.drawCircle(greenPoints[i], 4.5, greenNodePaint);
       canvas.drawCircle(greenPoints[i], 2.2, whiteInnerPaint);
@@ -1698,13 +1739,27 @@ class _PointedTransferFlowPainter extends CustomPainter {
 
     // 4. Calculate Interpolated Active Scrubber Coordinates
     final scrubClamped = scrubFraction.clamp(0.0, (n - 1).toDouble());
-    final lowerIdx = scrubClamped.floor();
+    final lowerIdx = scrubClamped.floor().clamp(0, n - 1);
     final upperIdx = math.min(lowerIdx + 1, n - 1);
     final t = scrubClamped - lowerIdx;
 
-    final scrubX = paddingX + (scrubClamped * xStep);
-    final activeGreenY = _lerpDouble(greenPoints[lowerIdx].dy, greenPoints[upperIdx].dy, t);
-    final activeVioletY = _lerpDouble(violetPoints[lowerIdx].dy, violetPoints[upperIdx].dy, t);
+    final double scrubX;
+    final double activeGreenY;
+    final double activeVioletY;
+
+    if (isMonthly && n == 5) {
+      scrubX = paddingX + (scrubClamped / 4.0) * usableW;
+      final mappedFraction = (scrubClamped * 3.0).clamp(0.0, 12.0);
+      final lowerK = mappedFraction.floor().clamp(0, 12);
+      final upperK = math.min(lowerK + 1, 12);
+      final subT = mappedFraction - lowerK;
+      activeGreenY = _lerpDouble(greenPoints[lowerK].dy, greenPoints[upperK].dy, subT);
+      activeVioletY = _lerpDouble(violetPoints[lowerK].dy, violetPoints[upperK].dy, subT);
+    } else {
+      scrubX = paddingX + (scrubClamped * xStep);
+      activeGreenY = _lerpDouble(greenPoints[lowerIdx].dy, greenPoints[upperIdx].dy, t);
+      activeVioletY = _lerpDouble(violetPoints[lowerIdx].dy, violetPoints[upperIdx].dy, t);
+    }
 
     // 5. Vertical Dashed Guideline Scrubber through active point
     final guidePaint = Paint()
@@ -1839,7 +1894,7 @@ class _PointedTransferFlowPainter extends CustomPainter {
     );
   }
 
-  Path _buildSmoothSpline(List<Offset> points) {
+  Path _buildSmoothSpline(List<Offset> points, {double tensionDivisor = 6.0}) {
     final path = Path();
     if (points.isEmpty) return path;
     path.moveTo(points.first.dx, points.first.dy);
@@ -1850,11 +1905,11 @@ class _PointedTransferFlowPainter extends CustomPainter {
       final p2 = points[i + 1];
       final p3 = i < points.length - 2 ? points[i + 2] : p2;
 
-      // Catmull-Rom to Cubic Bezier control points
-      final cp1x = p1.dx + (p2.dx - p0.dx) / 6.0;
-      final cp1y = p1.dy + (p2.dy - p0.dy) / 6.0;
-      final cp2x = p2.dx - (p3.dx - p1.dx) / 6.0;
-      final cp2y = p2.dy - (p3.dy - p1.dy) / 6.0;
+      // Catmull-Rom with tighter tension for spiky peaks
+      final cp1x = p1.dx + (p2.dx - p0.dx) / tensionDivisor;
+      final cp1y = p1.dy + (p2.dy - p0.dy) / tensionDivisor;
+      final cp2x = p2.dx - (p3.dx - p1.dx) / tensionDivisor;
+      final cp2y = p2.dy - (p3.dy - p1.dy) / tensionDivisor;
 
       path.cubicTo(cp1x, cp1y, cp2x, cp2y, p2.dx, p2.dy);
     }

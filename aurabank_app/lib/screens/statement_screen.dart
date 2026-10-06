@@ -369,49 +369,69 @@ class _StatementScreenState extends State<StatementScreen> {
       margin: const EdgeInsets.only(top: 6),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: cardBorder, width: 1.2),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE9D5FF), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
+            color: AuraColors.primary.withValues(alpha: 0.12),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(14),
-        child: Column(
-          children: months.map((entry) {
-            final isSelected = entry.key == _selectedMonthKey;
-            return InkWell(
-              onTap: () {
-                setState(() {
-                  _selectedMonthKey = entry.key;
-                  _isMonthDropdownOpen = false;
-                });
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-                color: isSelected ? brandLight : Colors.transparent,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      entry.value.title,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-                        color: isSelected ? brandPrimary : textDark,
+        borderRadius: BorderRadius.circular(16),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 280),
+          child: SingleChildScrollView(
+            child: Column(
+              children: months.map((entry) {
+                final isSelected = entry.key == _selectedMonthKey;
+                return InkWell(
+                  onTap: () {
+                    setState(() {
+                      _selectedMonthKey = entry.key;
+                      _isMonthDropdownOpen = false;
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+                    decoration: BoxDecoration(
+                      color: isSelected ? const Color(0xFFF3E8FF) : Colors.transparent,
+                      border: const Border(
+                        bottom: BorderSide(color: Color(0xFFF3F4F6), width: 0.8),
                       ),
                     ),
-                    if (isSelected)
-                      const Icon(Icons.check_rounded, color: brandAccent, size: 18),
-                  ],
-                ),
-              ),
-            );
-          }).toList(),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_month_outlined,
+                              size: 16,
+                              color: isSelected ? brandPrimary : textMuted,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              entry.value.title,
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                color: isSelected ? brandPrimary : textDark,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (isSelected)
+                          const Icon(Icons.check_circle_rounded, color: brandPrimary, size: 18),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
         ),
       ),
     );

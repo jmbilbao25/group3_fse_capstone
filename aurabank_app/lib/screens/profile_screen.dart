@@ -609,14 +609,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final initials = user.name.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join();
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AuraColors.canvas,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 12.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. Header: Logo + App Name + Notification Bell (Matches media_1791312847670.png)
+              // 1. Header: Logo + App Name + Notification Bell (Matches executive neobanking design)
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -637,8 +637,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         'Aura Bank',
                         style: TextStyle(
                           fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: textDark,
+                          fontWeight: FontWeight.w800,
+                          color: brandViolet,
+                          letterSpacing: -0.4,
                         ),
                       ),
                     ],
@@ -646,20 +647,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   // Bell Icon with indicator dot
                   Stack(
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.notifications_none_rounded, color: textDark, size: 24),
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('No unread security alerts.'),
-                              duration: Duration(seconds: 2),
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: const Color(0xFFEDE9FE)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: brandViolet.withValues(alpha: 0.04),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
                             ),
-                          );
-                        },
+                          ],
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.notifications_none_rounded, color: textDark, size: 20),
+                          padding: EdgeInsets.zero,
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('No unread security alerts.'),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                        ),
                       ),
                       Positioned(
-                        right: 12,
-                        top: 12,
+                        right: 2,
+                        top: 2,
                         child: Container(
                           width: 8,
                           height: 8,
@@ -676,19 +694,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               const SizedBox(height: 16),
 
-              // 2. User Identity Card (Monogram + Name + Phone + Edit + Client ID & Email Pills)
+              // 2. User Identity Card (Monogram + Name + Privilege Badge + Phone + Edit + Client ID & Email Pills)
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(18),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: cardBorder),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: const Color(0xFFEDE9FE), width: 1.2),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
+                      color: brandViolet.withValues(alpha: 0.06),
+                      blurRadius: 18,
+                      offset: const Offset(0, 6),
                     ),
                   ],
                 ),
@@ -696,18 +714,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     Row(
                       children: [
-                        // Monogram Avatar with Green Verified Badge
+                        // Monogram Avatar with Aura Violet Gradient & Emerald Verified Badge
                         Stack(
                           children: [
-                            CircleAvatar(
-                              radius: 28,
-                              backgroundColor: darkMaroon,
+                            Container(
+                              width: 60,
+                              height: 60,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: AuraColors.balanceHeroGradient,
+                                border: Border.all(color: const Color(0xFFDDD6FE), width: 2),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: brandViolet.withValues(alpha: 0.35),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              alignment: Alignment.center,
                               child: Text(
-                                initials.isNotEmpty ? initials : 'JD',
+                                initials.isNotEmpty ? initials : 'EM',
                                 style: const TextStyle(
                                   color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w800,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.5,
                                 ),
                               ),
                             ),
@@ -715,14 +747,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               bottom: 0,
                               right: 0,
                               child: Container(
-                                width: 16,
-                                height: 16,
+                                width: 18,
+                                height: 18,
                                 decoration: BoxDecoration(
                                   color: accentGreen,
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 2),
+                                  border: Border.all(color: Colors.white, width: 2.2),
                                 ),
-                                child: const Icon(Icons.check, size: 10, color: Colors.white),
+                                child: const Icon(Icons.check, size: 11, color: Colors.white),
                               ),
                             ),
                           ],
@@ -730,19 +762,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                         const SizedBox(width: 14),
 
-                        // Name & Phone
+                        // Name, Privilege Badge & Phone
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                user.name,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 16.5,
-                                  fontWeight: FontWeight.w800,
-                                  color: textDark,
-                                ),
+                              Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      user.name,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 16.5,
+                                        fontWeight: FontWeight.w800,
+                                        color: textDark,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF3E8FF),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Text(
+                                      'PRIVILEGE',
+                                      style: TextStyle(
+                                        fontSize: 8.5,
+                                        fontWeight: FontWeight.w800,
+                                        color: brandViolet,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                               const SizedBox(height: 3),
                               Text(
@@ -761,18 +816,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         // Edit Button
                         OutlinedButton.icon(
                           style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Color(0xFFD1D5DB)),
+                            backgroundColor: const Color(0xFFF5EEFF),
+                            side: const BorderSide(color: Color(0xFFDDD6FE), width: 1.0),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             minimumSize: Size.zero,
                           ),
-                          icon: const Icon(Icons.edit_outlined, size: 14, color: textDark),
+                          icon: const Icon(Icons.edit_outlined, size: 13, color: brandViolet),
                           label: const Text(
                             'Edit',
                             style: TextStyle(
                               fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: textDark,
+                              fontWeight: FontWeight.w800,
+                              color: brandViolet,
                             ),
                           ),
                           onPressed: _showEditProfileDialog,
@@ -780,37 +836,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 18),
 
-                    // Client ID & Registered Email Pills
+                    // Client ID & Registered Email Pills (Double Machined Insets)
                     Row(
                       children: [
                         Expanded(
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF9FAFB),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFFE5E7EB)),
+                              color: const Color(0xFFFAF7FF),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: const Color(0xFFEDE9FE), width: 1.0),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [
-                                Text(
-                                  'AURA CLIENT ID',
-                                  style: TextStyle(
-                                    fontSize: 9.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: textGray,
-                                    letterSpacing: 0.5,
-                                  ),
+                              children: [
+                                Row(
+                                  children: const [
+                                    Icon(Icons.badge_outlined, size: 12, color: brandViolet),
+                                    SizedBox(width: 5),
+                                    Text(
+                                      'AURA CLIENT ID',
+                                      style: TextStyle(
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: brandViolet,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                SizedBox(height: 3),
-                                Text(
+                                const SizedBox(height: 4),
+                                const Text(
                                   'AUR-9021-8842',
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    fontSize: 12,
+                                    fontSize: 12.5,
                                     fontWeight: FontWeight.w800,
                                     color: textDark,
                                   ),
@@ -822,25 +884,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF9FAFB),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFFE5E7EB)),
+                              color: const Color(0xFFFAF7FF),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: const Color(0xFFEDE9FE), width: 1.0),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  'REGISTERED EMAIL',
-                                  style: TextStyle(
-                                    fontSize: 9.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: textGray,
-                                    letterSpacing: 0.5,
-                                  ),
+                                Row(
+                                  children: const [
+                                    Icon(Icons.mail_outline_rounded, size: 12, color: brandViolet),
+                                    SizedBox(width: 5),
+                                    Text(
+                                      'REGISTERED EMAIL',
+                                      style: TextStyle(
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: brandViolet,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(height: 3),
+                                const SizedBox(height: 4),
                                 Text(
                                   user.email,
                                   overflow: TextOverflow.ellipsis,
@@ -857,9 +925,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                     ),
 
-                    const SizedBox(height: 14),
-                    const Divider(color: cardBorder, height: 1),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 16),
+                    const Divider(color: Color(0xFFF3F4F6), height: 1),
+                    const SizedBox(height: 16),
 
                     // Two-Column Personal Details Grid
                     Row(
@@ -887,13 +955,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               // 3. SECURITY & AUTHENTICATION Section Header & List
               _buildSectionHeader('SECURITY & AUTHENTICATION'),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
 
               _buildSectionCard(
                 children: [
                   _buildSwitchTile(
                     title: 'Biometric Login (Face ID)',
                     subtitle: 'Unlock app instantly with Face ID',
+                    icon: Icons.face_unlock_rounded,
                     value: _faceIdEnabled,
                     onChanged: (val) {
                       setState(() => _faceIdEnabled = val);
@@ -909,6 +978,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildSwitchTile(
                     title: 'Biometric Login (Fingerprint)',
                     subtitle: 'Authenticate with Touch ID / Fingerprint',
+                    icon: Icons.fingerprint_rounded,
                     value: _fingerprintEnabled,
                     onChanged: (val) {
                       setState(() => _fingerprintEnabled = val);
@@ -924,6 +994,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildNavigationTile(
                     title: 'Trusted Devices & Sessions',
                     subtitle: 'Manage active logins and trusted hardware',
+                    icon: Icons.devices_rounded,
                     badgeText: '2 Active',
                     onTap: () {
                       Navigator.of(context).push(
@@ -935,12 +1006,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildNavigationTile(
                     title: 'Change Email',
                     subtitle: 'Update registered email address',
+                    icon: Icons.alternate_email_rounded,
                     onTap: _showChangeEmailDialog,
                   ),
                   const Divider(color: Color(0xFFF3F4F6), height: 1),
                   _buildNavigationTile(
                     title: 'Change Password',
                     subtitle: 'Update account security password',
+                    icon: Icons.lock_outline_rounded,
                     onTap: _showChangePasswordDialog,
                   ),
                 ],
@@ -950,13 +1023,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               // 4. PREFERENCES & ALERTS Section Header & List
               _buildSectionHeader('PREFERENCES & ALERTS'),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
 
               _buildSectionCard(
                 children: [
                   _buildSwitchTile(
                     title: 'Instant Push Alerts',
                     subtitle: 'Real-time alerts for all transfers',
+                    icon: Icons.notifications_active_outlined,
                     value: _pushAlertsEnabled,
                     onChanged: (val) {
                       setState(() => _pushAlertsEnabled = val);
@@ -972,6 +1046,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildSwitchTile(
                     title: 'E-Statement Delivery',
                     subtitle: 'Monthly auto-email on 1st of month',
+                    icon: Icons.mark_email_read_outlined,
                     value: _statementEmailEnabled,
                     onChanged: (val) {
                       setState(() => _statementEmailEnabled = val);
@@ -984,13 +1059,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               // 5. HELP & LEGAL Section Header & List
               _buildSectionHeader('HELP & LEGAL'),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
 
               _buildSectionCard(
                 children: [
                   _buildNavigationTile(
                     title: 'Help & Contact Support',
                     subtitle: '24/7 Priority Aura Concierge',
+                    icon: Icons.headset_mic_outlined,
                     onTap: () {
                       showDialog(
                         context: context,
@@ -1011,6 +1087,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildNavigationTile(
                     title: 'Terms & Privacy Policy',
                     subtitle: 'BSP Circulars & Data Privacy Act compliance',
+                    icon: Icons.gavel_rounded,
                     onTap: () {
                       showDialog(
                         context: context,
@@ -1096,14 +1173,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildSectionHeader(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w800,
-        color: Color(0xFF6B7280),
-        letterSpacing: 0.8,
-      ),
+    return Row(
+      children: [
+        Container(
+          width: 3.5,
+          height: 13,
+          decoration: BoxDecoration(
+            color: brandViolet,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+            color: brandViolet,
+            letterSpacing: 0.9,
+          ),
+        ),
+      ],
     );
   }
 
@@ -1111,13 +1201,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: cardBorder),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFEDE9FE), width: 1.0),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+            color: brandViolet.withValues(alpha: 0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -1130,14 +1220,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildSwitchTile({
     required String title,
     required String subtitle,
+    IconData? icon,
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          if (icon != null) ...[
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF3E8FF),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, size: 20, color: brandViolet),
+            ),
+            const SizedBox(width: 12),
+          ],
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1156,7 +1258,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           Switch.adaptive(
             value: value,
-            activeTrackColor: darkMaroon,
+            activeTrackColor: brandViolet,
             activeThumbColor: Colors.white,
             onChanged: onChanged,
           ),
@@ -1168,6 +1270,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildNavigationTile({
     required String title,
     required String subtitle,
+    IconData? icon,
     String? badgeText,
     required VoidCallback onTap,
   }) {
@@ -1177,8 +1280,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
+            if (icon != null) ...[
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3E8FF),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, size: 20, color: brandViolet),
+              ),
+              const SizedBox(width: 12),
+            ],
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1201,7 +1315,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFEE2E2),
+                      color: const Color(0xFFE9D5FF),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -1209,7 +1323,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF991B1B),
+                        color: brandViolet,
                       ),
                     ),
                   ),

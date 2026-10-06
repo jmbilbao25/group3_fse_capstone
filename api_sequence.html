@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="generator" content="archify 2.17.0-dev.1">
-  <title>Banking Core API: Event-Driven Transfer &amp; Kafka Stream Diagram</title>
+  <title>Funds Transfer &amp; OFS Settlement Sequence Diagram</title>
   <script>
     // Resolve the theme before first paint so light-preference users don't
     // see a dark flash. The toolbar script below re-applies with UI state.
@@ -4955,11 +4955,11 @@
            data-preset-badge-blueprint="BLUEPRINT / REV 01"
            data-preset-badge-editorial="EDITORIAL / FIELD NOTE">
         <div class="pulse-dot"></div>
-        <h1>Banking Core API: Event-Driven Transfer &amp; Kafka Stream</h1>
+        <h1>Funds Transfer &amp; OFS Settlement Sequence</h1>
       </div>
     </div>
 
-    <script id="archify-guided-views-data" type="application/json">[{"id":"ingestion-outbox","label":"Ingestion \u0026 Outbox","focus":["client","gateway","redis","core","oracle"],"note":"Immediate HTTP 202 Accepted returned upon persisting transfer command to Oracle outbox table."},{"id":"kafka-settlement","label":"Partition Settlement","focus":["core","kafka","oracle"],"note":"Partition consumer locks account rows via SELECT FOR UPDATE, settles balances, and publishes events."},{"id":"async-fanout","label":"Asynchronous Fan-Out","focus":["kafka","postgres","client"],"note":"Independent consumer groups stream audit records into PostgreSQL and alerts to the customer."}]</script>
+    <script id="archify-guided-views-data" type="application/json">[{"id":"risk-scoring","label":"Risk scoring path","focus":["user","gateway","orchestrator","risk_engine"],"note":"Follow real-time risk check from API Gateway to Python XGBoost engine under 2ms."},{"id":"cbs-settlement","label":"T24 mock settlement","focus":["orchestrator","t24_cbs","azure_sql","kafka"],"note":"Inspect Temenos OFS syntax serialization and atomic double-entry balance mutation."}]</script>
 
     <script id="archify-i18n-data" type="application/json">{"locale":"en","messages":{"viewer.kind.frontend":"Frontend","viewer.kind.backend":"Backend","viewer.kind.database":"Database","viewer.kind.cloud":"Cloud","viewer.kind.security":"Security","viewer.kind.messagebus":"Message bus","viewer.kind.external":"External","viewer.kind.neutral":"Neutral","viewer.kind.node":"Node","viewer.kind.start":"Start","viewer.kind.active":"Active","viewer.kind.waiting":"Waiting","viewer.kind.decision":"Decision","viewer.kind.success":"Success","viewer.kind.failure":"Failure","viewer.toolbar.actions":"Diagram actions","viewer.theme.toggle.title":"Toggle theme (T)","viewer.theme.toggle":"Toggle color theme","viewer.theme.dark":"Dark","viewer.theme.light":"Light","viewer.preset.choose.title":"Choose visual style (S cycles)","viewer.preset.choose":"Choose visual style","viewer.preset.style":"Style","viewer.preset.menu":"Visual style","viewer.preset.identity":"Visual identity","viewer.preset.cycles":"S cycles","viewer.preset.classic":"Classic","viewer.preset.classic.short":"Classic","viewer.preset.classic.hint":"Stable technical default","viewer.preset.flow":"Signal Flow","viewer.preset.flow.short":"Flow","viewer.preset.flow.hint":"Motion-forward presentation","viewer.preset.blueprint":"Blueprint","viewer.preset.blueprint.hint":"Engineering review","viewer.preset.editorial":"Editorial","viewer.preset.editorial.hint":"Publication and launch notes","viewer.preset.badge.signalFlow":"SIGNAL FLOW","viewer.preset.badge.blueprint":"BLUEPRINT / REV 01","viewer.preset.badge.editorial":"EDITORIAL / FIELD NOTE","viewer.preset.badge.editorialPlate":"ARCHIFY / PLATE 04","viewer.preset.current":"Visual style: {style}. Choose visual style","viewer.motion.live":"Live","viewer.motion.still":"Still","viewer.motion.pause":"Pause motion","viewer.motion.resume":"Resume motion","viewer.motion.reduced":"Motion paused by reduced-motion preference","viewer.motion.hidden":"Motion paused while this page is hidden","viewer.motion.yielding":"Pause motion; currently yielding to {owner}","viewer.motion.yielding.title":"Live preview enabled · yielding to {owner}","viewer.owner.story":"the guided story","viewer.owner.chapter":"the active chapter","viewer.owner.chapterPreview":"the chapter delta preview","viewer.owner.handoff":"the chapter handoff","viewer.owner.route":"Route Probe","viewer.owner.lens":"Semantic Lens","viewer.owner.relationship":"Relationship Preview","viewer.owner.intent":"Intent Trace","viewer.owner.focus":"semantic focus","viewer.owner.legend":"legend preview","viewer.owner.reader":"reader interaction","viewer.present.enter":"Enter presentation stage","viewer.present.enter.title":"Presentation stage (F)","viewer.present.exit":"Exit presentation stage","viewer.present.exit.title":"Exit presentation stage (F or Escape)","viewer.present.present":"Present","viewer.present.exit.label":"Exit","viewer.export.button":"Export","viewer.export.button.title":"Export diagram (E)","viewer.export.diagram":"Export diagram","viewer.export.menu":"Export","viewer.export.subtitle":"Portable, clean outputs","viewer.export.share":"Share","viewer.export.shareCard":"Share Card","viewer.export.routeShareCard":"Route Share Card","viewer.export.reachShareCard":"Reach Share Card","viewer.export.copyShareCard":"Copy Share Card","viewer.export.copyDiagram":"Copy diagram","viewer.export.clipboardPng":"PNG to clipboard","viewer.export.raster":"Raster images","viewer.export.image":"Image","viewer.export.lossless":"Lossless image","viewer.export.compact":"Compact image","viewer.export.modern":"Modern image","viewer.export.vectorMotion":"Vector and motion","viewer.export.vectorMotion.heading":"Vector \u0026 motion","viewer.export.editable":"Editable vector","viewer.export.motion6s":"6s motion","viewer.export.unsupported":"Not supported by this browser","viewer.export.clipboardUnsupported":"Clipboard image write not supported by this browser","viewer.export.clipboardUnsupported.period":"Clipboard image write not supported by this browser.","viewer.export.clipboardUnsupported.short":"Clipboard image write not supported in this browser.","viewer.export.motionUnavailable":"Motion capture unavailable in this browser","viewer.export.webmUnavailable":"WebM unavailable in this browser","viewer.export.failed":"Export failed: {message}","viewer.export.unknownVariant":"Unknown Share Card variant: {variant}","viewer.export.routeRequired":"Trace a route before exporting a Route Share Card","viewer.export.reachRequired":"Trace authored reach before exporting a Reach Share Card","viewer.export.unknown":"unknown","viewer.export.routeFailed":"Route Share Card export failed: {message}","viewer.export.reachFailed":"Reach Share Card export failed: {message}","viewer.export.copyFailed":"Copy failed: {message}","viewer.export.copiedPng":"Copied PNG to clipboard","viewer.export.copiedShare":"Copied Share Card","viewer.export.downloadedShare":"Downloaded Share Card","viewer.export.downloadedRoute":"Downloaded Route Share Card","viewer.export.downloadedReach":"Downloaded Reach Share Card","viewer.export.downloadedWebm":"Downloaded WebM","viewer.export.recording":"Recording 6 seconds of motion…","viewer.export.card.routeSummary.one":"Route: {source} → {target} · {count} directed hop","viewer.export.card.routeSummary.other":"Route: {source} → {target} · {count} directed hops","viewer.export.card.reachSummary":"Authored {direction} from {origin} · {nodes} · {links} · max {hops}","viewer.export.card.node.one":"{count} node","viewer.export.card.node.other":"{count} nodes","viewer.export.card.link.one":"{count} link","viewer.export.card.link.other":"{count} links","viewer.export.card.hop.one":"{count} hop","viewer.export.card.hop.other":"{count} hops","viewer.export.card.routeBadge":"ARCHIFY · ROUTE · {hops}","viewer.export.card.reachBadge":"ARCHIFY · {direction} REACH","viewer.export.card.defaultBadge":"ARCHIFY · {preset} · {theme}","viewer.export.direction.upstream":"Upstream","viewer.export.direction.downstream":"Downstream","viewer.export.error.canvasUnavailable":"Canvas unavailable for {label}","viewer.export.error.contextUnavailable":"2D canvas context unavailable for {label}","viewer.export.error.toBlobUnavailable":"canvas.toBlob unavailable for {label}","viewer.export.error.toBlobNull":"canvas.toBlob returned no data for {label}","viewer.export.error.variantsCombined":"Share Card variants cannot be combined","viewer.export.error.viewerState":"Share Card export could not remove temporary viewer state","viewer.export.error.routeState":"Route Card export could not preserve the resolved route safely","viewer.export.error.reachState":"Reach Card export could not preserve authored reach safely","viewer.export.error.webmRequirements":"WebM motion export requires a trace animation and browser MediaRecorder support","viewer.export.error.mediaRecorder":"MediaRecorder failed","viewer.export.error.emptyWebm":"MediaRecorder produced an empty WebM","viewer.export.error.webmBackground":"SVG background could not be loaded for WebM export","viewer.guided.region":"Guided diagram views","viewer.guided.previous":"Previous guided view","viewer.guided.previous.title":"Previous guided view ([)","viewer.guided.next":"Next guided view","viewer.guided.next.title":"Next guided view (])","viewer.guided.views":"Guided views","viewer.guided.explore":"Explore this system","viewer.guided.intro":"Step through curated paths without changing the source diagram.","viewer.guided.trail":"Story trail","viewer.guided.beat":"Beat","viewer.guided.nextBeat":"Next","viewer.guided.play":"Play guided story","viewer.guided.play.title":"Play guided story (P)","viewer.guided.pause":"Pause guided story","viewer.guided.pause.title":"Pause guided story (P)","viewer.guided.replay":"Replay guided story","viewer.guided.replay.title":"Replay guided story (P)","viewer.guided.playStory":"Play story","viewer.guided.pauseStory":"Pause","viewer.guided.replayStory":"Replay story","viewer.guided.motionUnavailable":"Story playback unavailable while motion is Still","viewer.guided.enableMotion":"Switch motion to Live to play the guided story","viewer.guided.selectBeatLink":"Select a Story Beat to copy its exact link","viewer.guided.copyMoment":"Copy moment","viewer.guided.momentCopied":"Moment link copied","viewer.guided.momentCopyFailed":"Could not copy story moment link","viewer.guided.copied":"Copied","viewer.guided.copyFailed":"Copy failed","viewer.guided.showAll":"Show all","viewer.guided.showAll.aria":"Show entire diagram","viewer.guided.chapters":"Story chapters","viewer.guided.storyTrail":"Story trail for {label}: {count} beats","viewer.guided.chapter.open":"Open chapter {index} of {total}: {label}, {count} stops","viewer.guided.chapter.current":"Current chapter {index} of {total}: {label}, {count} stops","viewer.guided.chapter.selectedNodes":"{count} selected nodes","viewer.guided.chapter.stops":"{count} stops","viewer.guided.chapter.stop.one":"{count} stop","viewer.guided.chapter.stop.other":"{count} stops","viewer.guided.chapter.current.title":"{label} — current chapter, {count} stops","viewer.guided.chapter.delta.expanded":"{stay} stay, {enter} enter, {leave} leave","viewer.guided.chapter.delta.aria":"Open chapter {index} of {total}: {label}. Chapter focus delta: {delta}","viewer.guided.chapter.delta.title":"{label} — {delta} chapter focus","viewer.guided.handoff":"{from} → {to} · via {label}","viewer.guided.share.chapter":"Chapter {index} / {total}","viewer.guided.share.initial":"Chapter 01 / 01","viewer.guided.share.default":"Guided chapter","viewer.guided.state.ready":"Ready","viewer.guided.state.playing":"Playing","viewer.guided.state.settled":"Settled","viewer.guided.state.paused":"Paused","viewer.guided.state.pinned":"Pinned","viewer.guided.state.still":"Still","viewer.guided.share.step":"Step {index} / {total} · {label}","viewer.guided.share.staticMoment":"{step} · Static moment","viewer.guided.share.complete":"{count} steps complete · {note}","viewer.guided.share.settled":"Path settled for reading.","viewer.guided.share.staticPath":"{count} steps · Static path","viewer.guided.share.ready":"{count} steps · Ready","viewer.guided.share.aria":"{state} chapter {index} of {total}: {label}. {beat}. {route}","viewer.guided.beat.start":"Beat {index} / {total} · {label} · starting point","viewer.guided.beat.forward":"Beat {index} / {total} · {from} → {to}","viewer.guided.beat.reverse":"Beat {index} / {total} · {from} → {to} · reverse authored link","viewer.guided.beat.multiple":"Beat {index} / {total} · {from} ⇄ {to} · {count} authored links","viewer.guided.beat.group":"Beat {index} / {total} · {from} · {to} · grouped · no direct link","viewer.guided.beat.aria.prefix":"Story beat {index} of {total}: {label}. ","viewer.guided.beat.aria.start":"Starting point.","viewer.guided.beat.aria.forward":"From {from} through one authored forward relationship.","viewer.guided.beat.aria.reverse":"From {from}; the authored relationship points from {to} to {from}.","viewer.guided.beat.aria.multiple":"From {from} through {count} authored relationships; shown without arbitrary motion.","viewer.guided.beat.aria.group":"Grouped from {from} with no direct authored relationship.","viewer.guided.caption.start":"Starting point","viewer.guided.caption.grouped":"Grouped transition · no direct authored link","viewer.guided.caption.more":" +{count} more","viewer.guided.caption.reverse":"Reverse authored relationship","viewer.guided.caption.relationships":"{count} authored relationships","viewer.guided.caption.relationship":"Authored relationship","viewer.guided.caption.direction":"authored direction: {from} → {to}","viewer.guided.caption.starting":"Authored starting point","viewer.guided.beatLink":"Copy link to current story moment: Beat {index} of {total}: {label}","viewer.guided.noStory":"This diagram has no authored guided story.","viewer.guide.eyebrow":"Diagram guide","viewer.guide.close":"Close diagram guide","viewer.guide.inspecting":"Inspecting compiled semantics","viewer.guide.actions":"Diagram exploration actions","viewer.guide.find":"Find any node","viewer.guide.find.hint":"Search labels, responsibilities, kinds, and stable IDs.","viewer.guide.route":"Trace a route","viewer.guide.route.aria":"Trace a directed route","viewer.guide.route.hint":"Ask how two semantic nodes connect in authored direction.","viewer.guide.map":"See the whole system","viewer.guide.map.hint":"Open Semantic Radar with a live viewport and stable nodes.","viewer.guide.lens":"Compare semantic kinds","viewer.guide.lens.hint":"Count roles, reveal their traffic, and compare direct authored links.","viewer.guide.story":"Play the guided story","viewer.guide.story.hint":"Walk the authored chapters and real relationships.","viewer.guide.present":"Enter Presentation Stage","viewer.guide.present.hint":"Give the live diagram the viewport without changing export.","viewer.guide.shortcuts":"Additional keyboard shortcuts","viewer.guide.shortcut.export":"Export","viewer.guide.shortcut.theme":"Theme","viewer.guide.shortcut.style":"Style","viewer.guide.shortcut.reset":"Reset","viewer.guide.shortcut.zoomIn":"Zoom in","viewer.guide.shortcut.zoomOut":"Zoom out","viewer.guide.shortcut.close":"Close","viewer.guide.facts":"{nodes} · {relationships} · {views}","viewer.guide.fact.node.one":"{count} semantic node","viewer.guide.fact.node.other":"{count} semantic nodes","viewer.guide.fact.relationship.one":"{count} relationship","viewer.guide.fact.relationship.other":"{count} relationships","viewer.guide.fact.view.one":"{count} guided view","viewer.guide.fact.view.other":"{count} guided views","viewer.guide.story.available.one":"Walk {count} authored chapter and its real relationships.","viewer.guide.story.available.other":"Walk {count} authored chapters and their real relationships.","viewer.guide.story.unavailable":"No authored guided story in this diagram.","viewer.guide.open":"Open diagram guide","viewer.guide.noStory":"This diagram has no authored guided story.","viewer.finder.title":"Find a node","viewer.finder.close":"Close node finder","viewer.finder.placeholder":"Search labels or IDs","viewer.finder.search":"Search diagram nodes","viewer.finder.results":"Diagram nodes","viewer.finder.empty":"No matching nodes","viewer.finder.result.focus":"Focus {label}","viewer.finder.result.routeStart":"Choose {label} as route start","viewer.finder.result.routeTarget":"Choose {label} as route destination, {links}","viewer.finder.status.empty":"No matching nodes","viewer.finder.status.count.one":"{count} matching node","viewer.finder.status.count.other":"{count} matching nodes","viewer.finder.noun.nodes":"nodes","viewer.finder.link.one":"{count} link","viewer.finder.link.other":"{count} links","viewer.finder.result.focus.one":"Focus {label}, {count} related connection","viewer.finder.result.focus.other":"Focus {label}, {count} related connections","viewer.finder.status.filtered":"{visible} of {available} {noun}","viewer.finder.status.all":"{available} {noun}","viewer.passport.eyebrow":"Semantic passport","viewer.passport.metadata":"Node metadata","viewer.passport.evidence":"Verified source evidence","viewer.passport.verified":"Verified source","viewer.passport.reach":"Authored reach","viewer.passport.reach.trace":"Trace authored reachability","viewer.passport.upstream":"Upstream","viewer.passport.downstream":"Downstream","viewer.passport.upstream.trace":"Trace upstream authored reachability","viewer.passport.downstream.trace":"Trace downstream authored reachability","viewer.passport.close":"Close semantic passport","viewer.passport.copy":"Copy link","viewer.passport.copy.focus":"Copy link to focused node","viewer.passport.relations":"Relations","viewer.passport.relations.show":"Show connected relationships","viewer.passport.relations.hide":"Hide connected relationships","viewer.passport.relations.list":"Connected relationships","viewer.passport.copyRelation":"Copy relation","viewer.passport.copyNode":"Copy node","viewer.passport.copyPinned":"Copy link to pinned relationship","viewer.passport.copySource":"Copy link to source node","viewer.passport.copy.focused.success":"Focused node link copied","viewer.passport.copy.pinned.success":"Pinned relationship link copied","viewer.passport.copy.focused.failed":"Could not copy focused node link","viewer.passport.copy.pinned.failed":"Could not copy pinned relationship link","viewer.passport.relationship.none":"No connected relationships","viewer.passport.relationship.count.one":"{count} relation","viewer.passport.relationship.count.other":"{count} relations","viewer.passport.relationship.show.one":"Show {count} connected relationship","viewer.passport.relationship.show.other":"Show {count} connected relationships","viewer.passport.relationship.summary":"{out} outgoing · {in} incoming{loops}","viewer.passport.relationship.loops":" · {count} loop","viewer.passport.relationship.explorer":"Direct relationship explorer","viewer.passport.relationship.help":"Use arrow keys to explore relationships. Press Enter or Space to pin details; Escape clears.","viewer.passport.relationship.loopsBack":"loops back","viewer.passport.relationship.connectsTo":"connects to","viewer.passport.relationship.connectsFrom":"connects from","viewer.passport.relationship.pinned":"Pinned relationship · {from} → {to} · {label}","viewer.passport.relationship.inspect":"Inspect relationship {index} of {total}: {from} to {to}, {label}. Press Enter for details.","viewer.passport.relationship.group.out":"Outgoing","viewer.passport.relationship.group.in":"Incoming","viewer.passport.relationship.group.loop":"Self loops","viewer.passport.relationship.row":"{group}: {relationship}, {neighbor}","viewer.passport.relationship.direction.out":"OUT →","viewer.passport.relationship.direction.in":"← IN","viewer.passport.relationship.direction.loop":"LOOP","viewer.passport.sourceCount.one":"{count} verified source reference","viewer.passport.sourceCount.other":"{count} verified source references","viewer.passport.sourceMarker":"SRC","viewer.passport.beacon.one":"{count} verified source; focus this node to inspect","viewer.passport.beacon.other":"{count} verified sources; focus this node to inspect","viewer.passport.repository.open":"Open verified repository revision {revision}","viewer.passport.source.open":"Open verified source {path} at revision {revision}","viewer.passport.source.openLink":"Open ↗","viewer.passport.reach.upstream.one":"Trace {count} upstream authored node","viewer.passport.reach.upstream.other":"Trace {count} upstream authored nodes","viewer.passport.reach.downstream.one":"Trace {count} downstream authored node","viewer.passport.reach.downstream.other":"Trace {count} downstream authored nodes","viewer.passport.reach.noUpstream":"No upstream authored nodes","viewer.passport.reach.noDownstream":"No downstream authored nodes","viewer.passport.reach.status":"{direction} · {nodes} nodes · {links} links · max {hops} hops","viewer.route.eyebrow":"Route probe","viewer.route.start":"Choose a start node","viewer.route.start.find":"Find start","viewer.route.start.find.aria":"Find a route start","viewer.route.copy":"Copy link","viewer.route.copy.aria":"Copy link to traced route","viewer.route.clear":"Clear","viewer.route.clear.aria":"Clear route probe","viewer.route.traced":"Traced route","viewer.route.pickTwo":"Pick two semantic nodes on the diagram","viewer.route.pickOne":"Pick a semantic node on the diagram","viewer.route.controls":"Route journey controls","viewer.route.previous":"Previous route position","viewer.route.play":"Play route journey","viewer.route.pause":"Pause route journey","viewer.route.replay":"Replay route journey","viewer.route.next":"Next route position","viewer.route.journey":"Journey","viewer.route.pause.label":"Pause","viewer.route.replay.label":"Replay","viewer.route.overview":"Overview","viewer.route.overview.aria":"Show complete route overview","viewer.route.instructions":"Choose the source, then the destination. Direction matters.","viewer.route.destination":"Choose a destination from {label}","viewer.route.destination.find":"Find target","viewer.route.destination.find.aria":"Find a reachable route destination","viewer.route.differentDestination":"Choose a different destination","viewer.route.distinct":"A route needs two distinct semantic nodes.","viewer.route.unreachable":"No directed route to {label}","viewer.route.unreachable.detail":"{target} is not reachable from {source}. Pick a highlighted destination.","viewer.route.start.instructions":"Select the source. The next step will reveal only directed destinations.","viewer.route.copy.success":"Traced route link copied","viewer.route.copy.failed":"Could not copy traced route link","viewer.route.position":"Route position {index} of {total}: {label}","viewer.route.step":"Step {index} of {total} · {phase} · {label}","viewer.route.motionRequired":"Automatic journey requires Live motion","viewer.route.trigger.clear":"Clear traced route","viewer.route.overview.status":"{nodes} · {hops} · shortest authored route","viewer.route.overview.node.one":"{count} node","viewer.route.overview.node.other":"{count} nodes","viewer.route.overview.hop.one":"{count} directed hop","viewer.route.overview.hop.other":"{count} directed hops","viewer.route.phase.playing":"Playing","viewer.route.phase.complete":"Complete","viewer.route.phase.inspecting":"Inspecting","viewer.route.destination.count.one":"{count} directed destination available. Pick a highlighted node.","viewer.route.destination.count.other":"{count} directed destinations available. Pick a highlighted node.","viewer.route.noOutgoing":"No outgoing route starts here. Clear and choose another source.","viewer.route.result.title":"{source} to {target}","viewer.route.finder.source.title":"Choose route start","viewer.route.finder.source.placeholder":"Search route sources","viewer.route.finder.source.empty":"No matching route sources","viewer.route.finder.source.results":"Nodes that can start a route","viewer.route.finder.source.noun":"route sources","viewer.route.finder.source.badge":"start","viewer.route.finder.target.title":"Destination from {label}","viewer.route.finder.target.placeholder":"Search reachable destinations","viewer.route.finder.target.empty":"No matching reachable destinations","viewer.route.finder.target.results":"Reachable route destinations","viewer.route.finder.target.noun":"reachable destinations","viewer.route.hop.one":"{count} hop","viewer.route.hop.other":"{count} hops","viewer.lens.eyebrow":"Semantic lens","viewer.lens.title":"Compare system roles","viewer.lens.close":"Close semantic lens","viewer.lens.instruction":"Choose up to two semantic kinds. One reveals its real traffic; two compare only direct authored relationships.","viewer.lens.kinds":"Semantic kinds","viewer.lens.choose":"Choose a kind to inspect its nodes and touching relationships.","viewer.lens.copy":"Copy link to semantic lens","viewer.lens.clear":"Clear semantic lens","viewer.lens.open":"Open semantic lens","viewer.lens.openActive":"Open active semantic lens","viewer.lens.legend":"Semantic legend","viewer.lens.legend.inspect.one":"Inspect {label}, {count} node","viewer.lens.legend.inspect.other":"Inspect {label}, {count} nodes","viewer.lens.kind.count.one":"{label}, {count} node","viewer.lens.kind.count.other":"{label}, {count} nodes","viewer.lens.compare.one":"{first} → {second}: {forward} · {second} → {first}: {reverse} · {count} direct relationship","viewer.lens.compare.other":"{first} → {second}: {forward} · {second} → {first}: {reverse} · {count} direct relationships","viewer.lens.single":"{nodes} · {relationships} · connected peers remain visible","viewer.lens.node.one":"{count} {label} node","viewer.lens.node.other":"{count} {label} nodes","viewer.lens.relationship.one":"{count} touching relationship","viewer.lens.relationship.other":"{count} touching relationships","viewer.radar.title":"Semantic radar","viewer.radar.building":"Building overview","viewer.radar.openFull":"Open full semantic radar","viewer.radar.open":"Open radar","viewer.radar.close":"Close semantic radar","viewer.radar.surface":"Diagram overview. Click a node to focus it, or use arrow keys to pan.","viewer.radar.click":"Click node","viewer.radar.drag":"Drag to pan","viewer.radar.space":"Semantic radar needs more MAP space.","viewer.radar.nodes":"Semantic diagram radar nodes","viewer.radar.focus":"Focus {label} from Semantic Radar","viewer.radar.status":"{count} nodes · {viewport}","viewer.radar.fullMap":"{count} nodes · full map","viewer.radar.compacted":"Radar compacted to avoid covering the Semantic Passport or MAP controls.","viewer.radar.cancelWaiting":"Cancel semantic radar waiting for more MAP space","viewer.radar.needsSpace":"Semantic radar needs more visible MAP space","viewer.radar.viewport.full":"full map","viewer.radar.viewport.width":"{percent}% width","viewer.radar.viewport.scale":"{percent}% viewport","viewer.nav.controls":"Diagram view controls","viewer.nav.route":"Trace a directed route","viewer.nav.route.title":"Trace route (R)","viewer.nav.route.short":"PATH","viewer.nav.radar":"Open semantic radar","viewer.nav.radar.title":"Semantic radar (M)","viewer.nav.radar.short":"MAP","viewer.nav.lens":"Open semantic lens","viewer.nav.lens.title":"Semantic lens (L)","viewer.nav.lens.short":"LENS","viewer.nav.find":"Find a node","viewer.nav.find.title":"Find a node (/)","viewer.nav.guide":"Open diagram guide","viewer.nav.guide.title":"Diagram guide (?)","viewer.nav.zoomOut":"Zoom out","viewer.nav.zoomOut.title":"Zoom out (-)","viewer.nav.reset":"Reset diagram view","viewer.nav.reset.title":"Reset view (0)","viewer.nav.read":"READ","viewer.nav.zoomIn":"Zoom in","viewer.nav.zoomIn.title":"Zoom in (+)","viewer.nav.camera":"{hint}. Reset diagram view","viewer.nav.camera.title":"{semantic}{hint} · reset view (0)","viewer.nav.camera.semantic":"Semantic camera active · ","viewer.nav.level.map":"MAP","viewer.nav.level.read":"READ","viewer.nav.level.full":"FULL","viewer.nav.level.auto":"AUTO","viewer.nav.detail.map":"Zoom in to reveal relationship labels and node context","viewer.nav.detail.read":"Zoom in again to reveal tags and annotations","viewer.nav.detail.full":"Full diagram detail","viewer.intent.summary":"{label}. {out} outgoing, {in} incoming{loops}. {total} connections. Press Enter for details.","viewer.intent.loops":", {count} self loop","viewer.common.copied":"Copied","viewer.common.copyFailed":"Copy failed","viewer.common.copyLink":"Copy link","viewer.common.clear":"Clear","viewer.common.close":"Close"}}</script>
     <div class="guided-views no-print" id="guided-views" hidden aria-label="Guided diagram views">
@@ -5004,8 +5004,8 @@
     <!-- Main Diagram -->
     <div class="diagram-container" data-detail-level="read"
          data-preset-badge-editorial-plate="ARCHIFY / PLATE 04">
-      <svg viewBox="0 0 880 840" role="img" lang="en" aria-labelledby="archify-diagram-title archify-diagram-description" data-animation="trace" data-preset="classic" data-quality-profile="showcase">
-        <title id="archify-diagram-title">Banking Core API: Event-Driven Transfer &amp; Kafka Stream</title>
+      <svg viewBox="0 0 980 620" role="img" lang="en" aria-labelledby="archify-diagram-title archify-diagram-description" data-animation="trace" data-preset="classic" data-quality-profile="showcase">
+        <title id="archify-diagram-title">Funds Transfer &amp; OFS Settlement Sequence</title>
         <desc id="archify-diagram-description">A sequence diagram generated by Archify.</desc>
         <!-- Definitions -->
         <defs>
@@ -5030,302 +5030,252 @@
         <rect width="100%" height="100%" fill="url(#grid)" />
 
         <!-- Time Segments -->
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="segment" data-composition-frame-id="0" x="48" y="150" width="784" height="245" rx="10" class="c-lane" stroke-width="1"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="segment" data-composition-frame-id="0" x="48" y="135" width="884" height="80" rx="10" class="c-lane" stroke-width="1"/>
 
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="segment" data-composition-frame-id="1" x="48" y="415" width="784" height="210" rx="10" class="c-lane" stroke-width="1"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="segment" data-composition-frame-id="1" x="48" y="225" width="884" height="90" rx="10" class="c-lane" stroke-width="1"/>
 
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="segment" data-composition-frame-id="2" x="48" y="640" width="784" height="105" rx="10" class="c-lane" stroke-width="1"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="segment" data-composition-frame-id="2" x="48" y="325" width="884" height="125" rx="10" class="c-lane" stroke-width="1"/>
+
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="segment" data-composition-frame-id="3" x="48" y="460" width="884" height="90" rx="10" class="c-lane" stroke-width="1"/>
 
         <!-- Lifelines -->
-        <path d="M 105 142 L 105 775" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
-        <path d="M 220.33333333333331 142 L 220.33333333333331 775" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
-        <path d="M 335.66666666666663 142 L 335.66666666666663 775" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
-        <path d="M 451 142 L 451 775" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
-        <path d="M 566.3333333333333 142 L 566.3333333333333 775" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
-        <path d="M 681.6666666666666 142 L 681.6666666666666 775" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
-        <path d="M 797 142 L 797 775" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
+        <path d="M 62 142 L 62 555" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
+        <path d="M 170 142 L 170 555" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
+        <path d="M 278 142 L 278 555" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
+        <path d="M 386 142 L 386 555" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
+        <path d="M 494 142 L 494 555" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
+        <path d="M 602 142 L 602 555" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
+        <path d="M 710 142 L 710 555" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
 
         <!-- Activations -->
-        <rect x="215.33333333333331" y="170" width="10" height="105" rx="3" class="c-mask"/>
-        <rect x="215.33333333333331" y="170" width="10" height="105" rx="3" class="c-security" stroke-width="1"/>
-        <rect x="330.66666666666663" y="205" width="10" height="40" rx="3" class="c-mask"/>
-        <rect x="330.66666666666663" y="205" width="10" height="40" rx="3" class="c-database" stroke-width="1"/>
-        <rect x="446" y="265" width="10" height="95" rx="3" class="c-mask"/>
-        <rect x="446" y="265" width="10" height="95" rx="3" class="c-backend" stroke-width="1"/>
-        <rect x="561.3333333333333" y="295" width="10" height="40" rx="3" class="c-mask"/>
-        <rect x="561.3333333333333" y="295" width="10" height="40" rx="3" class="c-database" stroke-width="1"/>
-        <rect x="215.33333333333331" y="350" width="10" height="35" rx="3" class="c-mask"/>
-        <rect x="215.33333333333331" y="350" width="10" height="35" rx="3" class="c-security" stroke-width="1"/>
-        <rect x="676.6666666666666" y="435" width="10" height="45" rx="3" class="c-mask"/>
-        <rect x="676.6666666666666" y="435" width="10" height="45" rx="3" class="c-messagebus" stroke-width="1"/>
-        <rect x="446" y="470" width="10" height="140" rx="3" class="c-mask"/>
-        <rect x="446" y="470" width="10" height="140" rx="3" class="c-backend" stroke-width="1"/>
-        <rect x="561.3333333333333" y="505" width="10" height="70" rx="3" class="c-mask"/>
-        <rect x="561.3333333333333" y="505" width="10" height="70" rx="3" class="c-database" stroke-width="1"/>
-        <rect x="676.6666666666666" y="600" width="10" height="130" rx="3" class="c-mask"/>
-        <rect x="676.6666666666666" y="600" width="10" height="130" rx="3" class="c-messagebus" stroke-width="1"/>
-        <rect x="792" y="655" width="10" height="45" rx="3" class="c-mask"/>
-        <rect x="792" y="655" width="10" height="45" rx="3" class="c-database" stroke-width="1"/>
+        <rect x="165" y="165" width="10" height="370" rx="3" class="c-mask"/>
+        <rect x="165" y="165" width="10" height="370" rx="3" class="c-security" stroke-width="1"/>
+        <rect x="273" y="198" width="10" height="307" rx="3" class="c-mask"/>
+        <rect x="273" y="198" width="10" height="307" rx="3" class="c-backend" stroke-width="1"/>
+        <rect x="381" y="232" width="10" height="70" rx="3" class="c-mask"/>
+        <rect x="381" y="232" width="10" height="70" rx="3" class="c-backend" stroke-width="1"/>
+        <rect x="489" y="332" width="10" height="106" rx="3" class="c-mask"/>
+        <rect x="489" y="332" width="10" height="106" rx="3" class="c-backend" stroke-width="1"/>
+        <rect x="597" y="365" width="10" height="37" rx="3" class="c-mask"/>
+        <rect x="597" y="365" width="10" height="37" rx="3" class="c-database" stroke-width="1"/>
 
         <!-- Messages -->
-        <g data-edge-from="client" data-edge-to="gateway" data-edge-label="POST /api/v1/transfers" data-edge-key="0" data-edge-id="post-transfer">
-          <path data-composition-edge-from="client" data-composition-edge-to="gateway" data-composition-edge-id="post-transfer" data-composition-points="112,175;213.33333333333331,175" d="M 112 175 L 213.33333333333331 175" class="a-emphasis" data-animate="edge" style="--step:0" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <g data-edge-from="user" data-edge-to="gateway" data-edge-label="POST /api/v1/transfers" data-edge-key="0" data-edge-id="msg-transfer-req">
+          <path data-composition-edge-from="user" data-composition-edge-to="gateway" data-composition-edge-id="msg-transfer-req" data-composition-points="69,165;163,165" d="M 69 165 L 163 165" class="a-emphasis" data-animate="edge" style="--step:0" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <g data-detail="context">
-          <rect x="99.46666666666665" y="155" width="126.4" height="16" rx="3" class="c-mask"/>
-          <text x="162.66666666666666" y="165" class="t-backend" font-size="9" text-anchor="middle">POST /api/v1/transfers</text>
+          <rect x="52.8" y="145" width="126.4" height="16" rx="3" class="c-mask"/>
+          <text x="116" y="155" class="t-backend" font-size="9" text-anchor="middle">POST /api/v1/transfers</text>
         </g>
         </g>
 
-        <g data-edge-from="gateway" data-edge-to="redis" data-edge-label="verify token &amp; idempotency" data-edge-key="1" data-edge-id="check-token">
-          <path data-composition-edge-from="gateway" data-composition-edge-to="redis" data-composition-edge-id="check-token" data-composition-points="227.33333333333331,210;328.66666666666663,210" d="M 227.33333333333331 210 L 328.66666666666663 210" class="a-security" data-animate="edge" style="--step:1" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
+        <g data-edge-from="gateway" data-edge-to="orchestrator" data-edge-label="forward transfer JSON" data-edge-key="1" data-edge-id="msg-route-orch">
+          <path data-composition-edge-from="gateway" data-composition-edge-to="orchestrator" data-composition-edge-id="msg-route-orch" data-composition-points="177,198;271,198" d="M 177 198 L 271 198" class="a-emphasis" data-animate="edge" style="--step:1" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <g data-detail="context">
-          <rect x="204.39999999999998" y="190" width="147.20000000000002" height="16" rx="3" class="c-mask"/>
-          <text x="278" y="200" class="t-security" font-size="9" text-anchor="middle">verify token &amp; idempotency</text>
+          <rect x="163.4" y="178" width="121.2" height="16" rx="3" class="c-mask"/>
+          <text x="224" y="188" class="t-backend" font-size="9" text-anchor="middle">forward transfer JSON</text>
         </g>
         </g>
 
-        <g data-edge-from="redis" data-edge-to="gateway" data-edge-label="valid session" data-edge-key="2" data-edge-id="token-valid">
-          <path data-composition-edge-from="redis" data-composition-edge-to="gateway" data-composition-edge-id="token-valid" data-composition-points="328.66666666666663,240;227.33333333333331,240" d="M 328.66666666666663 240 L 227.33333333333331 240" class="a-default" data-animate="edge" style="--step:2" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
+        <g data-edge-from="orchestrator" data-edge-to="risk_engine" data-edge-label="POST /api/v1/risk/transfer" data-edge-key="2" data-edge-id="msg-risk-eval">
+          <path data-composition-edge-from="orchestrator" data-composition-edge-to="risk_engine" data-composition-edge-id="msg-risk-eval" data-composition-points="285,232;379,232" d="M 285 232 L 379 232" class="a-security" data-animate="edge" style="--step:2" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
         <g data-detail="context">
-          <rect x="238.2" y="220" width="79.60000000000001" height="16" rx="3" class="c-mask"/>
-          <text x="278" y="230" class="t-muted" font-size="9" text-anchor="middle">valid session</text>
+          <rect x="258.4" y="212" width="147.20000000000002" height="16" rx="3" class="c-mask"/>
+          <text x="332" y="222" class="t-security" font-size="9" text-anchor="middle">POST /api/v1/risk/transfer</text>
         </g>
         </g>
 
-        <g data-edge-from="gateway" data-edge-to="core" data-edge-label="dispatch validated transfer" data-edge-key="3" data-edge-id="forward-core">
-          <path data-composition-edge-from="gateway" data-composition-edge-to="core" data-composition-edge-id="forward-core" data-composition-points="227.33333333333331,270;444,270" d="M 227.33333333333331 270 L 444 270" class="a-default" data-animate="edge" style="--step:3" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <g data-edge-from="risk_engine" data-edge-to="orchestrator" data-edge-label="ALLOW (score 0.12, &lt; 2ms)" data-edge-key="3" data-edge-id="msg-risk-resp">
+          <path data-composition-edge-from="risk_engine" data-composition-edge-to="orchestrator" data-composition-edge-id="msg-risk-resp" data-composition-points="379,265;285,265" d="M 379 265 L 285 265" class="a-default" data-animate="edge" style="--step:3" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
         <g data-detail="context">
-          <rect x="259.46666666666664" y="250" width="152.4" height="16" rx="3" class="c-mask"/>
-          <text x="335.66666666666663" y="260" class="t-backend" font-size="9" text-anchor="middle">dispatch validated transfer</text>
+          <rect x="261" y="245" width="142" height="16" rx="3" class="c-mask"/>
+          <text x="332" y="255" class="t-muted" font-size="9" text-anchor="middle">ALLOW (score 0.12, &lt; 2ms)</text>
         </g>
         </g>
 
-        <g data-edge-from="core" data-edge-to="oracle" data-edge-label="INSERT transfer &amp; outbox" data-edge-key="4" data-edge-id="write-outbox">
-          <path data-composition-edge-from="core" data-composition-edge-to="oracle" data-composition-edge-id="write-outbox" data-composition-points="458,300;559.3333333333333,300" d="M 458 300 L 559.3333333333333 300" class="a-emphasis" data-animate="edge" style="--step:4" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <g data-edge-from="risk_engine" data-edge-to="kafka" data-edge-label="publish risk evaluation" data-edge-key="4" data-edge-id="msg-risk-event">
+          <path data-composition-edge-from="risk_engine" data-composition-edge-to="kafka" data-composition-edge-id="msg-risk-event" data-composition-points="393,298;703,298" d="M 393 298 L 703 298" class="a-dashed" data-animate="edge" style="--step:4" stroke-width="1.4" marker-end="url(#arrowhead-dashed)"/>
         <g data-detail="context">
-          <rect x="440.26666666666665" y="280" width="136.8" height="16" rx="3" class="c-mask"/>
-          <text x="508.66666666666663" y="290" class="t-backend" font-size="9" text-anchor="middle">INSERT transfer &amp; outbox</text>
+          <rect x="482.2" y="278" width="131.60000000000002" height="16" rx="3" class="c-mask"/>
+          <text x="548" y="288" class="t-messagebus" font-size="9" text-anchor="middle">publish risk evaluation</text>
         </g>
         </g>
 
-        <g data-edge-from="oracle" data-edge-to="core" data-edge-label="outbox committed" data-edge-key="5" data-edge-id="outbox-committed">
-          <path data-composition-edge-from="oracle" data-composition-edge-to="core" data-composition-edge-id="outbox-committed" data-composition-points="559.3333333333333,330;458,330" d="M 559.3333333333333 330 L 458 330" class="a-default" data-animate="edge" style="--step:5" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
+        <g data-edge-from="orchestrator" data-edge-to="t24_cbs" data-edge-label="POST OFS: FUNDS.TRANSFER..." data-edge-key="5" data-edge-id="msg-ofs-dispatch">
+          <path data-composition-edge-from="orchestrator" data-composition-edge-to="t24_cbs" data-composition-edge-id="msg-ofs-dispatch" data-composition-points="285,332;487,332" d="M 285 332 L 487 332" class="a-emphasis" data-animate="edge" style="--step:5" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <g data-detail="context">
-          <rect x="461.0666666666666" y="310" width="95.2" height="16" rx="3" class="c-mask"/>
-          <text x="508.66666666666663" y="320" class="t-muted" font-size="9" text-anchor="middle">outbox committed</text>
+          <rect x="309.8" y="312" width="152.4" height="16" rx="3" class="c-mask"/>
+          <text x="386" y="322" class="t-backend" font-size="9" text-anchor="middle">POST OFS: FUNDS.TRANSFER...</text>
         </g>
         </g>
 
-        <g data-edge-from="core" data-edge-to="gateway" data-edge-label="202 Accepted (transfer_id)" data-edge-key="6" data-edge-id="core-accepted">
-          <path data-composition-edge-from="core" data-composition-edge-to="gateway" data-composition-edge-id="core-accepted" data-composition-points="444,355;227.33333333333331,355" d="M 444 355 L 227.33333333333331 355" class="a-default" data-animate="edge" style="--step:6" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
+        <g data-edge-from="t24_cbs" data-edge-to="azure_sql" data-edge-label="BEGIN &amp; UPDLOCK balance" data-edge-key="6" data-edge-id="msg-sql-commit">
+          <path data-composition-edge-from="t24_cbs" data-composition-edge-to="azure_sql" data-composition-edge-id="msg-sql-commit" data-composition-points="501,365;595,365" d="M 501 365 L 595 365" class="a-security" data-animate="edge" style="--step:6" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
         <g data-detail="context">
-          <rect x="262.0666666666666" y="335" width="147.20000000000002" height="16" rx="3" class="c-mask"/>
-          <text x="335.66666666666663" y="345" class="t-muted" font-size="9" text-anchor="middle">202 Accepted (transfer_id)</text>
+          <rect x="482.2" y="345" width="131.60000000000002" height="16" rx="3" class="c-mask"/>
+          <text x="548" y="355" class="t-security" font-size="9" text-anchor="middle">BEGIN &amp; UPDLOCK balance</text>
         </g>
         </g>
 
-        <g data-edge-from="gateway" data-edge-to="client" data-edge-label="HTTP 202 Accepted" data-edge-key="7" data-edge-id="gateway-accepted">
-          <path data-composition-edge-from="gateway" data-composition-edge-to="client" data-composition-edge-id="gateway-accepted" data-composition-points="213.33333333333331,380;112,380" d="M 213.33333333333331 380 L 112 380" class="a-default" data-animate="edge" style="--step:7" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
+        <g data-edge-from="azure_sql" data-edge-to="t24_cbs" data-edge-label="ACID ledger committed" data-edge-key="7" data-edge-id="msg-sql-done">
+          <path data-composition-edge-from="azure_sql" data-composition-edge-to="t24_cbs" data-composition-edge-id="msg-sql-done" data-composition-points="595,398;501,398" d="M 595 398 L 501 398" class="a-default" data-animate="edge" style="--step:7" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
         <g data-detail="context">
-          <rect x="112.46666666666665" y="360" width="100.4" height="16" rx="3" class="c-mask"/>
-          <text x="162.66666666666666" y="370" class="t-muted" font-size="9" text-anchor="middle">HTTP 202 Accepted</text>
+          <rect x="487.4" y="378" width="121.2" height="16" rx="3" class="c-mask"/>
+          <text x="548" y="388" class="t-muted" font-size="9" text-anchor="middle">ACID ledger committed</text>
         </g>
         </g>
 
-        <g data-edge-from="core" data-edge-to="kafka" data-edge-label="produce transfers.commands" data-edge-key="8" data-edge-id="publish-command">
-          <path data-composition-edge-from="core" data-composition-edge-to="kafka" data-composition-edge-id="publish-command" data-composition-points="458,440;674.6666666666666,440" d="M 458 440 L 674.6666666666666 440" class="a-dashed" data-animate="edge" style="--step:8" stroke-width="1.4" marker-end="url(#arrowhead-dashed)"/>
+        <g data-edge-from="t24_cbs" data-edge-to="orchestrator" data-edge-label="FT26095A//1/SUCCESS" data-edge-key="8" data-edge-id="msg-ofs-resp">
+          <path data-composition-edge-from="t24_cbs" data-composition-edge-to="orchestrator" data-composition-edge-id="msg-ofs-resp" data-composition-points="487,432;285,432" d="M 487 432 L 285 432" class="a-default" data-animate="edge" style="--step:8" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
         <g data-detail="context">
-          <rect x="492.73333333333323" y="420" width="147.20000000000002" height="16" rx="3" class="c-mask"/>
-          <text x="566.3333333333333" y="430" class="t-messagebus" font-size="9" text-anchor="middle">produce transfers.commands</text>
+          <rect x="330.6" y="412" width="110.8" height="16" rx="3" class="c-mask"/>
+          <text x="386" y="422" class="t-muted" font-size="9" text-anchor="middle">FT26095A//1/SUCCESS</text>
         </g>
         </g>
 
-        <g data-edge-from="kafka" data-edge-to="core" data-edge-label="consume partition (source_acc)" data-edge-key="9" data-edge-id="consume-command">
-          <path data-composition-edge-from="kafka" data-composition-edge-to="core" data-composition-edge-id="consume-command" data-composition-points="674.6666666666666,475;458,475" d="M 674.6666666666666 475 L 458 475" class="a-default" data-animate="edge" style="--step:9" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <g data-edge-from="orchestrator" data-edge-to="kafka" data-edge-label="publish transfer event" data-edge-key="9" data-edge-id="msg-event-emit">
+          <path data-composition-edge-from="orchestrator" data-composition-edge-to="kafka" data-composition-edge-id="msg-event-emit" data-composition-points="285,468;703,468" d="M 285 468 L 703 468" class="a-dashed" data-animate="edge" style="--step:9" stroke-width="1.4" marker-end="url(#arrowhead-dashed)"/>
         <g data-detail="context">
-          <rect x="482.33333333333326" y="455" width="168" height="16" rx="3" class="c-mask"/>
-          <text x="566.3333333333333" y="465" class="t-backend" font-size="9" text-anchor="middle">consume partition (source_acc)</text>
+          <rect x="430.8" y="448" width="126.4" height="16" rx="3" class="c-mask"/>
+          <text x="494" y="458" class="t-messagebus" font-size="9" text-anchor="middle">publish transfer event</text>
         </g>
         </g>
 
-        <g data-edge-from="core" data-edge-to="oracle" data-edge-label="SELECT ... FOR UPDATE" data-edge-key="10" data-edge-id="lock-account">
-          <path data-composition-edge-from="core" data-composition-edge-to="oracle" data-composition-edge-id="lock-account" data-composition-points="458,510;559.3333333333333,510" d="M 458 510 L 559.3333333333333 510" class="a-emphasis" data-animate="edge" style="--step:10" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <g data-edge-from="orchestrator" data-edge-to="gateway" data-edge-label="200 OK (Transfer Success)" data-edge-key="10" data-edge-id="msg-orch-resp">
+          <path data-composition-edge-from="orchestrator" data-composition-edge-to="gateway" data-composition-edge-id="msg-orch-resp" data-composition-points="271,500;177,500" d="M 271 500 L 177 500" class="a-default" data-animate="edge" style="--step:10" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
         <g data-detail="context">
-          <rect x="448.0666666666666" y="490" width="121.2" height="16" rx="3" class="c-mask"/>
-          <text x="508.66666666666663" y="500" class="t-backend" font-size="9" text-anchor="middle">SELECT ... FOR UPDATE</text>
+          <rect x="153" y="480" width="142" height="16" rx="3" class="c-mask"/>
+          <text x="224" y="490" class="t-muted" font-size="9" text-anchor="middle">200 OK (Transfer Success)</text>
         </g>
         </g>
 
-        <g data-edge-from="oracle" data-edge-to="core" data-edge-label="locked balance rows" data-edge-key="11" data-edge-id="lock-granted">
-          <path data-composition-edge-from="oracle" data-composition-edge-to="core" data-composition-edge-id="lock-granted" data-composition-points="559.3333333333333,540;458,540" d="M 559.3333333333333 540 L 458 540" class="a-default" data-animate="edge" style="--step:11" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
+        <g data-edge-from="gateway" data-edge-to="user" data-edge-label="Transaction Receipt" data-edge-key="11" data-edge-id="msg-user-receipt">
+          <path data-composition-edge-from="gateway" data-composition-edge-to="user" data-composition-edge-id="msg-user-receipt" data-composition-points="163,530;69,530" d="M 163 530 L 69 530" class="a-default" data-animate="edge" style="--step:11" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
         <g data-detail="context">
-          <rect x="453.26666666666665" y="520" width="110.8" height="16" rx="3" class="c-mask"/>
-          <text x="508.66666666666663" y="530" class="t-muted" font-size="9" text-anchor="middle">locked balance rows</text>
-        </g>
-        </g>
-
-        <g data-edge-from="core" data-edge-to="oracle" data-edge-label="UPDATE balances (status: EXECUTED)" data-edge-key="12" data-edge-id="mutate-oracle">
-          <path data-composition-edge-from="core" data-composition-edge-to="oracle" data-composition-edge-id="mutate-oracle" data-composition-points="458,570;559.3333333333333,570" d="M 458 570 L 559.3333333333333 570" class="a-emphasis" data-animate="edge" style="--step:12" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <g data-detail="context">
-          <rect x="414.26666666666665" y="550" width="188.8" height="16" rx="3" class="c-mask"/>
-          <text x="508.66666666666663" y="560" class="t-backend" font-size="9" text-anchor="middle">UPDATE balances (status: EXECUTED)</text>
-        </g>
-        </g>
-
-        <g data-edge-from="core" data-edge-to="kafka" data-edge-label="publish TransferExecuted" data-edge-key="13" data-edge-id="publish-event">
-          <path data-composition-edge-from="core" data-composition-edge-to="kafka" data-composition-edge-id="publish-event" data-composition-points="458,605;674.6666666666666,605" d="M 458 605 L 674.6666666666666 605" class="a-dashed" data-animate="edge" style="--step:12" stroke-width="1.4" marker-end="url(#arrowhead-dashed)"/>
-        <g data-detail="context">
-          <rect x="497.9333333333333" y="585" width="136.8" height="16" rx="3" class="c-mask"/>
-          <text x="566.3333333333333" y="595" class="t-messagebus" font-size="9" text-anchor="middle">publish TransferExecuted</text>
-        </g>
-        </g>
-
-        <g data-edge-from="kafka" data-edge-to="postgres" data-edge-label="audit worker: INSERT audit" data-edge-key="14" data-edge-id="audit-stream">
-          <path data-composition-edge-from="kafka" data-composition-edge-to="postgres" data-composition-edge-id="audit-stream" data-composition-points="688.6666666666666,660;790,660" d="M 688.6666666666666 660 L 790 660" class="a-dashed" data-animate="edge" style="--step:12" stroke-width="1.4" marker-end="url(#arrowhead-dashed)"/>
-        <g data-detail="context">
-          <rect x="665.7333333333332" y="640" width="147.20000000000002" height="16" rx="3" class="c-mask"/>
-          <text x="739.3333333333333" y="650" class="t-messagebus" font-size="9" text-anchor="middle">audit worker: INSERT audit</text>
-        </g>
-        </g>
-
-        <g data-edge-from="postgres" data-edge-to="kafka" data-edge-label="commit audit offset" data-edge-key="15" data-edge-id="audit-offset">
-          <path data-composition-edge-from="postgres" data-composition-edge-to="kafka" data-composition-edge-id="audit-offset" data-composition-points="790,695;688.6666666666666,695" d="M 790 695 L 688.6666666666666 695" class="a-default" data-animate="edge" style="--step:12" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
-        <g data-detail="context">
-          <rect x="683.9333333333333" y="675" width="110.8" height="16" rx="3" class="c-mask"/>
-          <text x="739.3333333333333" y="685" class="t-muted" font-size="9" text-anchor="middle">commit audit offset</text>
-        </g>
-        </g>
-
-        <g data-edge-from="kafka" data-edge-to="client" data-edge-label="push email advice &amp; receipt" data-edge-key="16" data-edge-id="push-notification">
-          <path data-composition-edge-from="kafka" data-composition-edge-to="client" data-composition-edge-id="push-notification" data-composition-points="674.6666666666666,725;112,725" d="M 674.6666666666666 725 L 112 725" class="a-dashed" data-animate="edge" style="--step:12" stroke-width="1.4" marker-end="url(#arrowhead-dashed)"/>
-        <g data-detail="context">
-          <rect x="317.1333333333333" y="705" width="152.4" height="16" rx="3" class="c-mask"/>
-          <text x="393.3333333333333" y="715" class="t-messagebus" font-size="9" text-anchor="middle">push email advice &amp; receipt</text>
+          <rect x="60.6" y="510" width="110.8" height="16" rx="3" class="c-mask"/>
+          <text x="116" y="520" class="t-muted" font-size="9" text-anchor="middle">Transaction Receipt</text>
         </g>
         </g>
 
         <!-- Segment Labels -->
         <g data-graph-role="segment-label" data-segment-id="0">
-          <rect x="56" y="128" width="164.8" height="18" rx="3" class="c-mask"/>
-          <text x="62" y="141" class="t-dim" font-size="9" font-weight="600">Perimeter &amp; Outbox Acceptance</text>
+          <rect x="56" y="113" width="86.8" height="18" rx="3" class="c-mask"/>
+          <text x="62" y="126" class="t-dim" font-size="9" font-weight="600">Inbound &amp; Auth</text>
         </g>
         <g data-graph-role="segment-label" data-segment-id="1">
-          <rect x="56" y="393" width="149.20000000000002" height="18" rx="3" class="c-mask"/>
-          <text x="62" y="406" class="t-dim" font-size="9" font-weight="600">Kafka Partition Settlement</text>
+          <rect x="56" y="203" width="170" height="18" rx="3" class="c-mask"/>
+          <text x="62" y="216" class="t-dim" font-size="9" font-weight="600">Python Risk Evaluation (&lt; 2ms)</text>
         </g>
         <g data-graph-role="segment-label" data-segment-id="2">
-          <rect x="56" y="618" width="164.8" height="18" rx="3" class="c-mask"/>
-          <text x="62" y="631" class="t-dim" font-size="9" font-weight="600">Asynchronous Fan-Out &amp; Alerts</text>
+          <rect x="56" y="303" width="180.4" height="18" rx="3" class="c-mask"/>
+          <text x="62" y="316" class="t-dim" font-size="9" font-weight="600">Temenos OFS &amp; ACID Ledger Commit</text>
+        </g>
+        <g data-graph-role="segment-label" data-segment-id="3">
+          <rect x="56" y="438" width="154.4" height="18" rx="3" class="c-mask"/>
+          <text x="62" y="451" class="t-dim" font-size="9" font-weight="600">Settlement Receipt &amp; Events</text>
         </g>
 
         <!-- Participants -->
-        <g id="node-client" data-node-id="client" data-node-label="Client SPA" tabindex="0" role="button" aria-label="Focus Client SPA, Customer Portal, Sequence participant" aria-pressed="false" data-node-kind="external" data-node-sublabel="Customer Portal" data-node-context="Sequence participant">
-          <title>Client SPA · Customer Portal · Sequence participant</title>
-          <rect x="62" y="72" width="86" height="54" rx="6" class="c-mask"/>
-          <rect x="62" y="72" width="86" height="54" rx="6" class="c-external" data-animate="node" style="--step:0" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(68 78) scale(0.6875)">
+        <g id="node-user" data-node-id="user" data-node-label="Customer" tabindex="0" role="button" aria-label="Focus Customer, Flutter / Web, Sequence participant" aria-pressed="false" data-node-kind="external" data-node-sublabel="Flutter / Web" data-node-context="Sequence participant">
+          <title>Customer · Flutter / Web · Sequence participant</title>
+          <rect x="19" y="72" width="86" height="54" rx="6" class="c-mask"/>
+          <rect x="19" y="72" width="86" height="54" rx="6" class="c-external" data-animate="node" style="--step:0" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(25 78) scale(0.6875)">
             <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
             <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="105" y="94" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Client SPA</text>
-          <text data-detail="context" x="105" y="111" class="t-muted" font-size="7" text-anchor="middle">Customer Portal</text>
+          <text data-node-label="" data-detail-anchor="" x="62" y="94" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Customer</text>
+          <text data-detail="context" x="62" y="111" class="t-muted" font-size="7" text-anchor="middle">Flutter / Web</text>
         </g>
 
         <g id="node-gateway" data-node-id="gateway" data-node-label="API Gateway" tabindex="0" role="button" aria-label="Focus API Gateway, Spring Cloud :8080, Sequence participant" aria-pressed="false" data-node-kind="security" data-node-sublabel="Spring Cloud :8080" data-node-context="Sequence participant">
           <title>API Gateway · Spring Cloud :8080 · Sequence participant</title>
-          <rect x="177.33333333333331" y="72" width="86" height="54" rx="6" class="c-mask"/>
-          <rect x="177.33333333333331" y="72" width="86" height="54" rx="6" class="c-security" data-animate="node" style="--step:1" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(183.33333333333331 78) scale(0.6875)">
+          <rect x="127" y="72" width="86" height="54" rx="6" class="c-mask"/>
+          <rect x="127" y="72" width="86" height="54" rx="6" class="c-security" data-animate="node" style="--step:1" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(133 78) scale(0.6875)">
             <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
             <path d="m5.8 8 1.5 1.5 3-3"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="220.33333333333331" y="94" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">API Gateway</text>
-          <text data-detail="context" x="220.33333333333331" y="111" class="t-muted" font-size="7" text-anchor="middle">Spring Cloud :8080</text>
+          <text data-node-label="" data-detail-anchor="" x="170" y="94" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">API Gateway</text>
+          <text data-detail="context" x="170" y="111" class="t-muted" font-size="7" text-anchor="middle">Spring Cloud :8080</text>
         </g>
 
-        <g id="node-redis" data-node-id="redis" data-node-label="Redis Cache" tabindex="0" role="button" aria-label="Focus Redis Cache, Token &amp; Idempotency, Sequence participant" aria-pressed="false" data-node-kind="database" data-node-sublabel="Token &amp; Idempotency" data-node-context="Sequence participant">
-          <title>Redis Cache · Token &amp; Idempotency · Sequence participant</title>
-          <rect x="292.66666666666663" y="72" width="86" height="54" rx="6" class="c-mask"/>
-          <rect x="292.66666666666663" y="72" width="86" height="54" rx="6" class="c-database" data-animate="node" style="--step:2" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(298.66666666666663 78) scale(0.6875)">
-            <ellipse cx="8" cy="4" rx="5" ry="2"/>
-            <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
-          </g>
-          <text data-node-label="" data-detail-anchor="" x="335.66666666666663" y="94" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Redis Cache</text>
-          <text data-detail="context" x="335.66666666666663" y="111" class="t-muted" font-size="6.8" text-anchor="middle">Token &amp; Idempotency</text>
-        </g>
-
-        <g id="node-core" data-node-id="core" data-node-label="Core Engine" tabindex="0" role="button" aria-label="Focus Core Engine, Ledger Service, Sequence participant" aria-pressed="false" data-node-kind="backend" data-node-sublabel="Ledger Service" data-node-context="Sequence participant">
-          <title>Core Engine · Ledger Service · Sequence participant</title>
-          <rect x="408" y="72" width="86" height="54" rx="6" class="c-mask"/>
-          <rect x="408" y="72" width="86" height="54" rx="6" class="c-backend" data-animate="node" style="--step:3" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(414 78) scale(0.6875)">
+        <g id="node-orchestrator" data-node-id="orchestrator" data-node-label="Orchestrator" tabindex="0" role="button" aria-label="Focus Orchestrator, Spring Boot :8082, Sequence participant" aria-pressed="false" data-node-kind="backend" data-node-sublabel="Spring Boot :8082" data-node-context="Sequence participant">
+          <title>Orchestrator · Spring Boot :8082 · Sequence participant</title>
+          <rect x="235" y="72" width="86" height="54" rx="6" class="c-mask"/>
+          <rect x="235" y="72" width="86" height="54" rx="6" class="c-backend" data-animate="node" style="--step:2" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(241 78) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="451" y="94" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Core Engine</text>
-          <text data-detail="context" x="451" y="111" class="t-muted" font-size="7" text-anchor="middle">Ledger Service</text>
+          <text data-node-label="" data-detail-anchor="" x="278" y="94" class="t-primary" font-size="10.8" font-weight="600" text-anchor="middle">Orchestrator</text>
+          <text data-detail="context" x="278" y="111" class="t-muted" font-size="7" text-anchor="middle">Spring Boot :8082</text>
         </g>
 
-        <g id="node-oracle" data-node-id="oracle" data-node-label="Master DB" tabindex="0" role="button" aria-label="Focus Master DB, Oracle XE &amp; Outbox, Sequence participant" aria-pressed="false" data-node-kind="database" data-node-sublabel="Oracle XE &amp; Outbox" data-node-context="Sequence participant">
-          <title>Master DB · Oracle XE &amp; Outbox · Sequence participant</title>
-          <rect x="523.3333333333333" y="72" width="86" height="54" rx="6" class="c-mask"/>
-          <rect x="523.3333333333333" y="72" width="86" height="54" rx="6" class="c-database" data-animate="node" style="--step:4" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(529.3333333333333 78) scale(0.6875)">
+        <g id="node-risk_engine" data-node-id="risk_engine" data-node-label="Risk Engine" tabindex="0" role="button" aria-label="Focus Risk Engine, Python :8084, Sequence participant" aria-pressed="false" data-node-kind="backend" data-node-sublabel="Python :8084" data-node-context="Sequence participant">
+          <title>Risk Engine · Python :8084 · Sequence participant</title>
+          <rect x="343" y="72" width="86" height="54" rx="6" class="c-mask"/>
+          <rect x="343" y="72" width="86" height="54" rx="6" class="c-backend" data-animate="node" style="--step:3" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(349 78) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="386" y="94" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Risk Engine</text>
+          <text data-detail="context" x="386" y="111" class="t-muted" font-size="7" text-anchor="middle">Python :8084</text>
+        </g>
+
+        <g id="node-t24_cbs" data-node-id="t24_cbs" data-node-label="T24 Mock CBS" tabindex="0" role="button" aria-label="Focus T24 Mock CBS, Spring Boot :8085, Sequence participant" aria-pressed="false" data-node-kind="backend" data-node-sublabel="Spring Boot :8085" data-node-context="Sequence participant">
+          <title>T24 Mock CBS · Spring Boot :8085 · Sequence participant</title>
+          <rect x="451" y="72" width="86" height="54" rx="6" class="c-mask"/>
+          <rect x="451" y="72" width="86" height="54" rx="6" class="c-backend" data-animate="node" style="--step:4" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(457 78) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="494" y="94" class="t-primary" font-size="10.8" font-weight="600" text-anchor="middle">T24 Mock CBS</text>
+          <text data-detail="context" x="494" y="111" class="t-muted" font-size="7" text-anchor="middle">Spring Boot :8085</text>
+        </g>
+
+        <g id="node-azure_sql" data-node-id="azure_sql" data-node-label="Azure SQL" tabindex="0" role="button" aria-label="Focus Azure SQL, CBS Ledger DB, Sequence participant" aria-pressed="false" data-node-kind="database" data-node-sublabel="CBS Ledger DB" data-node-context="Sequence participant">
+          <title>Azure SQL · CBS Ledger DB · Sequence participant</title>
+          <rect x="559" y="72" width="86" height="54" rx="6" class="c-mask"/>
+          <rect x="559" y="72" width="86" height="54" rx="6" class="c-database" data-animate="node" style="--step:5" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(565 78) scale(0.6875)">
             <ellipse cx="8" cy="4" rx="5" ry="2"/>
             <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="566.3333333333333" y="94" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Master DB</text>
-          <text data-detail="context" x="566.3333333333333" y="111" class="t-muted" font-size="7" text-anchor="middle">Oracle XE &amp; Outbox</text>
+          <text data-node-label="" data-detail-anchor="" x="602" y="94" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Azure SQL</text>
+          <text data-detail="context" x="602" y="111" class="t-muted" font-size="7" text-anchor="middle">CBS Ledger DB</text>
         </g>
 
-        <g id="node-kafka" data-node-id="kafka" data-node-label="Apache Kafka" tabindex="0" role="button" aria-label="Focus Apache Kafka, KRaft Broker :9092, Sequence participant" aria-pressed="false" data-node-kind="messagebus" data-node-sublabel="KRaft Broker :9092" data-node-context="Sequence participant">
-          <title>Apache Kafka · KRaft Broker :9092 · Sequence participant</title>
-          <rect x="638.6666666666666" y="72" width="86" height="54" rx="6" class="c-mask"/>
-          <rect x="638.6666666666666" y="72" width="86" height="54" rx="6" class="c-messagebus" data-animate="node" style="--step:5" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="messagebus" class="semantic-sigil s-messagebus" transform="translate(644.6666666666666 78) scale(0.6875)">
+        <g id="node-kafka" data-node-id="kafka" data-node-label="Kafka Stream" tabindex="0" role="button" aria-label="Focus Kafka Stream, Event Bus :9092, Sequence participant" aria-pressed="false" data-node-kind="messagebus" data-node-sublabel="Event Bus :9092" data-node-context="Sequence participant">
+          <title>Kafka Stream · Event Bus :9092 · Sequence participant</title>
+          <rect x="667" y="72" width="86" height="54" rx="6" class="c-mask"/>
+          <rect x="667" y="72" width="86" height="54" rx="6" class="c-messagebus" data-animate="node" style="--step:6" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="messagebus" class="semantic-sigil s-messagebus" transform="translate(673 78) scale(0.6875)">
             <path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11"/>
             <circle cx="5" cy="4.5" r="1" class="sigil-fill"/>
             <circle cx="10.5" cy="8" r="1" class="sigil-fill"/>
             <circle cx="7" cy="11.5" r="1" class="sigil-fill"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="681.6666666666666" y="94" class="t-primary" font-size="10.8" font-weight="600" text-anchor="middle">Apache Kafka</text>
-          <text data-detail="context" x="681.6666666666666" y="111" class="t-muted" font-size="7" text-anchor="middle">KRaft Broker :9092</text>
-        </g>
-
-        <g id="node-postgres" data-node-id="postgres" data-node-label="Audit Vault" tabindex="0" role="button" aria-label="Focus Audit Vault, PostgreSQL 15+, Sequence participant" aria-pressed="false" data-node-kind="database" data-node-sublabel="PostgreSQL 15+" data-node-context="Sequence participant">
-          <title>Audit Vault · PostgreSQL 15+ · Sequence participant</title>
-          <rect x="754" y="72" width="86" height="54" rx="6" class="c-mask"/>
-          <rect x="754" y="72" width="86" height="54" rx="6" class="c-database" data-animate="node" style="--step:6" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(760 78) scale(0.6875)">
-            <ellipse cx="8" cy="4" rx="5" ry="2"/>
-            <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
-          </g>
-          <text data-node-label="" data-detail-anchor="" x="797" y="94" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Audit Vault</text>
-          <text data-detail="context" x="797" y="111" class="t-muted" font-size="7" text-anchor="middle">PostgreSQL 15+</text>
+          <text data-node-label="" data-detail-anchor="" x="710" y="94" class="t-primary" font-size="10.8" font-weight="600" text-anchor="middle">Kafka Stream</text>
+          <text data-detail="context" x="710" y="111" class="t-muted" font-size="7" text-anchor="middle">Event Bus :9092</text>
         </g>
 
         <!-- Legend -->
         <g data-legend="">
-          <text x="40" y="766" class="t-primary" font-size="12" font-weight="650">Legend</text>
-          <g data-legend-semantic-kind="emphasis" data-legend-x="40" data-legend-baseline="786" data-legend-width="78">
-            <path d="M 40 783 L 74 783" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-            <text x="83" y="786" class="t-muted" font-size="10" font-weight="500">request</text>
+          <text x="40" y="546" class="t-primary" font-size="12" font-weight="650">Legend</text>
+          <g data-legend-semantic-kind="emphasis" data-legend-x="40" data-legend-baseline="566" data-legend-width="78">
+            <path d="M 40 563 L 74 563" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+            <text x="83" y="566" class="t-muted" font-size="10" font-weight="500">request</text>
           </g>
-          <g data-legend-semantic-kind="return" data-legend-x="140" data-legend-baseline="786" data-legend-width="73">
-            <path d="M 140 783 L 174 783" class="a-default" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
-            <text x="183" y="786" class="t-muted" font-size="10" font-weight="500">return</text>
+          <g data-legend-semantic-kind="return" data-legend-x="140" data-legend-baseline="566" data-legend-width="73">
+            <path d="M 140 563 L 174 563" class="a-default" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
+            <text x="183" y="566" class="t-muted" font-size="10" font-weight="500">return</text>
           </g>
-          <g data-legend-semantic-kind="security" data-legend-x="235" data-legend-baseline="786" data-legend-width="83">
-            <path d="M 235 783 L 269 783" class="a-security" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
-            <text x="278" y="786" class="t-muted" font-size="10" font-weight="500">security</text>
+          <g data-legend-semantic-kind="security" data-legend-x="235" data-legend-baseline="566" data-legend-width="83">
+            <path d="M 235 563 L 269 563" class="a-security" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
+            <text x="278" y="566" class="t-muted" font-size="10" font-weight="500">security</text>
           </g>
-          <g data-legend-semantic-kind="dashed" data-legend-x="340" data-legend-baseline="786" data-legend-width="98">
-            <path d="M 340 783 L 374 783" class="a-dashed" stroke-width="1.4" marker-end="url(#arrowhead-dashed)"/>
-            <text x="383" y="786" class="t-muted" font-size="10" font-weight="500">async trace</text>
-          </g>
-          <g data-legend-semantic-kind="default" data-legend-x="460" data-legend-baseline="786" data-legend-width="118">
-            <path d="M 460 783 L 494 783" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-            <text x="503" y="786" class="t-muted" font-size="10" font-weight="500">default message</text>
+          <g data-legend-semantic-kind="dashed" data-legend-x="340" data-legend-baseline="566" data-legend-width="98">
+            <path d="M 340 563 L 374 563" class="a-dashed" stroke-width="1.4" marker-end="url(#arrowhead-dashed)"/>
+            <text x="383" y="566" class="t-muted" font-size="10" font-weight="500">async trace</text>
           </g>
         </g>
       </svg>
@@ -5516,37 +5466,34 @@
     <div class="cards">
       <div class="card">
         <div class="card-header">
-          <div class="card-dot cyan"></div>
-          <h3>Perimeter &amp; Outbox Pattern</h3>
-        </div>
-        <ul>
-          <li>&bull; Inbound requests validated at Spring Cloud Gateway in sub-5ms</li>
-          <li>&bull; Transfer record and outbox event written within one atomic Oracle transaction</li>
-          <li>&bull; Client receives immediate HTTP 202 Accepted without holding open persistence locks</li>
-        </ul>
-      </div>
-
-      <div class="card">
-        <div class="card-header">
           <div class="card-dot emerald"></div>
-          <h3>Ordered Partition Settlement</h3>
+          <h3>Python Risk Engine Fast Path (&lt; 2ms SLA)</h3>
         </div>
         <ul>
-          <li>&bull; Transfers partitioned by source_account_id guaranteeing strict sequence per account</li>
-          <li>&bull; Consumer thread acquires pessimistic lock via SELECT ... FOR UPDATE on Oracle rows</li>
-          <li>&bull; Settlement updates balance amounts and publishes TransferExecuted event</li>
+          <li>&bull; Orchestrator invokes Python FastAPI risk evaluation before ledger mutation</li>
+          <li>&bull; Synchronous inference uses trained XGBoost model evaluating amount and velocity</li>
         </ul>
       </div>
 
       <div class="card">
         <div class="card-header">
-          <div class="card-dot violet"></div>
-          <h3>Asynchronous Fan-Out Projections</h3>
+          <div class="card-dot cyan"></div>
+          <h3>Temenos OFS Serialization (Spring Boot Mock)</h3>
         </div>
         <ul>
-          <li>&bull; PostgreSQL audit consumer reads event stream and inserts immutable journal records</li>
-          <li>&bull; Audit consumer lag or database maintenance never impedes balance settlement</li>
-          <li>&bull; Notification service delivers real-time email advices and receipts to customer inboxes</li>
+          <li>&bull; Orchestrator formats JSON into standard Temenos OFS command syntax</li>
+          <li>&bull; Spring Boot T24 mock parses OFS and enforces double-entry ledger debit and credit</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot amber"></div>
+          <h3>ACID Guarantee on Azure SQL</h3>
+        </div>
+        <ul>
+          <li>&bull; T24 Mock CBS maintains exclusive direct connection to Azure SQL Database</li>
+          <li>&bull; Applies strict row locking (UPDLOCK) preventing race conditions and overdrafts</li>
         </ul>
       </div>
     </div>

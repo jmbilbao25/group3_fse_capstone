@@ -1,0 +1,20 @@
+{
+  "temperature": 7.12,
+  "nll_before": 3.3429,
+  "nll_after": 1.8858,
+  "ece_before": 0.5824,
+  "ece_after": 0.0919,
+  "macro_f1_v": 0.0636,
+  "theta_medium": 0.35,
+  "theta_high": 0.5,
+  "classes": [
+    "prize_or_fee_scam",
+    "investment_scam",
+    "romance_scam",
+    "impersonation",
+    "fake_invoice_or_selling_scam",
+    "other_suspicious",
+    "none"
+  ],
+  "calibrated_at": "2026-10-05 16:48:23"
+}

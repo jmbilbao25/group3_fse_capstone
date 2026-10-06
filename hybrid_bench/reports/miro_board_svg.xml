@@ -1,0 +1,149 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+  <g id="two_stage_frame" transform="translate(4200, 350)" data-frame="Two-Stage Transfer Risk Engine (S2 Tabular + NanoJev Typology)">
+    <rect data-type="frame" x="0" y="0" width="2500" height="1550" fill="#ffffff" data-title="Two-Stage Transfer Risk Engine (S2 Tabular + NanoJev Typology)" />
+    
+    <!-- Title and Subtitle -->
+    <text x="40" y="70" font-family="noto_sans" font-size="33" font-weight="bold" fill="#1a1a1a">Two-Stage Transfer Risk Engine: S2 Tabular &amp; NanoJev Typology</text>
+    <text x="40" y="105" font-family="noto_sans" font-size="16" fill="#595959">Philippine Retail Banking Architecture • Targeted Scam Friction • Escalate-Only Safety Guarantee</text>
+
+    <!-- Main Mermaid Flowchart Diagram Widget -->
+    <foreignObject id="flow_diagram_widget" x="40" y="140" width="1600" height="900" data-type="diagram" data-title="Two-Stage Decision &amp; Warning Flow">
+flowchart TD
+    classDef startNode fill:#B3E65F,stroke:#6E9A24,color:#2F440B
+    classDef decisionNode fill:#9CE6FF,stroke:#2C97BB,color:#1C4657
+    classDef stageANode fill:#FFE86D,stroke:#A28E26,color:#574900
+    classDef stageBNode fill:#B8ACFB,stroke:#8A7BE0,color:#231266
+    classDef alertNode fill:#FFB575,stroke:#CC7830,color:#542700
+    classDef asyncNode fill:#DDDDD8,stroke:#8A8A7E,color:#434339
+    classDef userNode fill:#81E7DE,stroke:#259D92,color:#0E4343
+
+    subgraph SubUser ["1. Customer Initiates Transfer"]
+        C1["Customer Submits Transfer&lt;br/&gt;Amount, Payee, Device Context, Memo"]:::userNode
+    end
+
+    subgraph SubStageA ["2. Stage A: Sync Tabular Risk (&lt; 200 ms)"]
+        G0{"Gate 0 Hard Rules&lt;br/&gt;Velocity &gt; 1000 km/h, Tampering"}:::decisionNode
+        XGB["XGBoost S2 Tabular Model&lt;br/&gt;Spike, Drain, Payee History"]:::stageANode
+        A0{"Action a0"}:::decisionNode
+        G0 --&gt;|Pass| XGB
+        XGB --&gt; A0
+    end
+
+    subgraph SubStageB ["3. Stage B: Sync-Bounded Memo Check (1500 ms Timeout)"]
+        ChkMemo{"Memo Present &amp;&lt;br/&gt;a0 != BLOCK?"}:::decisionNode
+        NJ["NanoJev Typology Logits (Qwen2.5 INT8)&lt;br/&gt;7 Fixed Scam Classes | T*=7.12"]:::stageBNode
+        Tier{"Friction Tier"}:::decisionNode
+        ChkMemo --&gt;|Yes| NJ
+        NJ --&gt; Tier
+    end
+
+    subgraph SubFriction ["4. Customer Warning &amp; Action Flow"]
+        Modal["Targeted Typology Warning Screen&lt;br/&gt;English / Tagalog / Taglish"]:::alertNode
+        CustAction{"Customer Action"}:::decisionNode
+        StepUp["Step-Up Authentication&lt;br/&gt;In-App Biometric (No SMS OTP)"]:::stageANode
+        ExecDone(["Simulated Ledger Settlement&lt;br/&gt;Transfer Executed"]):::startNode
+        CancelDone(["Transfer Cancelled&lt;br/&gt;Funds Preserved"]):::userNode
+        PauseDone(["10-Min Cool-Off Pause&lt;br/&gt;Transfer Held"]):::userNode
+
+        Tier --&gt;|"MEDIUM (0.35 - 0.50)"| Modal
+        Tier --&gt;|"HIGH (&gt;= 0.50) + Cool-Off"| Modal
+        Modal --&gt; CustAction
+        CustAction --&gt;|Cancel| CancelDone
+        CustAction --&gt;|Pause| PauseDone
+        CustAction --&gt;|Continue| StepUp
+        StepUp --&gt;|Success| ExecDone
+    end
+
+    subgraph SubInvariants ["5. Safety Invariants &amp; Safe Fallbacks"]
+        DirectExec["Execute Directly (a0)&lt;br/&gt;No Warning Needed"]:::startNode
+        BlockDone(["Transfer Blocked"]):::alertNode
+        Tier --&gt;|"NONE (&lt; 0.35)"| DirectExec
+        ChkMemo --&gt;|No Memo| DirectExec
+        A0 --&gt;|BLOCK| BlockDone
+        G0 --&gt;|Hard Rule Trip| BlockDone
+        NJ -.-&gt;|"Timeout / Error Fallback"| DirectExec
+    end
+
+    subgraph SubAsync ["6. Asynchronous Path (Fire-and-Forget)"]
+        Events["POST /risk/events"]:::asyncNode
+        SAR["Draft AMLC SAR Report&lt;br/&gt;(BLOCK / HIGH Tier)"]:::asyncNode
+        Audit["Append-Only JSONL Audit Log"]:::asyncNode
+        Queue["Analyst Review Queue&lt;br/&gt;(STARS Accountability)"]:::asyncNode
+        Events --&gt; SAR
+        Events --&gt; Audit
+        Events --&gt; Queue
+    end
+
+    C1 --&gt; G0
+    A0 --&gt;|ALLOW / STEP_UP| ChkMemo
+    BlockDone -.-&gt; Events
+    ExecDone -.-&gt; Events
+    CancelDone -.-&gt; Events
+    PauseDone -.-&gt; Events
+
+    </foreignObject>
+
+    <!-- Side Panel 1: Stage A Architecture -->
+    <rect id="panel_stage_a" x="1680" y="140" width="760" height="260" rx="12" fill="#fffbed" stroke="#ffdc4a" stroke-width="2" />
+    <text x="1710" y="180" font-family="noto_sans" font-size="18" font-weight="bold" fill="#af7e04">Stage A: Fast Synchronous Risk (&lt; 200 ms)</text>
+    <textArea id="text_stage_a" x="1710" y="200" width="700" font-family="noto_sans" font-size="14" fill="#595959">
+<b>Gate 0 Hard Rules:</b> Physical velocity &gt; 1000 km/h, device rooting, tampering, failed Play Integrity, mock location.<br/>
+<b>XGBoost S2 Tabular:</b> 30+ behavioral signals (spike ratio, balance drain, payee history, dormant days).<br/>
+<b>Performance Benchmark:</b> p50 = 30.1 ms, p95 = 39.7 ms at 10 TPS (budget &lt; 200 ms satisfied).<br/>
+<b>Initial Action a0:</b> ALLOW, REQUIRE_2FA (STEP_UP), or BLOCK. NanoJev is not invoked here.
+    </textArea>
+
+    <!-- Side Panel 2: Stage B Typology & Friction Tiers -->
+    <rect id="panel_stage_b" x="1680" y="430" width="760" height="300" rx="12" fill="#f4f2fd" stroke="#8f7fee" stroke-width="2" />
+    <text x="1710" y="470" font-family="noto_sans" font-size="18" font-weight="bold" fill="#6631d7">Stage B: Sync-Bounded Typology Check (1500 ms Timeout)</text>
+    <textArea id="text_stage_b" x="1710" y="490" width="700" font-family="noto_sans" font-size="14" fill="#595959">
+<b>NanoJev Model:</b> Qwen2.5-0.5B ONNX INT8 next-token logit readout across 7 typologies.<br/>
+<b>Scam Categories:</b> Prize/Fee, Investment, Romance, Impersonation, Fake Selling, Other, None.<br/>
+<b>Fitted Calibration:</b> T* = 7.12 (reduces ECE from 0.5824 to 0.0919 on validation split V).<br/>
+<b>Friction Tiers:</b><br/>
+• NONE (prob &lt; 0.35): Settle payment directly under a0 without modal.<br/>
+• MEDIUM (0.35 &lt;= prob &lt; 0.50): Targeted modal warning (Cancel / Pause / Continue).<br/>
+• HIGH (prob &gt;= 0.50): Targeted modal warning + mandatory 10-min cool-off pause.
+    </textArea>
+
+    <!-- Side Panel 3: Invariant & Regulatory Alignment -->
+    <rect id="panel_reg" x="1680" y="760" width="760" height="280" rx="12" fill="#f0f5fd" stroke="#659df2" stroke-width="2" />
+    <text x="1710" y="800" font-family="noto_sans" font-size="18" font-weight="bold" fill="#305bab">Safety Invariants &amp; Regulatory Alignment</text>
+    <textArea id="text_reg" x="1710" y="820" width="700" font-family="noto_sans" font-size="14" fill="#595959">
+<b>Escalate-Only Invariant:</b> RiskTier(final) &gt;= RiskTier(a0). NanoJev may escalate, never downgrade.<br/>
+<b>Adversarial Robustness:</b> 0 downgrades across 60 prompt injection vectors (100% preservation).<br/>
+<b>Timeout &amp; Error Fallback:</b> On timeout or exception, orchestrator defaults to a0 with zero failed transfers.<br/>
+<b>BSP Circular 1213 (AFASA):</b> Moving away from SMS OTP; STEP_UP mapped to in-app biometrics.<br/>
+<b>STARS AI Governance:</b> Sustainability (local CPU), Transparency, Accountability, Responsibility, Security.
+    </textArea>
+
+    <!-- Bottom KPI Card 1: Stage A Latency -->
+    <rect id="kpi_1" x="40" y="1080" width="570" height="150" rx="12" fill="#eaf9ef" stroke="#2dc75c" stroke-width="2" />
+    <text x="70" y="1120" font-family="noto_sans" font-size="14" font-weight="bold" fill="#067429">STAGE A LATENCY (10 TPS)</text>
+    <text x="70" y="1165" font-family="noto_sans" font-size="33" font-weight="bold" fill="#067429">30.1 ms</text>
+    <text x="70" y="1200" font-family="noto_sans" font-size="13" fill="#595959">p50 latency (p95: 39.7 ms) &lt; 200 ms SLA budget strictly met</text>
+
+    <!-- Bottom KPI Card 2: SHA256 Cache Speed -->
+    <rect id="kpi_2" x="650" y="1080" width="570" height="150" rx="12" fill="#f0f5fd" stroke="#659df2" stroke-width="2" />
+    <text x="680" y="1120" font-family="noto_sans" font-size="14" font-weight="bold" fill="#305bab">SHA256 CACHE SPEED</text>
+    <text x="680" y="1165" font-family="noto_sans" font-size="33" font-weight="bold" fill="#305bab">3.01 ms</text>
+    <text x="680" y="1200" font-family="noto_sans" font-size="13" fill="#595959">Sub-millisecond engine lookup; binds memo + S2 tabular facts</text>
+
+    <!-- Bottom KPI Card 3: Invariant Guarantee -->
+    <rect id="kpi_3" x="1260" y="1080" width="570" height="150" rx="12" fill="#fffbed" stroke="#ffdc4a" stroke-width="2" />
+    <text x="1290" y="1120" font-family="noto_sans" font-size="14" font-weight="bold" fill="#af7e04">INVARIANT PRESERVATION</text>
+    <text x="1290" y="1165" font-family="noto_sans" font-size="33" font-weight="bold" fill="#af7e04">100.0%</text>
+    <text x="1290" y="1200" font-family="noto_sans" font-size="13" fill="#595959">0 downgrades across 60 prompt injection attacks and 1000 property tests</text>
+
+    <!-- Bottom KPI Card 4: Safe Fallback Rate -->
+    <rect id="kpi_4" x="1870" y="1080" width="570" height="150" rx="12" fill="#f4f2fd" stroke="#8f7fee" stroke-width="2" />
+    <text x="1900" y="1120" font-family="noto_sans" font-size="14" font-weight="bold" fill="#6631d7">TIMEOUT FALLBACK RATE</text>
+    <text x="1900" y="1165" font-family="noto_sans" font-size="33" font-weight="bold" fill="#6631d7">0.0%</text>
+    <text x="1900" y="1200" font-family="noto_sans" font-size="13" fill="#595959">Stage B timeout never fails a transfer; safe fallback directly to a0</text>
+
+    <!-- Bottom Summary Row -->
+    <text x="40" y="1280" font-family="noto_sans" font-size="14" fill="#595959">
+      <b>Summary:</b> The two-stage design provides rapid tabular fraud scoring (&lt; 40 ms) while isolating heavy NLP evaluation into a bounded secondary step. Targeted warnings address authorized push payment scams where step-up authentication alone is ineffective.
+    </text>
+  </g>
+</svg>

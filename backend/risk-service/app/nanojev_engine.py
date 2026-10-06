@@ -19,6 +19,11 @@ try:
 except ImportError:
     ONNX_AVAILABLE = False
 
+try:
+    from app.warning_catalog import get_warning_dialog
+except ImportError:
+    from warning_catalog import get_warning_dialog
+
 
 # Known high-risk scam patterns and fraud vernacular in Philippine retail banking
 HIGH_RISK_MEMO_PATTERNS = [
@@ -105,6 +110,7 @@ class NanoJevEngine:
                 self.tok_allow_ids = [self.tokenizer.encode(" ALLOW").ids[0], self.tokenizer.encode("ALLOW").ids[0]]
                 self.tok_block_ids = [self.tokenizer.encode(" BLOCK").ids[0], self.tokenizer.encode("BLOCK").ids[0]]
                 self.tok_req_ids = [self.tokenizer.encode(" REQUIRE").ids[0], self.tokenizer.encode("REQUIRE").ids[0]]
+                self.tok_warn_ids = [self.tokenizer.encode(" WARNING").ids[0], self.tokenizer.encode("WARNING").ids[0]]
 
                 # Pre-allocate static past_key_values (empty pkv for single forward pass)
                 empty_pkv = np.zeros((1, 2, 0, 64), dtype=np.float32)
@@ -153,7 +159,9 @@ class NanoJevEngine:
         amount: float,
         avg_amount: float,
         memo: str,
-        geo_signals: Dict[str, Any]
+        geo_signals: Dict[str, Any],
+        threat_narrative: Optional[str] = None,
+        threat_category: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Executes real-time System 1 neural decision across Choice, Score, and Noul primitives.
@@ -198,14 +206,6 @@ class NanoJevEngine:
             flags.append("SLIGHT_AMOUNT_ELEVATION")
 
         # ---------------------------------------------------------------------
-        # 3. Natural Language Memo Semantic Analysis
-        # ---------------------------------------------------------------------
-        memo_lower = memo.lower() if memo else ""
-        for pattern, flag_name, _ in HIGH_RISK_MEMO_PATTERNS:
-            if re.search(pattern, memo_lower):
-                flags.append(flag_name)
-
-        # ---------------------------------------------------------------------
         # Gate 0: Deterministic Fast-Path (< 0.1ms)
         # ---------------------------------------------------------------------
         # Fast Block: Physically impossible travel velocity (> 1,000 km/h)
@@ -232,11 +232,14 @@ class NanoJevEngine:
                 }
             }
 
-        # Fast Pass: Pure routine habit (home radius, normal amount, zero anomaly flags)
-        if dist_from_home < 5.0 and spike_ratio <= 1.2 and not is_vpn and not flags:
+        # Fast Pass: Pure routine habit (home radius, normal amount, zero anomaly flags, no threat narrative)
+        if dist_from_home < 5.0 and spike_ratio <= 1.2 and not is_vpn and not flags and not threat_narrative and not threat_category:
             total_latency_ms = round((time.perf_counter() - t0) * 1000.0, 2)
             return {
                 "decision": "ALLOW",
+                "advisory_tier": "NONE",
+                "warning_dialog": None,
+                "threat_narrative": None,
                 "fraud_score": 0,
                 "is_anomaly": False,
                 "anomaly_probability": 0.001,
@@ -266,15 +269,25 @@ class NanoJevEngine:
             try:
                 t_infer_start = time.perf_counter()
                 
-                # Compact prompt reduces self-attention sequence length for maximum speed
-                prompt = (
-                    f"<|im_start|>system\n"
-                    f"You are NanoJev banking risk model. Classify verdict: ALLOW, REQUIRE_2FA, or BLOCK.<|im_end|>\n"
-                    f"<|im_start|>user\n"
-                    f"Spike: {spike_ratio:.1f}x | Speed: {velocity_kmh:.1f}km/h | VPN: {is_vpn} | Memo: \"{memo}\"\n"
-                    f"Verdict:<|im_end|>\n"
-                    f"<|im_start|>assistant\n"
-                )
+                # Build prompt: use rich threat context narrative if available
+                if threat_narrative:
+                    prompt = (
+                        f"<|im_start|>system\n"
+                        f"You are NanoJev mobile banking risk copilot. Classify verdict: ALLOW, WARNING, or BLOCK.<|im_end|>\n"
+                        f"<|im_start|>user\n"
+                        f"{threat_narrative}\n"
+                        f"Verdict:<|im_end|>\n"
+                        f"<|im_start|>assistant\n"
+                    )
+                else:
+                    prompt = (
+                        f"<|im_start|>system\n"
+                        f"You are NanoJev banking risk model. Classify verdict: ALLOW, REQUIRE_2FA, or BLOCK.<|im_end|>\n"
+                        f"<|im_start|>user\n"
+                        f"Spike: {spike_ratio:.1f}x | Speed: {velocity_kmh:.1f}km/h | VPN: {is_vpn} | Telemetry: Standard Retail Transfer\n"
+                        f"Verdict:<|im_end|>\n"
+                        f"<|im_start|>assistant\n"
+                    )
                 enc = self.tokenizer.encode(prompt)
                 seq_len = len(enc.ids)
 
@@ -292,9 +305,11 @@ class NanoJevEngine:
                 allow_logit = float(max(logits[self.tok_allow_ids[0]], logits[self.tok_allow_ids[1]]))
                 block_logit = float(max(logits[self.tok_block_ids[0]], logits[self.tok_block_ids[1]]))
                 req_logit = float(max(logits[self.tok_req_ids[0]], logits[self.tok_req_ids[1]]))
+                warn_logit = float(max(logits[self.tok_warn_ids[0]], logits[self.tok_warn_ids[1]]))
 
                 raw_logits_dict = {
                     "ALLOW": round(allow_logit, 3),
+                    "WARNING": round(warn_logit, 3),
                     "REQUIRE_2FA": round(req_logit, 3),
                     "BLOCK": round(block_logit, 3)
                 }
@@ -366,9 +381,19 @@ class NanoJevEngine:
         anomaly_probability = round(p_block + p_require, 3)
 
         # Choice Head
+        advisory_tier = "NONE"
+        warning_dialog = None
+
         if is_impossible_travel or final_score >= 80 or p_block >= 0.50:
             decision = "BLOCK"
             primary_flag = "IMPOSSIBLE_TRAVEL_VELOCITY" if is_impossible_travel else (flags[0] if flags else "HIGH_RISK_SCORE")
+        elif threat_category:
+            # Contextual device threat signals trigger in-app ADVISORY_WARNING
+            decision = "ADVISORY_WARNING"
+            primary_flag = f"DEVICE_THREAT_{threat_category}"
+            advisory_tier = "ADVISORY_WARNING"
+            wd = get_warning_dialog(threat_category)
+            warning_dialog = wd.model_dump() if hasattr(wd, "model_dump") else wd.dict()
         elif final_score >= 35 or p_require >= 0.40 or flags:
             decision = "REQUIRE_2FA"
             primary_flag = flags[0] if flags else "ELEVATED_RISK_SCORE"
@@ -380,6 +405,9 @@ class NanoJevEngine:
 
         return {
             "decision": decision,
+            "advisory_tier": advisory_tier,
+            "warning_dialog": warning_dialog,
+            "threat_narrative": threat_narrative,
             "fraud_score": final_score,
             "is_anomaly": anomaly_probability > 0.40,
             "anomaly_probability": anomaly_probability,

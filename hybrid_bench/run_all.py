@@ -72,7 +72,10 @@ def main():
     if args.phase in ["all", "8"]:
         print("\n>>> [8/8] Executing Phase 8: Programmatic Report Compilation...")
         report_path = generate_report()
-        print(f"Report compiled successfully at: {report_path}")
+        print(f"Markdown report compiled successfully at: {report_path}")
+        from hybrid_bench.reports.generate_excel_report import build_excel_report
+        excel_path = build_excel_report()
+        print(f"Excel report compiled successfully at: {excel_path}")
 
     elapsed = time.time() - start_time
     print("\n" + "=" * 75)

@@ -9,7 +9,7 @@ This single-page application provides dedicated web portals for Customer and Adm
 ### Customer portal
 - Real-time balance monitoring and account details
 - Instant funds transfer initiation with automated regulatory tier calculation
-- Two-factor authentication (2FA) verification via email OTP for transfers above PHP 50,000.00
+- Bound hardware biometric authentication (Primary Device) or Out-of-Band push notification (Secondary Device) with step-up MPIN for high-value transfers (Zero SMS OTP under BSP Circular 1213)
 - Live Server-Sent Events (SSE) transaction status alerts
 
 ### Admin portal

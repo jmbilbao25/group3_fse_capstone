@@ -1459,41 +1459,66 @@ export default function AdminExecutivePortal() {
                   </span>
                 </div>
 
-                {/* 2-Column Wide Grid for the 11 Stages */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Single Row per Stage (11 Rows) */}
+                <div className="space-y-2.5">
                   {[
-                    { step: 1, name: 'Initiated', desc: 'Received via API Gateway (Port 8080) with client fingerprint' },
-                    { step: 2, name: 'Validated', desc: 'Account format, destination existence & ISO-4217 PHP currency verified' },
-                    { step: 3, name: 'Authenticated', desc: 'Active cryptographic JWT session and hardware device key validated' },
-                    { step: 4, name: 'Fraud Check', desc: 'Stage A Gate 0 (<200ms) & NanoJev ONNX memo check cleared' },
-                    { step: 5, name: 'Limit Check', desc: 'BSP Circular 1033 daily thresholds & AMLA velocity limits verified' },
-                    { step: 6, name: 'Funds Check', desc: 'Pessimistic row lock acquired; available balance verified sufficient' },
-                    { step: 7, name: 'Authorized', desc: 'Hardware biometric token & maker-checker dual rules verified' },
-                    { step: 8, name: 'Posted', desc: 'Committed to Oracle XE 21c Master table (Debit Dr / Credit Cr)' },
-                    { step: 9, name: 'Ledger Update', desc: 'Atomic double-entry mutation complete in Balance Master' },
-                    { step: 10, name: 'Notification', desc: 'Transactional outbox event published to Kafka broker (:9092)' },
-                    { step: 11, name: 'Reconciliation', desc: 'Immutable SHA-256 cryptographic seal written to PostgreSQL Vault' },
+                    { step: 1, name: 'Initiated', system: 'Gateway :8080', desc: 'Received via API Gateway with client device fingerprint and TLS session verification' },
+                    { step: 2, name: 'Validated', system: 'Account Svc :8081', desc: 'Account format, beneficiary existence, active status & ISO-4217 PHP currency verified' },
+                    { step: 3, name: 'Authenticated', system: 'Security JWT', desc: 'Active cryptographic JWT session and hardware-bound device signature cleared' },
+                    { step: 4, name: 'Fraud Check', system: 'Risk Engine :8084', desc: 'Stage A Gate 0 (<200ms latency) & NanoJev ONNX memo NLP threat check passed' },
+                    { step: 5, name: 'Limit Check', system: 'BSP Cir. 1033', desc: 'Regulatory daily ceilings, velocity limits & AMLA threshold validation completed' },
+                    { step: 6, name: 'Funds Check', system: 'Pessimistic Lock', desc: 'Database row-level lock acquired; available balance verified strictly sufficient' },
+                    { step: 7, name: 'Authorized', system: 'Dual Controls', desc: 'Hardware biometric token & maker-checker segregation of duties verified' },
+                    { step: 8, name: 'Posted', system: 'Oracle XE 21c', desc: 'Transaction master record committed to Oracle database with unique sequence' },
+                    { step: 9, name: 'Ledger Update', system: 'Ledger Engine :8082', desc: 'Atomic double-entry mutation complete in Balance Master (Debit Dr / Credit Cr)' },
+                    { step: 10, name: 'Notification', system: 'Kafka Broker :9092', desc: 'Transactional outbox event dispatched to Kafka cluster and customer advice stream' },
+                    { step: 11, name: 'Reconciliation', system: 'PostgreSQL :5433', desc: 'Immutable SHA-256 cryptographic seal written to PostgreSQL WORM Audit Vault' },
                   ].map((stage) => (
                     <div
                       key={stage.step}
-                      className="flex items-start gap-3 rounded-2xl border border-line bg-surface p-3.5 hover:bg-sunken/40 transition"
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-line bg-surface p-3.5 hover:bg-sunken/40 transition"
                     >
-                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-400 font-mono text-xs font-bold ring-2 ring-emerald-500/20">
-                        {stage.step}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-fg">{stage.name}</span>
-                          <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-0.5">
-                            <Check className="h-2.5 w-2.5" /> Passed
-                          </span>
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-400 font-mono text-xs font-bold ring-2 ring-emerald-500/20">
+                          {stage.step}
                         </div>
-                        <p className="mt-0.5 text-[11px] text-fg-muted leading-relaxed">
+                        <div className="min-w-[130px] sm:min-w-[150px] shrink-0">
+                          <span className="text-xs font-bold text-fg block">{stage.name}</span>
+                          <span className="text-[10px] text-fg-subtle font-mono">{stage.system}</span>
+                        </div>
+                        <p className="text-xs text-fg-muted">
                           {stage.desc}
                         </p>
                       </div>
+                      <div className="shrink-0 flex items-center justify-end sm:justify-start">
+                        <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] text-emerald-400 font-semibold flex items-center gap-1 border border-emerald-500/20">
+                          <Check className="h-3 w-3" /> Passed
+                        </span>
+                      </div>
                     </div>
                   ))}
+
+                  {selectedTx.status === 'REVERSED' && (
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-rose-500/30 bg-rose-500/5 p-3.5 transition">
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-rose-500/20 text-rose-400 font-mono text-xs font-bold ring-2 ring-rose-500/30">
+                          12
+                        </div>
+                        <div className="min-w-[130px] sm:min-w-[150px] shrink-0">
+                          <span className="text-xs font-bold text-rose-400 block">Compensating Rollback</span>
+                          <span className="text-[10px] text-rose-300 font-mono">T24 Core Banking</span>
+                        </div>
+                        <p className="text-xs text-fg-muted">
+                          Contra-entry credited back to originating account. Signed off by {selectedTx.reversedBy || 'Carlos Mendoza'} & approved by {selectedTx.approvedBy || 'Diana Vance'}.
+                        </p>
+                      </div>
+                      <div className="shrink-0 flex items-center justify-end sm:justify-start">
+                        <span className="rounded-full bg-rose-500/10 px-2.5 py-1 text-[11px] text-rose-400 font-semibold flex items-center gap-1 border border-rose-500/20">
+                          <RotateCcw className="h-3 w-3" /> Reversed
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

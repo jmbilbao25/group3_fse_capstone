@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/user_persona.dart';
 import '../services/auth_api_service.dart';
+import '../services/security_service.dart';
 import '../widgets/brand_logo.dart';
 import 'otp_verification_screen.dart';
 
@@ -303,6 +304,18 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
 
+    // Pre-flight device integrity check
+    final assessment = await SecurityService.assessDevice();
+    if (assessment.isCompromised) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      await SecurityService.showWarningDialogAndExit(
+        context,
+        reason: assessment.summary,
+      );
+      return;
+    }
+
     // Call AuthApiService to authenticate against backend account-service
     final authResult = await AuthApiService().login(
       email: email,
@@ -336,8 +349,18 @@ class _LoginScreenState extends State<LoginScreen> {
     } else if (authResult.status == AuthStatus.authenticated) {
       widget.onLoginSuccess(authResult.persona ?? matchedPersona);
     } else {
+      final errorMsg = authResult.errorMessage ?? 'Authentication failed. Please check your credentials.';
+      if (errorMsg.contains('security integrity') || errorMsg.contains('compromised')) {
+        if (mounted) {
+          await SecurityService.showWarningDialogAndExit(
+            context,
+            reason: errorMsg,
+          );
+        }
+        return;
+      }
       setState(() {
-        _errorMessage = authResult.errorMessage ?? 'Authentication failed. Please check your credentials.';
+        _errorMessage = errorMsg;
       });
     }
   }

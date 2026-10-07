@@ -1,3 +1,4 @@
+import 'dart:async' show Timer;
 import 'dart:io' show Directory, File, Platform, Socket, exit;
 import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:flutter/material.dart';
@@ -51,16 +52,59 @@ class SecurityService {
     '/Applications/Zebra.app',
   ];
 
-  /// Set to true in development/test if you want to simulate a compromised device
+  /// Compile-time / launch-time environment variable support (zero code edits):
+  /// e.g. flutter run --dart-define=SECURITY_THREAT=rooted
+  ///      flutter run --dart-define=SECURITY_THREAT=dev_options
+  ///      flutter run --dart-define=SECURITY_THREAT=bootloader
+  ///      flutter run --dart-define=SECURITY_THREAT=emulator
+  ///      flutter run --dart-define=SIMULATE_COMPROMISED=true
+  static const String _envThreat = String.fromEnvironment('SECURITY_THREAT', defaultValue: '');
+  static const bool _envSimulate = bool.fromEnvironment('SIMULATE_COMPROMISED', defaultValue: false);
+
+  /// Set to true in development/test if you want to simulate a compromised device in code
   static bool simulateCompromised = false;
 
   /// Performs full device security assessment.
   static Future<SecurityAssessment> assessDevice() async {
-    if (simulateCompromised) {
-      return const SecurityAssessment(
+    // 1. Check environment variable override (--dart-define) or in-memory flag
+    if (simulateCompromised || _envSimulate || _envThreat.isNotEmpty) {
+      String threat = 'Simulated Tamper Alert: Root / Developer Options / Bootloader (TEST MODE)';
+      final lower = _envThreat.toLowerCase().trim();
+      if (lower == 'rooted' || lower == 'root') {
+        threat = 'Root binary detected: /system/bin/su';
+      } else if (lower == 'dev_options' || lower == 'adb' || lower == 'developer') {
+        threat = 'Developer Options Enabled, USB Debugging (ADB) Active';
+      } else if (lower == 'bootloader') {
+        threat = 'Unlocked Bootloader (AVB Compromised)';
+      } else if (lower == 'emulator') {
+        threat = 'Android Emulator / Virtual Environment Detected';
+      } else if (lower == 'frida' || lower == 'hooking') {
+        threat = 'Frida Dynamic Instrumentation Server Detected';
+      } else if (_envThreat.isNotEmpty) {
+        threat = _envThreat;
+      }
+      return SecurityAssessment(
         isCompromised: true,
-        threats: ['Simulated Tamper Alert: Root / Developer Options / Bootloader (TEST MODE)'],
+        threats: [threat],
       );
+    }
+
+    // 2. Check external runtime file trigger (allows zero-code runtime testing while app is running)
+    if (!kIsWeb) {
+      try {
+        final tempFile = File('${Directory.systemTemp.path}/.bank_security_tamper');
+        if (tempFile.existsSync()) {
+          final customReason = tempFile.readAsStringSync().trim();
+          return SecurityAssessment(
+            isCompromised: true,
+            threats: [
+              customReason.isNotEmpty
+                  ? customReason
+                  : 'Hardware tamper signal detected: /system/bin/su (Security Alert)',
+            ],
+          );
+        }
+      } catch (_) {}
     }
 
     if (kIsWeb) {
@@ -156,12 +200,293 @@ class SecurityService {
     final result = await assessDevice();
     return result.isCompromised;
   }
+
+  /// Flag to allow test harnesses to verify auto-close behavior without terminating the test runner.
+  static bool enableAutoExit = true;
+
+  /// Automatically terminates the mobile application cleanly across platforms.
+  static void exitApp() {
+    if (!enableAutoExit) {
+      debugPrint('[SecurityService] exitApp() called (suppressed for test environment)');
+      return;
+    }
+    if (kIsWeb) {
+      debugPrint('[SecurityService] exitApp() called in web browser environment.');
+      return;
+    }
+    try {
+      if (Platform.isAndroid) {
+        SystemNavigator.pop();
+      } else {
+        exit(0);
+      }
+    } catch (e) {
+      debugPrint('[SecurityService] System exit exception: $e');
+    }
+    // Safety fallback: ensure process termination if SystemNavigator.pop() is delayed
+    Future.delayed(const Duration(milliseconds: 300), () {
+      try {
+        exit(0);
+      } catch (_) {}
+    });
+  }
+
+  /// Displays the security warning dialog and automatically closes the application after the delay.
+  static Future<void> showWarningDialogAndExit(
+    BuildContext context, {
+    required String reason,
+    int delaySeconds = 2,
+    VoidCallback? onExit,
+  }) async {
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => SecurityWarningDialog(
+        reason: reason,
+        autoClose: true,
+        delaySeconds: delaySeconds,
+        onExit: onExit,
+      ),
+    );
+  }
 }
 
-/// Fallback blocking screen if device integrity fails
+/// Interactive Warning Dialog displaying detected threats and automatically closing after a delay.
+class SecurityWarningDialog extends StatefulWidget {
+  final String reason;
+  final bool autoClose;
+  final int delaySeconds;
+  final VoidCallback? onExit;
+
+  const SecurityWarningDialog({
+    super.key,
+    required this.reason,
+    this.autoClose = true,
+    this.delaySeconds = 2,
+    this.onExit,
+  });
+
+  @override
+  State<SecurityWarningDialog> createState() => _SecurityWarningDialogState();
+}
+
+class _SecurityWarningDialogState extends State<SecurityWarningDialog> {
+  late int _remainingSeconds;
+  Timer? _countdownTimer;
+  Timer? _safetyCloseTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _remainingSeconds = widget.delaySeconds;
+    if (widget.autoClose) {
+      _startCountdown();
+    }
+  }
+
+  void _startCountdown() {
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_remainingSeconds > 1) {
+        setState(() {
+          _remainingSeconds--;
+        });
+      } else {
+        setState(() {
+          _remainingSeconds = 0;
+        });
+        timer.cancel();
+        _triggerExit();
+      }
+    });
+
+    // Safety timer guaranteeing close exactly at delaySeconds
+    _safetyCloseTimer = Timer(Duration(seconds: widget.delaySeconds), () {
+      _countdownTimer?.cancel();
+      _triggerExit();
+    });
+  }
+
+  void _triggerExit() {
+    if (widget.onExit != null) {
+      widget.onExit!();
+    } else {
+      SecurityService.exitApp();
+    }
+  }
+
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    _safetyCloseTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return PopScope(
+      canPop: false,
+      child: AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: isDark ? const Color(0xFF1E222B) : Colors.white,
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.redAccent.withAlpha(30),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.redAccent.withAlpha(80), width: 1.5),
+              ),
+              child: const Icon(
+                Icons.gpp_bad_rounded,
+                color: Colors.redAccent,
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Security Warning',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.redAccent,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'AuraBank detected an untrusted environment. To safeguard customer accounts and financial integrity, this application cannot run on compromised devices.',
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.4,
+                color: isDark ? Colors.grey[300] : Colors.grey[800],
+              ),
+            ),
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF15181E) : const Color(0xFFFFF1F2),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: isDark ? Colors.redAccent.withAlpha(70) : Colors.red.withAlpha(80),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.warning_amber_rounded, size: 14, color: Colors.redAccent),
+                      const SizedBox(width: 6),
+                      Text(
+                        'DETECTED THREAT',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                          color: isDark ? Colors.redAccent : Colors.red[800],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    widget.reason.isNotEmpty ? widget.reason : 'Device integrity compromised',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.grey[200] : Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF262C36) : const Color(0xFFF1F3F7),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.redAccent,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      widget.autoClose
+                          ? 'Automatically closing in $_remainingSeconds second${_remainingSeconds == 1 ? '' : 's'}...'
+                          : 'Application is terminating...',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.grey[300] : Colors.grey[700],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              icon: const Icon(Icons.exit_to_app_rounded, size: 16),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: _triggerExit,
+              label: const Text('Close App Now', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Fallback full-screen barrier displayed on launch if device integrity fails.
+/// Centered on a hardened backdrop, displaying the SecurityWarningDialog and auto-closing in 2 seconds.
 class SecurityLockoutScreen extends StatelessWidget {
   final String? reason;
-  const SecurityLockoutScreen({super.key, this.reason});
+  final bool autoClose;
+  final int delaySeconds;
+  final VoidCallback? onExit;
+
+  const SecurityLockoutScreen({
+    super.key,
+    this.reason,
+    this.autoClose = true,
+    this.delaySeconds = 2,
+    this.onExit,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -169,80 +494,21 @@ class SecurityLockoutScreen extends StatelessWidget {
       canPop: false,
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
+        theme: ThemeData.dark().copyWith(
+          scaffoldBackgroundColor: const Color(0xFF101215),
+        ),
         home: Scaffold(
           backgroundColor: const Color(0xFF101215),
           body: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 28.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withAlpha(30),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.redAccent.withAlpha(100), width: 2),
-                    ),
-                    child: const Icon(Icons.gpp_bad_rounded, size: 72, color: Colors.redAccent),
-                  ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Security Violation Detected',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'AuraBank cannot run on compromised, rooted, or developer-mode Android devices to safeguard your funds and confidential financial data.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[400],
-                      height: 1.5,
-                    ),
-                  ),
-                  if (reason != null && reason!.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1E222B),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.grey[800]!),
-                      ),
-                      child: Text(
-                        'Detected Threat: $reason',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 12, color: Colors.redAccent),
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 36),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: const BorderSide(color: Colors.grey),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onPressed: () {
-                        if (Platform.isAndroid) {
-                          SystemNavigator.pop();
-                        } else {
-                          exit(0);
-                        }
-                      },
-                      child: const Text('Exit Application'),
-                    ),
-                  ),
-                ],
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: SecurityWarningDialog(
+                  reason: reason ?? 'Device integrity compromised',
+                  autoClose: autoClose,
+                  delaySeconds: delaySeconds,
+                  onExit: onExit,
+                ),
               ),
             ),
           ),
@@ -251,3 +517,4 @@ class SecurityLockoutScreen extends StatelessWidget {
     );
   }
 }
+

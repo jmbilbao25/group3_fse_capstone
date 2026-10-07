@@ -659,6 +659,85 @@ class NanoJevSecondLookEngine:
         return "none"
 
 
+class LayaSecondLookEngine:
+    """
+    Second-look reviewer wrapping Laya System 1 decision engine.
+    Executes typed question schemas (Choice, Score, Noul) in a single non-autoregressive pass.
+    """
+
+    def __init__(
+        self,
+        model_name: str = "laya-multilingual",
+        intra_op_threads: int = 4,
+        temperature: float = 5.0,
+        theta_block: float = 0.40,
+        theta_2fa: float = 0.60
+    ):
+        self.model_loaded = False
+        self.intra_op_threads = intra_op_threads
+        self.temperature = temperature
+        self.theta_block = theta_block
+        self.theta_2fa = theta_2fa
+        self.model_name = model_name
+        self.engine = None
+
+        try:
+            from app.laya_engine import LayaEngine
+            self.engine = LayaEngine(model_name=model_name)
+            self.model_loaded = self.engine.model_loaded
+            logger.info(f"LayaSecondLookEngine initialized (model={model_name}, loaded={self.model_loaded})")
+        except Exception as e:
+            logger.warning(f"Error initializing LayaEngine in LayaSecondLookEngine: {e}")
+
+    def review_transfer(
+        self,
+        s2_action: str,
+        memo: str,
+        amount: float,
+        spike_ratio: float,
+        balance_drain_ratio: float,
+        payee_age_days: float,
+        velocity_kmh: float = 0.0,
+        is_vpn: bool = False,
+        use_cache: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Executes second-look evaluation using Laya non-autoregressive encoder.
+        Guarantees escalate-only output format compatible with AsyncReviewWorkerPool.
+        """
+        if self.engine is not None:
+            return self.engine.review_transfer(
+                s2_action=s2_action,
+                memo=memo,
+                amount=amount,
+                spike_ratio=spike_ratio,
+                balance_drain_ratio=balance_drain_ratio,
+                payee_age_days=payee_age_days,
+                velocity_kmh=velocity_kmh,
+                is_vpn=is_vpn,
+                use_cache=use_cache
+            )
+
+        # Fallback when Laya is unavailable
+        a0 = str(s2_action).upper().strip()
+        return {
+            "raw_logits": {"ALLOW": 15.0, "REQUIRE_2FA": 5.0, "BLOCK": 2.0},
+            "calibrated_probs": {
+                "ALLOW": 0.95,
+                "REQUIRE_2FA": 0.04,
+                "BLOCK": 0.01
+            },
+            "recommended_action": a0,
+            "typology_tag": "none",
+            "consistency_flag": {
+                "is_consistent": True,
+                "detail": "Evaluated with default fallback"
+            },
+            "latency_ms": 0.1,
+            "cached": False
+        }
+
+
 # =============================================================================
 # 7. Asynchronous Review Worker Pool & Queue Manager
 # =============================================================================

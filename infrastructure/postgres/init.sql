@@ -45,7 +45,8 @@ CREATE TABLE IF NOT EXISTS ledger_mutation_audit (
               'DEBIT',
               'CREDIT',
               'HOLD',
-              'RELEASE'
+              'RELEASE',
+              'REVERSAL'
                                )
     ),
 

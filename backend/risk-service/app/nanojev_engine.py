@@ -67,7 +67,20 @@ class NanoJevEngine:
     Synthesizes physical telemetry, transaction amounts, and memo semantics.
     """
 
-    def __init__(self):
+    def __init__(self, backend: Optional[str] = None):
+        self.backend = (backend or os.environ.get("RISK_ENGINE_BACKEND", "laya")).lower()
+        self._laya_engine = None
+        if self.backend == "laya":
+            try:
+                from app.laya_engine import LayaEngine
+                self._laya_engine = LayaEngine()
+                self.model_loaded = self._laya_engine.model_loaded
+                self.model_name = self._laya_engine.model_name
+                print(f"[NanoJevEngine] Delegating to LayaEngine (backend={self.backend})", flush=True)
+                return
+            except Exception as e:
+                print(f"[NanoJevEngine] Note: Laya delegation init: {e}. Falling back to Qwen.", flush=True)
+
         self.model_loaded = False
         self.session = None
         self.tokenizer = None
@@ -166,6 +179,16 @@ class NanoJevEngine:
         """
         Executes real-time System 1 neural decision across Choice, Score, and Noul primitives.
         """
+        if self._laya_engine is not None:
+            return self._laya_engine.evaluate(
+                amount=amount,
+                avg_amount=avg_amount,
+                memo=memo,
+                geo_signals=geo_signals,
+                threat_narrative=threat_narrative,
+                threat_category=threat_category
+            )
+
         t0 = time.perf_counter()
         flags: List[str] = []
 
@@ -427,3 +450,32 @@ class NanoJevEngine:
                 "raw_neural_logits": raw_logits_dict
             }
         }
+
+    def analyze_transfer(
+        self,
+        amount: float,
+        avg_amount: float,
+        memo: str,
+        geo_signals: Dict[str, Any],
+        threat_narrative: Optional[str] = None,
+        threat_category: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Alias for evaluate matching the legacy engine interface."""
+        return self.evaluate(
+            amount=amount,
+            avg_amount=avg_amount,
+            memo=memo,
+            geo_signals=geo_signals,
+            threat_narrative=threat_narrative,
+            threat_category=threat_category
+        )
+
+
+# Export LayaEngine for drop-in alternative usage
+try:
+    from app.laya_engine import LayaEngine
+except ImportError:
+    try:
+        from laya_engine import LayaEngine
+    except ImportError:
+        LayaEngine = None

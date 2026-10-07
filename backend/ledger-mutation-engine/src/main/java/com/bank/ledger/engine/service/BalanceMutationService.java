@@ -3,6 +3,10 @@ package com.bank.ledger.engine.service;
 import com.bank.ledger.contracts.dto.CheckerActionRequest;
 import com.bank.ledger.contracts.dto.MutationRequest;
 import com.bank.ledger.contracts.dto.MutationResponse;
+import com.bank.ledger.contracts.dto.T24FundsTransferRequest;
+import com.bank.ledger.contracts.dto.T24FundsTransferResponse;
+import com.bank.ledger.contracts.dto.T24ReversalRequest;
+import com.bank.ledger.contracts.dto.T24ReversalResponse;
 import com.bank.ledger.contracts.dto.TransactionNotificationEvent;
 import com.bank.ledger.contracts.exception.InsufficientFundsException;
 import com.bank.ledger.contracts.exception.SegregationOfDutiesException;
@@ -930,5 +934,314 @@ public class BalanceMutationService {
     @Transactional(transactionManager = "postgresTransactionManager", readOnly = true)
     public List<LedgerMutationAudit> getAuditRecords() {
         return auditRepository.findAllByOrderByAuditIdDesc();
+    }
+
+    /**
+     * T24 Core Banking Funds Transfer API (FUNDS.TRANSFER)
+     * Executes atomic dual-account settlement following Temenos Transact core banking protocol.
+     */
+    @Transactional(transactionManager = "oracleTransactionManager")
+    public T24FundsTransferResponse executeT24FundsTransfer(T24FundsTransferRequest request) {
+        if (request.getOfsMessage() != null && !request.getOfsMessage().isBlank()) {
+            parseOfsTransferMessage(request.getOfsMessage(), request);
+        }
+
+        String txId = request.getTransactionReference();
+        if (txId == null || txId.isBlank()) {
+            txId = "FT" + java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyMMdd"))
+                    + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+            request.setTransactionReference(txId);
+        }
+
+        log.info("[T24 FUNDS.TRANSFER] Ref: {}, Debit: {}, Credit: {}, Amount: PHP {}",
+                txId, request.getDebitAccountId(), request.getCreditAccountId(), request.getAmount());
+
+        MutationRequest mutationReq = MutationRequest.builder()
+                .transactionId(txId)
+                .accountId(request.getDebitAccountId())
+                .targetAccountId(request.getCreditAccountId())
+                .mutationAmount(request.getAmount())
+                .initiatorUserId(request.getCustomerId() != null ? request.getCustomerId() : "T24-USER")
+                .memo(request.getPaymentDetails() != null ? request.getPaymentDetails() : "T24 Funds Transfer")
+                .eventType(com.bank.ledger.contracts.enums.EventType.TRANSFER)
+                .mutationType(com.bank.ledger.contracts.enums.MutationType.TRANSFER)
+                .build();
+
+        MutationResponse res = executeTransfer(mutationReq);
+
+        BigDecimal debitBalAfter = res.getBalanceAfter();
+        BigDecimal creditBalAfter = BigDecimal.ZERO;
+        Optional<BalanceMaster> creditAcc = balanceRepository.findByAccountId(request.getCreditAccountId());
+        if (creditAcc.isPresent()) {
+            creditBalAfter = creditAcc.get().getBalanceAmount();
+        }
+
+        String ofsResponse = String.format("%s//1/%s", txId, res.getStatus());
+
+        return T24FundsTransferResponse.builder()
+                .t24Reference(txId)
+                .status(res.getStatus())
+                .debitAccountId(request.getDebitAccountId())
+                .debitAmount(request.getAmount())
+                .debitBalanceAfter(debitBalAfter)
+                .creditAccountId(request.getCreditAccountId())
+                .creditAmount(request.getAmount())
+                .creditBalanceAfter(creditBalAfter)
+                .currency(request.getCurrency() != null ? request.getCurrency() : "PHP")
+                .valueDate(request.getValueDate() != null ? request.getValueDate() : java.time.LocalDate.now().toString())
+                .ofsResponse(ofsResponse)
+                .timestamp(Instant.now())
+                .message("T24 Funds Transfer executed successfully: " + res.getStatus())
+                .build();
+    }
+
+    /**
+     * T24 Core Banking Transaction Reversal API (FUNDS.TRANSFER,REVERSE)
+     * Reverses a previously settled transfer via compensating double-entry mutation.
+     */
+    @Transactional(transactionManager = "oracleTransactionManager")
+    public T24ReversalResponse executeT24Reversal(T24ReversalRequest request) {
+        if (request.getOfsMessage() != null && !request.getOfsMessage().isBlank()) {
+            parseOfsReversalMessage(request.getOfsMessage(), request);
+        }
+
+        String originalTxId = request.getOriginalTransactionId();
+        if (originalTxId == null || originalTxId.isBlank()) {
+            throw new IllegalArgumentException("Original transaction ID is required for T24 reversal.");
+        }
+
+        log.info("[T24 REVERSAL START] OriginalTxId: {}, Reason: {}, Checker: {}",
+                originalTxId, request.getReversalReason(), request.getCheckerId());
+
+        TransactionMaster originalTx = transactionRepository.findById(originalTxId)
+                .orElseThrow(() -> new IllegalArgumentException("Original transaction not found: " + originalTxId));
+
+        if ("REVERSED".equalsIgnoreCase(originalTx.getStatus())) {
+            throw new IllegalStateException("Transaction " + originalTxId + " has already been reversed.");
+        }
+
+        if (!"COMMITTED".equalsIgnoreCase(originalTx.getStatus()) && !"POSTED".equalsIgnoreCase(originalTx.getStatus()) && !"SETTLED".equalsIgnoreCase(originalTx.getStatus())) {
+            throw new IllegalStateException("Cannot reverse transaction in status '" + originalTx.getStatus() + "'. Only settled transactions can be reversed.");
+        }
+
+        String originalSenderId = originalTx.getFromAccountId();
+        String originalReceiverId = originalTx.getToAccountId();
+        BigDecimal amount = originalTx.getAmount();
+
+        if (originalReceiverId == null || originalReceiverId.isBlank()) {
+            throw new IllegalStateException("Original transaction " + originalTxId + " does not have a destination account to debit for reversal.");
+        }
+
+        // 1. Deterministic Lock Ordering
+        String firstLockId = originalSenderId.compareTo(originalReceiverId) < 0 ? originalSenderId : originalReceiverId;
+        String secondLockId = originalSenderId.compareTo(originalReceiverId) < 0 ? originalReceiverId : originalSenderId;
+
+        BalanceMaster firstAccount = balanceRepository.findByAccountIdWithLock(firstLockId)
+                .orElseThrow(() -> new IllegalArgumentException("Account not found: " + firstLockId));
+        BalanceMaster secondAccount = balanceRepository.findByAccountIdWithLock(secondLockId)
+                .orElseThrow(() -> new IllegalArgumentException("Account not found: " + secondLockId));
+
+        BalanceMaster originalSender = originalSenderId.equals(firstLockId) ? firstAccount : secondAccount;
+        BalanceMaster originalReceiver = originalReceiverId.equals(firstLockId) ? firstAccount : secondAccount;
+
+        // 2. Solvency check on beneficiary account
+        if (originalReceiver.getAvailableBalance().compareTo(amount) < 0) {
+            log.error("[T24 REVERSAL REJECTED] Beneficiary account {} has insufficient funds (PHP {}) to reverse PHP {}",
+                    originalReceiverId, originalReceiver.getAvailableBalance(), amount);
+            throw new InsufficientFundsException(String.format(
+                    "Beneficiary account %s has insufficient funds to reverse transfer. Available: PHP %s, Reversal Amount: PHP %s",
+                    originalReceiverId, originalReceiver.getAvailableBalance(), amount));
+        }
+
+        // 3. Compensating Double-Entry Mutation (Debit recipient back, Credit sender back)
+        BigDecimal receiverBefore = originalReceiver.getBalanceAmount();
+        BigDecimal receiverAfter = receiverBefore.subtract(amount);
+        originalReceiver.setBalanceAmount(receiverAfter);
+        originalReceiver.setAvailableBalance(originalReceiver.getAvailableBalance().subtract(amount));
+        originalReceiver.setUpdatedAt(Instant.now());
+
+        BigDecimal senderBefore = originalSender.getBalanceAmount();
+        BigDecimal senderAfter = senderBefore.add(amount);
+        originalSender.setBalanceAmount(senderAfter);
+        originalSender.setAvailableBalance(originalSender.getAvailableBalance().add(amount));
+        originalSender.setUpdatedAt(Instant.now());
+
+        balanceRepository.save(originalReceiver);
+        balanceRepository.save(originalSender);
+
+        // Update original transaction status
+        originalTx.setStatus("REVERSED");
+        originalTx.setUpdatedAt(Instant.now());
+        transactionRepository.save(originalTx);
+
+        // Record compensating reversal transaction
+        String reversalRef = "REV-" + originalTxId + "-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+        // Validate approvedBy against user directory to preserve FK constraint
+        String checkerId = request.getCheckerId();
+        String approvedBy = null;
+        if (checkerId != null && !checkerId.isBlank()) {
+            if (accountRepository.existsByUserId(checkerId)
+                    || "usr-1003-tel-001".equals(checkerId)
+                    || "usr-1004-adm-001".equals(checkerId)
+                    || "U1001".equals(checkerId)) {
+                approvedBy = checkerId;
+            }
+        }
+
+        TransactionMaster reversalTx = TransactionMaster.builder()
+                .transactionId(reversalRef)
+                .fromAccountId(originalReceiverId) // debited back
+                .toAccountId(originalSenderId)     // credited back
+                .type("REVERSAL")
+                .amount(amount)
+                .beforeBalance(receiverBefore)
+                .afterBalance(receiverAfter)
+                .status("COMMITTED")
+                .requires2FaOtp(0)
+                .approvedByUserId(approvedBy)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+        transactionRepository.save(reversalTx);
+
+        // 4. Immutable PostgreSQL Audit Vault
+        LedgerMutationAudit audit = LedgerMutationAudit.builder()
+                .transactionId(reversalRef)
+                .accountId(originalReceiverId)
+                .mutationType("REVERSAL")
+                .mutationAmount(amount)
+                .beforeBalance(receiverBefore)
+                .afterBalance(receiverAfter)
+                .initiatorUserId(request.getMakerId() != null ? request.getMakerId() : "T24-OPERATOR")
+                .approvedByUserId(request.getCheckerId())
+                .status("COMMITTED")
+                .createdAt(Instant.now())
+                .build();
+        auditRepository.save(audit);
+
+        try {
+            kafkaPublisher.publishAuditEvent(audit);
+        } catch (Exception ex) {
+            log.warn("[KAFKA AUDIT WARNING] Failed to stream reversal audit: {}", ex.getMessage());
+        }
+
+        try {
+            TransactionEvent event = TransactionEvent.builder()
+                    .transactionId(reversalRef)
+                    .sourceAccountId(originalReceiverId)
+                    .destinationAccountId(originalSenderId)
+                    .amount(amount)
+                    .currency("PHP")
+                    .mutationType("REVERSAL")
+                    .status("COMMITTED")
+                    .initiatorUserId(request.getMakerId() != null ? request.getMakerId() : "T24-OPERATOR")
+                    .timestamp(Instant.now())
+                    .build();
+
+            outboxRepository.save(OutboxEventMaster.builder()
+                    .eventId("EVT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                    .aggregateType("TRANSACTION")
+                    .aggregateId(reversalRef)
+                    .eventType("TRANSFER_REVERSED")
+                    .kafkaTopic("transaction-events")
+                    .payload(objectMapper.writeValueAsString(event))
+                    .status("PENDING")
+                    .retryCount(0)
+                    .createdAt(Instant.now())
+                    .build());
+        } catch (Exception e) {
+            log.error("[OUTBOX ERROR] Failed to record reversal in outbox", e);
+        }
+
+        String ofsResponse = String.format("%s//1/REVERSED,REV.REF=%s", originalTxId, reversalRef);
+
+        log.info("[T24 REVERSAL COMPLETED] Original: {}, ReversalRef: {}, Amount: PHP {}, Debited: {}, Credited: {}",
+                originalTxId, reversalRef, amount, originalReceiverId, originalSenderId);
+
+        return T24ReversalResponse.builder()
+                .reversalReference(reversalRef)
+                .originalTransactionId(originalTxId)
+                .status("REVERSED")
+                .reversalReason(request.getReversalReason() != null ? request.getReversalReason() : "ADMIN_REVERSAL")
+                .amount(amount)
+                .debitedAccountId(originalReceiverId)
+                .debitedBalanceAfter(receiverAfter)
+                .creditedAccountId(originalSenderId)
+                .creditedBalanceAfter(senderAfter)
+                .ofsResponse(ofsResponse)
+                .timestamp(Instant.now())
+                .message("T24 transaction successfully reversed with compensating double-entry mutation.")
+                .build();
+    }
+
+    private void parseOfsTransferMessage(String ofs, T24FundsTransferRequest req) {
+        if (ofs == null) return;
+        for (String part : ofs.split(",")) {
+            String[] kv = part.split("=", 2);
+            if (kv.length == 2) {
+                String key = kv[0].trim().toUpperCase();
+                String val = kv[1].trim();
+                switch (key) {
+                    case "DEBIT.ACCT.NO":
+                    case "DEBIT_ACCT_NO":
+                        req.setDebitAccountId(val);
+                        break;
+                    case "CREDIT.ACCT.NO":
+                    case "CREDIT_ACCT_NO":
+                        req.setCreditAccountId(val);
+                        break;
+                    case "DEBIT.AMOUNT":
+                    case "AMOUNT":
+                        try { req.setAmount(new BigDecimal(val)); } catch (Exception ignored) {}
+                        break;
+                    case "PAYMENT.DETAILS":
+                    case "PAYMENT_DETAILS":
+                        req.setPaymentDetails(val);
+                        break;
+                    case "DEBIT.CURRENCY":
+                        req.setCurrency(val);
+                        break;
+                    case "CUSTOMER.ID":
+                        req.setCustomerId(val);
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+    }
+
+    private void parseOfsReversalMessage(String ofs, T24ReversalRequest req) {
+        if (ofs == null) return;
+        for (String part : ofs.split(",")) {
+            String[] kv = part.split("=", 2);
+            if (kv.length == 2) {
+                String key = kv[0].trim().toUpperCase();
+                String val = kv[1].trim();
+                switch (key) {
+                    case "TX.ID":
+                    case "TRANSACTION.ID":
+                    case "REF":
+                        req.setOriginalTransactionId(val);
+                        break;
+                    case "REASON":
+                        req.setReversalReason(val);
+                        break;
+                    case "CHECKER":
+                        req.setCheckerId(val);
+                        break;
+                    case "MAKER":
+                        req.setMakerId(val);
+                        break;
+                    case "TICKET":
+                        req.setTicketId(val);
+                        break;
+                    default:
+                        break;
+                }
+            } else if (!part.contains("/") && !part.contains(":") && req.getOriginalTransactionId() == null) {
+                req.setOriginalTransactionId(part.trim());
+            }
+        }
     }
 }

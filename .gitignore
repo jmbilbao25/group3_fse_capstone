@@ -75,3 +75,4 @@ docs/skills/
 scratch/
 scratch_*.txt
 package-lock.json
+.github/

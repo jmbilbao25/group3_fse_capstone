@@ -44,7 +44,7 @@ from app.reviewer import (
 DD_AGENT_HOST = os.environ.get("DD_AGENT_HOST", "dd-agent")
 DD_TRACE_AGENT_PORT = int(os.environ.get("DD_TRACE_AGENT_PORT", 8126))
 DD_SERVICE = os.environ.get("DD_SERVICE", "risk-service")
-DD_ENV = os.environ.get("DD_ENV", "production")
+DD_ENV = os.environ.get("DD_ENV", "local")
 DD_VERSION = os.environ.get("DD_VERSION", "2.0.0")
 
 try:
@@ -278,6 +278,12 @@ class RiskRequestHandler(BaseHTTPRequestHandler):
         trace_id = ""
         span_id = ""
         if TRACING_AVAILABLE:
+            try:
+                from ddtrace.propagation.http import HTTPPropagator
+                parent_context = HTTPPropagator.extract(dict(self.headers))
+                tracer.context_provider.activate(parent_context)
+            except Exception:
+                pass
             span = tracer.trace("risk.analyze", service=DD_SERVICE, resource="POST /api/v1/risk/analyze", span_type="web")
             trace_id = str(span.trace_id)
             span_id = str(span.span_id)

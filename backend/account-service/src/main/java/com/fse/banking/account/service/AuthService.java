@@ -15,6 +15,7 @@ import com.fse.banking.account.security.model.SessionMetadata;
 import com.fse.banking.common.enums.UserRole;
 import com.fse.banking.common.enums.UserStatus;
 import com.fse.banking.common.exception.ConflictException;
+import com.fse.banking.common.exception.DeviceCompromisedException;
 import com.fse.banking.common.exception.ForbiddenException;
 import com.fse.banking.common.exception.LockedUserException;
 import com.fse.banking.common.exception.UnauthorizedException;
@@ -104,6 +105,16 @@ public class AuthService {
     @Transactional
     public LoginResult login(LoginRequest request, String clientIp, String userAgent) {
         log.info("Processing login attempt for: {}", request.getEmail());
+
+        // Zero-tolerance device integrity gate
+        if (Boolean.TRUE.equals(request.getIsDeviceCompromised())) {
+            String reasons = request.getCompromiseReasons() != null && !request.getCompromiseReasons().isBlank()
+                    ? request.getCompromiseReasons()
+                    : "Root, Unlocked Bootloader, or Developer Options detected";
+            log.error("SECURITY ALERT: Blocked login attempt from compromised device! email={}, deviceId={}, reasons={}",
+                    request.getEmail(), request.getDeviceId(), reasons);
+            throw new DeviceCompromisedException("Access Denied: Your device failed security integrity checks (" + reasons + ").");
+        }
 
         UserEntity user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new UnauthorizedException("Invalid email or password."));

@@ -103,7 +103,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: hostController,
                     decoration: const InputDecoration(
                       labelText: 'Host / IP Address',
-                      hintText: 'e.g. 172.20.10.2 or localhost',
+                      hintText: 'e.g. 192.168.254.159 or localhost',
                       prefixIcon: Icon(Icons.lan_outlined),
                       border: OutlineInputBorder(),
                     ),
@@ -113,8 +113,18 @@ class _LoginScreenState extends State<LoginScreen> {
                     spacing: 8,
                     children: [
                       ActionChip(
+                        avatar: const Icon(Icons.phone_android_rounded, size: 14),
+                        label: const Text('Emulator (10.0.2.2)', style: TextStyle(fontSize: 11)),
+                        onPressed: () {
+                          setSheetState(() {
+                            hostController.text = '10.0.2.2';
+                            testPassed = null;
+                          });
+                        },
+                      ),
+                      ActionChip(
                         avatar: const Icon(Icons.laptop_mac_rounded, size: 14),
-                        label: const Text('Laptop IP (172.20.10.2)', style: TextStyle(fontSize: 11)),
+                        label: const Text('Laptop IP (192.168.254.159)', style: TextStyle(fontSize: 11)),
                         onPressed: () {
                           setSheetState(() {
                             hostController.text = BackendConfig.defaultLanIp;

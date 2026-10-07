@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'auth_api_service.dart' show defaultBackendHost;
+import '../main.dart' show rootNavigatorKey;
+import '../widgets/security_dialog.dart';
+import 'auth_api_service.dart' show AuthApiService, defaultBackendHost;
 
 class SecurityAlertEvent {
   final String title;
@@ -135,15 +137,10 @@ class NotificationStreamService {
                   final data = jsonDecode(dataStr) as Map<String, dynamic>;
                   final type = data['type'] as String? ?? currentEvent;
                   if (type == 'SECURITY_ALERT') {
-                    final notifId = data['notification_id'] as String? ?? '';
-                    if (notifId.isEmpty || _seenNotificationIds.add(notifId)) {
-                      final alert = SecurityAlertEvent.fromJson(data);
-                      _alertController.add(alert);
-                      debugPrint('[NotificationStream] Dispatched SECURITY_ALERT: ${alert.deviceName}');
-                    }
+                    final alert = SecurityAlertEvent.fromJson(data);
+                    _onSecurityAlertReceived(alert);
                   } else if (type == 'DEVICE_APPROVED' || type == 'DEVICE_REVOKED') {
-                    _deviceApprovalController.add(data);
-                    debugPrint('[NotificationStream] Dispatched $type for device: ${data['device_id']}');
+                    _onDeviceApprovalEventReceived(data);
                   }
                 } catch (e) {
                   debugPrint('[NotificationStream] Failed to parse alert data: $e');
@@ -224,7 +221,7 @@ class NotificationStreamService {
                   targetDeviceId: '',
                   notificationId: id,
                 );
-                _alertController.add(alert);
+                _onSecurityAlertReceived(alert);
               }
             }
           }
@@ -233,10 +230,63 @@ class NotificationStreamService {
     });
   }
 
+  void _onSecurityAlertReceived(SecurityAlertEvent alert) {
+    final notifId = alert.notificationId;
+    if (notifId.isEmpty || _seenNotificationIds.add(notifId)) {
+      _alertController.add(alert);
+      debugPrint('[NotificationStream] Dispatched SECURITY_ALERT: ${alert.deviceName}');
+
+      // If this device is the primary device, automatically trigger the security modal on the active route
+      if (AuthApiService().isPrimaryDevice) {
+        final context = rootNavigatorKey.currentContext;
+        if (context != null) {
+          SecurityApprovalDialog.show(context, alert);
+        }
+      }
+    }
+  }
+
+  void _onDeviceApprovalEventReceived(Map<String, dynamic> data) {
+    _deviceApprovalController.add(data);
+    debugPrint('[NotificationStream] Dispatched ${data['type']} for device: ${data['device_id']}');
+
+    final targetDevId = data['device_id'] as String? ?? '';
+    final currentDevId = AuthApiService().currentDeviceId;
+    final currentDevName = AuthApiService().currentDeviceName;
+    final isForThisDevice = targetDevId == currentDevId || targetDevId == currentDevName;
+
+    if (isForThisDevice) {
+      final type = data['type'] as String? ?? '';
+      final context = rootNavigatorKey.currentContext;
+      if (type == 'DEVICE_APPROVED') {
+        AuthApiService().currentIsApproved = true;
+        if (context != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✓ Device Approved! Your primary device authorized banking transactions.'),
+              backgroundColor: Color(0xFF107C41),
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+      } else if (type == 'DEVICE_REVOKED') {
+        AuthApiService().currentIsApproved = false;
+        if (context != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Access Revoked: Your session was terminated by your primary device.'),
+              backgroundColor: Colors.redAccent,
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+    }
+  }
+
   /// Manually inject alert (useful for test cases or instant demonstration)
   void injectAlert(SecurityAlertEvent alert) {
-    _seenNotificationIds.add(alert.notificationId);
-    _alertController.add(alert);
+    _onSecurityAlertReceived(alert);
   }
 
   void disconnect() {

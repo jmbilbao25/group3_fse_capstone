@@ -3,6 +3,8 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import '../models/user_persona.dart';
+import 'device_storage.dart';
+import 'security_service.dart';
 
 class BackendConfig {
   static final BackendConfig _instance = BackendConfig._internal();
@@ -10,7 +12,7 @@ class BackendConfig {
   BackendConfig._internal();
 
   /// Laptop's local Wi-Fi IP address for cross-device testing
-  static const String defaultLanIp = '172.20.10.2';
+  static const String defaultLanIp = '192.168.254.159';
 
   static String _resolveInitialHost() {
     if (kIsWeb) {
@@ -21,8 +23,8 @@ class BackendConfig {
       return 'localhost';
     }
     try {
-      if (Platform.isAndroid || Platform.isIOS) {
-        return defaultLanIp;
+      if (Platform.isAndroid) {
+        return '10.0.2.2';
       }
     } catch (_) {}
     return 'localhost';
@@ -114,7 +116,10 @@ class AuthVerifyResult {
 class AuthApiService {
   static final AuthApiService _instance = AuthApiService._internal();
   factory AuthApiService() => _instance;
-  AuthApiService._internal();
+  AuthApiService._internal() {
+    currentAccessToken = DeviceStorage.getAccessToken();
+    currentUserId = DeviceStorage.getUserId();
+  }
 
   /// Primary Gateway endpoint (Spring Cloud Gateway :8080)
   String get gatewayUrl => 'http://$defaultBackendHost:8080';
@@ -134,6 +139,9 @@ class AuthApiService {
   bool? currentIsApproved;
   String? currentPrimaryDeviceId;
   String? currentAccessToken;
+
+  bool get isDeviceApproved => currentIsApproved ?? (currentIsPrimaryDevice == true);
+  bool get isPrimaryDevice => currentIsPrimaryDevice ?? true;
 
   void switchDevice(DevicePreset preset) {
     currentDeviceId = preset.id;
@@ -175,6 +183,7 @@ class AuthApiService {
 
     for (final baseUrl in endpoints) {
       try {
+        final assessment = await SecurityService.assessDevice();
         final url = Uri.parse('$baseUrl/api/v1/auth/login');
         final response = await _client
             .post(
@@ -185,6 +194,8 @@ class AuthApiService {
                 'password': password,
                 'device_id': currentDeviceId,
                 'device_name': currentDeviceName,
+                'is_device_compromised': assessment.isCompromised,
+                'compromise_reasons': assessment.summary,
               }),
             )
             .timeout(const Duration(seconds: 4));
@@ -213,6 +224,12 @@ class AuthApiService {
               primaryDeviceId: currentPrimaryDeviceId,
             );
           } else {
+            if (currentAccessToken != null) {
+              DeviceStorage.saveAccessToken(currentAccessToken!);
+            }
+            if (currentUserId != null) {
+              DeviceStorage.saveUserId(currentUserId!);
+            }
             return AuthLoginResult(
               status: AuthStatus.authenticated,
               accessToken: currentAccessToken,
@@ -290,6 +307,12 @@ class AuthApiService {
           currentIsApproved = data['is_approved'] as bool? ?? (currentIsPrimaryDevice == true);
           currentPrimaryDeviceId = data['primary_device_id'] as String?;
           currentAccessToken = data['access_token'] as String?;
+          if (currentAccessToken != null) {
+            DeviceStorage.saveAccessToken(currentAccessToken!);
+          }
+          if (currentUserId != null) {
+            DeviceStorage.saveUserId(currentUserId!);
+          }
           return AuthVerifyResult(
             success: true,
             accessToken: currentAccessToken,
@@ -419,6 +442,14 @@ class AuthApiService {
       } catch (_) {}
     }
     return false;
+  }
+
+  Future<void> logout() async {
+    currentAccessToken = null;
+    currentUserId = null;
+    currentEmail = null;
+    currentPersona = null;
+    await DeviceStorage.clearSession();
   }
 
   Map<String, dynamic> _tryDecodeJson(String body) {

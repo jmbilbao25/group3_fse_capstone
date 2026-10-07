@@ -209,6 +209,11 @@ void main() {
 
     expect(find.text('Aura to Aura'), findsOneWidget);
     expect(find.text('Other Bank'), findsOneWidget);
+    expect(find.text('From:'), findsOneWidget);
+    expect(find.text('Savings Account'), findsOneWidget);
+    expect(find.text('Purpose'), findsOneWidget);
+    expect(find.text('Select transfer purpose'), findsOneWidget);
+    expect(find.text('Remarks (Optional)'), findsOneWidget);
     expect(find.text('Send Money'), findsOneWidget);
     expect(find.text('Bills & Utilities'), findsNothing);
   });

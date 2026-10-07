@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../services/bank_service.dart';
 import '../theme/aura_theme.dart';
 import '../widgets/aura_logo.dart';
@@ -26,13 +25,48 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
   late bool _isAuraToAura;
   late int _selectedPartnerBankIndex;
 
+  String _selectedSourceAccount = 'Savings';
+  String? _selectedPurpose;
+
   final TextEditingController _accountController =
-      TextEditingController(text: '1234 5678 9123 4569');
+      TextEditingController(text: '1234568898951');
   final TextEditingController _recipientController =
       TextEditingController(text: 'Jessie Mae Dela Paz');
   final TextEditingController _amountController =
-      TextEditingController(text: '50000.00');
-  final TextEditingController _remarksController = TextEditingController();
+      TextEditingController();
+  final TextEditingController _remarksController =
+      TextEditingController();
+
+  static const List<Map<String, dynamic>> _sourceAccounts = [
+    {
+      'type': 'Savings',
+      'title': 'Savings Account',
+      'accountNo': 'AUR-SAV-9821',
+      'balance': 50000.0,
+      'icon': Icons.savings_outlined,
+    },
+    {
+      'type': 'Current',
+      'title': 'Current Account',
+      'accountNo': 'AUR-CUR-4412',
+      'balance': 125000.0,
+      'icon': Icons.account_balance_wallet_outlined,
+    },
+    {
+      'type': 'Credit',
+      'title': 'Credit Account',
+      'accountNo': 'AUR-CRD-7703',
+      'balance': 75000.0,
+      'icon': Icons.credit_card_outlined,
+    },
+  ];
+
+  static const List<String> _purposes = [
+    'Remittance',
+    'Funds Transfer',
+    'Bills Payment',
+    'Savings',
+  ];
 
   static const List<Map<String, dynamic>> _partnerBanks = [
     {
@@ -58,56 +92,42 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
     },
   ];
 
-  static const List<Map<String, dynamic>> _quickRecipients = [
+  static const List<Map<String, dynamic>> _recentRecipients = [
     {
       'name': 'Jessie Mae Dela Paz',
-      'account': '1234 5678 9123 4569',
-      'isAura': true,
-      'bank': 'Aura Bank',
-      'avatar': 'J',
-      'color': Color(0xFF4F46E5),
+      'account': '1234568898951',
+      'bank': 'MeyBank',
+      'isAura': false,
+      'partnerIndex': 0,
     },
     {
       'name': 'Angel Lou F. Yabut',
-      'account': '7128 9012 3456 7890',
-      'isAura': true,
+      'account': '7128901234567',
       'bank': 'Aura Bank',
-      'avatar': 'A',
-      'color': Color(0xFF2E0854),
+      'isAura': true,
+      'partnerIndex': 0,
     },
     {
       'name': 'Mae G. Mercado',
-      'account': '4491 8820 1923 8810',
-      'isAura': false,
+      'account': '4491882019238',
       'bank': 'Apex Digital Bank',
+      'isAura': false,
       'partnerIndex': 1,
-      'avatar': 'M',
-      'color': Color(0xFF7928CA),
     },
     {
       'name': 'Luis Tan',
-      'account': '9975 4012 8841 2309',
-      'isAura': true,
+      'account': '9975401288412',
       'bank': 'Aura Bank',
-      'avatar': 'L',
-      'color': Color(0xFF059669),
+      'isAura': true,
+      'partnerIndex': 0,
     },
   ];
 
-  String _selectedPurpose = 'Personal / Family';
-  final List<String> _purposes = [
-    'Personal / Family',
-    'Allowance / Support',
-    'Business / Supplier',
-    'Investment / Savings',
-    'Emergency',
-  ];
-
-  static const Color brandViolet = AuraColors.primary;
-  static const Color textDark = AuraColors.textPrimary;
-  static const Color textGray = AuraColors.textMuted;
-  static const Color cardBorder = AuraColors.cardBorder;
-  static const Color greenCredit = AuraColors.creditGreen;
+  static const Color brandViolet = Color(0xFF380084);
+  static const Color textDark = Color(0xFF111827);
+  static const Color textGray = Color(0xFF6B7280);
+  static const Color cardBorder = Color(0xFFE5E7EB);
+  static const Color inputBg = Color(0xFFDCDFE4);
 
   @override
   void initState() {
@@ -125,52 +145,33 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
     super.dispose();
   }
 
-  double get _currentAmount {
-    return double.tryParse(_amountController.text.replaceAll(',', '')) ?? 0.0;
+  double get _currentSourceBalance {
+    final match = _sourceAccounts.firstWhere(
+      (a) => a['type'] == _selectedSourceAccount,
+      orElse: () => _sourceAccounts.first,
+    );
+    return match['balance'] as double;
   }
 
-  double get _currentFee => _isAuraToAura ? 0.0 : 10.0;
-
-  void _addAmount(double add) {
-    final next = _currentAmount + add;
-    setState(() {
-      _amountController.text = next.toStringAsFixed(2);
-    });
-  }
-
-  void _setMaxAmount() {
-    setState(() {
-      _amountController.text = _bankService.availableBalance.toStringAsFixed(2);
-    });
-  }
-
-  Future<void> _pasteFromClipboard() async {
-    final data = await Clipboard.getData(Clipboard.kTextPlain);
-    if (data?.text != null && data!.text!.trim().isNotEmpty) {
-      setState(() {
-        _accountController.text = data.text!.trim();
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Account number pasted from clipboard'),
-            duration: Duration(seconds: 1),
-          ),
-        );
-      }
-    }
+  Map<String, dynamic> get _currentSourceAccountData {
+    return _sourceAccounts.firstWhere(
+      (a) => a['type'] == _selectedSourceAccount,
+      orElse: () => _sourceAccounts.first,
+    );
   }
 
   void _onSendMoney() {
-    final enteredAmount = _currentAmount;
+    final text = _amountController.text.replaceAll(',', '').trim();
+    final enteredAmount = double.tryParse(text) ?? 0.0;
+
     if (enteredAmount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid amount to transfer')),
+        const SnackBar(content: Text('Please enter an amount greater than 0')),
       );
       return;
     }
 
-    if (enteredAmount > _bankService.availableBalance) {
+    if (enteredAmount > _currentSourceBalance) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Amount exceeds available account balance')),
       );
@@ -181,17 +182,195 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
         ? 'Aura Bank'
         : (_partnerBanks[_selectedPartnerBankIndex]['name'] as String);
 
+    final fee = _isAuraToAura ? 0.0 : 10.0;
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => ReviewTransferScreen(
           senderName: _bankService.user.name,
-          senderAccount: _bankService.savingsAccountNumber,
-          recipientName: _recipientController.text.trim(),
-          recipientAccount: _accountController.text.trim(),
+          senderAccount: _currentSourceAccountData['accountNo'] as String,
+          recipientName: _recipientController.text.trim().isNotEmpty
+              ? _recipientController.text.trim()
+              : 'Jessie Mae Dela Paz',
+          recipientAccount: _accountController.text.trim().isNotEmpty
+              ? _accountController.text.trim()
+              : '1234568898951',
           recipientBank: destinationBank,
           amount: enteredAmount,
-          fee: _currentFee,
-          remarks: _remarksController.text.trim(),
+          fee: fee,
+          remarks: _remarksController.text.trim().isNotEmpty
+              ? _remarksController.text.trim()
+              : (_selectedPurpose ?? 'Funds Transfer'),
+        ),
+      ),
+    );
+  }
+
+  void _showEditRecipientSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) => Padding(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 16,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD1D5DB),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Recipient Information',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: textDark),
+              ),
+              const SizedBox(height: 14),
+
+              // Recent Contacts quick pick
+              const Text(
+                'QUICK SELECT RECENT',
+                style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: textGray),
+              ),
+              const SizedBox(height: 8),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: _recentRecipients.map((r) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ActionChip(
+                        label: Text(
+                          r['name'] as String,
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _recipientController.text = r['name'] as String;
+                            _accountController.text = r['account'] as String;
+                            _isAuraToAura = r['isAura'] as bool;
+                            _selectedPartnerBankIndex = r['partnerIndex'] as int;
+                          });
+                          Navigator.of(ctx).pop();
+                        },
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              // Name Field
+              const Text(
+                'Account Holder Name',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textGray),
+              ),
+              const SizedBox(height: 6),
+              TextField(
+                controller: _recipientController,
+                decoration: InputDecoration(
+                  hintText: 'Enter recipient name',
+                  filled: true,
+                  fillColor: const Color(0xFFF3F4F6),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+
+              const SizedBox(height: 12),
+
+              // Account Number Field
+              const Text(
+                'Account Number',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textGray),
+              ),
+              const SizedBox(height: 6),
+              TextField(
+                controller: _accountController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  hintText: 'Enter account number',
+                  filled: true,
+                  fillColor: const Color(0xFFF3F4F6),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+
+              if (!_isAuraToAura) ...[
+                const SizedBox(height: 12),
+                const Text(
+                  'Destination Partner Bank',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textGray),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF3F4F6),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<int>(
+                      isExpanded: true,
+                      value: _selectedPartnerBankIndex,
+                      items: List.generate(_partnerBanks.length, (idx) {
+                        return DropdownMenuItem(
+                          value: idx,
+                          child: Text(
+                            _partnerBanks[idx]['name'] as String,
+                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                          ),
+                        );
+                      }),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setModalState(() => _selectedPartnerBankIndex = val);
+                          setState(() => _selectedPartnerBankIndex = val);
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: brandViolet,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Save Details', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -199,1119 +378,553 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final amount = _currentAmount;
-    final fee = _currentFee;
-
     return Scaffold(
-      backgroundColor: const Color(0xFFFBFBFE),
+      backgroundColor: const Color(0xFFFAFAFA),
       body: SafeArea(
-        child: Stack(
-          children: [
-            Column(
-              children: [
-                // Top Header with Aura branding and security indicator
-                _buildHeader(),
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Top Bar (Circle back button + Aura Bank pill)
+              _buildTopBar(),
 
-                Expanded(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 110),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Funding Account Card ("From:")
-                        _buildFundingAccountCard(),
+              const SizedBox(height: 20),
 
-                        const SizedBox(height: 18),
+              // Card 1: "From:" Dropdown (Savings, Current, Credit)
+              _buildFromCard(),
 
-                        // Transfer Scope Selector: Aura to Aura vs Other Bank
-                        _buildTransferScopeSelector(),
+              const SizedBox(height: 16),
 
-                        const SizedBox(height: 14),
+              // Card 2: Recipient, Channel Toggle & Amount Box
+              _buildRecipientAndAmountCard(),
 
-                        // Destination Bank Card (Active when Other Bank is selected)
-                        if (!_isAuraToAura) ...[
-                          _buildDestinationPartnerBankCard(),
-                          const SizedBox(height: 14),
-                        ] else ...[
-                          _buildAuraIntraBankBanner(),
-                          const SizedBox(height: 14),
-                        ],
+              const SizedBox(height: 16),
 
-                        // Quick Recent Recipients Carousel
-                        _buildQuickRecipientsSection(),
+              // Card 3: Purpose Dropdown & Remarks
+              _buildPurposeAndRemarksCard(),
 
-                        const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
-                        // Recipient Information Section
-                        _buildRecipientDetailsCard(),
+              // Bottom Button: "Send Money"
+              _buildSendMoneyButton(),
 
-                        const SizedBox(height: 16),
-
-                        // Amount Card with Quick Chips & Fee Notice
-                        _buildAmountHeroCard(),
-
-                        const SizedBox(height: 16),
-
-                        // Purpose & Remarks
-                        _buildTransferDetailsCard(),
-
-                        const SizedBox(height: 16),
-
-                        // Real-Time Settlement & Fee Breakdown
-                        _buildTransferSummaryBreakdown(amount, fee),
-
-                        const SizedBox(height: 12),
-
-                        // Security guarantee badge
-                        const Center(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.lock_outline_rounded, size: 12, color: textGray),
-                              SizedBox(width: 5),
-                              Text(
-                                'End-to-End Encrypted • Zero-Trust Ledger Controls',
-                                style: TextStyle(
-                                  fontSize: 10.5,
-                                  color: textGray,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            // Bottom Sticky Floating CTA: "Send Money"
-            _buildStickyBottomButton(),
-          ],
+              const SizedBox(height: 16),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Color(0xFFF1F5F9), width: 1)),
-      ),
-      child: Row(
-        children: [
-          Material(
-            color: const Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.circular(10),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(10),
-              onTap: widget.onBack ?? () => Navigator.of(context).pop(),
-              child: const Padding(
-                padding: EdgeInsets.all(8.0),
-                child: Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: textDark),
+  Widget _buildTopBar() {
+    return Row(
+      children: [
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
               ),
-            ),
+            ],
           ),
-          const SizedBox(width: 12),
-          const AuraLogo(size: 30, style: AuraLogoStyle.violet, borderRadius: 8),
-          const SizedBox(width: 10),
-          const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+            color: brandViolet,
+            onPressed: widget.onBack ?? () => Navigator.of(context).pop(),
+          ),
+        ),
+        const SizedBox(width: 14),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: cardBorder),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: const Row(
             children: [
+              AuraLogo(size: 22, style: AuraLogoStyle.violet, borderRadius: 5),
+              SizedBox(width: 8),
               Text(
                 'Aura Bank',
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: 14.5,
                   fontWeight: FontWeight.w800,
                   color: textDark,
-                  letterSpacing: -0.2,
-                ),
-              ),
-              Text(
-                'Instant Fund Transfer',
-                style: TextStyle(
-                  fontSize: 10.5,
-                  color: textGray,
-                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
-          ),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFECFDF5),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFA7F3D0), width: 0.8),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.shield_outlined, size: 12, color: greenCredit),
-                SizedBox(width: 4),
-                Text(
-                  'Encrypted',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: greenCredit,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFundingAccountCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: cardBorder),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF380084), Color(0xFF7000FF)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.account_balance_wallet_rounded, color: Colors.white, size: 22),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Text(
-                      'FROM ACCOUNT',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: textGray,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFECFDF5),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        '● Active',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          color: greenCredit,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 3),
-                const Text(
-                  'Aura Primary Savings',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: textDark),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Available: ₱ ${_formatAmountPlain(_bankService.availableBalance)}',
-                  style: const TextStyle(fontSize: 11.5, color: textGray, fontWeight: FontWeight.w600),
-                ),
-              ],
-            ),
-          ),
-          const Icon(Icons.check_circle_rounded, color: brandViolet, size: 20),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTransferScopeSelector() {
-    return Container(
-      padding: const EdgeInsets.all(5),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          // Aura to Aura Tab
-          Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => _isAuraToAura = true),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-                decoration: BoxDecoration(
-                  color: _isAuraToAura ? Colors.white : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                  border: _isAuraToAura
-                      ? Border.all(color: const Color(0xFF7000FF).withValues(alpha: 0.15), width: 1.5)
-                      : null,
-                  boxShadow: _isAuraToAura
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.bolt_rounded,
-                          size: 16,
-                          color: _isAuraToAura ? brandViolet : textGray,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Aura to Aura',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                            color: _isAuraToAura ? brandViolet : textDark,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Same Bank • FREE',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: _isAuraToAura ? greenCredit : textGray,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          const SizedBox(width: 4),
-
-          // Other Bank Tab
-          Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => _isAuraToAura = false),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-                decoration: BoxDecoration(
-                  color: !_isAuraToAura ? Colors.white : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                  border: !_isAuraToAura
-                      ? Border.all(color: const Color(0xFF7000FF).withValues(alpha: 0.15), width: 1.5)
-                      : null,
-                  boxShadow: !_isAuraToAura
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.account_balance_rounded,
-                          size: 15,
-                          color: !_isAuraToAura ? brandViolet : textGray,
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          'Other Bank',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                            color: !_isAuraToAura ? brandViolet : textDark,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'InstaPay • ₱10.00',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: !_isAuraToAura ? brandViolet : textGray,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAuraIntraBankBanner() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFAF5FF),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE9D5FF), width: 1.0),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: brandViolet.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.flash_on_rounded, color: brandViolet, size: 18),
-          ),
-          const SizedBox(width: 10),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Aura Same-Bank Transfer',
-                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: textDark),
-                ),
-                SizedBox(height: 1),
-                Text(
-                  'Direct ledger transfer • Zero fee • Instant settlement',
-                  style: TextStyle(fontSize: 10.5, color: textGray, fontWeight: FontWeight.w500),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: const Color(0xFFD1FAE5),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: const Text(
-              'FREE',
-              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: greenCredit),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDestinationPartnerBankCard() {
-    final selectedBank = _partnerBanks[_selectedPartnerBankIndex];
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE9D5FF), width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF7000FF).withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'DESTINATION PARTNER BANK',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  color: brandViolet,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD1FAE5),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Text(
-                  'InstaPay 24/7',
-                  style: TextStyle(
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w700,
-                    color: greenCredit,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          InkWell(
-            onTap: _showSelectPartnerBankSheet,
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFAF5FF),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE9D5FF)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: selectedBank['color'] as Color,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      selectedBank['avatar'] as String,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          selectedBank['name'] as String,
-                          style: const TextStyle(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w800,
-                            color: textDark,
-                          ),
-                        ),
-                        const SizedBox(height: 1),
-                        Text(
-                          selectedBank['group'] as String,
-                          style: const TextStyle(
-                            fontSize: 10.5,
-                            color: textGray,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFFDDD6FE)),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Change',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: brandViolet,
-                          ),
-                        ),
-                        SizedBox(width: 2),
-                        Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: brandViolet),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          // Quick 3 partner bank selector tabs
-          Row(
-            children: [
-              for (int i = 0; i < _partnerBanks.length; i++)
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => setState(() => _selectedPartnerBankIndex = i),
-                    child: Container(
-                      margin: EdgeInsets.only(right: i < _partnerBanks.length - 1 ? 6 : 0),
-                      padding: const EdgeInsets.symmetric(vertical: 7),
-                      decoration: BoxDecoration(
-                        color: _selectedPartnerBankIndex == i
-                            ? (_partnerBanks[i]['color'] as Color).withValues(alpha: 0.12)
-                            : const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: _selectedPartnerBankIndex == i
-                              ? (_partnerBanks[i]['color'] as Color)
-                              : const Color(0xFFE2E8F0),
-                          width: _selectedPartnerBankIndex == i ? 1.5 : 1.0,
-                        ),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        _partnerBanks[i]['shortName'] as String,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: _selectedPartnerBankIndex == i ? FontWeight.w800 : FontWeight.w600,
-                          color: _selectedPartnerBankIndex == i
-                              ? (_partnerBanks[i]['color'] as Color)
-                              : textDark,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickRecipientsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'RECENT RECIPIENTS',
-              style: TextStyle(
-                fontSize: 10.5,
-                fontWeight: FontWeight.w800,
-                color: textGray,
-                letterSpacing: 0.5,
-              ),
-            ),
-            Text(
-              'Tap to autofill',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-                color: textGray,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
-          child: Row(
-            children: _quickRecipients.map((r) {
-              final isSelected = _recipientController.text.trim() == r['name'];
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: InkWell(
-                  onTap: () {
-                    setState(() {
-                      _recipientController.text = r['name'] as String;
-                      _accountController.text = r['account'] as String;
-                      _isAuraToAura = r['isAura'] as bool;
-                      if (!_isAuraToAura && r.containsKey('partnerIndex')) {
-                        _selectedPartnerBankIndex = r['partnerIndex'] as int;
-                      }
-                    });
-                  },
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                    decoration: BoxDecoration(
-                      color: isSelected ? const Color(0xFFFAF5FF) : Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected ? brandViolet : cardBorder,
-                        width: isSelected ? 1.4 : 1.0,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 12,
-                          backgroundColor: r['color'] as Color,
-                          child: Text(
-                            r['avatar'] as String,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              (r['name'] as String).split(' ').first,
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w700,
-                                color: isSelected ? brandViolet : textDark,
-                              ),
-                            ),
-                            Text(
-                              r['isAura'] ? 'Aura' : (r['bank'] as String).split(' ').first,
-                              style: const TextStyle(fontSize: 9.5, color: textGray),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildRecipientDetailsCard() {
+  Widget _buildFromCard() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: cardBorder),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: cardBorder, width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          isExpanded: true,
+          value: _selectedSourceAccount,
+          borderRadius: BorderRadius.circular(20),
+          selectedItemBuilder: (context) {
+            return _sourceAccounts.map((item) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'From:',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: textDark,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    item['title'] as String,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: textGray,
+                    ),
+                  ),
+                ],
+              );
+            }).toList();
+          },
+          icon: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(color: cardBorder),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.keyboard_arrow_down_rounded,
+              color: brandViolet,
+              size: 26,
+            ),
+          ),
+          items: _sourceAccounts.map((item) {
+            return DropdownMenuItem<String>(
+              value: item['type'] as String,
+              child: Row(
+                children: [
+                  Icon(item['icon'] as IconData, size: 20, color: brandViolet),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        item['type'] as String,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                          color: textDark,
+                        ),
+                      ),
+                      Text(
+                        'Available: PHP ${_formatAmountPlain(item['balance'] as double)}',
+                        style: const TextStyle(fontSize: 11, color: textGray),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+          onChanged: (val) {
+            if (val != null) {
+              setState(() => _selectedSourceAccount = val);
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecipientAndAmountCard() {
+    final destinationBank = _isAuraToAura
+        ? 'Aura Bank'
+        : (_partnerBanks[_selectedPartnerBankIndex]['name'] as String);
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: cardBorder, width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Account Number Input
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'ACCOUNT NUMBER',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  color: textGray,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              InkWell(
-                onTap: _pasteFromClipboard,
-                borderRadius: BorderRadius.circular(6),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                  child: Row(
-                    children: [
-                      Icon(Icons.content_paste_rounded, size: 12, color: brandViolet),
-                      SizedBox(width: 3),
-                      Text(
-                        'Paste',
+          // Aura to Aura vs Other Bank Segmented Bar
+          Container(
+            padding: const EdgeInsets.all(3.5),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _isAuraToAura = true),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: _isAuraToAura ? Colors.white : Colors.transparent,
+                        borderRadius: BorderRadius.circular(9),
+                        boxShadow: _isAuraToAura
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        'Aura to Aura',
                         style: TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w700,
-                          color: brandViolet,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w800,
+                          color: _isAuraToAura ? brandViolet : textGray,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _isAuraToAura = false),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: !_isAuraToAura ? Colors.white : Colors.transparent,
+                        borderRadius: BorderRadius.circular(9),
+                        boxShadow: !_isAuraToAura
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        'Other Bank',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w800,
+                          color: !_isAuraToAura ? brandViolet : textGray,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          // Recipient Profile Row
+          InkWell(
+            onTap: _showEditRecipientSheet,
+            borderRadius: BorderRadius.circular(12),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF380084),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.person, color: Colors.white, size: 24),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _recipientController.text.trim().isNotEmpty
+                            ? _recipientController.text.trim()
+                            : 'Jessie Mae Dela Paz',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: textDark,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        destinationBank,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF4B5563),
+                        ),
+                      ),
+                      Text(
+                        'Account No. ${_accountController.text.trim().isNotEmpty ? _accountController.text.trim() : '1234568898951'}',
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w500,
+                          color: textGray,
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.pin_outlined, size: 18, color: textGray),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: TextField(
-                    controller: _accountController,
-                    keyboardType: TextInputType.number,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: textDark,
-                      letterSpacing: 0.5,
-                    ),
-                    decoration: const InputDecoration(
-                      hintText: 'Enter account number',
-                      hintStyle: TextStyle(fontSize: 13, color: textGray, fontWeight: FontWeight.w400),
-                      border: InputBorder.none,
-                      isDense: true,
-                    ),
-                  ),
-                ),
+                const Icon(Icons.edit_outlined, size: 18, color: brandViolet),
               ],
             ),
           ),
 
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
 
-          // Recipient Name Input
-          const Text(
-            'RECIPIENT NAME',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
-              color: textGray,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 6),
+          // Amount Box (Matching Grey Card with PHP prefix)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+            height: 60,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              color: inputBg,
+              borderRadius: BorderRadius.circular(14),
             ),
             child: Row(
               children: [
-                const Icon(Icons.person_outline_rounded, size: 18, color: textGray),
-                const SizedBox(width: 10),
+                const Text(
+                  'PHP ',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: textDark,
+                  ),
+                ),
                 Expanded(
                   child: TextField(
-                    controller: _recipientController,
+                    controller: _amountController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
                       color: textDark,
                     ),
                     decoration: const InputDecoration(
-                      hintText: 'Enter recipient full name',
-                      hintStyle: TextStyle(fontSize: 13, color: textGray, fontWeight: FontWeight.w400),
+                      hintText: '0',
+                      hintStyle: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF9CA3AF),
+                      ),
                       border: InputBorder.none,
                       isDense: true,
+                      contentPadding: EdgeInsets.zero,
                     ),
                     onChanged: (_) => setState(() {}),
                   ),
                 ),
-                if (_recipientController.text.trim().isNotEmpty)
-                  const Icon(Icons.check_circle_rounded, size: 16, color: greenCredit),
               ],
             ),
           ),
+
+          const SizedBox(height: 10),
+
+          // Available Balance & Transfer Limit subtext
+          Text(
+            'Available Balance: PHP ${_formatAmountPlain(_currentSourceBalance)}',
+            style: const TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF4B5563),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Transfer Limit: PHP ${_formatAmountPlain(_currentSourceBalance)}',
+            style: const TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF4B5563),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildAmountHeroCard() {
+  Widget _buildPurposeAndRemarksCard() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: cardBorder),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: cardBorder, width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'ENTER AMOUNT',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  color: textGray,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
-                decoration: BoxDecoration(
-                  color: _isAuraToAura ? const Color(0xFFECFDF5) : const Color(0xFFFAF5FF),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  _isAuraToAura ? 'Transfer Fee: FREE' : 'Transfer Fee: PHP 10.00',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: _isAuraToAura ? greenCredit : brandViolet,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const Text(
-                'PHP',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                  color: brandViolet,
-                  letterSpacing: -0.2,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: TextField(
-                  controller: _amountController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                    color: textDark,
-                    letterSpacing: -0.5,
-                  ),
-                  decoration: const InputDecoration(
-                    hintText: '0.00',
-                    hintStyle: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFFD1D5DB),
-                    ),
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                  onChanged: (_) => setState(() {}),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Quick amount increment chips
-          Row(
-            children: [
-              _buildAmountChip('+₱500', 500),
-              const SizedBox(width: 6),
-              _buildAmountChip('+₱1k', 1000),
-              const SizedBox(width: 6),
-              _buildAmountChip('+₱5k', 5000),
-              const SizedBox(width: 6),
-              _buildAmountChip('+₱10k', 10000),
-              const SizedBox(width: 6),
-              _buildMaxChip(),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAmountChip(String label, double addAmount) {
-    return Expanded(
-      child: InkWell(
-        onTap: () => _addAmount(addAmount),
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 10.5,
-              fontWeight: FontWeight.w700,
+          // Purpose Dropdown Label
+          const Text(
+            'Purpose',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
               color: textDark,
             ),
           ),
-        ),
-      ),
-    );
-  }
+          const SizedBox(height: 8),
 
-  Widget _buildMaxChip() {
-    return Expanded(
-      child: InkWell(
-        onTap: _setMaxAmount,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          decoration: BoxDecoration(
-            color: const Color(0xFFFAF5FF),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFFDDD6FE)),
-          ),
-          alignment: Alignment.center,
-          child: const Text(
-            'MAX',
-            style: TextStyle(
-              fontSize: 10.5,
-              fontWeight: FontWeight.w800,
-              color: brandViolet,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTransferDetailsCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: cardBorder),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'PURPOSE',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
-              color: textGray,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 6),
+          // Purpose Grey Dropdown Box
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
+              color: inputBg,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
+            alignment: Alignment.center,
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 isDense: true,
                 isExpanded: true,
                 value: _selectedPurpose,
-                icon: const Icon(Icons.keyboard_arrow_down_rounded, color: textDark),
+                hint: const Text(
+                  'Select transfer purpose',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF4B5563),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                icon: const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: brandViolet,
+                  size: 24,
+                ),
+                borderRadius: BorderRadius.circular(14),
                 items: _purposes.map((p) {
-                  return DropdownMenuItem(
+                  return DropdownMenuItem<String>(
                     value: p,
-                    child: Row(
-                      children: [
-                        const Icon(Icons.label_outline_rounded, size: 16, color: textGray),
-                        const SizedBox(width: 8),
-                        Text(
-                          p,
-                          style: const TextStyle(fontSize: 13, color: textDark, fontWeight: FontWeight.w700),
-                        ),
-                      ],
+                    child: Text(
+                      p,
+                      style: const TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                        color: textDark,
+                      ),
                     ),
                   );
                 }).toList(),
                 onChanged: (val) {
-                  if (val != null) setState(() => _selectedPurpose = val);
+                  if (val != null) {
+                    setState(() => _selectedPurpose = val);
+                  }
                 },
               ),
             ),
           ),
 
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
 
+          // Remarks Label
           const Text(
-            'REMARKS (OPTIONAL)',
+            'Remarks (Optional)',
             style: TextStyle(
-              fontSize: 10,
+              fontSize: 16,
               fontWeight: FontWeight.w800,
-              color: textGray,
-              letterSpacing: 0.5,
+              color: textDark,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
+
+          // Remarks Grey Input Box
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
+              color: inputBg,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
-            child: Row(
-              children: [
-                const Icon(Icons.edit_note_rounded, size: 18, color: textGray),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: TextField(
-                    controller: _remarksController,
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: textDark),
-                    decoration: const InputDecoration(
-                      hintText: 'Add an optional note for recipient',
-                      hintStyle: TextStyle(fontSize: 12.5, color: textGray, fontWeight: FontWeight.w400),
-                      border: InputBorder.none,
-                      isDense: true,
-                    ),
-                  ),
+            alignment: Alignment.center,
+            child: TextField(
+              controller: _remarksController,
+              style: const TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+                color: textDark,
+              ),
+              decoration: const InputDecoration(
+                hintText: 'Enter details',
+                hintStyle: TextStyle(
+                  fontSize: 13,
+                  color: Color(0xFF6B7280),
+                  fontWeight: FontWeight.w400,
                 ),
-              ],
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
             ),
           ),
         ],
@@ -1319,189 +932,40 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
     );
   }
 
-  Widget _buildTransferSummaryBreakdown(double amount, double fee) {
+  Widget _buildSendMoneyButton() {
     return Container(
-      padding: const EdgeInsets.all(14),
+      width: double.infinity,
+      height: 52,
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: AuraColors.buttonShadow,
       ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Transfer Amount',
-                style: TextStyle(fontSize: 11.5, color: textGray, fontWeight: FontWeight.w500),
-              ),
-              Text(
-                'PHP ${_formatAmountPlain(amount)}',
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: textDark),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                _isAuraToAura ? 'Aura Transfer Fee' : 'InstaPay Network Fee',
-                style: const TextStyle(fontSize: 11.5, color: textGray, fontWeight: FontWeight.w500),
-              ),
-              Text(
-                fee == 0.0 ? 'FREE' : 'PHP ${_formatAmountPlain(fee)}',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: fee == 0.0 ? greenCredit : textDark,
-                ),
-              ),
-            ],
-          ),
-          const Divider(color: Color(0xFFE2E8F0), height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Total Deduction',
-                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: textDark),
-              ),
-              Text(
-                'PHP ${_formatAmountPlain(amount + fee)}',
-                style: const TextStyle(
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w900,
-                  color: brandViolet,
-                  letterSpacing: -0.2,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStickyBottomButton() {
-    return Positioned(
-      left: 20,
-      right: 20,
-      bottom: 16,
-      child: Container(
-        height: 52,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(26),
-          boxShadow: AuraColors.buttonShadow,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF2E0854),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+          elevation: 0,
         ),
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: brandViolet,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
-            elevation: 0,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+        onPressed: _onSendMoney,
+        child: const Text(
+          'Send Money',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
           ),
-          onPressed: _onSendMoney,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Spacer(),
-              const Text(
-                'Send Money',
-                style: TextStyle(
-                  fontSize: 15.5,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                  letterSpacing: 0.2,
-                ),
-              ),
-              const Spacer(),
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.18),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.arrow_forward_rounded,
-                  color: Colors.white,
-                  size: 18,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showSelectPartnerBankSheet() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-      ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD1D5DB),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Select Destination Bank',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: textDark),
-            ),
-            const SizedBox(height: 12),
-            for (int i = 0; i < _partnerBanks.length; i++)
-              ListTile(
-                contentPadding: const EdgeInsets.symmetric(vertical: 2),
-                leading: CircleAvatar(
-                  backgroundColor: _partnerBanks[i]['color'] as Color,
-                  child: Text(
-                    _partnerBanks[i]['avatar'] as String,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                title: Text(
-                  _partnerBanks[i]['name'] as String,
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-                ),
-                subtitle: Text(
-                  _partnerBanks[i]['group'] as String,
-                  style: const TextStyle(fontSize: 11, color: textGray),
-                ),
-                trailing: _selectedPartnerBankIndex == i
-                    ? const Icon(Icons.check_circle_rounded, color: brandViolet)
-                    : null,
-                onTap: () {
-                  setState(() => _selectedPartnerBankIndex = i);
-                  Navigator.of(ctx).pop();
-                },
-              ),
-          ],
         ),
       ),
     );
   }
 
   String _formatAmountPlain(double amount) {
-    final parts = amount.toStringAsFixed(0);
-    return parts.replaceAllMapped(
+    final parts = amount.toStringAsFixed(2);
+    final splitParts = parts.split('.');
+    final formattedInt = splitParts[0].replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
       (Match m) => '${m[1]},',
     );
+    return '$formattedInt.${splitParts[1]}';
   }
 }

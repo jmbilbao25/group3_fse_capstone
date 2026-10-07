@@ -278,7 +278,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             _buildActionItem(
               icon: Icons.swap_horiz_rounded,
@@ -302,16 +302,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   MaterialPageRoute(builder: (context) => const StatementScreen()),
                 );
               },
-            ),
-            _buildActionItem(
-              icon: Icons.payments_rounded,
-              label: 'Bills',
-              onTap: _showPayBillsSheet,
-            ),
-            _buildActionItem(
-              icon: Icons.grid_view_rounded,
-              label: 'More',
-              onTap: _showMoreServicesSheet,
             ),
           ],
         ),
@@ -354,233 +344,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _showMoreServicesSheet() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD1D5DB),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Aura Bank Hub',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AuraColors.textPrimary),
-            ),
-            const SizedBox(height: 14),
-            ListTile(
-              leading: const Icon(Icons.mark_email_read_outlined, color: AuraColors.primary),
-              title: const Text('Email OTP Verification', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-              subtitle: const Text('Figma 001 verification screen flow', style: TextStyle(fontSize: 11)),
-              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 13),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                Navigator.of(context).pushNamed('/otp');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.shield_outlined, color: AuraColors.primary),
-              title: const Text('Security Gates & Threat Detection', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-              subtitle: const Text('Gate 0 Scan, Screen Share & Fraud block', style: TextStyle(fontSize: 11)),
-              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 13),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                Navigator.of(context).pushNamed('/security_gate');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.devices_rounded, color: AuraColors.primary),
-              title: const Text('Trusted Devices & Active Sessions', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-              subtitle: const Text('Figma 012 hardware telemetry management', style: TextStyle(fontSize: 11)),
-              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 13),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                Navigator.of(context).pushNamed('/devices');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.description_outlined, color: AuraColors.primary),
-              title: const Text('Statement of Account', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-              subtitle: const Text('Monthly e-statements with digital certificate', style: TextStyle(fontSize: 11)),
-              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 13),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                Navigator.of(context).pushNamed('/statement');
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  void _showPayBillsSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.65,
-        minChildSize: 0.4,
-        maxChildSize: 0.9,
-        expand: false,
-        builder: (sheetContext, scrollController) => ListView(
-          controller: scrollController,
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD1D5DB),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Container(
-                  width: 3.5,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    color: brandViolet,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                const Text(
-                  'Pay Bills & Utilities',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: AuraColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Zero processing fees on enrolled utility billers',
-              style: TextStyle(fontSize: 12, color: textGray),
-            ),
-            const SizedBox(height: 16),
-            // Search field
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF9FAFB),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE5E7EB)),
-              ),
-              child: const TextField(
-                decoration: InputDecoration(
-                  icon: Icon(Icons.search, size: 20, color: textGray),
-                  hintText: 'Search biller (e.g. Meralco, Maynilad, Globe)',
-                  hintStyle: TextStyle(fontSize: 12.5, color: textGray),
-                  border: InputBorder.none,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Bank Group Settlement & Clearing',
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w800,
-                color: brandViolet,
-                letterSpacing: 0.3,
-              ),
-            ),
-            const SizedBox(height: 8),
-            _buildBillerTile(
-              initial: 'M',
-              avatarColor: const Color(0xFF701A75),
-              name: 'MeyBank Clearing (Group 2)',
-              category: 'Interbank Settlement • Real-time Posting',
-            ),
-            _buildBillerTile(
-              initial: 'A',
-              avatarColor: const Color(0xFF047857),
-              name: 'Apex Digital Settlement (Group 1)',
-              category: 'Interbank Settlement • Real-time Posting',
-            ),
-            _buildBillerTile(
-              initial: 'N',
-              avatarColor: const Color(0xFF1E3A8A),
-              name: 'Nexus Core Settlement (Group 4)',
-              category: 'Interbank Settlement • Real-time Posting',
-            ),
-            _buildBillerTile(
-              initial: 'A',
-              avatarColor: brandViolet,
-              name: 'Aura Bank Settlement (Group 3)',
-              category: 'Interbank Settlement • Real-time Posting',
-            ),
-            const SizedBox(height: 14),
-            const Text(
-              'Utility & Telecommunications Billers',
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w800,
-                color: textDark,
-                letterSpacing: 0.3,
-              ),
-            ),
-            const SizedBox(height: 8),
-            _buildBillerTile(
-              initial: 'M',
-              avatarColor: const Color(0xFFEA580C),
-              name: 'Meralco',
-              category: 'Electricity • Direct Connect',
-            ),
-            _buildBillerTile(
-              initial: 'W',
-              avatarColor: const Color(0xFF0284C7),
-              name: 'Maynilad Water',
-              category: 'Water Utility • Real-time Posting',
-            ),
-            _buildBillerTile(
-              initial: 'G',
-              avatarColor: const Color(0xFF2563EB),
-              name: 'Globe Telecom & Postpaid',
-              category: 'Telecom & Fiber Broadband',
-            ),
-            _buildBillerTile(
-              initial: 'P',
-              avatarColor: const Color(0xFFDC2626),
-              name: 'PLDT Home Fiber',
-              category: 'Broadband & Landline',
-            ),
-            _buildBillerTile(
-              initial: 'B',
-              avatarColor: const Color(0xFF1E3A8A),
-              name: 'BDO Credit Cards',
-              category: 'Credit Cards & Finance',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
+
 
   void _showFourBanksTransferSheet() {
     showModalBottomSheet(
@@ -773,42 +539,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildBillerTile({
-    required String initial,
-    required Color avatarColor,
-    required String name,
-    required String category,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-      ),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: avatarColor,
-          child: Text(
-            initial,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          ),
-        ),
-        title: Text(name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
-        subtitle: Text(category, style: const TextStyle(fontSize: 11, color: textGray)),
-        trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 13, color: textGray),
-        onTap: () {
-          Navigator.of(context).pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Selected biller: $name. Ready for payment.'),
-              backgroundColor: brandViolet,
-            ),
-          );
-        },
-      ),
-    );
-  }
+
 
   Widget _buildActionItem({
     required IconData icon,

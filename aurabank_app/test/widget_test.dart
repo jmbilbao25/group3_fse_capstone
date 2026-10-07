@@ -144,8 +144,8 @@ void main() {
     expect(find.text('Transfer'), findsOneWidget);
     expect(find.text('Banks'), findsOneWidget);
     expect(find.text('Statement'), findsOneWidget);
-    expect(find.text('Bills'), findsOneWidget);
-    expect(find.text('More'), findsOneWidget);
+    expect(find.text('Bills'), findsNothing);
+    expect(find.text('More'), findsNothing);
     expect(find.text('Recent Transactions'), findsOneWidget);
   });
 
@@ -316,7 +316,7 @@ void main() {
     expect(find.text('Trusted Devices & Sessions'), findsOneWidget);
     expect(find.text('Instant Push Alerts'), findsOneWidget);
     expect(find.text('Log Out of This Device'), findsOneWidget);
-    expect(find.text('Log Out of All Devices'), findsOneWidget);
+    expect(find.text('Log Out of All Devices'), findsNothing);
 
     // Tap Edit button to open Edit Profile bottom sheet
     await tester.tap(find.text('Edit'));

@@ -410,7 +410,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () {
                 Navigator.of(ctx).pop();
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const SendMoneyScreen()),
+                  MaterialPageRoute(builder: (_) => const SendMoneyScreen(initialIsAuraToAura: true)),
                 );
               },
             ),
@@ -424,7 +424,12 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () {
                 Navigator.of(ctx).pop();
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const SendMoneyScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => const SendMoneyScreen(
+                      initialIsAuraToAura: false,
+                      initialPartnerBankIndex: 0,
+                    ),
+                  ),
                 );
               },
             ),
@@ -438,7 +443,12 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () {
                 Navigator.of(ctx).pop();
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const SendMoneyScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => const SendMoneyScreen(
+                      initialIsAuraToAura: false,
+                      initialPartnerBankIndex: 1,
+                    ),
+                  ),
                 );
               },
             ),
@@ -452,7 +462,12 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () {
                 Navigator.of(ctx).pop();
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const SendMoneyScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => const SendMoneyScreen(
+                      initialIsAuraToAura: false,
+                      initialPartnerBankIndex: 2,
+                    ),
+                  ),
                 );
               },
             ),

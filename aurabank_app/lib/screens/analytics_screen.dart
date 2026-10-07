@@ -535,7 +535,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             outTransfers: 1,
             transactions: const [
               AnalyticsTxItem(name: 'Retainer Payment', initial: 'R', avatarBg: Color(0xFF2ECC71), time: 'Jul 26, 10:00 am', amount: 25000.0, isReceived: true, status: 'RECEIVED'),
-              AnalyticsTxItem(name: 'Tax Withholding', initial: 'T', avatarBg: Color(0xFF8E24AA), time: 'Jul 29, 4:45 pm', amount: 11000.0, isReceived: false),
+              AnalyticsTxItem(name: 'Supplier Transfer', initial: 'S', avatarBg: Color(0xFF8E24AA), time: 'Jul 29, 4:45 pm', amount: 11000.0, isReceived: false),
             ],
           ),
         ],

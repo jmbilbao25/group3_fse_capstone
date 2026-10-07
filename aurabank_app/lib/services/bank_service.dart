@@ -439,7 +439,7 @@ class BankService extends ChangeNotifier {
         BankTransaction(
           id: 'TXN-APR-02',
           reference: 'AUR-880402',
-          counterparty: 'Q2 Tax Pre-settlement',
+          counterparty: 'Q2 Scheduled Outgoing Transfer',
           type: TransactionType.outgoing,
           amount: 22000.00,
           timestamp: DateTime(2026, 4, 28, 15, 15),

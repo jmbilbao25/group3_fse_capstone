@@ -1308,12 +1308,12 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
                     decoration: BoxDecoration(color: const Color(0xFFECFDF5), borderRadius: BorderRadius.circular(10)),
                     child: const Icon(Icons.verified_outlined, color: greenCredit, size: 20),
                   ),
-                  title: const Text('Request Tax Certificate (Form 2316 / 2307)', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
-                  subtitle: const Text('BIR accredited withholding tax dossier', style: TextStyle(fontSize: 11, color: textMuted)),
+                  title: const Text('Request Transfer Certificate', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+                  subtitle: const Text('Certified bank certificate for funds transferred', style: TextStyle(fontSize: 11, color: textMuted)),
                   onTap: () {
                     Navigator.of(ctx).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Tax Certificate requested via Bureau of Internal Revenue.')),
+                      const SnackBar(content: Text('Transfer Certificate request submitted successfully.')),
                     );
                   },
                 ),

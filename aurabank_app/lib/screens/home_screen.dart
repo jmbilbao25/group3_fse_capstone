@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/bank_models.dart';
 import '../services/bank_service.dart';
 import '../theme/aura_theme.dart';
+import 'risk_showcase_screen.dart';
 import 'send_money_screen.dart';
 import 'statement_screen.dart';
 
@@ -64,9 +65,14 @@ class _HomeScreenState extends State<HomeScreen> {
               // 3. Quick Actions Grid
               _buildQuickActions(),
 
+              const SizedBox(height: 20),
+
+              // 4. Interactive Risk Engine Showcase Banner
+              _buildRiskEngineBanner(),
+
               const SizedBox(height: 24),
 
-              // 4. Recent Transactions
+              // 5. Recent Transactions
               _buildRecentTransactions(),
 
               const SizedBox(height: 16),
@@ -272,7 +278,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             _buildActionItem(
               icon: Icons.swap_horiz_rounded,
@@ -296,16 +302,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   MaterialPageRoute(builder: (context) => const StatementScreen()),
                 );
               },
-            ),
-            _buildActionItem(
-              icon: Icons.payments_rounded,
-              label: 'Bills',
-              onTap: _showPayBillsSheet,
-            ),
-            _buildActionItem(
-              icon: Icons.grid_view_rounded,
-              label: 'More',
-              onTap: _showMoreServicesSheet,
             ),
           ],
         ),
@@ -348,233 +344,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _showMoreServicesSheet() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD1D5DB),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Aura Bank Hub',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AuraColors.textPrimary),
-            ),
-            const SizedBox(height: 14),
-            ListTile(
-              leading: const Icon(Icons.mark_email_read_outlined, color: AuraColors.primary),
-              title: const Text('Email OTP Verification', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-              subtitle: const Text('Figma 001 verification screen flow', style: TextStyle(fontSize: 11)),
-              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 13),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                Navigator.of(context).pushNamed('/otp');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.shield_outlined, color: AuraColors.primary),
-              title: const Text('Security Gates & Threat Detection', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-              subtitle: const Text('Gate 0 Scan, Screen Share & Fraud block', style: TextStyle(fontSize: 11)),
-              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 13),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                Navigator.of(context).pushNamed('/security_gate');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.devices_rounded, color: AuraColors.primary),
-              title: const Text('Trusted Devices & Active Sessions', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-              subtitle: const Text('Figma 012 hardware telemetry management', style: TextStyle(fontSize: 11)),
-              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 13),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                Navigator.of(context).pushNamed('/devices');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.description_outlined, color: AuraColors.primary),
-              title: const Text('Statement of Account', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-              subtitle: const Text('Monthly e-statements with digital certificate', style: TextStyle(fontSize: 11)),
-              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 13),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                Navigator.of(context).pushNamed('/statement');
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  void _showPayBillsSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.65,
-        minChildSize: 0.4,
-        maxChildSize: 0.9,
-        expand: false,
-        builder: (sheetContext, scrollController) => ListView(
-          controller: scrollController,
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD1D5DB),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Container(
-                  width: 3.5,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    color: brandViolet,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                const Text(
-                  'Pay Bills & Utilities',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: AuraColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Zero processing fees on enrolled utility billers',
-              style: TextStyle(fontSize: 12, color: textGray),
-            ),
-            const SizedBox(height: 16),
-            // Search field
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF9FAFB),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE5E7EB)),
-              ),
-              child: const TextField(
-                decoration: InputDecoration(
-                  icon: Icon(Icons.search, size: 20, color: textGray),
-                  hintText: 'Search biller (e.g. Meralco, Maynilad, Globe)',
-                  hintStyle: TextStyle(fontSize: 12.5, color: textGray),
-                  border: InputBorder.none,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Bank Group Settlement & Clearing',
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w800,
-                color: brandViolet,
-                letterSpacing: 0.3,
-              ),
-            ),
-            const SizedBox(height: 8),
-            _buildBillerTile(
-              initial: 'M',
-              avatarColor: const Color(0xFF701A75),
-              name: 'MeyBank Clearing (Group 2)',
-              category: 'Interbank Settlement • Real-time Posting',
-            ),
-            _buildBillerTile(
-              initial: 'A',
-              avatarColor: const Color(0xFF047857),
-              name: 'Apex Digital Settlement (Group 1)',
-              category: 'Interbank Settlement • Real-time Posting',
-            ),
-            _buildBillerTile(
-              initial: 'N',
-              avatarColor: const Color(0xFF1E3A8A),
-              name: 'Nexus Core Settlement (Group 4)',
-              category: 'Interbank Settlement • Real-time Posting',
-            ),
-            _buildBillerTile(
-              initial: 'A',
-              avatarColor: brandViolet,
-              name: 'Aura Bank Settlement (Group 3)',
-              category: 'Interbank Settlement • Real-time Posting',
-            ),
-            const SizedBox(height: 14),
-            const Text(
-              'Utility & Telecommunications Billers',
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w800,
-                color: textDark,
-                letterSpacing: 0.3,
-              ),
-            ),
-            const SizedBox(height: 8),
-            _buildBillerTile(
-              initial: 'M',
-              avatarColor: const Color(0xFFEA580C),
-              name: 'Meralco',
-              category: 'Electricity • Direct Connect',
-            ),
-            _buildBillerTile(
-              initial: 'W',
-              avatarColor: const Color(0xFF0284C7),
-              name: 'Maynilad Water',
-              category: 'Water Utility • Real-time Posting',
-            ),
-            _buildBillerTile(
-              initial: 'G',
-              avatarColor: const Color(0xFF2563EB),
-              name: 'Globe Telecom & Postpaid',
-              category: 'Telecom & Fiber Broadband',
-            ),
-            _buildBillerTile(
-              initial: 'P',
-              avatarColor: const Color(0xFFDC2626),
-              name: 'PLDT Home Fiber',
-              category: 'Broadband & Landline',
-            ),
-            _buildBillerTile(
-              initial: 'B',
-              avatarColor: const Color(0xFF1E3A8A),
-              name: 'BDO Credit Cards',
-              category: 'Credit Cards & Finance',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
+
 
   void _showFourBanksTransferSheet() {
     showModalBottomSheet(
@@ -767,42 +539,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildBillerTile({
-    required String initial,
-    required Color avatarColor,
-    required String name,
-    required String category,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-      ),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: avatarColor,
-          child: Text(
-            initial,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          ),
-        ),
-        title: Text(name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
-        subtitle: Text(category, style: const TextStyle(fontSize: 11, color: textGray)),
-        trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 13, color: textGray),
-        onTap: () {
-          Navigator.of(context).pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Selected biller: $name. Ready for payment.'),
-              backgroundColor: brandViolet,
-            ),
-          );
-        },
-      ),
-    );
-  }
+
 
   Widget _buildActionItem({
     required IconData icon,
@@ -840,6 +577,134 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildRiskEngineBanner() {
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const RiskEngineShowcaseScreen(),
+          ),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF22004F), Color(0xFF4A0E78)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF380084).withValues(alpha: 0.28),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Shield Icon with Halo
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.25),
+                  width: 1.5,
+                ),
+              ),
+              child: const Icon(
+                Icons.security_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+
+            const SizedBox(width: 14),
+
+            // Text Info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFBBF24),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text(
+                          'INTERACTIVE DEMO',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Text(
+                        'Aura Defense',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFD8B4FE),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Risk Engine Showcase',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  const Text(
+                    'Simulate Allowed, Warning, & Blocked transfers live.',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.white70,
+                      height: 1.25,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(width: 8),
+
+            // Play Arrow Icon
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.18),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 13,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

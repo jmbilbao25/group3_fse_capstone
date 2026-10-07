@@ -14,6 +14,7 @@ import 'package:aurabank_app/screens/analytics_screen.dart';
 import 'package:aurabank_app/screens/app_shell.dart';
 import 'package:aurabank_app/screens/login_screen.dart';
 import 'package:aurabank_app/screens/annual_report_screen.dart';
+import 'package:aurabank_app/screens/review_transfer_screen.dart';
 import 'package:aurabank_app/services/bank_service.dart';
 
 void main() {
@@ -512,5 +513,58 @@ void main() {
     expect(find.text('PHP 362,000.00'), findsOneWidget);
     expect(find.text('Quarter 4 (Oct-Dec 2025)'), findsOneWidget);
     expect(find.text('Fiscal Year 2025 • Certified Transfer Ledger'), findsOneWidget);
+  });
+
+  testWidgets('Review Transfer screen renders Image 2 fintech UI with sender, recipient, heroic amount, and CTAs', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ReviewTransferScreen(
+          senderName: 'Elijah Riley Montefalco',
+          senderAccount: '123256847878',
+          recipientName: 'Jessie Mae Dela Paz',
+          recipientAccount: '154847878751',
+          recipientBank: 'Aura Bank',
+          amount: 50000.0,
+          fee: 0.0,
+        ),
+      ),
+    );
+
+    // Title & Header
+    expect(find.text('Review Transfer'), findsOneWidget);
+
+    // Sender & Recipient dossier card
+    expect(find.text('Elijah Riley Montefalco'), findsOneWidget);
+    expect(find.text('Account No. 123256847878'), findsOneWidget);
+    expect(find.text('Jessie Mae Dela Paz'), findsOneWidget);
+    expect(find.text('Account No. 154847878751'), findsOneWidget);
+
+    // Heroic Amount & Summary Card
+    expect(find.text('Transfer Amount'), findsOneWidget);
+    expect(find.text('50,000.00'), findsOneWidget);
+    expect(find.text('Transfer Fee'), findsOneWidget);
+    expect(find.text('FREE'), findsOneWidget);
+    expect(find.text('Total Amount'), findsOneWidget);
+    expect(find.text('PHP 50,000.00'), findsOneWidget);
+
+    // Add as Favorite
+    expect(find.text('Add as Favorite'), findsOneWidget);
+    await tester.tap(find.text('Add as Favorite'));
+    await tester.pumpAndSettle();
+
+    // CTAs
+    expect(find.text('Confirm & Send'), findsOneWidget);
+    expect(find.text('Cancel Transaction'), findsOneWidget);
+
+    // Tap Confirm & Send opens modal
+    await tester.tap(find.text('Confirm & Send'));
+    await tester.pumpAndSettle();
+    expect(find.text('Do you want to continue?'), findsOneWidget);
+    expect(find.text('Confirm Transfer'), findsOneWidget);
   });
 }

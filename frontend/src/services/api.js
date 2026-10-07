@@ -170,6 +170,70 @@ const initialMockState = {
       status: 'ACTIVE',
       created_at: '2023-09-01T08:30:00Z',
       updated_at: '2023-09-01T08:30:00Z',
+    },
+    {
+      user_id: 'U0002',
+      first_name: 'Alex',
+      middle_name: 'Jordan',
+      last_name: 'Rivera',
+      email: 'alex.rivera@bank.com',
+      phone_number: '09178889900',
+      dob: '1988-04-18',
+      government_id: 'GOV-7788-9900',
+      role: 'ADMIN',
+      password_hash: '$2a$12$e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1',
+      pin_hash: null,
+      max_concurrent_sessions: 3,
+      failed_login_attempts: 0,
+      status: 'ACTIVE',
+      created_at: '2023-09-01T08:30:00Z',
+      updated_at: '2023-09-01T08:30:00Z',
+    },
+    {
+      user_id: 'U1003',
+      first_name: 'Jose',
+      middle_name: 'Protacio',
+      last_name: 'Rizal',
+      email: 'jose.rizal@retailbank.ph',
+      phone_number: '09195556677',
+      dob: '1987-06-19',
+      government_id: 'PRC-1861-1234',
+      role: 'CUSTOMER',
+      password_hash: '$2a$12$e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1',
+      pin_hash: '$2a$12$k4L9m1Wq2P8k4L9m1Wq2P8k4L9m1Wq2P8k4L9m1Wq2P8k4L9m1Wq2P8',
+      max_concurrent_sessions: 3,
+      failed_login_attempts: 0,
+      status: 'ACTIVE',
+      last_known_latitude: 14.2117,
+      last_known_longitude: 121.1656,
+      last_known_location_name: 'Calamba, Laguna, Philippines',
+      last_known_ip: '112.198.33.15',
+      force_impossible_travel_flag: false,
+      created_at: '2024-02-01T10:00:00Z',
+      updated_at: '2024-02-01T10:00:00Z',
+    },
+    {
+      user_id: 'U1004',
+      first_name: 'Andres',
+      middle_name: 'Castro',
+      last_name: 'Bonifacio',
+      email: 'andres.bonifacio@retailbank.ph',
+      phone_number: '09173334455',
+      dob: '1989-11-30',
+      government_id: 'PSA-1863-1130',
+      role: 'CUSTOMER',
+      password_hash: '$2a$12$e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1',
+      pin_hash: '$2a$12$k4L9m1Wq2P8k4L9m1Wq2P8k4L9m1Wq2P8k4L9m1Wq2P8k4L9m1Wq2P8',
+      max_concurrent_sessions: 3,
+      failed_login_attempts: 0,
+      status: 'ACTIVE',
+      last_known_latitude: 7.1907,
+      last_known_longitude: 125.4553,
+      last_known_location_name: 'Davao City, Philippines',
+      last_known_ip: '112.198.99.77',
+      force_impossible_travel_flag: false,
+      created_at: '2024-02-15T11:00:00Z',
+      updated_at: '2024-02-15T11:00:00Z',
     }
   ],
   account: {
@@ -201,6 +265,8 @@ const initialMockState = {
     { account_id: 'A2001', account_number: '1000-2000-3001', user_id: 'U1001', account_name: 'Juan Dela Cruz', account_type: 'SAVINGS', credit_limit: 0.0000, status: 'ACTIVE' },
     { account_id: 'A2002', account_number: '1000-2000-3002', user_id: 'U1002', account_name: 'Maria Clara Santos', account_type: 'SAVINGS', credit_limit: 0.0000, status: 'ACTIVE' },
     { account_id: 'A2003', account_number: '1000-2000-3003', user_id: 'U1001', account_name: 'Juan Dela Cruz (Checking Account)', account_type: 'CHECKING', credit_limit: 0.0000, status: 'ACTIVE' },
+    { account_id: 'A2004', account_number: '1000-2000-3004', user_id: 'U1003', account_name: 'Jose Rizal', account_type: 'SAVINGS', credit_limit: 0.0000, status: 'ACTIVE' },
+    { account_id: 'A2005', account_number: '1000-2000-3005', user_id: 'U1004', account_name: 'Andres Bonifacio', account_type: 'SAVINGS', credit_limit: 0.0000, status: 'ACTIVE' },
   ],
   transfers: [
     {
@@ -704,13 +770,65 @@ function handleMockFallback(config) {
         });
       }
 
+      // 3d. Update Account Status (Freeze / Lock / Unlock Customer Account)
+      if (url.includes('/accounts') && url.endsWith('/status') && (method === 'patch' || method === 'put')) {
+        const parts = url.split('/');
+        const accIdx = parts.indexOf('accounts');
+        const accId = parts[accIdx + 1];
+        const newStatus = payload.status || 'LOCKED';
+
+        const matched = (mockState.registeredAccounts || []).find(a => a.account_id === accId || a.account_number === accId);
+        if (matched) {
+          matched.status = newStatus;
+        }
+        if (mockState.account && (mockState.account.account_id === accId || mockState.account.account_number === accId)) {
+          mockState.account.status = newStatus;
+        }
+        saveMockState();
+        return resolve({
+          status: 200,
+          data: {
+            accountId: accId,
+            status: newStatus,
+            message: `Account ${accId} status successfully updated to ${newStatus}.`
+          }
+        });
+      }
+
       // 4. Initiating Funds Transfer
       if (url.includes('/transfers') && !url.includes('/verify-otp') && !url.includes('/pending') && !url.includes('/approve') && !url.includes('/reject') && !url.includes('/sign-l1') && !url.includes('/reverse') && method === 'post') {
         const toAccountId = (payload.to_account_id || payload.destination_account_id || payload.target_account_id || payload.targetAccountId || '').trim();
         const fromAccountId = (payload.from_account_id || payload.source_account_id || payload.account_id || payload.accountId || mockState.account.account_id || '1000-2000-3001').trim();
 
-        // 0. Impossible Travel & Geovelocity Detection
-        const currentUser = (mockState.users || []).find((u) => u.user_id === 'U1001') || {};
+        // 0. Account Status & Freeze Protection Check
+        const registeredList = (mockState.registeredAccounts && mockState.registeredAccounts.length > 0)
+          ? mockState.registeredAccounts
+          : initialMockState.registeredAccounts;
+
+        const cleanFromCheck = fromAccountId.replace(/[\s-]/g, '').toUpperCase();
+        const originatingAcc = registeredList.find(a => {
+          const num = (a.account_number || '').replace(/[\s-]/g, '').toUpperCase();
+          const id = (a.account_id || '').replace(/[\s-]/g, '').toUpperCase();
+          return num === cleanFromCheck || id === cleanFromCheck;
+        }) || mockState.account;
+
+        if (originatingAcc && originatingAcc.status === 'LOCKED') {
+          return reject({
+            response: {
+              status: 423,
+              data: {
+                status: 'REJECTED_LOCKED',
+                error_code: 'ACCOUNT_STATUS_LOCKED',
+                title: 'Account Temporarily Frozen',
+                message: `Account ${fromAccountId} has been placed under protective administrative freeze by Branch Operations. All outgoing debit transfers are restricted. Please visit a branch or contact customer support.`
+              }
+            }
+          });
+        }
+
+        // 0b. Impossible Travel & Geovelocity Detection
+        const accountUser = originatingAcc ? (mockState.users || []).find(u => u.user_id === originatingAcc.user_id) : null;
+        const currentUser = accountUser || (mockState.users || []).find((u) => u.user_id === 'U1001') || {};
         const isSuspiciousLoc = (currentUser.last_known_location_name && (currentUser.last_known_location_name.includes('London') || currentUser.last_known_location_name.includes('New York')))
           || (payload.location_name && (payload.location_name.includes('London') || payload.location_name.includes('New York')))
           || currentUser.force_impossible_travel_flag;
@@ -763,10 +881,6 @@ function handleMockFallback(config) {
         }
 
         // 3. Verify Destination Account Existence in Bank Ledger
-        const registeredList = (mockState.registeredAccounts && mockState.registeredAccounts.length > 0)
-          ? mockState.registeredAccounts
-          : initialMockState.registeredAccounts;
-
         const matchedAccount = registeredList.find((acc) => {
           const accNumClean = (acc.account_number || '').replace(/[\s-]/g, '').toUpperCase();
           const accIdClean = (acc.account_id || '').replace(/[\s-]/g, '').toUpperCase();

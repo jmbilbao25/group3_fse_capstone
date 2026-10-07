@@ -39,7 +39,8 @@ import {
   CreditCard,
   Wallet,
   Eye,
-  UserCheck
+  UserCheck,
+  Unlock
 } from 'lucide-react';
 import apiClient, { mockState } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -90,21 +91,93 @@ const GEO_PRESETS = [
   }
 ];
 
-// Dual-Admin Roster (Maker-Checker segregation of duties)
+// Multi-Customer Simulation Target Directory
+const SIMULATION_CUSTOMERS = [
+  {
+    userId: 'usr-1001-cst-001',
+    name: 'Juan Dela Cruz',
+    email: 'juan.delacruz@retailbank.ph',
+    accountNumber: '1000-2000-3001',
+    baselineCity: 'Manila, Philippines',
+    lat: 14.5995,
+    lon: 120.9842,
+    ip: '112.198.45.10',
+    avatar: 'JD',
+    balance: '₱15,000,000.00',
+    tier: 'Retail Primary'
+  },
+  {
+    userId: 'usr-1002-cst-002',
+    name: 'Maria Clara Santos',
+    email: 'maria.santos@retailbank.ph',
+    accountNumber: '1000-2000-3002',
+    baselineCity: 'Cebu City, Philippines',
+    lat: 10.3157,
+    lon: 123.8854,
+    ip: '112.198.88.22',
+    avatar: 'MC',
+    balance: '₱8,500,000.00',
+    tier: 'Premier Client'
+  },
+  {
+    userId: 'usr-1003-cst-003',
+    name: 'Jose Rizal',
+    email: 'jose.rizal@retailbank.ph',
+    accountNumber: '1000-2000-3004',
+    baselineCity: 'Calamba, Laguna, Philippines',
+    lat: 14.2117,
+    lon: 121.1656,
+    ip: '112.198.33.15',
+    avatar: 'JR',
+    balance: '₱5,200,000.00',
+    tier: 'Commercial'
+  },
+  {
+    userId: 'usr-1004-cst-004',
+    name: 'Andres Bonifacio',
+    email: 'andres.bonifacio@retailbank.ph',
+    accountNumber: '1000-2000-3005',
+    baselineCity: 'Davao City, Philippines',
+    lat: 7.1907,
+    lon: 125.4553,
+    ip: '112.198.99.77',
+    avatar: 'AB',
+    balance: '₱3,750,000.00',
+    tier: 'Retail Standard'
+  }
+];
+
+// 3 Distinct Bank Admin Roles (Segregation of Duties & Least Privilege RBAC)
 const ADMIN_ROSTER = [
+  {
+    userId: 'usr-1007-sec-003',
+    name: 'Alex Rivera',
+    email: 'alex.rivera@bank.com',
+    role: 'Fraud Ops & Security Analyst',
+    badge: 'Fraud Ops Analyst',
+    capability: 'SIMULATION',
+    capabilityLabel: 'Security Simulation & Threat Radar',
+    desc: 'Authorized to inject Geo jumps, simulate threat vectors, and monitor live AI threat radar.'
+  },
   {
     userId: 'usr-1006-mgr-002',
     name: 'Carlos Mendoza',
     email: 'carlos.mendoza@bank.com',
-    role: 'Operations Lead (Maker)',
-    badge: 'Operations Lead'
+    role: 'Customer Service & Branch Operations',
+    badge: 'Branch Operations Officer',
+    capability: 'ACCOUNT_LOCK_UNLOCK',
+    capabilityLabel: 'Account Freeze/Unfreeze & 360 Governance',
+    desc: 'Authorized to freeze/unfreeze customer accounts and manage Customer 360° profiles.'
   },
   {
     userId: 'usr-1004-adm-001',
     name: 'Diana Vance',
     email: 'diana.admin@bank.com',
-    role: 'Compliance & Audit Lead (Checker)',
-    badge: 'Compliance Lead'
+    role: 'Compliance & Settlement Auditor',
+    badge: 'Compliance Lead (Checker)',
+    capability: 'REVERSAL_APPROVAL',
+    capabilityLabel: 'Maker-Checker Reversal Sign-Off',
+    desc: 'Authorized to approve T24 compensating reversals (Maker-Checker) and inspect WORM vault.'
   }
 ];
 
@@ -192,7 +265,11 @@ export default function AdminExecutivePortal() {
 
   // Active Admin Operator
   const [activeAdminId, setActiveAdminId] = useState(
-    activeAuthUser?.user_id === 'usr-1006-mgr-002' ? 'usr-1006-mgr-002' : 'usr-1004-adm-001'
+    activeAuthUser?.email?.includes('alex') 
+      ? 'usr-1007-sec-003' 
+      : activeAuthUser?.email?.includes('diana') 
+      ? 'usr-1004-adm-001' 
+      : 'usr-1006-mgr-002'
   );
 
   // Core Data States
@@ -208,6 +285,12 @@ export default function AdminExecutivePortal() {
   // Selected Transaction for Slide-over Detail Drawer
   const [selectedTx, setSelectedTx] = useState(null);
 
+  // Account Lock / Unlock Modal State
+  const [lockTargetAccount, setLockTargetAccount] = useState(null);
+  const [lockReason, setLockReason] = useState('SUSPECTED_PHISHING_COERCION');
+  const [lockMemo, setLockMemo] = useState('Customer reported suspicious account activity and requested protective security lock.');
+  const [isSubmittingLock, setIsSubmittingLock] = useState(false);
+
   // Reversal / Rollback Modal State
   const [rollbackTarget, setRollbackTarget] = useState(null);
   const [rollbackApproverId, setRollbackApproverId] = useState('usr-1004-adm-001');
@@ -217,6 +300,7 @@ export default function AdminExecutivePortal() {
   const [notification, setNotification] = useState(null);
 
   // Customer Geolocation Simulation State
+  const [selectedSimCustomer, setSelectedSimCustomer] = useState(SIMULATION_CUSTOMERS[0]);
   const [userLocation, setUserLocation] = useState({
     latitude: 14.5995,
     longitude: 120.9842,
@@ -348,13 +432,15 @@ export default function AdminExecutivePortal() {
           { account_id: 'A2001', account_number: '1000-2000-3001', user_id: 'U1001', account_name: 'Juan Dela Cruz', account_type: 'SAVINGS', status: 'ACTIVE' },
           { account_id: 'A2002', account_number: '1000-2000-3002', user_id: 'U1002', account_name: 'Maria Clara Santos', account_type: 'SAVINGS', status: 'ACTIVE' },
           { account_id: 'A2003', account_number: '1000-2000-3003', user_id: 'U1001', account_name: 'Juan Dela Cruz (Checking Account)', account_type: 'CHECKING', status: 'ACTIVE' },
-          { account_id: 'A2004', account_number: '1000-2000-3004', user_id: 'U1003', account_name: 'Jose Rizal', account_type: 'SAVINGS', status: 'ACTIVE' }
+          { account_id: 'A2004', account_number: '1000-2000-3004', user_id: 'U1003', account_name: 'Jose Rizal', account_type: 'SAVINGS', status: 'ACTIVE' },
+          { account_id: 'A2005', account_number: '1000-2000-3005', user_id: 'U1004', account_name: 'Andres Bonifacio', account_type: 'SAVINGS', status: 'ACTIVE' }
         ];
 
         const users = mockState?.users?.length ? mockState.users : [
           { user_id: 'U1001', first_name: 'Juan', last_name: 'Dela Cruz', email: 'juan.delacruz@retailbank.ph', phone_number: '09171234567', government_id: 'PSA-1985-0012', last_known_location_name: 'Manila, Philippines', last_known_ip: '112.198.45.10' },
-          { user_id: 'U1002', first_name: 'Maria', middle_name: 'Clara', last_name: 'Santos', email: 'maria.santos@retailbank.ph', phone_number: '09189876543', government_id: 'PSA-1992-0045', last_known_location_name: 'Quezon City, Philippines', last_known_ip: '112.198.88.22' },
-          { user_id: 'U1003', first_name: 'Jose', last_name: 'Rizal', email: 'jose.rizal@retailbank.ph', phone_number: '09195556677', government_id: 'PRC-1861-1234', last_known_location_name: 'Calamba, Laguna, Philippines', last_known_ip: '112.198.33.15' }
+          { user_id: 'U1002', first_name: 'Maria', middle_name: 'Clara', last_name: 'Santos', email: 'maria.santos@retailbank.ph', phone_number: '09189876543', government_id: 'PSA-1992-0045', last_known_location_name: 'Cebu City, Philippines', last_known_ip: '112.198.88.22' },
+          { user_id: 'U1003', first_name: 'Jose', last_name: 'Rizal', email: 'jose.rizal@retailbank.ph', phone_number: '09195556677', government_id: 'PRC-1861-1234', last_known_location_name: 'Calamba, Laguna, Philippines', last_known_ip: '112.198.33.15' },
+          { user_id: 'U1004', first_name: 'Andres', last_name: 'Bonifacio', email: 'andres.bonifacio@retailbank.ph', phone_number: '09173334455', government_id: 'PSA-1863-1130', last_known_location_name: 'Davao City, Philippines', last_known_ip: '112.198.99.77' }
         ];
 
         accountsList = sourceAccounts.map(acc => {
@@ -362,8 +448,9 @@ export default function AdminExecutivePortal() {
           const isJuanSav = acc.account_number === '1000-2000-3001';
           const isJuanChk = acc.account_number === '1000-2000-3003';
           const isMaria = acc.account_number === '1000-2000-3002';
-          const availBal = isJuanSav ? 15000000.00 : isJuanChk ? 298000.00 : isMaria ? 8500000.00 : 5000000.00;
-          const currBal = isJuanSav ? 15000000.00 : isJuanChk ? 2000.00 : isMaria ? 8500000.00 : 5000000.00;
+          const isJose = acc.account_number === '1000-2000-3004';
+          const availBal = isJuanSav ? 15000000.00 : isJuanChk ? 298000.00 : isMaria ? 8500000.00 : isJose ? 5200000.00 : 3750000.00;
+          const currBal = isJuanSav ? 15000000.00 : isJuanChk ? 2000.00 : isMaria ? 8500000.00 : isJose ? 5200000.00 : 3750000.00;
           return {
             account_id: acc.account_id || acc.account_number,
             account_number: acc.account_number,
@@ -399,29 +486,50 @@ export default function AdminExecutivePortal() {
     return () => clearInterval(timer);
   }, []);
 
-  // Set Location Preset
+  // Select Customer Target for Simulation
+  const handleSelectSimCustomer = (cust) => {
+    setSelectedSimCustomer(cust);
+    setUserLocation({
+      latitude: cust.lat,
+      longitude: cust.lon,
+      locationName: cust.baselineCity,
+      ipAddress: cust.ip
+    });
+    setNotification({
+      type: 'success',
+      title: 'Target Customer Loaded',
+      message: `Active simulation target set to ${cust.name} (${cust.baselineCity}).`
+    });
+  };
+
+  // Set Location Preset for Selected Customer
   const handleApplyLocation = async (preset) => {
     setIsUpdatingLocation(true);
     try {
+      const targetCity = preset.id === 'MNL' ? selectedSimCustomer.baselineCity : preset.name;
+      const targetLat = preset.id === 'MNL' ? selectedSimCustomer.lat : preset.lat;
+      const targetLon = preset.id === 'MNL' ? selectedSimCustomer.lon : preset.lon;
+      const targetIp = preset.id === 'MNL' ? selectedSimCustomer.ip : preset.ip;
+
       const payload = {
-        latitude: preset.lat,
-        longitude: preset.lon,
-        location_name: preset.name,
-        ip_address: preset.ip
+        latitude: targetLat,
+        longitude: targetLon,
+        location_name: targetCity,
+        ip_address: targetIp
       };
-      await apiClient.patch('/ledger/users/usr-1001-cst-001/location', payload);
+      await apiClient.patch(`/ledger/users/${selectedSimCustomer.userId}/location`, payload);
       setUserLocation({
-        latitude: preset.lat,
-        longitude: preset.lon,
-        locationName: preset.name,
-        ipAddress: preset.ip
+        latitude: targetLat,
+        longitude: targetLon,
+        locationName: targetCity,
+        ipAddress: targetIp
       });
       setNotification({
         type: preset.type === 'FRAUD' ? 'alert' : 'success',
-        title: preset.type === 'FRAUD' ? '🚨 Impossible Travel Simulated' : 'Location Updated',
+        title: preset.type === 'FRAUD' ? '🚨 Impossible Travel Simulated' : 'Baseline Location Restored',
         message: preset.type === 'FRAUD'
-          ? `Customer relocated to ${preset.name}. Subsequent transfer attempts will trigger an instant security hold.`
-          : `Customer baseline location restored to ${preset.name}.`
+          ? `${selectedSimCustomer.name} relocated to ${targetCity}. Subsequent transfer attempts will trigger an instant security hold.`
+          : `${selectedSimCustomer.name} baseline location restored to ${targetCity}.`
       });
     } catch (err) {
       setNotification({
@@ -431,6 +539,50 @@ export default function AdminExecutivePortal() {
       });
     } finally {
       setIsUpdatingLocation(false);
+    }
+  };
+
+  // Execute Protective Account Lock / Unlock (Branch Operations Officer)
+  const handleToggleAccountStatus = async (account, targetStatus) => {
+    setIsSubmittingLock(true);
+    try {
+      const accId = account.account_id || account.account_number;
+      await apiClient.patch(`/accounts/${accId}/status`, {
+        status: targetStatus,
+        reason: lockReason,
+        memo: lockMemo,
+        actioned_by_user_id: activeAdminId
+      });
+
+      // Update in local accounts list
+      setAccounts(prev => prev.map(a => {
+        if ((a.account_id || a.account_number) === accId) {
+          return { ...a, status: targetStatus };
+        }
+        return a;
+      }));
+
+      if (selectedAccount && (selectedAccount.account_id || selectedAccount.account_number) === accId) {
+        setSelectedAccount(prev => ({ ...prev, status: targetStatus }));
+      }
+
+      setNotification({
+        type: 'success',
+        title: targetStatus === 'LOCKED' ? '🔒 Account Locked' : '✅ Account Unlocked',
+        message: targetStatus === 'LOCKED'
+          ? `Account ${accId} has been placed under protective lock by ${currentAdmin.name}. All debit transactions are frozen.`
+          : `Account ${accId} has been unlocked by ${currentAdmin.name}. Regular banking services restored.`
+      });
+
+      setLockTargetAccount(null);
+    } catch (err) {
+      setNotification({
+        type: 'alert',
+        title: 'Status Update Failed',
+        message: err.message || 'Could not update account status.'
+      });
+    } finally {
+      setIsSubmittingLock(false);
     }
   };
 
@@ -609,7 +761,7 @@ export default function AdminExecutivePortal() {
         </div>
 
         {/* Operator Badge at Bottom */}
-        <div className="rounded-2xl border border-line bg-sunken/60 p-3">
+        <div className="rounded-2xl border border-line bg-sunken/60 p-3 space-y-2">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-accent/20 text-accent font-bold text-xs">
               {currentAdmin.name.split(' ').map(n => n[0]).join('')}
@@ -622,6 +774,9 @@ export default function AdminExecutivePortal() {
                 {currentAdmin.badge}
               </span>
             </div>
+          </div>
+          <div className="rounded-xl bg-accent/10 border border-accent/20 px-2 py-1 text-[10px] font-medium text-accent truncate text-center">
+            {currentAdmin.capabilityLabel || 'Operational Access'}
           </div>
         </div>
       </aside>
@@ -642,7 +797,7 @@ export default function AdminExecutivePortal() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Operator Switcher */}
+            {/* Operator Switcher with Capability Pill */}
             <div className="flex items-center gap-2 rounded-2xl border border-line bg-surface px-3 py-1.5 shadow-xs">
               <Users className="h-3.5 w-3.5 text-accent" />
               <select
@@ -1360,7 +1515,7 @@ export default function AdminExecutivePortal() {
                       <th className="py-3 px-4 text-right">Available Balance</th>
                       <th className="py-3 px-4 text-right">Ledger Balance</th>
                       <th className="py-3 px-4 text-center">Status</th>
-                      <th className="py-3 px-4 text-right">360° Inspection</th>
+                      <th className="py-3 px-4 text-right">Governance Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line/60">
@@ -1412,16 +1567,42 @@ export default function AdminExecutivePortal() {
                           </span>
                         </td>
                         <td className="py-3.5 px-4 text-right">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedAccount(acc);
-                            }}
-                            className="inline-flex items-center gap-1 rounded-xl border border-accent/30 bg-accent/10 px-2.5 py-1 text-[11px] font-semibold text-accent hover:bg-accent/20 transition shadow-xs"
-                          >
-                            <Eye className="h-3 w-3" />
-                            <span>View 360°</span>
-                          </button>
+                          <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={() => setSelectedAccount(acc)}
+                              className="inline-flex items-center gap-1 rounded-xl border border-accent/30 bg-accent/10 px-2.5 py-1 text-[11px] font-semibold text-accent hover:bg-accent/20 transition shadow-xs"
+                              title="Inspect 360° Profile & Balances"
+                            >
+                              <Eye className="h-3 w-3" />
+                              <span>360° View</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                setLockTargetAccount(acc);
+                                setLockReason(acc.status === 'LOCKED' ? 'CUSTOMER_VOLUNTARY_REQUEST' : 'SUSPECTED_PHISHING_COERCION');
+                                setLockMemo(acc.status === 'LOCKED' ? 'Customer identity verified at branch. Restoring normal account access.' : 'Customer reported suspicious activity. Freezing debit access.');
+                              }}
+                              className={cn(
+                                "inline-flex items-center gap-1 rounded-xl border px-2.5 py-1 text-[11px] font-semibold transition shadow-xs",
+                                acc.status === 'LOCKED'
+                                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
+                                  : "border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20"
+                              )}
+                              title={acc.status === 'LOCKED' ? "Unlock Customer Account" : "Freeze / Lock Customer Account"}
+                            >
+                              {acc.status === 'LOCKED' ? (
+                                <>
+                                  <Unlock className="h-3 w-3" />
+                                  <span>Unlock</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Lock className="h-3 w-3" />
+                                  <span>Lock</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -1602,142 +1783,232 @@ export default function AdminExecutivePortal() {
         )}
 
         {/* =========================================================================
-            VIEW 4: CUSTOMER GEOLOCATION SURVEILLANCE
+            VIEW 4: CUSTOMER GEOLOCATION SURVEILLANCE & MULTI-CUSTOMER SIMULATION
             ========================================================================= */}
         {activeView === 'geo_surveillance' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in">
-            {/* Left Card: Customer Location Control */}
-            <div className="rounded-3xl border border-line bg-surface p-6 shadow-xs space-y-6">
-              <div>
+          <div className="space-y-6 animate-fade-in">
+            {/* Top Customer Selection Directory Bar */}
+            <div className="rounded-3xl border border-line bg-surface p-6 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Globe className="h-5 w-5 text-accent" />
+                    <h2 className="text-base font-semibold text-fg">
+                      Multi-Customer Geolocation Simulation Engine
+                    </h2>
+                    <InfoTooltip
+                      title="Multi-Customer Attack Vector Simulation"
+                      text="Select any retail customer profile from the bank's active directory. Injected geolocation updates dynamically patch the Oracle XE database record, allowing security teams to simulate impossible travel anomalies, credential sharing, and regional fraud runs across different customer accounts."
+                    />
+                  </div>
+                  <p className="mt-1 text-xs text-fg-muted">
+                    Pick a target account holder to inspect baseline coordinates and trigger simulated impossible travel jumps.
+                  </p>
+                </div>
+
                 <div className="flex items-center gap-2">
-                  <Globe className="h-4 w-4 text-accent" />
-                  <h2 className="text-base font-semibold text-fg">
-                    Customer Geolocation Control
-                  </h2>
-                </div>
-                <p className="mt-1 text-xs text-fg-muted">
-                  Simulate geographic jumps for <strong>Juan Dela Cruz</strong>. Relocating to London or New York triggers the Impossible Travel velocity rule and places transactions on security hold.
-                </p>
-              </div>
-
-              {/* Current Active Origin Card */}
-              <div className="rounded-2xl border border-line bg-sunken/40 p-4">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-fg-subtle block">
-                  Active Database Coordinates (Oracle XE)
-                </span>
-                <div className="mt-1 flex items-baseline justify-between">
-                  <span className="text-base font-bold text-fg">
-                    {userLocation.locationName}
-                  </span>
-                  <span className="font-mono text-xs text-fg-muted">
-                    IP: {userLocation.ipAddress}
+                  <span className="text-xs text-fg-muted">Operating Analyst:</span>
+                  <span className={cn(
+                    "rounded-full px-2.5 py-1 text-xs font-semibold border",
+                    currentAdmin.capability === 'SIMULATION'
+                      ? "bg-accent/10 text-accent border-accent/30"
+                      : "bg-amber-500/10 text-amber-500 border-amber-500/30"
+                  )}>
+                    {currentAdmin.name} ({currentAdmin.badge})
                   </span>
                 </div>
-                <span className="mt-0.5 block font-mono text-[11px] text-fg-subtle">
-                  {userLocation.latitude.toFixed(4)}° N, {userLocation.longitude.toFixed(4)}° E
-                </span>
               </div>
 
-              {/* 1-Click Simulation Buttons */}
-              <div className="space-y-3">
-                <span className="text-xs font-semibold text-fg-subtle block">
-                  Select Simulation Vector
-                </span>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {GEO_PRESETS.map((preset) => (
+              {/* 4 Customer Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {SIMULATION_CUSTOMERS.map((cust) => {
+                  const isSelected = selectedSimCustomer.userId === cust.userId;
+                  return (
                     <button
-                      key={preset.id}
-                      onClick={() => handleApplyLocation(preset)}
-                      disabled={isUpdatingLocation}
+                      key={cust.userId}
+                      onClick={() => handleSelectSimCustomer(cust)}
                       className={cn(
-                        "flex flex-col text-left rounded-2xl border p-3.5 transition shadow-xs",
-                        preset.type === 'FRAUD' 
-                          ? "border-rose-500/30 bg-rose-500/5 hover:bg-rose-500/10" 
-                          : "border-line bg-surface hover:bg-sunken",
-                        userLocation.locationName.includes(preset.name.split(',')[0]) && "ring-2 ring-accent"
+                        "flex flex-col text-left rounded-2xl border p-3.5 transition shadow-xs group",
+                        isSelected
+                          ? "border-accent bg-accent/5 ring-2 ring-accent/30 shadow-md"
+                          : "border-line bg-surface hover:bg-sunken/60"
                       )}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-fg">{preset.name}</span>
-                        <span className={cn(
-                          "text-[10px] font-semibold px-1.5 py-0.5 rounded-lg",
-                          preset.type === 'FRAUD' ? "text-rose-400 bg-rose-500/10" : "text-emerald-400 bg-emerald-500/10"
-                        )}>
-                          {preset.type === 'FRAUD' ? 'Anomaly' : 'Safe'}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <div className={cn(
+                            "flex h-8 w-8 items-center justify-center rounded-xl font-bold text-xs",
+                            isSelected ? "bg-accent text-white" : "bg-sunken text-fg-muted group-hover:bg-accent/20 group-hover:text-accent"
+                          )}>
+                            {cust.avatar}
+                          </div>
+                          <div>
+                            <span className="text-xs font-bold text-fg block">{cust.name}</span>
+                            <span className="text-[10px] text-fg-subtle font-mono">{cust.accountNumber}</span>
+                          </div>
+                        </div>
+                        {isSelected && (
+                          <span className="h-2 w-2 rounded-full bg-accent animate-pulse" />
+                        )}
                       </div>
-                      <p className="mt-1 text-[11px] text-fg-muted leading-tight">
-                        {preset.desc}
-                      </p>
+
+                      <div className="mt-3 pt-2.5 border-t border-line/60 flex items-center justify-between text-[11px]">
+                        <span className="text-fg-subtle truncate max-w-[130px]">{cust.baselineCity.split(',')[0]}</span>
+                        <span className="font-semibold text-emerald-400">{cust.balance}</span>
+                      </div>
                     </button>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Right Card: Radar & Customer Notice Preview */}
-            <div className="space-y-6">
-              <div className="rounded-3xl border border-line bg-surface p-6 shadow-xs">
-                <div className="flex items-center justify-between border-b border-line pb-3">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-accent" />
-                    <h3 className="text-sm font-semibold text-fg">Geodetic Velocity Radar</h3>
+            {/* Simulation Controls & Radar */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Left Card: Customer Location Control */}
+              <div className="rounded-3xl border border-line bg-surface p-6 shadow-xs space-y-6">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-4 w-4 text-accent" />
+                      <h3 className="text-sm font-semibold text-fg">
+                        Active Target: {selectedSimCustomer.name}
+                      </h3>
+                    </div>
+                    <span className="text-[11px] font-mono text-fg-subtle">
+                      {selectedSimCustomer.accountNumber}
+                    </span>
                   </div>
-                  <span className="text-xs text-fg-subtle font-mono">Haversine Metric</span>
+                  <p className="mt-1 text-xs text-fg-muted">
+                    Simulate geographic jumps for <strong>{selectedSimCustomer.name}</strong>. Relocating to London or New York triggers the Impossible Travel velocity rule and places subsequent transactions on security hold.
+                  </p>
                 </div>
 
-                {/* Map Canvas Graphic */}
-                <div className="relative mt-4 h-48 rounded-2xl border border-line bg-sunken/40 flex items-center justify-center overflow-hidden">
-                  <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800f_1px,transparent_1px),linear-gradient(to_bottom,#8080800f_1px,transparent_1px)] bg-[size:20px_20px]" />
-
-                  {/* Point 1: Manila */}
-                  <div className="absolute left-[65%] top-[55%] flex flex-col items-center">
-                    <span className="h-6 w-6 rounded-full bg-emerald-500 text-black flex items-center justify-center text-xs font-bold shadow-md">
-                      1
+                {/* Current Active Origin Card */}
+                <div className="rounded-2xl border border-line bg-sunken/40 p-4">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-fg-subtle block">
+                    Active Database Coordinates (Oracle XE)
+                  </span>
+                  <div className="mt-1 flex items-baseline justify-between">
+                    <span className="text-base font-bold text-fg">
+                      {userLocation.locationName}
                     </span>
-                    <span className="mt-1 text-[10px] font-semibold text-fg bg-surface px-1.5 py-0.5 rounded-lg border border-line shadow-xs">
-                      Manila
+                    <span className="font-mono text-xs text-fg-muted">
+                      IP: {userLocation.ipAddress}
                     </span>
                   </div>
+                  <span className="mt-0.5 block font-mono text-[11px] text-fg-subtle">
+                    {userLocation.latitude.toFixed(4)}° N, {userLocation.longitude.toFixed(4)}° E
+                  </span>
+                </div>
 
-                  {/* Point 2: Anomaly Point */}
-                  {stats.isAnomaly && (
-                    <>
-                      <div className="absolute left-[25%] top-[25%] flex flex-col items-center animate-bounce">
-                        <span className="h-7 w-7 rounded-full bg-rose-500 text-white flex items-center justify-center text-xs font-bold shadow-lg ring-4 ring-rose-500/30">
-                          2
-                        </span>
-                        <span className="mt-1 text-[10px] font-bold text-rose-400 bg-surface px-2 py-0.5 rounded-lg border border-rose-500/30 shadow-xs">
-                          {userLocation.locationName.split(',')[0]}
-                        </span>
-                      </div>
+                {/* 1-Click Simulation Buttons */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-fg-subtle block">
+                      Select Simulation Vector for {selectedSimCustomer.name}
+                    </span>
+                    {isUpdatingLocation && (
+                      <span className="text-[10px] text-accent animate-pulse font-mono">
+                        Updating Oracle XE...
+                      </span>
+                    )}
+                  </div>
 
-                      <svg className="absolute inset-0 h-full w-full pointer-events-none">
-                        <line x1="65%" y1="55%" x2="25%" y2="25%" stroke="#f43f5e" strokeWidth="2" strokeDasharray="4 4" />
-                      </svg>
-                    </>
-                  )}
-
-                  {!stats.isAnomaly && (
-                    <div className="text-xs text-fg-muted flex items-center gap-1.5">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                      <span>User origin matches Manila. No velocity anomalies.</span>
-                    </div>
-                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {GEO_PRESETS.map((preset) => (
+                      <button
+                        key={preset.id}
+                        onClick={() => handleApplyLocation(preset)}
+                        disabled={isUpdatingLocation}
+                        className={cn(
+                          "flex flex-col text-left rounded-2xl border p-3.5 transition shadow-xs",
+                          preset.type === 'FRAUD' 
+                            ? "border-rose-500/30 bg-rose-500/5 hover:bg-rose-500/10" 
+                            : "border-line bg-surface hover:bg-sunken",
+                          userLocation.locationName.includes(preset.name.split(',')[0]) && "ring-2 ring-accent"
+                        )}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-fg">{preset.name}</span>
+                          <span className={cn(
+                            "text-[10px] font-semibold px-1.5 py-0.5 rounded-lg",
+                            preset.type === 'FRAUD' ? "text-rose-400 bg-rose-500/10" : "text-emerald-400 bg-emerald-500/10"
+                          )}>
+                            {preset.type === 'FRAUD' ? 'Anomaly' : 'Safe'}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-[11px] text-fg-muted leading-tight">
+                          {preset.desc}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              {/* Customer Notice Preview */}
-              <div className="rounded-3xl border border-amber-500/30 bg-amber-500/5 p-5 shadow-xs">
-                <div className="flex items-center gap-2 text-xs font-semibold text-amber-300">
-                  <ShieldAlert className="h-4 w-4" />
-                  <span>Customer Warning Notice (Shown on held transfers)</span>
+              {/* Right Card: Radar & Customer Notice Preview */}
+              <div className="space-y-6">
+                <div className="rounded-3xl border border-line bg-surface p-6 shadow-xs">
+                  <div className="flex items-center justify-between border-b border-line pb-3">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-accent" />
+                      <h3 className="text-sm font-semibold text-fg">Geodetic Velocity Radar</h3>
+                    </div>
+                    <span className="text-xs text-fg-subtle font-mono">Haversine Metric</span>
+                  </div>
+
+                  {/* Map Canvas Graphic */}
+                  <div className="relative mt-4 h-48 rounded-2xl border border-line bg-sunken/40 flex items-center justify-center overflow-hidden">
+                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800f_1px,transparent_1px),linear-gradient(to_bottom,#8080800f_1px,transparent_1px)] bg-[size:20px_20px]" />
+
+                    {/* Point 1: Baseline City */}
+                    <div className="absolute left-[65%] top-[55%] flex flex-col items-center">
+                      <span className="h-6 w-6 rounded-full bg-emerald-500 text-black flex items-center justify-center text-xs font-bold shadow-md">
+                        1
+                      </span>
+                      <span className="mt-1 text-[10px] font-semibold text-fg bg-surface px-1.5 py-0.5 rounded-lg border border-line shadow-xs">
+                        {selectedSimCustomer.baselineCity.split(',')[0]}
+                      </span>
+                    </div>
+
+                    {/* Point 2: Anomaly Point */}
+                    {stats.isAnomaly && (
+                      <>
+                        <div className="absolute left-[25%] top-[25%] flex flex-col items-center animate-bounce">
+                          <span className="h-7 w-7 rounded-full bg-rose-500 text-white flex items-center justify-center text-xs font-bold shadow-lg ring-4 ring-rose-500/30">
+                            2
+                          </span>
+                          <span className="mt-1 text-[10px] font-bold text-rose-400 bg-surface px-2 py-0.5 rounded-lg border border-rose-500/30 shadow-xs">
+                            {userLocation.locationName.split(',')[0]}
+                          </span>
+                        </div>
+
+                        <svg className="absolute inset-0 h-full w-full pointer-events-none">
+                          <line x1="65%" y1="55%" x2="25%" y2="25%" stroke="#f43f5e" strokeWidth="2" strokeDasharray="4 4" />
+                        </svg>
+                      </>
+                    )}
+
+                    {!stats.isAnomaly && (
+                      <div className="text-xs text-fg-muted flex items-center gap-1.5">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                        <span>User origin matches {selectedSimCustomer.baselineCity.split(',')[0]}. No velocity anomalies.</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <p className="mt-2 text-xs text-fg-muted leading-relaxed">
-                  <strong>"Security Notice: Transaction Temporarily Held"</strong><br />
-                  We detected unusual activity from a new location. To protect your funds, this transfer was stopped and your account has been placed on a temporary security hold. If this was you, please verify your identity via Face/2FA or contact Customer Support.
-                </p>
+
+                {/* Customer Notice Preview */}
+                <div className="rounded-3xl border border-amber-500/30 bg-amber-500/5 p-5 shadow-xs">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-amber-300">
+                    <ShieldAlert className="h-4 w-4" />
+                    <span>Customer Warning Notice (Shown on held transfers)</span>
+                  </div>
+                  <p className="mt-2 text-xs text-fg-muted leading-relaxed">
+                    <strong>"Security Notice: Transaction Temporarily Held"</strong><br />
+                    We detected unusual activity from a new location. To protect your funds, this transfer was stopped and your account has been placed on a temporary security hold. If this was you, please verify your identity via Face/2FA or contact Customer Support.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -2110,12 +2381,39 @@ export default function AdminExecutivePortal() {
                   </div>
                 </div>
               </div>
-              <button
-                onClick={() => setSelectedAccount(null)}
-                className="rounded-2xl p-2 text-fg-subtle hover:text-fg hover:bg-sunken transition"
-              >
-                <X className="h-5 w-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setLockTargetAccount(selectedAccount);
+                    setLockReason(selectedAccount.status === 'LOCKED' ? 'CUSTOMER_VOLUNTARY_REQUEST' : 'SUSPECTED_PHISHING_COERCION');
+                    setLockMemo(selectedAccount.status === 'LOCKED' ? 'Customer identity verified at branch. Restoring normal account access.' : 'Customer reported suspicious activity. Freezing debit access.');
+                  }}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-2xl border px-3 py-1.5 text-xs font-semibold transition shadow-xs",
+                    selectedAccount.status === 'LOCKED'
+                      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
+                      : "border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20"
+                  )}
+                >
+                  {selectedAccount.status === 'LOCKED' ? (
+                    <>
+                      <Unlock className="h-3.5 w-3.5" />
+                      <span>Unlock Account</span>
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="h-3.5 w-3.5" />
+                      <span>Freeze / Lock Account</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => setSelectedAccount(null)}
+                  className="rounded-2xl p-2 text-fg-subtle hover:text-fg hover:bg-sunken transition"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
 
             {/* Modal Scrollable Body */}
@@ -2365,6 +2663,157 @@ export default function AdminExecutivePortal() {
                 className="w-full sm:w-auto rounded-2xl border border-line bg-sunken px-4 py-2 text-xs font-semibold text-fg hover:bg-raised transition"
               >
                 Close Profile
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          ACCOUNT LOCK / UNLOCK MODAL (BRANCH OPERATIONS & SECURITY OFFICER)
+          ========================================================================= */}
+      {lockTargetAccount && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-3xl border border-line bg-surface p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between border-b border-line pb-3">
+              <div className="flex items-center gap-2">
+                {lockTargetAccount.status === 'LOCKED' ? (
+                  <Unlock className="h-4 w-4 text-emerald-400" />
+                ) : (
+                  <Lock className="h-4 w-4 text-rose-400" />
+                )}
+                <h3 className="text-sm font-semibold text-fg">
+                  {lockTargetAccount.status === 'LOCKED' ? 'Unlock Account Authorization' : 'Protective Account Lock Authorization'}
+                </h3>
+              </div>
+              <button
+                onClick={() => setLockTargetAccount(null)}
+                className="text-fg-subtle hover:text-fg p-1 rounded-md"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Target Account Summary */}
+            <div className="rounded-2xl border border-line bg-sunken/40 p-3.5 space-y-2 text-xs">
+              <div className="flex justify-between items-center">
+                <span className="text-fg-subtle">Customer Name:</span>
+                <span className="font-semibold text-fg">{lockTargetAccount.user_name}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-fg-subtle">Account Number:</span>
+                <span className="font-mono font-bold text-fg">{lockTargetAccount.account_number}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-fg-subtle">Current Status:</span>
+                <span className={cn(
+                  "rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                  lockTargetAccount.status === 'ACTIVE' ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
+                )}>
+                  {lockTargetAccount.status}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-fg-subtle">Target New Status:</span>
+                <span className={cn(
+                  "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase",
+                  lockTargetAccount.status === 'LOCKED' ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
+                )}>
+                  ➔ {lockTargetAccount.status === 'LOCKED' ? 'ACTIVE' : 'LOCKED'}
+                </span>
+              </div>
+            </div>
+
+            {/* Officer & Role Check */}
+            <div className="space-y-3.5 text-xs">
+              <div>
+                <label className="block font-medium text-fg mb-1">
+                  Authorizing Officer (Segregation of Duties)
+                </label>
+                <div className="flex items-center justify-between rounded-xl border border-line bg-sunken px-3 py-2 text-fg">
+                  <div>
+                    <div className="font-semibold">{currentAdmin.name}</div>
+                    <div className="text-[10px] text-fg-subtle">{currentAdmin.badge} • {currentAdmin.role}</div>
+                  </div>
+                  {currentAdmin.capability === 'ACCOUNT_LOCK_UNLOCK' ? (
+                    <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">
+                      Authorized
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-400">
+                      Cross-Role Override
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-medium text-fg mb-1">
+                  Audit Security Reason
+                </label>
+                <select
+                  value={lockReason}
+                  onChange={(e) => setLockReason(e.target.value)}
+                  className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-fg font-medium focus:outline-none"
+                >
+                  <option value="SUSPECTED_PHISHING_COERCION">
+                    Suspected Phishing / Social Engineering Coercion
+                  </option>
+                  <option value="LOST_DEVICE_SIM_SWAP">
+                    Reported Stolen Device / Unauthorized SIM Swap
+                  </option>
+                  <option value="IMPOSSIBLE_TRAVEL_ANOMALY">
+                    Geographic Anomaly / Impossible Travel Trigger
+                  </option>
+                  <option value="COURT_ORDER_REGULATORY_HOLD">
+                    Regulatory / Court Order Freeze (AMLA / BSP)
+                  </option>
+                  <option value="CUSTOMER_VOLUNTARY_REQUEST">
+                    Customer Voluntary Request / Temporary Lock
+                  </option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-medium text-fg mb-1">
+                  Official Justification Memo
+                </label>
+                <textarea
+                  rows="2"
+                  value={lockMemo}
+                  onChange={(e) => setLockMemo(e.target.value)}
+                  className="w-full rounded-xl border border-line bg-surface p-2.5 text-fg focus:outline-none text-xs"
+                />
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-line">
+              <button
+                type="button"
+                onClick={() => setLockTargetAccount(null)}
+                className="rounded-xl border border-line bg-surface px-3.5 py-2 text-xs font-medium text-fg hover:bg-sunken"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleToggleAccountStatus(
+                  lockTargetAccount, 
+                  lockTargetAccount.status === 'LOCKED' ? 'ACTIVE' : 'LOCKED'
+                )}
+                disabled={isSubmittingLock}
+                className={cn(
+                  "rounded-xl px-4 py-2 text-xs font-semibold text-white transition",
+                  lockTargetAccount.status === 'LOCKED'
+                    ? "bg-emerald-600 hover:bg-emerald-500"
+                    : "bg-rose-600 hover:bg-rose-500"
+                )}
+              >
+                {isSubmittingLock
+                  ? 'Updating...'
+                  : (lockTargetAccount.status === 'LOCKED' ? 'Confirm Unlock Account' : 'Confirm Freeze / Lock Account')}
               </button>
             </div>
           </div>

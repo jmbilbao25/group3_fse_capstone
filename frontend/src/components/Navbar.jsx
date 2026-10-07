@@ -10,16 +10,23 @@ import { cn } from '../ui';
 const ADMIN_PERSONAS = [
   {
     role: 'ROLE_ADMIN',
+    email: 'alex.rivera@bank.com',
+    name: 'Alex Rivera',
+    title: 'Fraud Ops Analyst (Simulation)',
+    id: 'usr-1007-sec-003',
+  },
+  {
+    role: 'ROLE_ADMIN',
     email: 'carlos.mendoza@bank.com',
     name: 'Carlos Mendoza',
-    title: 'Operations Lead (Maker)',
+    title: 'Branch Operations (Account Lock/Unlock)',
     id: 'usr-1006-mgr-002',
   },
   {
     role: 'ROLE_ADMIN',
     email: 'diana.admin@bank.com',
     name: 'Diana Vance',
-    title: 'Compliance Lead (Checker)',
+    title: 'Compliance Lead (Reversals Approver)',
     id: 'usr-1004-adm-001',
   },
 ];

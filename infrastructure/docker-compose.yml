@@ -180,6 +180,8 @@ services:
     restart: unless-stopped
     ports:
       - "5540:5540" # Web UI
+    volumes:
+      - redisinsight_data:/data
     networks:
       - banking-net
     depends_on:
@@ -548,5 +550,6 @@ volumes:
   postgres_data:
   prometheus_data:
   grafana_data:
+  redisinsight_data:
 
 

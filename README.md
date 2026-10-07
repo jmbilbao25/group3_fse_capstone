@@ -177,6 +177,7 @@ Every container attaches to the internal bridge network `banking-net`. Only peri
 | **Notification Service** | `notification-service` | *Internal* | `8083` | HTTP / REST | Kafka event listener, email receipts, 2FA OTP generation and dispatch |
 | **Fraud Risk Engine** | `risk-service` | *Internal* | `8084` | HTTP / REST | Two-stage S2 XGBoost (Stage A) + Laya threat synthesis & synchronous memo analysis (Stage B) |
 | **Redis Cache** | `redis-cache` | `6379` | `6379` | RESP / TCP | RTR token families, JWT blacklist, 5-minute OTP, rate limiting |
+| **Redis Insight** | `redis-insight` | `5540` | `5540` | HTTP | Web management dashboard for inspecting Redis keys, memory, and TTLs |
 | **Oracle Database XE** | `oracle-xe-master` | `1521` | `1521` | Oracle TNS | Operational relational state (`XEPDB1`), row locks, outbox events |
 | **PostgreSQL Audit** | `postgres-audit-vault`| `5433` | `5432` | PostgreSQL | Write-once append-only compliance audit journal (`banking_audit`) |
 | **Apache Kafka** | `kafka-broker` | `9092` | `9092` | PLAINTEXT | KRaft cluster event commit log (`banking.transfers.events`) |

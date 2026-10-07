@@ -42,21 +42,21 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
       'title': 'Savings Account',
       'accountNo': 'AUR-SAV-9821',
       'balance': 50000.0,
-      'icon': Icons.savings_outlined,
+      'icon': Icons.account_balance_rounded,
     },
     {
       'type': 'Current',
       'title': 'Current Account',
       'accountNo': 'AUR-CUR-4412',
       'balance': 125000.0,
-      'icon': Icons.account_balance_wallet_outlined,
+      'icon': Icons.account_balance_wallet_rounded,
     },
     {
       'type': 'Credit',
       'title': 'Credit Account',
       'accountNo': 'AUR-CRD-7703',
       'balance': 75000.0,
-      'icon': Icons.credit_card_outlined,
+      'icon': Icons.credit_card_rounded,
     },
   ];
 
@@ -78,7 +78,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
     },
     {
       'name': 'Savings',
-      'icon': Icons.savings_rounded,
+      'icon': Icons.account_balance_rounded,
       'desc': 'Personal stash & emergency reserve',
     },
   ];

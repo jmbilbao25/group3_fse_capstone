@@ -30,8 +30,6 @@ class _StatementScreenState extends State<StatementScreen> {
   static const Color textMuted = Color(0xFF64748B);
   static const Color cardBorder = Color(0xFFE2E8F0);
   static const Color bgCanvas = Color(0xFFF8FAFC);
-  static const Color badgeBg = Color(0xFFF1F5F9);
-  static const Color bannerBg = Color(0xFFF5F3FF);
 
   @override
   void initState() {
@@ -86,7 +84,7 @@ class _StatementScreenState extends State<StatementScreen> {
                 Expanded(
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -119,15 +117,19 @@ class _StatementScreenState extends State<StatementScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Text(
-                              'Transfer Record ($filteredCount)',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: textDark,
-                                letterSpacing: -0.3,
+                            Expanded(
+                              child: Text(
+                                'Transfer Record ($filteredCount)',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: textDark,
+                                  letterSpacing: -0.3,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                            const SizedBox(width: 8),
                             _buildFilterTabs(
                               totalCount,
                               statement.inCount,
@@ -264,41 +266,88 @@ class _StatementScreenState extends State<StatementScreen> {
         });
       },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: _isMonthDropdownOpen ? brandAccent : const Color(0xFF6D28D9),
-            width: 1.5,
+            color: _isMonthDropdownOpen ? brandAccent : const Color(0xFFE2E8F0),
+            width: _isMonthDropdownOpen ? 1.5 : 1.0,
           ),
           boxShadow: [
             BoxShadow(
-              color: brandAccent.withValues(alpha: 0.06),
-              blurRadius: 10,
+              color: _isMonthDropdownOpen
+                  ? brandAccent.withValues(alpha: 0.12)
+                  : Colors.black.withValues(alpha: 0.025),
+              blurRadius: _isMonthDropdownOpen ? 16 : 8,
               offset: const Offset(0, 3),
             ),
           ],
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              statement.title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: textDark,
-                letterSpacing: -0.2,
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F3FF),
+                borderRadius: BorderRadius.circular(11),
+                border: Border.all(color: const Color(0xFFEDE9FE), width: 1),
+              ),
+              child: const Icon(
+                Icons.calendar_today_rounded,
+                size: 16,
+                color: brandAccent,
               ),
             ),
-            Icon(
-              _isMonthDropdownOpen
-                  ? Icons.keyboard_arrow_up_rounded
-                  : Icons.keyboard_arrow_down_rounded,
-              color: brandAccent,
-              size: 26,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'STATEMENT MONTH',
+                    style: TextStyle(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.6,
+                      color: textMuted,
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    statement.title,
+                    style: const TextStyle(
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.w800,
+                      color: textDark,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            AnimatedRotation(
+              turns: _isMonthDropdownOpen ? 0.5 : 0.0,
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              child: Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFFE2E8F0), width: 0.8),
+                ),
+                child: const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: brandAccent,
+                  size: 20,
+                ),
+              ),
             ),
           ],
         ),
@@ -428,31 +477,47 @@ class _StatementScreenState extends State<StatementScreen> {
 
   Widget _buildDossierCard(MonthlyStatement statement) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: cardBorder, width: 1.2),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.035),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
+            color: const Color(0x0A0F172A),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: const Color(0x040F172A),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Aura Bank Header + E-Statement Tag
+          // Header Row: Bank Monogram + Identity + Luxury Status Capsule
           Row(
             children: [
               Container(
-                width: 38,
-                height: 38,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
-                  color: brandPrimary,
-                  borderRadius: BorderRadius.circular(10),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF2A0054), Color(0xFF4C1D95)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF2A0054).withValues(alpha: 0.25),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 alignment: Alignment.center,
                 child: const Text(
@@ -464,7 +529,7 @@ class _StatementScreenState extends State<StatementScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -472,12 +537,13 @@ class _StatementScreenState extends State<StatementScreen> {
                     Text(
                       'Aura Bank',
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: 16,
                         fontWeight: FontWeight.w900,
                         color: textDark,
-                        letterSpacing: -0.2,
+                        letterSpacing: -0.3,
                       ),
                     ),
+                    SizedBox(height: 1),
                     Text(
                       'Intra-Bank Network Ledger',
                       style: TextStyle(
@@ -490,44 +556,54 @@ class _StatementScreenState extends State<StatementScreen> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: badgeBg,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: cardBorder, width: 0.8),
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFE2E8F0), width: 0.8),
                 ),
-                child: const Text(
-                  'E-Statement',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF475569),
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    SizedBox(
+                      width: 6,
+                      height: 6,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Color(0xFF10B981),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 5),
+                    Text(
+                      'E-Statement',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.3,
+                        color: Color(0xFF475569),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
 
-          // Two Inner Floating Cards (Account Holder & Statement Period)
+          // Metadata Twin Shelf (Account Holder & Statement Period)
           Row(
             children: [
-              // Left Card: Account Holder
+              // Left Shelf: Account Holder
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: cardBorder),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.02),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFF1F5F9)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -536,7 +612,8 @@ class _StatementScreenState extends State<StatementScreen> {
                         'Account Holder',
                         style: TextStyle(
                           fontSize: 9.5,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.4,
                           color: textMuted,
                         ),
                       ),
@@ -546,7 +623,7 @@ class _StatementScreenState extends State<StatementScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontSize: 11.5,
+                          fontSize: 12,
                           fontWeight: FontWeight.w800,
                           color: textDark,
                         ),
@@ -565,44 +642,40 @@ class _StatementScreenState extends State<StatementScreen> {
                 ),
               ),
               const SizedBox(width: 10),
-              // Right Card: Statement Period
+              // Right Shelf: Statement Period
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: cardBorder),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.02),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFF1F5F9)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
+                    children: [
+                      const Text(
                         'Statement Period',
                         style: TextStyle(
                           fontSize: 9.5,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.4,
                           color: textMuted,
                         ),
                       ),
-                      SizedBox(height: 3),
+                      const SizedBox(height: 3),
                       Text(
-                        'October 1 - 31, 2026',
-                        style: TextStyle(
-                          fontSize: 11.5,
+                        statement.monthKey == '2026-10' ? 'October 1 - 31, 2026' : statement.dateRange,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
                           fontWeight: FontWeight.w800,
                           color: textDark,
                         ),
                       ),
-                      SizedBox(height: 2),
-                      Text(
+                      const SizedBox(height: 2),
+                      const Text(
                         'Currency: PHP',
                         style: TextStyle(
                           fontSize: 9.5,
@@ -619,13 +692,17 @@ class _StatementScreenState extends State<StatementScreen> {
 
           const SizedBox(height: 14),
 
-          // Financial Totals Banner (Lavender Box)
+          // Financial Cash Flow Hero Section (Dual-Tranche Balance)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: bannerBg,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFEDE9FE)),
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFAF5FF), Color(0xFFF5F3FF)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFEDE9FE), width: 1.0),
             ),
             child: Row(
               children: [
@@ -633,22 +710,44 @@ class _StatementScreenState extends State<StatementScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Total Received',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: textDark,
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(3),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFECFDF5),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.arrow_downward_rounded, size: 10, color: greenCredit),
+                            ),
+                            const SizedBox(width: 5),
+                            const Text(
+                              'Total Received',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF334155),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'PHP ${_formatCurrency(statement.totalReceived)}',
-                        style: const TextStyle(
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w900,
-                          color: greenCredit,
-                          letterSpacing: -0.3,
+                      const SizedBox(height: 5),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'PHP ${_formatCurrency(statement.totalReceived)}',
+                          style: const TextStyle(
+                            fontSize: 16.5,
+                            fontWeight: FontWeight.w900,
+                            color: greenCredit,
+                            letterSpacing: -0.4,
+                          ),
                         ),
                       ),
                     ],
@@ -656,7 +755,7 @@ class _StatementScreenState extends State<StatementScreen> {
                 ),
                 Container(
                   width: 1,
-                  height: 32,
+                  height: 36,
                   color: const Color(0xFFDDD6FE),
                 ),
                 const SizedBox(width: 14),
@@ -664,22 +763,44 @@ class _StatementScreenState extends State<StatementScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Total Sent',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: textDark,
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(3),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFFFF1F2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.arrow_upward_rounded, size: 10, color: debitRed),
+                            ),
+                            const SizedBox(width: 5),
+                            const Text(
+                              'Total Sent',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF334155),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'PHP ${_formatCurrency(statement.totalSent)}',
-                        style: const TextStyle(
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w900,
-                          color: debitRed,
-                          letterSpacing: -0.3,
+                      const SizedBox(height: 5),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'PHP ${_formatCurrency(statement.totalSent)}',
+                          style: const TextStyle(
+                            fontSize: 16.5,
+                            fontWeight: FontWeight.w900,
+                            color: debitRed,
+                            letterSpacing: -0.4,
+                          ),
                         ),
                       ),
                     ],
@@ -691,13 +812,13 @@ class _StatementScreenState extends State<StatementScreen> {
 
           const SizedBox(height: 12),
 
-          // Counter Pills Row: ALL / IN / OUT
+          // Counter Strip: ALL / IN / OUT
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
             decoration: BoxDecoration(
               color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: cardBorder),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFF1F5F9)),
             ),
             child: Row(
               children: [
@@ -825,51 +946,87 @@ class _StatementScreenState extends State<StatementScreen> {
     final isIncoming = t.isIncoming;
     final initial = t.counterparty.isNotEmpty ? t.counterparty[0].toUpperCase() : 'T';
 
-    // Color code monogram avatars based on counterparty
-    Color avatarColor = const Color(0xFF2A0054);
-    if (t.counterparty.contains('Klare')) avatarColor = const Color(0xFF7C3AED);
-    if (t.counterparty.contains('Jessi')) avatarColor = const Color(0xFF4C1D95);
-    if (t.counterparty.contains('Angel')) avatarColor = const Color(0xFF6D28D9);
+    // Sophisticated color mapping with modern fintech pastel/deep tones
+    Color avatarBg = const Color(0xFFF3E8FF);
+    Color avatarText = const Color(0xFF6D28D9);
+    if (t.counterparty.contains('Drake')) {
+      avatarBg = const Color(0xFFEDE9FE);
+      avatarText = const Color(0xFF5B21B6);
+    } else if (t.counterparty.contains('Klare')) {
+      avatarBg = const Color(0xFFF3E8FF);
+      avatarText = const Color(0xFF7C3AED);
+    } else if (t.counterparty.contains('Jessi')) {
+      avatarBg = const Color(0xFFFAF5FF);
+      avatarText = const Color(0xFF4C1D95);
+    } else if (t.counterparty.contains('Angel')) {
+      avatarBg = const Color(0xFFF5F3FF);
+      avatarText = const Color(0xFF6D28D9);
+    }
 
     return GestureDetector(
       onTap: () => _showTransactionDetailsModal(t),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: cardBorder),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFF1F5F9), width: 1.2),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.02),
-              blurRadius: 6,
+              blurRadius: 8,
               offset: const Offset(0, 2),
             ),
           ],
         ),
         child: Row(
           children: [
-            // Circular Avatar Monogram
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: avatarColor,
-                shape: BoxShape.circle,
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                initial,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w900,
+            // Squircle Avatar Monogram with subtle micro-indicator
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: avatarBg,
+                    borderRadius: BorderRadius.circular(13),
+                    border: Border.all(color: avatarText.withValues(alpha: 0.15), width: 0.8),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    initial,
+                    style: TextStyle(
+                      color: avatarText,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
                 ),
-              ),
+                Positioned(
+                  right: -2,
+                  bottom: -2,
+                  child: Container(
+                    width: 15,
+                    height: 15,
+                    decoration: BoxDecoration(
+                      color: isIncoming ? greenCredit : debitRed,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 1.5),
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      isIncoming ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
+                      color: Colors.white,
+                      size: 9,
+                    ),
+                  ),
+                ),
+              ],
             ),
 
-            const SizedBox(width: 12),
+            const SizedBox(width: 14),
 
             // Counterparty Name + Date / Time
             Expanded(
@@ -879,16 +1036,17 @@ class _StatementScreenState extends State<StatementScreen> {
                   Text(
                     t.counterparty,
                     style: const TextStyle(
-                      fontSize: 14,
+                      fontSize: 14.5,
                       fontWeight: FontWeight.w800,
                       color: textDark,
+                      letterSpacing: -0.2,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 3),
                   Text(
                     t.displayTime,
                     style: const TextStyle(
-                      fontSize: 11,
+                      fontSize: 11.5,
                       color: textMuted,
                       fontWeight: FontWeight.w500,
                     ),
@@ -897,26 +1055,33 @@ class _StatementScreenState extends State<StatementScreen> {
               ),
             ),
 
-            // Amount + Status Label
+            // Amount + Status Pill
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
                   '${isIncoming ? '+' : '-'} ${_formatCurrency(t.amount)}',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 14.5,
                     fontWeight: FontWeight.w900,
                     color: isIncoming ? greenCredit : debitRed,
-                    letterSpacing: -0.2,
+                    letterSpacing: -0.3,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  isIncoming ? 'Transfer Received' : 'Transfer Sent',
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: textMuted,
-                    fontWeight: FontWeight.w500,
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                  decoration: BoxDecoration(
+                    color: isIncoming ? const Color(0xFFECFDF5) : const Color(0xFFFFF1F2),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    isIncoming ? 'Transfer Received' : 'Transfer Sent',
+                    style: TextStyle(
+                      fontSize: 9.5,
+                      color: isIncoming ? greenCredit : debitRed,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ],
@@ -946,15 +1111,24 @@ class _StatementScreenState extends State<StatementScreen> {
 
   Widget _buildExportButton(MonthlyStatement statement) {
     return Container(
-      height: 50,
+      height: 52,
       decoration: BoxDecoration(
-        color: brandPrimary,
-        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF2A0054), Color(0xFF4C1D95)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(26),
         boxShadow: [
           BoxShadow(
-            color: brandPrimary.withValues(alpha: 0.35),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
+            color: const Color(0xFF2A0054).withValues(alpha: 0.38),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -962,7 +1136,7 @@ class _StatementScreenState extends State<StatementScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
         ),
         onPressed: () {
           Navigator.of(context).push(
@@ -971,12 +1145,21 @@ class _StatementScreenState extends State<StatementScreen> {
             ),
           );
         },
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.print_outlined, color: Colors.white, size: 20),
-            SizedBox(width: 8),
-            Text(
+            Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.16),
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: const Icon(Icons.print_outlined, color: Colors.white, size: 16),
+            ),
+            const SizedBox(width: 10),
+            const Text(
               'Export as PDF',
               style: TextStyle(
                 color: Colors.white,

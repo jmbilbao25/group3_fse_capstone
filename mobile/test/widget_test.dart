@@ -389,7 +389,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify 3rd device modal UI
-    expect(find.text('3rd Device Login Request'), findsOneWidget);
+    expect(find.text('3rd Mobile Login Request'), findsOneWidget);
     expect(find.text('Samsung Galaxy Tab (3rd Device)'), findsOneWidget);
     expect(find.text('iPad Air (Secondary)'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Confirm & Replace Device'), findsOneWidget);
@@ -400,7 +400,63 @@ void main() {
     await tester.pumpAndSettle();
 
     // Modal dismissed
-    expect(find.text('3rd Device Login Request'), findsNothing);
+    expect(find.text('3rd Mobile Login Request'), findsNothing);
+  });
+
+  testWidgets('Desktop Session Alert: Primary device receives real-time desktop login alert with 1-web policy details',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await tester.pumpWidget(const AuraBankApp());
+    await tester.pumpAndSettle();
+
+    final emailField = find.widgetWithText(TextFormField, 'Email Address');
+    final passwordField = find.widgetWithText(TextFormField, 'Password');
+
+    await tester.enterText(emailField, 'diana.admin@bank.com');
+    await tester.enterText(passwordField, 'password123');
+    await tester.pumpAndSettle();
+
+    final signInButton = find.widgetWithText(FilledButton, 'Sign In');
+    await tester.tap(signInButton);
+    await tester.pumpAndSettle();
+
+    // Inject Desktop Session Login Alert
+    NotificationStreamService().injectAlert(
+      SecurityAlertEvent(
+        title: 'Security Alert: Desktop Session Login',
+        message: 'A desktop/web session (MacBook Pro Chrome) just logged into your account from IP 192.168.1.102. (Policy: 1 Web session permitted).',
+        deviceName: 'MacBook Pro (Chrome)',
+        deviceId: 'dev-laptop-web',
+        deviceType: 'WEB',
+        clientIp: '192.168.1.102',
+        timestamp: DateTime.now().toIso8601String(),
+        targetDeviceId: 'dev-iphone-primary',
+        notificationId: 'NOTIF-DESK-1001',
+        status: 'ACTIVE_SESSION',
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify Desktop Session Modal UI
+    expect(find.text('Desktop Session Alert'), findsOneWidget);
+    expect(find.text('MacBook Pro (Chrome)'), findsOneWidget);
+    expect(find.text('Active Web Session'), findsOneWidget);
+    expect(find.textContaining('1 Web session permitted'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Acknowledge'), findsOneWidget);
+    expect(find.widgetWithText(OutlinedButton, 'Revoke Desktop'), findsOneWidget);
+
+    // Tap Acknowledge
+    await tester.tap(find.widgetWithText(FilledButton, 'Acknowledge'));
+    await tester.pumpAndSettle();
+
+    // Modal dismissed
+    expect(find.text('Desktop Session Alert'), findsNothing);
   });
 }
 

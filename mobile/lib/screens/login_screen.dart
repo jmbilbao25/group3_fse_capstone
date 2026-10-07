@@ -581,7 +581,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                '1st login is permanently set as Primary. Max 2 devices allowed; 3rd device login prompts Primary to confirm and deregisters the other secondary.',
+                                'Configuration: 1 Web session + 2 Mobiles allowed. 1st mobile login is permanently Primary. Desktop logins dispatch push alerts to your primary phone.',
                                 style: TextStyle(
                                   fontSize: 10,
                                   color: isDark ? Colors.grey[400] : Colors.grey[600],

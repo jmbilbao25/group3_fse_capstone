@@ -48,7 +48,26 @@ class SecurityApprovalDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isThird = alert.isThirdDevice;
+    final isDesktop = alert.isDesktopSession;
+    final isThird = alert.isThirdDevice && !isDesktop;
+
+    Color badgeColor;
+    IconData headerIcon;
+    String headerTitle;
+
+    if (isDesktop) {
+      badgeColor = const Color(0xFF3A4CD6);
+      headerIcon = Icons.laptop_mac_rounded;
+      headerTitle = 'Desktop Session Alert';
+    } else if (isThird) {
+      badgeColor = Colors.orange;
+      headerIcon = Icons.swap_horizontal_circle_rounded;
+      headerTitle = '3rd Mobile Login Request';
+    } else {
+      badgeColor = Colors.amber;
+      headerIcon = Icons.warning_amber_rounded;
+      headerTitle = 'Security Push Alert';
+    }
 
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -58,19 +77,19 @@ class SecurityApprovalDialog extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: (isThird ? Colors.orange : Colors.amber).withAlpha(40),
+              color: badgeColor.withAlpha(40),
               shape: BoxShape.circle,
             ),
             child: Icon(
-              isThird ? Icons.swap_horizontal_circle_rounded : Icons.warning_amber_rounded,
-              color: isThird ? Colors.orange : Colors.amber,
+              headerIcon,
+              color: badgeColor,
               size: 28,
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              isThird ? '3rd Device Login Request' : 'Security Push Alert',
+              headerTitle,
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
@@ -80,7 +99,40 @@ class SecurityApprovalDialog extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (isThird) ...[
+          if (isDesktop) ...[
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF3A4CD6).withAlpha(20),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFF3A4CD6).withAlpha(70)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline_rounded, color: Color(0xFF3A4CD6), size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Policy: 1 Web session permitted alongside 2 Mobile devices. Your mobile device remains the primary authenticator.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? const Color(0xFFA5B4FC) : const Color(0xFF1E3A8A),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'A desktop/web session just logged into your AuraBank account. If this was not you, terminate the desktop session immediately.',
+              style: TextStyle(
+                fontSize: 13,
+                color: isDark ? Colors.grey[300] : Colors.grey[800],
+              ),
+            ),
+          ] else if (isThird) ...[
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
@@ -94,7 +146,7 @@ class SecurityApprovalDialog extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Device limit reached (Max 2 devices). Approving this device will automatically deregister your other secondary device.',
+                      'Mobile limit reached (Max 2 mobiles). Approving this device will automatically deregister your other secondary mobile device.',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -107,7 +159,7 @@ class SecurityApprovalDialog extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'A 3rd device is requesting to log in. Since only 1 Primary and 1 Secondary device are allowed, confirm if you wish to replace your active secondary device.',
+              'A 3rd mobile device is requesting to log in. Since only 1 Primary and 1 Secondary mobile are allowed, confirm if you wish to replace your active secondary mobile.',
               style: TextStyle(
                 fontSize: 13,
                 color: isDark ? Colors.grey[300] : Colors.grey[800],
@@ -115,7 +167,7 @@ class SecurityApprovalDialog extends StatelessWidget {
             ),
           ] else ...[
             Text(
-              'A new device just logged into your AuraBank account from another location.',
+              'A new secondary mobile device just logged into your AuraBank account.',
               style: TextStyle(
                 fontSize: 13,
                 color: isDark ? Colors.grey[300] : Colors.grey[800],
@@ -135,15 +187,22 @@ class SecurityApprovalDialog extends StatelessWidget {
             child: Column(
               children: [
                 _buildDetailRow(
-                  isThird ? 'Incoming 3rd Device' : 'Device',
+                  isDesktop
+                      ? 'Desktop Device'
+                      : (isThird ? 'Incoming 3rd Mobile' : 'Device'),
                   alert.deviceName,
-                  Icons.phone_android_rounded,
+                  isDesktop ? Icons.laptop_mac_rounded : Icons.phone_android_rounded,
                   isDark,
                 ),
                 const SizedBox(height: 8),
                 _buildDetailRow('IP Address', alert.clientIp, Icons.wifi_rounded, isDark),
                 const SizedBox(height: 8),
-                _buildDetailRow('Status', 'Pending Your Approval', Icons.lock_clock_rounded, isDark),
+                _buildDetailRow(
+                  'Session Status',
+                  isDesktop ? 'Active Web Session' : 'Pending Your Approval',
+                  isDesktop ? Icons.check_circle_outline_rounded : Icons.lock_clock_rounded,
+                  isDark,
+                ),
                 if (isThird && alert.replacedDeviceName.isNotEmpty) ...[
                   const Divider(height: 16),
                   _buildDetailRow(
@@ -158,10 +217,16 @@ class SecurityApprovalDialog extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            isThird
-                ? 'Your Primary device is permanently bound. Only the Secondary device slot is replaceable.'
-                : 'Banking transactions are currently locked on this secondary device until you approve it.',
-            style: const TextStyle(fontSize: 12, color: Color(0xFFD97706), fontWeight: FontWeight.w500),
+            isDesktop
+                ? 'Desktop sessions can access web banking, but primary security alerts remain on this mobile.'
+                : (isThird
+                    ? 'Your Primary device is permanently bound. Only the Secondary device slot is replaceable.'
+                    : 'Banking transactions are currently locked on this secondary device until you approve it.'),
+            style: TextStyle(
+              fontSize: 12,
+              color: isDesktop ? const Color(0xFF3A4CD6) : const Color(0xFFD97706),
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
@@ -180,38 +245,44 @@ class SecurityApprovalDialog extends StatelessWidget {
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(isThird
-                      ? '3rd device request denied. Existing secondary device retained.'
-                      : 'Remote session revoked. Access blocked.'),
+                  content: Text(isDesktop
+                      ? 'Desktop session terminated. Access revoked.'
+                      : (isThird
+                          ? '3rd mobile device request denied. Existing secondary device retained.'
+                          : 'Remote session revoked. Access blocked.')),
                   backgroundColor: Colors.redAccent,
                 ),
               );
             }
           },
-          child: Text(isThird ? 'Deny Access' : 'Revoke Access'),
+          child: Text(isDesktop ? 'Revoke Desktop' : (isThird ? 'Deny Access' : 'Revoke Access')),
         ),
         FilledButton.icon(
-          icon: const Icon(Icons.check_circle_rounded, size: 16),
+          icon: Icon(isDesktop ? Icons.thumb_up_rounded : Icons.check_circle_rounded, size: 16),
           style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFF107C41),
+            backgroundColor: isDesktop ? const Color(0xFF3A4CD6) : const Color(0xFF107C41),
           ),
           onPressed: () async {
             Navigator.of(context).pop();
             final devId = alert.deviceId.isNotEmpty ? alert.deviceId : alert.deviceName;
-            await AuthApiService().approveDevice(deviceId: devId);
+            if (!isDesktop) {
+              await AuthApiService().approveDevice(deviceId: devId);
+            }
             onHandled?.call();
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(isThird
-                      ? 'Confirmed! ${alert.deviceName} approved; other secondary device was deregistered.'
-                      : 'Approved! ${alert.deviceName} authorized for transactions.'),
-                  backgroundColor: const Color(0xFF107C41),
+                  content: Text(isDesktop
+                      ? 'Desktop session acknowledged.'
+                      : (isThird
+                          ? 'Confirmed! ${alert.deviceName} approved; other secondary device was deregistered.'
+                          : 'Approved! ${alert.deviceName} authorized for transactions.')),
+                  backgroundColor: isDesktop ? const Color(0xFF3A4CD6) : const Color(0xFF107C41),
                 ),
               );
             }
           },
-          label: Text(isThird ? 'Confirm & Replace Device' : 'Approve Access'),
+          label: Text(isDesktop ? 'Acknowledge' : (isThird ? 'Confirm & Replace Device' : 'Approve Access')),
         ),
       ],
     );

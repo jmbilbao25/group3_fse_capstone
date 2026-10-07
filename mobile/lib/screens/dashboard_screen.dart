@@ -227,7 +227,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Policy: Max 2 devices (1 Primary, 1 Secondary). 1st login is permanently Primary. A 3rd device prompts confirmation and deregisters the old secondary.',
+                            'Policy: 1 Web session + 2 Mobiles allowed (1 Primary, 1 Secondary). 1st mobile login is permanently Primary. Desktop logins alert your primary phone.',
                             style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
                           ),
                         ),
@@ -245,7 +245,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       child: Text(
-                        'Current device: $_currentDeviceName (${_isPrimary ? "Primary" : "Secondary"})',
+                        'Current device: $_currentDeviceName (${_isPrimary ? "Primary Mobile" : "Secondary Mobile"})',
                         style: const TextStyle(fontSize: 13),
                       ),
                     )
@@ -254,26 +254,54 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       final isPrim = d['is_primary'] == true;
                       final isAppr = d['is_approved'] == true;
                       final devId = d['device_id'] as String? ?? '';
+                      final type = (d['device_type'] as String? ?? '').toUpperCase();
+                      final isWeb = type == 'WEB' || devId.contains('laptop') || devId.contains('web') || devId.contains('chrome');
                       final isCurrent = devId == _currentDeviceId;
+
+                      IconData devIcon = Icons.smartphone_rounded;
+                      if (isWeb) {
+                        devIcon = Icons.laptop_mac_rounded;
+                      } else if (devId.contains('iphone')) {
+                        devIcon = Icons.phone_iphone_rounded;
+                      } else if (devId.contains('ipad') || devId.contains('tablet') || devId.contains('tab')) {
+                        devIcon = Icons.tablet_mac_rounded;
+                      }
+
+                      String subtitleText;
+                      if (isWeb) {
+                        subtitleText = 'ID: $devId • Web Session (1 Allowed • Active)';
+                      } else if (isPrim) {
+                        subtitleText = 'ID: $devId • Primary Mobile (Permanent Authenticator)';
+                      } else {
+                        subtitleText = 'ID: $devId • ${isAppr ? "Secondary Mobile (Approved)" : "Secondary Mobile (Pending Approval)"}';
+                      }
+
                       return ListTile(
                         leading: Icon(
-                          devId.contains('iphone') ? Icons.phone_iphone_rounded : Icons.tablet_mac_rounded,
-                          color: const Color(0xFF3A4CD6),
+                          devIcon,
+                          color: isWeb ? const Color(0xFF3A4CD6) : (isPrim ? const Color(0xFF107C41) : Colors.orange),
                         ),
-                        title: Text('${d['device_name'] ?? 'Device'} ${isCurrent ? "(This Device)" : ""}'),
-                        subtitle: Text(
-                          'ID: $devId • ${isPrim ? "Primary Device (Permanent)" : (isAppr ? "Secondary (Approved)" : "Secondary (Pending Confirmation)")}',
-                        ),
+                        title: Text('${d['device_name'] ?? (isWeb ? 'Desktop Session' : 'Mobile Device')} ${isCurrent ? "(This Device)" : ""}'),
+                        subtitle: Text(subtitleText),
                         trailing: isPrim
                             ? const Chip(
                                 avatar: Icon(Icons.lock_rounded, size: 12, color: Colors.white),
-                                label: Text('PRIMARY', style: TextStyle(fontSize: 10, color: Colors.white)),
+                                label: Text('PRIMARY MOBILE', style: TextStyle(fontSize: 10, color: Colors.white)),
                                 backgroundColor: Color(0xFF107C41),
                               )
                             : Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  if (_isPrimary && !isAppr)
+                                  if (isWeb)
+                                    const Padding(
+                                      padding: EdgeInsets.only(right: 6),
+                                      child: Chip(
+                                        avatar: Icon(Icons.laptop_chromebook_rounded, size: 12, color: Colors.white),
+                                        label: Text('WEB (1 ALLOWED)', style: TextStyle(fontSize: 10, color: Colors.white)),
+                                        backgroundColor: Color(0xFF3A4CD6),
+                                      ),
+                                    ),
+                                  if (!isWeb && _isPrimary && !isAppr)
                                     Padding(
                                       padding: const EdgeInsets.only(right: 6),
                                       child: FilledButton.tonal(
@@ -301,14 +329,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         final confirmed = await showDialog<bool>(
                                           context: context,
                                           builder: (c) => AlertDialog(
-                                            title: const Text('Deregister Device?'),
+                                            title: Text(isWeb ? 'Terminate Desktop Session?' : 'Deregister Device?'),
                                             content: Text('Are you sure you want to deregister ${d['device_name'] ?? "this device"}? It will lose access.'),
                                             actions: [
                                               TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
                                               FilledButton(
                                                 style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
                                                 onPressed: () => Navigator.pop(c, true),
-                                                child: const Text('Deregister'),
+                                                child: Text(isWeb ? 'Log out' : 'Deregister'),
                                               ),
                                             ],
                                           ),
@@ -320,7 +348,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           setState(() {});
                                         }
                                       },
-                                      child: const Text('Deregister', style: TextStyle(fontSize: 11)),
+                                      child: Text(isWeb ? 'Log out' : 'Deregister', style: const TextStyle(fontSize: 11)),
                                     ),
                                 ],
                               ),
@@ -335,8 +363,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           alignment: WrapAlignment.center,
                           children: [
                             TextButton.icon(
+                              icon: const Icon(Icons.laptop_mac_rounded, size: 16, color: Color(0xFF3A4CD6)),
+                              label: const Text('Simulate Desktop Alert', style: TextStyle(fontSize: 11, color: Color(0xFF3A4CD6))),
+                              onPressed: () {
+                                Navigator.of(ctx).pop();
+                                _triggerDesktopSessionAlert();
+                              },
+                            ),
+                            TextButton.icon(
                               icon: const Icon(Icons.notification_important_rounded, size: 16),
-                              label: const Text('Simulate 2nd Device Alert', style: TextStyle(fontSize: 11)),
+                              label: const Text('Simulate 2nd Mobile Alert', style: TextStyle(fontSize: 11)),
                               onPressed: () {
                                 Navigator.of(ctx).pop();
                                 _triggerTestAlert();
@@ -344,7 +380,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                             TextButton.icon(
                               icon: const Icon(Icons.swap_horizontal_circle_outlined, size: 16, color: Colors.orange),
-                              label: const Text('Simulate 3rd Device Alert', style: TextStyle(fontSize: 11, color: Colors.orange)),
+                              label: const Text('Simulate 3rd Mobile Alert', style: TextStyle(fontSize: 11, color: Colors.orange)),
                               onPressed: () {
                                 Navigator.of(ctx).pop();
                                 _triggerThirdDeviceAlert();
@@ -364,11 +400,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  void _triggerDesktopSessionAlert() {
+    NotificationStreamService().injectAlert(
+      SecurityAlertEvent(
+        title: 'Security Alert: Desktop Session Login',
+        message: 'A desktop/web session (MacBook Pro Chrome) just logged into your account from IP 192.168.1.102. (Policy: 1 Web session permitted).',
+        deviceName: 'MacBook Pro (Chrome)',
+        deviceId: 'dev-laptop-web',
+        deviceType: 'WEB',
+        clientIp: '192.168.1.102',
+        timestamp: DateTime.now().toIso8601String(),
+        targetDeviceId: _currentDeviceId,
+        notificationId: 'TEST-DESK-${DateTime.now().millisecondsSinceEpoch}',
+        status: 'ACTIVE_SESSION',
+      ),
+    );
+  }
+
   void _triggerTestAlert() {
     NotificationStreamService().injectAlert(
       SecurityAlertEvent(
-        title: 'Security Alert: New Device Login',
-        message: 'A new device (iPad Air) just logged in from IP 192.168.1.55.',
+        title: 'Security Alert: New Mobile Device Login',
+        message: 'A new mobile device (iPad Air) just logged in from IP 192.168.1.55.',
         deviceName: 'iPad Air (Secondary)',
         clientIp: '192.168.1.55',
         timestamp: DateTime.now().toIso8601String(),
@@ -381,8 +434,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _triggerThirdDeviceAlert() {
     NotificationStreamService().injectAlert(
       SecurityAlertEvent(
-        title: '3rd Device Login Request',
-        message: 'A 3rd device (Samsung Galaxy Tab) is requesting access. Since AuraBank only allows 2 devices (1 Primary, 1 Secondary), confirming will deregister iPad Air.',
+        title: '3rd Mobile Device Login Request',
+        message: 'A 3rd mobile device (Samsung Galaxy Tab) is requesting access. Since AuraBank only allows 2 mobiles (1 Primary, 1 Secondary), confirming will deregister iPad Air.',
         deviceName: 'Samsung Galaxy Tab (3rd Device)',
         deviceId: 'dev-galaxy-third',
         clientIp: '192.168.1.120',

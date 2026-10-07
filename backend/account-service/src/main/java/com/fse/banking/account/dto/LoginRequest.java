@@ -29,6 +29,10 @@ public class LoginRequest {
     @com.fasterxml.jackson.annotation.JsonAlias({"deviceName"})
     private String deviceName;
 
+    @com.fasterxml.jackson.annotation.JsonProperty("device_type")
+    @com.fasterxml.jackson.annotation.JsonAlias({"deviceType"})
+    private String deviceType;
+
     @com.fasterxml.jackson.annotation.JsonProperty("is_device_compromised")
     @com.fasterxml.jackson.annotation.JsonAlias({"isDeviceCompromised", "deviceCompromised"})
     private Boolean isDeviceCompromised;

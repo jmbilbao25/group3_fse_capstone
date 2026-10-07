@@ -52,44 +52,44 @@ class DevicePreset {
   final String name;
   final String label;
   final String platform;
+  final String deviceType;
 
   const DevicePreset({
     required this.id,
     required this.name,
     required this.label,
     this.platform = 'Generic',
+    this.deviceType = 'MOBILE',
   });
 
   static const List<DevicePreset> presets = [
     DevicePreset(
-      id: 'dev-laptop-primary',
-      name: 'Laptop Workstation (Web)',
-      label: 'Laptop (Primary)',
+      id: 'dev-laptop-web',
+      name: 'MacBook Pro (Chrome)',
+      label: 'Desktop Session (Web)',
       platform: 'Web / Desktop',
-    ),
-    DevicePreset(
-      id: 'dev-phone-secondary',
-      name: 'Physical Mobile Phone',
-      label: 'Mobile Phone (Secondary)',
-      platform: 'Mobile (Android / iOS)',
+      deviceType: 'WEB',
     ),
     DevicePreset(
       id: 'dev-iphone-primary',
       name: 'iPhone 15 Pro',
       label: 'Device 1 (Primary - iPhone)',
       platform: 'iOS',
+      deviceType: 'MOBILE',
     ),
     DevicePreset(
       id: 'dev-ipad-secondary',
       name: 'iPad Air',
       label: 'Device 2 (Secondary - iPad)',
       platform: 'iPadOS',
+      deviceType: 'MOBILE',
     ),
     DevicePreset(
       id: 'dev-galaxy-third',
       name: 'Samsung Galaxy Tab S9',
       label: 'Device 3 (3rd Device - Galaxy)',
       platform: 'Android',
+      deviceType: 'MOBILE',
     ),
   ];
 
@@ -102,6 +102,12 @@ class DeviceIdentity {
   DeviceIdentity._internal() {
     _id = _defaultId();
     _name = _defaultName(_id);
+    _type = _defaultType();
+  }
+
+  static String _defaultType() {
+    if (kIsWeb) return 'WEB';
+    return 'MOBILE';
   }
 
   static String _defaultId() {
@@ -140,13 +146,16 @@ class DeviceIdentity {
 
   late String _id;
   late String _name;
+  late String _type;
 
   String get id => _id;
   String get name => _name;
+  String get type => _type;
 
-  void setDevice(String newId, String newName) {
+  void setDevice(String newId, String newName, {String newType = 'MOBILE'}) {
     _id = newId;
     _name = newName;
+    _type = newType;
   }
 }
 

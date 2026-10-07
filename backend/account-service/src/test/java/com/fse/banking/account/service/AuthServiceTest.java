@@ -390,4 +390,71 @@ class AuthServiceTest {
             authService.revokeDevice("USR-100001", "dev-primary");
         });
     }
+
+    @Test
+    @DisplayName("Should allow desktop session login, deregister existing web session (1-web limit), and keep mobile primary")
+    void testDesktopSessionLoginEnforcesOneWebPolicyAndDispatchesAlertToPrimary() {
+        activeUser.setLastLoginAt(Instant.now());
+        LoginRequest loginRequest = LoginRequest.builder()
+                .email("juan.delacruz@example.ph")
+                .password("Password123!")
+                .deviceId("dev-new-laptop")
+                .deviceName("Chrome on Windows")
+                .deviceType("WEB")
+                .build();
+
+        when(userRepository.findByEmail("juan.delacruz@example.ph")).thenReturn(Optional.of(activeUser));
+        when(passwordEncoder.matches("Password123!", activeUser.getPasswordHash())).thenReturn(true);
+        when(redisSessionStore.getPrimaryDeviceId("USR-100001")).thenReturn("dev-primary-mobile");
+
+        DeviceInfoDto oldWeb = DeviceInfoDto.builder()
+                .deviceId("dev-old-laptop")
+                .deviceName("Old MacBook")
+                .deviceType("WEB")
+                .isPrimary(false)
+                .build();
+        DeviceInfoDto primaryMobile = DeviceInfoDto.builder()
+                .deviceId("dev-primary-mobile")
+                .deviceName("iPhone 15")
+                .deviceType("MOBILE")
+                .isPrimary(true)
+                .build();
+
+        when(redisSessionStore.getUserDevices("USR-100001")).thenReturn(List.of(primaryMobile, oldWeb));
+        when(jwtProvider.generateAccessToken(any(), any(), any(), any())).thenReturn("mock.jwt.token");
+        when(jwtProvider.getAccessTokenExpirationSeconds()).thenReturn(900L);
+
+        AuthService.LoginResult result = authService.login(loginRequest, "203.177.100.5", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+
+        assertThat(result.getResponse().getDeviceId()).isEqualTo("dev-new-laptop");
+        assertThat(result.getResponse().getDeviceType()).isEqualTo("WEB");
+        assertThat(result.getResponse().getIsPrimaryDevice()).isFalse();
+        assertThat(result.getResponse().getIsApproved()).isTrue();
+        assertThat(result.getResponse().getPrimaryDeviceId()).isEqualTo("dev-primary-mobile");
+
+        // Verify old web session was deregistered (1-web limit)
+        verify(redisSessionStore).deleteUserDevice("USR-100001", "dev-old-laptop");
+        verify(redisSessionStore).deleteSessionsForDevice("USR-100001", "dev-old-laptop");
+
+        // Verify new web device was saved
+        verify(redisSessionStore).saveUserDevice(eq("USR-100001"), argThat(d ->
+                "dev-new-laptop".equals(d.getDeviceId()) && "WEB".equals(d.getDeviceType()) && d.isApproved()));
+    }
+
+    @Test
+    @DisplayName("Should throw exception when attempting to designate a desktop/web session as primary device")
+    void testSetPrimaryDeviceThrowsWhenTargetIsWebDevice() {
+        DeviceInfoDto webDevice = DeviceInfoDto.builder()
+                .deviceId("dev-laptop-web")
+                .deviceName("Chrome Browser")
+                .deviceType("WEB")
+                .build();
+
+        when(redisSessionStore.getPrimaryDeviceId("USR-100001")).thenReturn(null);
+        when(redisSessionStore.getDevice("USR-100001", "dev-laptop-web")).thenReturn(Optional.of(webDevice));
+
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            authService.setPrimaryDevice("USR-100001", "dev-laptop-web");
+        });
+    }
 }

@@ -50,4 +50,7 @@ public class LoginResponse {
 
     @JsonProperty("primary_device_id")
     private String primaryDeviceId;
+
+    @JsonProperty("device_type")
+    private String deviceType;
 }

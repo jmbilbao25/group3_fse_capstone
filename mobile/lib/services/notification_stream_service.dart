@@ -11,6 +11,7 @@ class SecurityAlertEvent {
   final String message;
   final String deviceName;
   final String deviceId;
+  final String deviceType;
   final String clientIp;
   final String timestamp;
   final String targetDeviceId;
@@ -25,6 +26,7 @@ class SecurityAlertEvent {
     required this.message,
     required this.deviceName,
     this.deviceId = '',
+    this.deviceType = 'MOBILE',
     required this.clientIp,
     required this.timestamp,
     required this.targetDeviceId,
@@ -35,19 +37,38 @@ class SecurityAlertEvent {
     this.replacedDeviceName = '',
   });
 
+  bool get isDesktopSession =>
+      deviceType.toUpperCase() == 'WEB' ||
+      title.toLowerCase().contains('desktop') ||
+      message.toLowerCase().contains('desktop') ||
+      deviceName.toLowerCase().contains('laptop') ||
+      deviceName.toLowerCase().contains('chrome');
+
   factory SecurityAlertEvent.fromJson(Map<String, dynamic> json) {
+    final rawType = json['device_type'] as String?;
+    final titleStr = json['title'] as String? ?? 'Security Alert: New Device Login';
+    final msgStr = json['message'] as String? ?? 'A new device logged into your account.';
+    final devName = json['device_name'] as String? ?? 'Unknown Device';
+    final isDesktop = rawType?.toUpperCase() == 'WEB' ||
+        titleStr.toLowerCase().contains('desktop') ||
+        msgStr.toLowerCase().contains('desktop') ||
+        devName.toLowerCase().contains('laptop') ||
+        devName.toLowerCase().contains('chrome');
+
     return SecurityAlertEvent(
-      title: json['title'] as String? ?? 'Security Alert: New Device Login',
-      message: json['message'] as String? ?? 'A new device logged into your account.',
-      deviceName: json['device_name'] as String? ?? 'Unknown Device',
+      title: titleStr,
+      message: msgStr,
+      deviceName: devName,
       deviceId: json['device_id'] as String? ?? '',
+      deviceType: isDesktop ? 'WEB' : (rawType ?? 'MOBILE'),
       clientIp: json['client_ip'] as String? ?? 'Unknown IP',
       timestamp: json['timestamp'] as String? ?? DateTime.now().toIso8601String(),
       targetDeviceId: json['target_device_id'] as String? ?? '',
       notificationId: json['notification_id'] as String? ?? '',
       status: json['status'] as String? ?? 'PENDING_APPROVAL',
       isThirdDevice: json['is_third_device'] == true ||
-          (json['message']?.toString().toLowerCase().contains('3rd device') == true),
+          (json['message']?.toString().toLowerCase().contains('3rd device') == true) ||
+          (json['message']?.toString().toLowerCase().contains('3rd mobile') == true),
       replacedDeviceId: json['replaced_device_id'] as String? ?? '',
       replacedDeviceName: json['replaced_device_name'] as String? ?? '',
     );

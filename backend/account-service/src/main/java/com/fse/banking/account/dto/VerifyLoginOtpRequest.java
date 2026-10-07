@@ -29,4 +29,7 @@ public class VerifyLoginOtpRequest {
 
     @JsonProperty("device_name")
     private String deviceName;
+
+    @JsonProperty("device_type")
+    private String deviceType;
 }

@@ -66,6 +66,7 @@ class AuthLoginResult {
   final UserPersona? persona;
   final String? deviceId;
   final String? deviceName;
+  final String? deviceType;
   final bool? isPrimaryDevice;
   final bool? isApproved;
   final String? primaryDeviceId;
@@ -80,6 +81,7 @@ class AuthLoginResult {
     this.persona,
     this.deviceId,
     this.deviceName,
+    this.deviceType,
     this.isPrimaryDevice,
     this.isApproved,
     this.primaryDeviceId,
@@ -93,6 +95,7 @@ class AuthVerifyResult {
   final String? errorMessage;
   final String? deviceId;
   final String? deviceName;
+  final String? deviceType;
   final bool? isPrimaryDevice;
   final bool? isApproved;
   final String? primaryDeviceId;
@@ -104,6 +107,7 @@ class AuthVerifyResult {
     this.errorMessage,
     this.deviceId,
     this.deviceName,
+    this.deviceType,
     this.isPrimaryDevice,
     this.isApproved,
     this.primaryDeviceId,
@@ -135,6 +139,7 @@ class AuthApiService {
   UserPersona? currentPersona;
   String currentDeviceId = DeviceIdentity().id;
   String currentDeviceName = DeviceIdentity().name;
+  String currentDeviceType = DeviceIdentity().type;
   bool? currentIsPrimaryDevice;
   bool? currentIsApproved;
   String? currentPrimaryDeviceId;
@@ -146,7 +151,8 @@ class AuthApiService {
   void switchDevice(DevicePreset preset) {
     currentDeviceId = preset.id;
     currentDeviceName = preset.name;
-    DeviceIdentity().setDevice(preset.id, preset.name);
+    currentDeviceType = preset.deviceType;
+    DeviceIdentity().setDevice(preset.id, preset.name, newType: preset.deviceType);
   }
 
   http.Client get _client => httpClient ?? http.Client();
@@ -159,9 +165,11 @@ class AuthApiService {
     required String password,
     String? deviceId,
     String? deviceName,
+    String? deviceType,
   }) async {
     if (deviceId != null) currentDeviceId = deviceId;
     if (deviceName != null) currentDeviceName = deviceName;
+    if (deviceType != null) currentDeviceType = deviceType;
 
     currentEmail = email;
     currentPersona = UserPersona.demoPersonas.firstWhere(
@@ -194,6 +202,7 @@ class AuthApiService {
                 'password': password,
                 'device_id': currentDeviceId,
                 'device_name': currentDeviceName,
+                'device_type': currentDeviceType,
                 'is_device_compromised': assessment.isCompromised,
                 'compromise_reasons': assessment.summary,
               }),
@@ -208,6 +217,7 @@ class AuthApiService {
           currentPrimaryDeviceId = data['primary_device_id'] as String?;
           currentAccessToken = data['access_token'] as String?;
           currentUserId = data['user_id'] as String?;
+          final resolvedType = data['device_type'] as String? ?? currentDeviceType;
 
           if (statusStr == 'MFA_REQUIRED') {
             final masked = data['masked_email'] as String? ?? email;
@@ -219,6 +229,7 @@ class AuthApiService {
               persona: currentPersona,
               deviceId: currentDeviceId,
               deviceName: currentDeviceName,
+              deviceType: resolvedType,
               isPrimaryDevice: currentIsPrimaryDevice,
               isApproved: currentIsApproved,
               primaryDeviceId: currentPrimaryDeviceId,
@@ -238,6 +249,7 @@ class AuthApiService {
               persona: currentPersona,
               deviceId: currentDeviceId,
               deviceName: currentDeviceName,
+              deviceType: resolvedType,
               isPrimaryDevice: currentIsPrimaryDevice,
               isApproved: currentIsApproved,
               primaryDeviceId: currentPrimaryDeviceId,
@@ -276,9 +288,11 @@ class AuthApiService {
     required String otp,
     String? deviceId,
     String? deviceName,
+    String? deviceType,
   }) async {
     if (deviceId != null) currentDeviceId = deviceId;
     if (deviceName != null) currentDeviceName = deviceName;
+    if (deviceType != null) currentDeviceType = deviceType;
 
     final endpoints = kIsWeb
         ? [accountServiceUrl, gatewayUrl]
@@ -297,6 +311,7 @@ class AuthApiService {
                 'otp': otp.trim(),
                 'device_id': currentDeviceId,
                 'device_name': currentDeviceName,
+                'device_type': currentDeviceType,
               }),
             )
             .timeout(const Duration(seconds: 4));
@@ -307,6 +322,7 @@ class AuthApiService {
           currentIsApproved = data['is_approved'] as bool? ?? (currentIsPrimaryDevice == true);
           currentPrimaryDeviceId = data['primary_device_id'] as String?;
           currentAccessToken = data['access_token'] as String?;
+          final resolvedType = data['device_type'] as String? ?? currentDeviceType;
           if (currentAccessToken != null) {
             DeviceStorage.saveAccessToken(currentAccessToken!);
           }
@@ -319,6 +335,7 @@ class AuthApiService {
             role: data['role'] as String?,
             deviceId: currentDeviceId,
             deviceName: currentDeviceName,
+            deviceType: resolvedType,
             isPrimaryDevice: currentIsPrimaryDevice,
             isApproved: currentIsApproved,
             primaryDeviceId: currentPrimaryDeviceId,

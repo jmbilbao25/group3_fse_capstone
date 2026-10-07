@@ -164,7 +164,7 @@ public class AuthService {
                     .build();
         }
 
-        return createAuthenticatedSession(user, clientIp, userAgent, request.getDeviceId(), request.getDeviceName());
+        return createAuthenticatedSession(user, clientIp, userAgent, request.getDeviceId(), request.getDeviceName(), request.getDeviceType());
     }
 
     @Transactional
@@ -190,78 +190,116 @@ public class AuthService {
         user.setLastLoginAt(Instant.now());
         userRepository.save(user);
 
-        return createAuthenticatedSession(user, clientIp, userAgent, request.getDeviceId(), request.getDeviceName());
+        return createAuthenticatedSession(user, clientIp, userAgent, request.getDeviceId(), request.getDeviceName(), request.getDeviceType());
     }
 
     public LoginResult createAuthenticatedSession(UserEntity user, String clientIp, String userAgent) {
-        return createAuthenticatedSession(user, clientIp, userAgent, null, null);
+        return createAuthenticatedSession(user, clientIp, userAgent, null, null, null);
     }
 
     public LoginResult createAuthenticatedSession(UserEntity user, String clientIp, String userAgent, String rawDeviceId, String rawDeviceName) {
+        return createAuthenticatedSession(user, clientIp, userAgent, rawDeviceId, rawDeviceName, null);
+    }
+
+    public LoginResult createAuthenticatedSession(UserEntity user, String clientIp, String userAgent, String rawDeviceId, String rawDeviceName, String rawDeviceType) {
         String resolvedDeviceId = resolveDeviceId(rawDeviceId, clientIp, userAgent);
         String resolvedDeviceName = resolveDeviceName(rawDeviceName, userAgent);
+        String resolvedDeviceType = resolveDeviceType(rawDeviceType, resolvedDeviceId, resolvedDeviceName, userAgent);
+        boolean isWeb = "WEB".equalsIgnoreCase(resolvedDeviceType);
 
         String primaryDeviceId = redisSessionStore.getPrimaryDeviceId(user.getUserId());
-        boolean isPrimary;
-        if (primaryDeviceId == null || primaryDeviceId.isBlank()) {
-            redisSessionStore.setPrimaryDeviceId(user.getUserId(), resolvedDeviceId);
-            primaryDeviceId = resolvedDeviceId;
-            isPrimary = true;
-            log.info("Registered initial primary device {} for user {}", resolvedDeviceId, user.getUserId());
-        } else {
-            isPrimary = resolvedDeviceId.equals(primaryDeviceId);
-        }
-
-        final String effectivePrimaryDeviceId = primaryDeviceId;
-        boolean isApproved = isPrimary;
+        boolean isPrimary = false;
+        boolean isApproved = false;
         boolean isThirdDevice = false;
         String replacedDeviceId = null;
         String replacedDeviceName = null;
 
-        if (!isPrimary) {
-            Optional<DeviceInfoDto> existing = redisSessionStore.getDevice(user.getUserId(), resolvedDeviceId);
-            if (existing.isPresent() && existing.get().isApproved()) {
+        if (isWeb) {
+            // Configuration: 1 Web session allowed
+            // A desktop/web session cannot be the primary mobile device
+            isPrimary = false;
+            isApproved = true;
+
+            // Enforce 1-web limit: deregister any existing web session
+            List<DeviceInfoDto> allDevices = redisSessionStore.getUserDevices(user.getUserId());
+            List<DeviceInfoDto> existingWebDevices = allDevices.stream()
+                    .filter(d -> "WEB".equalsIgnoreCase(d.getDeviceType()))
+                    .filter(d -> !d.getDeviceId().equals(resolvedDeviceId))
+                    .toList();
+            for (DeviceInfoDto oldWeb : existingWebDevices) {
+                log.info("Enforcing 1-web limit: deregistering previous web session {} for user {}", oldWeb.getDeviceId(), user.getUserId());
+                redisSessionStore.deleteUserDevice(user.getUserId(), oldWeb.getDeviceId());
+                redisSessionStore.deleteSessionsForDevice(user.getUserId(), oldWeb.getDeviceId());
+                dispatchDeviceApprovalEvent(user.getUserId(), oldWeb.getDeviceId(), "device-revoked");
+            }
+
+            // Also send a push notification to the primary device whenever there is a desktop session login
+            if (primaryDeviceId != null && !primaryDeviceId.isBlank()) {
+                dispatchDesktopSessionAlert(user.getUserId(), resolvedDeviceName, clientIp, primaryDeviceId, resolvedDeviceId);
+            }
+        } else {
+            // Mobile device: 2 Mobiles allowed (1 Primary Mobile + 1 Secondary Mobile)
+            if (primaryDeviceId == null || primaryDeviceId.isBlank()) {
+                redisSessionStore.setPrimaryDeviceId(user.getUserId(), resolvedDeviceId);
+                primaryDeviceId = resolvedDeviceId;
+                isPrimary = true;
+                isApproved = true;
+                log.info("Registered initial primary mobile device {} for user {}", resolvedDeviceId, user.getUserId());
+            } else {
+                isPrimary = resolvedDeviceId.equals(primaryDeviceId);
+            }
+
+            final String effectivePrimaryDeviceId = primaryDeviceId;
+            if (isPrimary) {
                 isApproved = true;
             } else {
-                List<DeviceInfoDto> allDevices = redisSessionStore.getUserDevices(user.getUserId());
-                List<DeviceInfoDto> existingSecondaries = allDevices.stream()
-                        .filter(d -> !d.getDeviceId().equals(effectivePrimaryDeviceId) && !d.getDeviceId().equals(resolvedDeviceId))
-                        .toList();
-                if (!existingSecondaries.isEmpty()) {
-                    isThirdDevice = true;
-                    replacedDeviceId = existingSecondaries.get(0).getDeviceId();
-                    replacedDeviceName = existingSecondaries.get(0).getDeviceName();
-                    log.info("User {} attempting login from 3rd device {}. Existing secondary is {} ({})",
-                            user.getUserId(), resolvedDeviceId, replacedDeviceId, replacedDeviceName);
+                Optional<DeviceInfoDto> existing = redisSessionStore.getDevice(user.getUserId(), resolvedDeviceId);
+                if (existing.isPresent() && existing.get().isApproved()) {
+                    isApproved = true;
+                } else {
+                    List<DeviceInfoDto> allDevices = redisSessionStore.getUserDevices(user.getUserId());
+                    List<DeviceInfoDto> existingMobileSecondaries = allDevices.stream()
+                            .filter(d -> !"WEB".equalsIgnoreCase(d.getDeviceType()))
+                            .filter(d -> !d.getDeviceId().equals(effectivePrimaryDeviceId) && !d.getDeviceId().equals(resolvedDeviceId))
+                            .toList();
+                    if (!existingMobileSecondaries.isEmpty()) {
+                        isThirdDevice = true;
+                        replacedDeviceId = existingMobileSecondaries.get(0).getDeviceId();
+                        replacedDeviceName = existingMobileSecondaries.get(0).getDeviceName();
+                        log.info("User {} attempting login from 3rd mobile device {}. Existing secondary mobile is {} ({})",
+                                user.getUserId(), resolvedDeviceId, replacedDeviceId, replacedDeviceName);
+                    }
                 }
+            }
+
+            if (!isPrimary && !isApproved) {
+                dispatchSecondaryDeviceLoginAlert(
+                        user.getUserId(),
+                        resolvedDeviceName,
+                        clientIp,
+                        effectivePrimaryDeviceId,
+                        resolvedDeviceId,
+                        isThirdDevice,
+                        replacedDeviceId,
+                        replacedDeviceName,
+                        "MOBILE"
+                );
             }
         }
 
         DeviceInfoDto deviceInfoDto = DeviceInfoDto.builder()
                 .deviceId(resolvedDeviceId)
                 .deviceName(resolvedDeviceName)
+                .deviceType(resolvedDeviceType)
                 .isPrimary(isPrimary)
                 .isApproved(isApproved)
-                .status(isApproved ? "APPROVED" : (isThirdDevice ? "PENDING_CONFIRMATION" : "PENDING_APPROVAL"))
+                .status(isApproved ? (isWeb ? "ACTIVE_SESSION" : "APPROVED") : (isThirdDevice ? "PENDING_CONFIRMATION" : "PENDING_APPROVAL"))
                 .clientIp(clientIp)
                 .userAgent(userAgent)
                 .registeredAt(Instant.now())
                 .lastLoginAt(Instant.now())
                 .build();
         redisSessionStore.saveUserDevice(user.getUserId(), deviceInfoDto);
-
-        if (!isPrimary && !isApproved) {
-            dispatchSecondaryDeviceLoginAlert(
-                    user.getUserId(),
-                    resolvedDeviceName,
-                    clientIp,
-                    effectivePrimaryDeviceId,
-                    resolvedDeviceId,
-                    isThirdDevice,
-                    replacedDeviceId,
-                    replacedDeviceName
-            );
-        }
 
         String jti = UUID.randomUUID().toString();
         String roleAuthority = user.getRole().getAuthority();
@@ -307,6 +345,7 @@ public class AuthService {
                 .userId(user.getUserId())
                 .deviceId(resolvedDeviceId)
                 .deviceName(resolvedDeviceName)
+                .deviceType(resolvedDeviceType)
                 .isPrimaryDevice(isPrimary)
                 .isApproved(isApproved)
                 .primaryDeviceId(primaryDeviceId)
@@ -328,21 +367,43 @@ public class AuthService {
             log.warn("Attempt to change immutable primary device for user {} from {} to {} rejected", userId, existingPrimary, deviceId);
             throw new IllegalArgumentException("Primary device is permanent and cannot be changed once established.");
         }
+        Optional<DeviceInfoDto> dev = redisSessionStore.getDevice(userId, deviceId);
+        if (dev.isPresent() && "WEB".equalsIgnoreCase(dev.get().getDeviceType())) {
+            throw new IllegalArgumentException("Desktop/Web sessions cannot be designated as the primary device.");
+        }
         redisSessionStore.setPrimaryDeviceId(userId, deviceId);
         log.info("Primary device for user {} set to {}", userId, deviceId);
     }
 
     public void approveDevice(String userId, String deviceId) {
         String primaryDeviceId = redisSessionStore.getPrimaryDeviceId(userId);
-        // Enforce 2-device policy (1 Primary, 1 Secondary).
-        // Approving a secondary device automatically deregisters any other secondary devices!
         List<DeviceInfoDto> allDevices = redisSessionStore.getUserDevices(userId);
-        for (DeviceInfoDto d : allDevices) {
-            if (!d.getDeviceId().equals(primaryDeviceId) && !d.getDeviceId().equals(deviceId)) {
-                log.info("Deregistering replaced secondary device {} for user {} to maintain 2-device policy", d.getDeviceId(), userId);
-                redisSessionStore.deleteUserDevice(userId, d.getDeviceId());
-                redisSessionStore.deleteSessionsForDevice(userId, d.getDeviceId());
-                dispatchDeviceApprovalEvent(userId, d.getDeviceId(), "device-revoked");
+        String targetDeviceType = redisSessionStore.getDevice(userId, deviceId)
+                .map(DeviceInfoDto::getDeviceType)
+                .orElse("MOBILE");
+
+        if ("WEB".equalsIgnoreCase(targetDeviceType)) {
+            // Configuration: 1 Web session allowed
+            for (DeviceInfoDto d : allDevices) {
+                if ("WEB".equalsIgnoreCase(d.getDeviceType()) && !d.getDeviceId().equals(deviceId)) {
+                    log.info("Deregistering older web session {} for user {}", d.getDeviceId(), userId);
+                    redisSessionStore.deleteUserDevice(userId, d.getDeviceId());
+                    redisSessionStore.deleteSessionsForDevice(userId, d.getDeviceId());
+                    dispatchDeviceApprovalEvent(userId, d.getDeviceId(), "device-revoked");
+                }
+            }
+        } else {
+            // Configuration: 2 Mobiles allowed (1 Primary, 1 Secondary).
+            // Approving a secondary mobile deregisters any other secondary mobile!
+            for (DeviceInfoDto d : allDevices) {
+                if (!"WEB".equalsIgnoreCase(d.getDeviceType())
+                        && !d.getDeviceId().equals(primaryDeviceId)
+                        && !d.getDeviceId().equals(deviceId)) {
+                    log.info("Deregistering replaced secondary mobile device {} for user {} to maintain 2-mobile policy", d.getDeviceId(), userId);
+                    redisSessionStore.deleteUserDevice(userId, d.getDeviceId());
+                    redisSessionStore.deleteSessionsForDevice(userId, d.getDeviceId());
+                    dispatchDeviceApprovalEvent(userId, d.getDeviceId(), "device-revoked");
+                }
             }
         }
 
@@ -410,6 +471,63 @@ public class AuthService {
         return "Mobile Device";
     }
 
+    public String resolveDeviceType(String rawDeviceType, String deviceId, String deviceName, String userAgent) {
+        if (rawDeviceType != null && !rawDeviceType.isBlank()) {
+            String t = rawDeviceType.trim().toUpperCase();
+            if (t.contains("WEB") || t.contains("DESKTOP")) return "WEB";
+            if (t.contains("MOBILE")) return "MOBILE";
+        }
+        String combined = ((deviceId != null ? deviceId : "") + " "
+                + (deviceName != null ? deviceName : "") + " "
+                + (userAgent != null ? userAgent : "")).toLowerCase();
+        if (combined.contains("android") || combined.contains("iphone") || combined.contains("ipad")
+                || combined.contains("mobile") || combined.contains("dart") || combined.contains("flutter")) {
+            return "MOBILE";
+        }
+        if (combined.contains("web") || combined.contains("desktop") || combined.contains("laptop")
+                || combined.contains("chrome") || combined.contains("firefox") || combined.contains("safari")
+                || combined.contains("windows") || combined.contains("macintosh") || combined.contains("linux")) {
+            return "WEB";
+        }
+        return "MOBILE";
+    }
+
+    private void dispatchDesktopSessionAlert(
+            String userId,
+            String deviceName,
+            String clientIp,
+            String targetPrimaryDeviceId,
+            String deviceId) {
+        try {
+            org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+            org.springframework.http.client.SimpleClientHttpRequestFactory factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+            factory.setConnectTimeout(3000);
+            factory.setReadTimeout(3000);
+            restTemplate.setRequestFactory(factory);
+
+            java.util.Map<String, Object> payload = new java.util.HashMap<>();
+            payload.put("user_id", userId);
+            payload.put("title", "Security Alert: Desktop Session Login");
+            payload.put("message", "A desktop/web session (" + deviceName + ") just logged into your account from IP " + clientIp + ". (Policy: 1 Web session permitted).");
+            payload.put("type", "SECURITY_ALERT");
+            payload.put("device_type", "WEB");
+            payload.put("device_name", deviceName);
+            payload.put("device_id", deviceId != null ? deviceId : "");
+            payload.put("client_ip", clientIp);
+            payload.put("target_device_id", targetPrimaryDeviceId != null ? targetPrimaryDeviceId : "");
+            payload.put("status", "ACTIVE_SESSION");
+            payload.put("is_third_device", false);
+            payload.put("replaced_device_id", "");
+            payload.put("replaced_device_name", "");
+
+            String targetUrl = notificationServiceUrl + "/api/v1/notifications/security-alert";
+            restTemplate.postForEntity(targetUrl, payload, java.util.Map.class);
+            log.info("Successfully dispatched desktop session alert to primary device {} for user {}", targetPrimaryDeviceId, userId);
+        } catch (Exception e) {
+            log.warn("Could not dispatch desktop session alert to notification-service: {}", e.getMessage());
+        }
+    }
+
     private void dispatchSecondaryDeviceLoginAlert(
             String userId,
             String newDeviceName,
@@ -419,6 +537,19 @@ public class AuthService {
             boolean isThirdDevice,
             String replacedDeviceId,
             String replacedDeviceName) {
+        dispatchSecondaryDeviceLoginAlert(userId, newDeviceName, clientIp, targetPrimaryDeviceId, newDeviceId, isThirdDevice, replacedDeviceId, replacedDeviceName, "MOBILE");
+    }
+
+    private void dispatchSecondaryDeviceLoginAlert(
+            String userId,
+            String newDeviceName,
+            String clientIp,
+            String targetPrimaryDeviceId,
+            String newDeviceId,
+            boolean isThirdDevice,
+            String replacedDeviceId,
+            String replacedDeviceName,
+            String deviceType) {
         try {
             org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
             org.springframework.http.client.SimpleClientHttpRequestFactory factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
@@ -427,17 +558,18 @@ public class AuthService {
             restTemplate.setRequestFactory(factory);
 
             String title = isThirdDevice
-                    ? "Security Alert: 3rd Device Login Attempt"
-                    : "Security Alert: New Device Login";
+                    ? "Security Alert: 3rd Mobile Device Login Attempt"
+                    : "Security Alert: New Mobile Device Login";
             String message = isThirdDevice
-                    ? "A 3rd device (" + newDeviceName + ") is requesting access. Since AuraBank only allows 2 devices (1 Primary, 1 Secondary), confirming this login will deregister and log out " + (replacedDeviceName != null ? replacedDeviceName : "the other secondary device") + "."
-                    : "A new device (" + newDeviceName + ") just logged into your account from IP " + clientIp + ".";
+                    ? "A 3rd mobile device (" + newDeviceName + ") is requesting access. Since AuraBank only allows 2 mobile devices (1 Primary, 1 Secondary), confirming this login will deregister and log out " + (replacedDeviceName != null ? replacedDeviceName : "the other secondary mobile") + "."
+                    : "A new mobile device (" + newDeviceName + ") just logged into your account from IP " + clientIp + ".";
 
             java.util.Map<String, Object> payload = new java.util.HashMap<>();
             payload.put("user_id", userId);
             payload.put("title", title);
             payload.put("message", message);
             payload.put("type", "SECURITY_ALERT");
+            payload.put("device_type", deviceType != null ? deviceType : "MOBILE");
             payload.put("device_name", newDeviceName);
             payload.put("device_id", newDeviceId != null ? newDeviceId : "");
             payload.put("client_ip", clientIp);
@@ -449,7 +581,7 @@ public class AuthService {
 
             String targetUrl = notificationServiceUrl + "/api/v1/notifications/security-alert";
             restTemplate.postForEntity(targetUrl, payload, java.util.Map.class);
-            log.info("Dispatched {} device login alert for user {} (device: {}) to notification-service",
+            log.info("Dispatched {} mobile device login alert for user {} (device: {}) to notification-service",
                     isThirdDevice ? "3rd" : "secondary", userId, newDeviceName);
         } catch (Exception e) {
             log.warn("Could not dispatch device alert to notification-service: {}", e.getMessage());

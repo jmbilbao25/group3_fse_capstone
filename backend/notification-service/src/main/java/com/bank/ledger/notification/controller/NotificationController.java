@@ -75,6 +75,10 @@ public class NotificationController {
                 ? request.get("replaced_device_name").toString()
                 : "";
 
+        String deviceType = request != null && request.get("device_type") != null
+                ? request.get("device_type").toString()
+                : (request != null && request.get("deviceType") != null ? request.get("deviceType").toString() : "MOBILE");
+
         String notificationId = "NOTIF-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
         // 1. Persist notification to database if repository is available
@@ -102,6 +106,7 @@ public class NotificationController {
         pushPayload.put("user_id", userId);
         pushPayload.put("device_name", deviceName);
         pushPayload.put("device_id", deviceId);
+        pushPayload.put("device_type", deviceType);
         pushPayload.put("client_ip", clientIp);
         pushPayload.put("target_device_id", targetDeviceId);
         pushPayload.put("status", status);

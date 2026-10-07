@@ -23,6 +23,9 @@ public class DeviceInfoDto implements Serializable {
     @JsonProperty("device_name")
     private String deviceName;
 
+    @JsonProperty("device_type")
+    private String deviceType;
+
     @JsonProperty("is_primary")
     private boolean isPrimary;
 

@@ -181,7 +181,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             outTransfers: 3,
             transactions: const [
               AnalyticsTxItem(name: 'Direct Settlement', initial: 'S', avatarBg: Color(0xFF00ACC1), time: 'Jan 25, 2:00 pm', amount: 15000.0, isReceived: true, status: 'RECEIVED'),
-              AnalyticsTxItem(name: 'Utility Clearing', initial: 'U', avatarBg: Color(0xFFE53935), time: 'Jan 28, 5:15 pm', amount: 19000.0, isReceived: false),
+              AnalyticsTxItem(name: 'Interbank Clearing', initial: 'I', avatarBg: Color(0xFFE53935), time: 'Jan 28, 5:15 pm', amount: 19000.0, isReceived: false),
             ],
           ),
         ],
@@ -201,7 +201,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             outTransfers: 2,
             transactions: const [
               AnalyticsTxItem(name: 'Consulting Honorarium', initial: 'C', avatarBg: Color(0xFF7C4DFF), time: 'Feb 03, 10:15 am', amount: 14000.0, isReceived: true, status: 'RECEIVED'),
-              AnalyticsTxItem(name: 'Internet & Telecom', initial: 'T', avatarBg: Color(0xFFE65100), time: 'Feb 05, 3:20 pm', amount: 11000.0, isReceived: false),
+              AnalyticsTxItem(name: 'Other Bank Transfer', initial: 'O', avatarBg: Color(0xFFE65100), time: 'Feb 05, 3:20 pm', amount: 11000.0, isReceived: false),
             ],
           ),
           FlowPointData(
@@ -345,7 +345,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             outTransfers: 1,
             transactions: const [
               AnalyticsTxItem(name: 'Project Milestone B', initial: 'P', avatarBg: Color(0xFF2ECC71), time: 'Apr 17, 10:20 am', amount: 18000.0, isReceived: true, status: 'RECEIVED'),
-              AnalyticsTxItem(name: 'Telecom Provider', initial: 'T', avatarBg: Color(0xFFD81B60), time: 'Apr 19, 4:10 pm', amount: 6500.0, isReceived: false),
+              AnalyticsTxItem(name: 'Other Bank Transfer', initial: 'O', avatarBg: Color(0xFFD81B60), time: 'Apr 19, 4:10 pm', amount: 6500.0, isReceived: false),
             ],
           ),
           FlowPointData(
@@ -476,7 +476,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             outTransfers: 2,
             transactions: const [
               AnalyticsTxItem(name: 'Professional Fee', initial: 'P', avatarBg: Color(0xFF2ECC71), time: 'Jun 25, 9:40 am', amount: 19000.0, isReceived: true, status: 'RECEIVED'),
-              AnalyticsTxItem(name: 'Utilities & Power', initial: 'U', avatarBg: Color(0xFF8E24AA), time: 'Jun 28, 5:15 pm', amount: 16500.0, isReceived: false),
+              AnalyticsTxItem(name: 'Same Bank Transfer', initial: 'S', avatarBg: Color(0xFF8E24AA), time: 'Jun 28, 5:15 pm', amount: 16500.0, isReceived: false),
             ],
           ),
         ],
@@ -496,7 +496,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             outTransfers: 1,
             transactions: const [
               AnalyticsTxItem(name: 'Inward Remittance', initial: 'I', avatarBg: Color(0xFF7C4DFF), time: 'Jul 03, 10:30 am', amount: 10000.0, isReceived: true, status: 'RECEIVED'),
-              AnalyticsTxItem(name: 'Utility Payout', initial: 'U', avatarBg: Color(0xFFE65100), time: 'Jul 06, 2:15 pm', amount: 8000.0, isReceived: false),
+              AnalyticsTxItem(name: 'Interbank Transfer', initial: 'I', avatarBg: Color(0xFFE65100), time: 'Jul 06, 2:15 pm', amount: 8000.0, isReceived: false),
             ],
           ),
           FlowPointData(
@@ -653,7 +653,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             outTransfers: 2,
             transactions: const [
               AnalyticsTxItem(name: 'Dividend Credit', initial: 'D', avatarBg: Color(0xFF2ECC71), time: 'Sep 25, 9:50 am', amount: 28000.0, isReceived: true, status: 'RECEIVED'),
-              AnalyticsTxItem(name: 'Telecom Utility', initial: 'T', avatarBg: Color(0xFFD81B60), time: 'Sep 28, 4:30 pm', amount: 12000.0, isReceived: false),
+              AnalyticsTxItem(name: 'Other Bank Transfer', initial: 'O', avatarBg: Color(0xFFD81B60), time: 'Sep 28, 4:30 pm', amount: 12000.0, isReceived: false),
             ],
           ),
         ],
@@ -674,7 +674,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             outTransfers: 3,
             transactions: const [
               AnalyticsTxItem(name: 'Angel Lou F. Yabut', initial: 'A', avatarBg: Color(0xFF7C4DFF), time: 'Oct 03, 2:45 pm', amount: 2500.0, isReceived: false),
-              AnalyticsTxItem(name: 'Meralco Utility Bill', initial: 'M', avatarBg: Color(0xFFE65100), time: 'Oct 04, 9:15 am', amount: 4500.0, isReceived: false),
+              AnalyticsTxItem(name: 'Mae G. Mercado', initial: 'M', avatarBg: Color(0xFF7928CA), time: 'Oct 04, 9:15 am', amount: 4500.0, isReceived: false),
               AnalyticsTxItem(name: 'Direct Deposit', initial: 'D', avatarBg: Color(0xFF00897B), time: 'Oct 02, 10:00 am', amount: 8000.0, isReceived: true, status: 'RECEIVED'),
             ],
           ),

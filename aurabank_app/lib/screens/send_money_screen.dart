@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 import '../services/bank_service.dart';
-import '../theme/aura_theme.dart';
 import '../widgets/aura_logo.dart';
 import 'review_transfer_screen.dart';
 
 class SendMoneyScreen extends StatefulWidget {
   final VoidCallback? onBack;
+  final bool initialIsAuraToAura;
+  final int initialPartnerBankIndex;
 
-  const SendMoneyScreen({super.key, this.onBack});
+  const SendMoneyScreen({
+    super.key,
+    this.onBack,
+    this.initialIsAuraToAura = true,
+    this.initialPartnerBankIndex = 0,
+  });
 
   @override
   State<SendMoneyScreen> createState() => _SendMoneyScreenState();
@@ -15,53 +21,145 @@ class SendMoneyScreen extends StatefulWidget {
 
 class _SendMoneyScreenState extends State<SendMoneyScreen> {
   final BankService _bankService = BankService();
-  bool _isAuraToAura = true;
+  late bool _isAuraToAura;
+  late int _selectedPartnerBankIndex;
+
+  String _selectedSourceAccount = 'Savings';
+  String? _selectedPurpose;
 
   final TextEditingController _accountController =
-      TextEditingController(text: '1234 5678 9123 4569');
+      TextEditingController(text: '1234568898951');
   final TextEditingController _recipientController =
       TextEditingController(text: 'Jessie Mae Dela Paz');
   final TextEditingController _amountController =
-      TextEditingController(text: '50000.00');
-  final TextEditingController _remarksController = TextEditingController();
+      TextEditingController();
+  final TextEditingController _remarksController =
+      TextEditingController();
 
-  int _selectedPartnerBankIndex = 0;
+  static const List<Map<String, dynamic>> _sourceAccounts = [
+    {
+      'type': 'Savings',
+      'title': 'Savings Account',
+      'accountNo': 'AUR-SAV-9821',
+      'balance': 50000.0,
+      'icon': Icons.account_balance_rounded,
+    },
+    {
+      'type': 'Current',
+      'title': 'Current Account',
+      'accountNo': 'AUR-CUR-4412',
+      'balance': 125000.0,
+      'icon': Icons.account_balance_wallet_rounded,
+    },
+    {
+      'type': 'Credit',
+      'title': 'Credit Account',
+      'accountNo': 'AUR-CRD-7703',
+      'balance': 75000.0,
+      'icon': Icons.credit_card_rounded,
+    },
+  ];
+
+  static const List<Map<String, dynamic>> _purposes = [
+    {
+      'name': 'Remittance',
+      'icon': Icons.send_rounded,
+      'desc': 'Family support & personal remittance',
+    },
+    {
+      'name': 'Funds Transfer',
+      'icon': Icons.swap_horiz_rounded,
+      'desc': 'General fund & account movement',
+    },
+    {
+      'name': 'Bills Payment',
+      'icon': Icons.receipt_long_rounded,
+      'desc': 'Utilities, dues & merchant checkout',
+    },
+    {
+      'name': 'Savings',
+      'icon': Icons.account_balance_rounded,
+      'desc': 'Personal stash & emergency reserve',
+    },
+  ];
 
   static const List<Map<String, dynamic>> _partnerBanks = [
     {
       'name': 'MeyBank',
+      'shortName': 'MeyBank',
       'group': 'Group 2 Partner Bank • MEY-002',
       'avatar': 'M',
       'color': Color(0xFF701A75),
     },
     {
       'name': 'Apex Digital Bank',
+      'shortName': 'Apex Digital',
       'group': 'Group 1 Partner Bank • APX-001',
       'avatar': 'A',
       'color': Color(0xFF047857),
     },
     {
       'name': 'Nexus Core Bank',
+      'shortName': 'Nexus Core',
       'group': 'Group 4 Partner Bank • NEX-004',
       'avatar': 'N',
       'color': Color(0xFF1E3A8A),
     },
   ];
 
-  String _selectedPurpose = 'Personal / Family';
-  final List<String> _purposes = [
-    'Personal / Family',
-    'Bills & Utilities',
-    'Business / Supplier',
-    'Investment / Savings',
-    'Emergency',
+  static const List<Map<String, dynamic>> _recentRecipients = [
+    {
+      'name': 'Jessie Mae Dela Paz',
+      'account': '1234568898951',
+      'bank': 'MeyBank',
+      'isAura': false,
+      'partnerIndex': 0,
+      'gradient': [Color(0xFF5B21B6), Color(0xFF7C3AED)],
+    },
+    {
+      'name': 'Angel Lou F. Yabut',
+      'account': '7128901234567',
+      'bank': 'Aura Bank',
+      'isAura': true,
+      'partnerIndex': 0,
+      'gradient': [Color(0xFF2563EB), Color(0xFF38BDF8)],
+    },
+    {
+      'name': 'Mae G. Mercado',
+      'account': '4491882019238',
+      'bank': 'Apex Digital Bank',
+      'isAura': false,
+      'partnerIndex': 1,
+      'gradient': [Color(0xFF059669), Color(0xFF10B981)],
+    },
+    {
+      'name': 'Luis Tan',
+      'account': '9975401288412',
+      'bank': 'Aura Bank',
+      'isAura': true,
+      'partnerIndex': 0,
+      'gradient': [Color(0xFFD97706), Color(0xFFFBBF24)],
+    },
   ];
 
-  static const Color brandViolet = AuraColors.primary;
-  static const Color textDark = AuraColors.textPrimary;
-  static const Color textGray = AuraColors.textMuted;
-  static const Color cardBorder = AuraColors.cardBorder;
-  static const Color greenCredit = AuraColors.creditGreen;
+  // Refined Color Palette
+  static const Color brandPrimary = Color(0xFF2A0054);
+  static const Color brandViolet = Color(0xFF4C1D95);
+  static const Color brandAccent = Color(0xFF6D28D9);
+  static const Color textDark = Color(0xFF0F172A);
+  static const Color textGray = Color(0xFF64748B);
+  static const Color textMuted = Color(0xFF94A3B8);
+  static const Color surfaceWhite = Colors.white;
+  static const Color cardBorder = Color(0xFFE2E8F0);
+  static const Color inputBg = Color(0xFFF8FAFC);
+  static const Color emeraldGreen = Color(0xFF059669);
+
+  @override
+  void initState() {
+    super.initState();
+    _isAuraToAura = widget.initialIsAuraToAura;
+    _selectedPartnerBankIndex = widget.initialPartnerBankIndex;
+  }
 
   @override
   void dispose() {
@@ -72,491 +170,1594 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
+  double get _currentSourceBalance {
+    final match = _sourceAccounts.firstWhere(
+      (a) => a['type'] == _selectedSourceAccount,
+      orElse: () => _sourceAccounts.first,
+    );
+    return match['balance'] as double;
+  }
+
+  Map<String, dynamic> get _currentSourceAccountData {
+    return _sourceAccounts.firstWhere(
+      (a) => a['type'] == _selectedSourceAccount,
+      orElse: () => _sourceAccounts.first,
+    );
+  }
+
+  String _getInitials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.isEmpty || parts[0].isEmpty) return 'A';
+    if (parts.length == 1) {
+      return parts[0].substring(0, parts[0].length >= 2 ? 2 : 1).toUpperCase();
+    }
+    return '${parts[0][0]}${parts[parts.length - 1][0]}'.toUpperCase();
+  }
+
+  void _applyQuickAmount(double delta) {
+    final current = double.tryParse(_amountController.text.replaceAll(',', '')) ?? 0.0;
+    final next = (current + delta).clamp(0.0, _currentSourceBalance);
+    setState(() {
+      _amountController.text = next == next.roundToDouble()
+          ? next.toInt().toString()
+          : next.toStringAsFixed(2);
+    });
+  }
+
+  void _applyMaxAmount() {
+    setState(() {
+      _amountController.text = _currentSourceBalance == _currentSourceBalance.roundToDouble()
+          ? _currentSourceBalance.toInt().toString()
+          : _currentSourceBalance.toStringAsFixed(2);
+    });
+  }
+
+  void _onSendMoney() {
+    final text = _amountController.text.replaceAll(',', '').trim();
+    final enteredAmount = double.tryParse(text) ?? 0.0;
+
+    if (enteredAmount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: const Color(0xFFDC2626),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          content: const Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.white, size: 20),
+              SizedBox(width: 10),
+              Text('Please enter an amount greater than 0', style: TextStyle(fontWeight: FontWeight.w700)),
+            ],
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (enteredAmount > _currentSourceBalance) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: const Color(0xFFDC2626),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          content: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
+              SizedBox(width: 10),
+              Text('Amount exceeds available account balance', style: TextStyle(fontWeight: FontWeight.w700)),
+            ],
+          ),
+        ),
+      );
+      return;
+    }
+
+    final destinationBank = _isAuraToAura
+        ? 'Aura Bank'
+        : (_partnerBanks[_selectedPartnerBankIndex]['name'] as String);
+
     final fee = _isAuraToAura ? 0.0 : 10.0;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Column(
-              children: [
-                // Top Header
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  child: Row(
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ReviewTransferScreen(
+          senderName: _bankService.user.name,
+          senderAccount: _currentSourceAccountData['accountNo'] as String,
+          recipientName: _recipientController.text.trim().isNotEmpty
+              ? _recipientController.text.trim()
+              : 'Jessie Mae Dela Paz',
+          recipientAccount: _accountController.text.trim().isNotEmpty
+              ? _accountController.text.trim()
+              : '1234568898951',
+          recipientBank: destinationBank,
+          amount: enteredAmount,
+          fee: fee,
+          remarks: _remarksController.text.trim().isNotEmpty
+              ? _remarksController.text.trim()
+              : (_selectedPurpose ?? 'Funds Transfer'),
+        ),
+      ),
+    );
+  }
+
+  void _showEditRecipientSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          decoration: const BoxDecoration(
+            color: surfaceWhite,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0x2A000000),
+                blurRadius: 30,
+                offset: Offset(0, -6),
+              ),
+            ],
+          ),
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 14,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Sleek Drag Handle
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4.5,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+
+              // Sheet Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
-                        color: textDark,
-                        onPressed: widget.onBack ?? () => Navigator.of(context).pop(),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                      ),
-                      const SizedBox(width: 8),
-                      const AuraLogo(size: 32, style: AuraLogoStyle.violet, borderRadius: 8),
-                      const SizedBox(width: 10),
-                      const Text(
-                        'Aura Bank',
+                      Text(
+                        'Recipient Information',
                         style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
                           color: textDark,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      SizedBox(height: 3),
+                      Text(
+                        'Choose a recent contact or enter new details',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w500,
+                          color: textGray,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: cardBorder),
+                    ),
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      icon: const Icon(Icons.close_rounded, size: 18, color: textGray),
+                      onPressed: () => Navigator.of(ctx).pop(),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+
+              // Recent Contacts Quick Pick
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'QUICK SELECT RECENT',
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.9,
+                      color: textMuted,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3E8FF),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Text(
+                      'Tap to fill',
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        color: brandAccent,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Horizontal Recent Contacts Carousel
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                child: Row(
+                  children: _recentRecipients.map((r) {
+                    final isSelected =
+                        _recipientController.text == (r['name'] as String);
+                    final gradient = r['gradient'] as List<Color>;
+
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _recipientController.text = r['name'] as String;
+                          _accountController.text = r['account'] as String;
+                          _isAuraToAura = r['isAura'] as bool;
+                          _selectedPartnerBankIndex = r['partnerIndex'] as int;
+                        });
+                        setModalState(() {});
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected ? const Color(0xFFFAF5FF) : inputBg,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isSelected ? brandAccent : cardBorder,
+                            width: isSelected ? 1.6 : 1,
+                          ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: brandAccent.withValues(alpha: 0.12),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: gradient,
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                shape: BoxShape.circle,
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                _getInitials(r['name'] as String),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 9),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  r['name'] as String,
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: isSelected ? brandViolet : textDark,
+                                  ),
+                                ),
+                                Text(
+                                  '${r['bank']} • ${(r['account'] as String).substring((r['account'] as String).length - 4)}',
+                                  style: const TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: textGray,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+
+              const SizedBox(height: 18),
+
+              // Name Field
+              const Text(
+                'Account Holder Name',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                  color: textGray,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Container(
+                decoration: BoxDecoration(
+                  color: inputBg,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: cardBorder),
+                ),
+                child: TextField(
+                  controller: _recipientController,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: textDark,
+                  ),
+                  decoration: const InputDecoration(
+                    prefixIcon: Icon(Icons.person_outline_rounded, size: 20, color: brandAccent),
+                    hintText: 'Enter recipient name',
+                    hintStyle: TextStyle(fontSize: 13, color: textMuted),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              // Account Number Field
+              const Text(
+                'Account Number',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                  color: textGray,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Container(
+                decoration: BoxDecoration(
+                  color: inputBg,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: cardBorder),
+                ),
+                child: TextField(
+                  controller: _accountController,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: textDark,
+                    letterSpacing: 0.5,
+                  ),
+                  decoration: const InputDecoration(
+                    prefixIcon: Icon(Icons.tag_rounded, size: 20, color: brandAccent),
+                    hintText: 'Enter account number',
+                    hintStyle: TextStyle(fontSize: 13, color: textMuted),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+
+              if (!_isAuraToAura) ...[
+                const SizedBox(height: 14),
+                const Text(
+                  'Destination Partner Bank',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: textGray,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: inputBg,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: cardBorder),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<int>(
+                      isExpanded: true,
+                      value: _selectedPartnerBankIndex,
+                      icon: const Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: brandAccent,
+                        size: 24,
+                      ),
+                      items: List.generate(_partnerBanks.length, (idx) {
+                        final b = _partnerBanks[idx];
+                        return DropdownMenuItem(
+                          value: idx,
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 28,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  color: (b['color'] as Color).withValues(alpha: 0.15),
+                                  shape: BoxShape.circle,
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  b['avatar'] as String,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w900,
+                                    color: b['color'] as Color,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    b['name'] as String,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 13,
+                                      color: textDark,
+                                    ),
+                                  ),
+                                  Text(
+                                    b['group'] as String,
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w500,
+                                      color: textGray,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setModalState(() => _selectedPartnerBankIndex = val);
+                          setState(() => _selectedPartnerBankIndex = val);
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 22),
+
+              // Save Details Button
+              Container(
+                width: double.infinity,
+                height: 50,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [brandPrimary, brandAccent],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: brandPrimary.withValues(alpha: 0.3),
+                      blurRadius: 14,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.check_circle_outline_rounded, color: Colors.white, size: 18),
+                      SizedBox(width: 8),
+                      Text(
+                        'Save Details',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.3,
                         ),
                       ),
                     ],
                   ),
                 ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 100),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // From Section
-                        const Text(
-                          'From:',
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: textDark),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: cardBorder, width: 1.2),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.02),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Savings Account',
-                                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textDark),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Avail: ₱ ${_formatAmountPlain(_bankService.availableBalance)}',
-                                    style: const TextStyle(fontSize: 11, color: textGray),
-                                  ),
-                                ],
-                              ),
-                              const Icon(Icons.keyboard_arrow_down_rounded, color: textDark),
-                            ],
-                          ),
-                        ),
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Top Bar
+              _buildTopBar(),
 
-                        const SizedBox(height: 18),
+              const SizedBox(height: 18),
 
-                        // Transfer Mode Toggle: Aura to Aura vs Other Bank
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF3F4F6),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () => setState(() => _isAuraToAura = true),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 10),
-                                    decoration: BoxDecoration(
-                                      color: _isAuraToAura ? Colors.white : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(10),
-                                      boxShadow: _isAuraToAura
-                                          ? [
-                                              BoxShadow(
-                                                color: Colors.black.withValues(alpha: 0.05),
-                                                blurRadius: 4,
-                                                offset: const Offset(0, 1),
-                                              ),
-                                            ]
-                                          : null,
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        'Aura to Aura',
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w700,
-                                          color: _isAuraToAura ? brandViolet : textGray,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () => setState(() => _isAuraToAura = false),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 10),
-                                    decoration: BoxDecoration(
-                                      color: !_isAuraToAura ? Colors.white : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(10),
-                                      boxShadow: !_isAuraToAura
-                                          ? [
-                                              BoxShadow(
-                                                color: Colors.black.withValues(alpha: 0.05),
-                                                blurRadius: 4,
-                                                offset: const Offset(0, 1),
-                                              ),
-                                            ]
-                                          : null,
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(Icons.account_balance_rounded,
-                                            size: 15, color: !_isAuraToAura ? brandViolet : textGray),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          'Other Bank',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w700,
-                                            color: !_isAuraToAura ? brandViolet : textGray,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+              // Card 1: "From:" Account Selector
+              _buildFromCard(),
 
-                        const SizedBox(height: 18),
+              const SizedBox(height: 16),
 
-                        // Partner Bank info card if Other Bank selected (Supports the 4 Banks)
-                        if (!_isAuraToAura) ...[
-                          GestureDetector(
-                            onTap: _showSelectPartnerBankSheet,
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFDF4FF),
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(color: const Color(0xFFF0ABFC), width: 0.8),
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 32,
-                                    height: 32,
-                                    decoration: BoxDecoration(
-                                      color: _partnerBanks[_selectedPartnerBankIndex]['color'] as Color,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        _partnerBanks[_selectedPartnerBankIndex]['avatar'] as String,
-                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          _partnerBanks[_selectedPartnerBankIndex]['name'] as String,
-                                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: textDark),
-                                        ),
-                                        const Text('Partner Bank • Tap to change', style: TextStyle(fontSize: 10, color: textGray)),
-                                      ],
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFD1FAE5),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: const Text('Instapay', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: greenCredit)),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  const Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: textGray),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                        ],
+              // Card 2: Recipient, Channel Toggle & Hero Amount
+              _buildRecipientAndAmountCard(),
 
-                        // Account Number Input
-                        _buildInputField(
-                          label: 'Account Number',
-                          controller: _accountController,
-                          hint: 'Enter account number',
-                          keyboardType: TextInputType.number,
-                        ),
+              const SizedBox(height: 16),
 
-                        const SizedBox(height: 16),
+              // Card 3: Purpose & Remarks
+              _buildPurposeAndRemarksCard(),
 
-                        // Recipient Name Input
-                        _buildInputField(
-                          label: 'Recipient Name',
-                          controller: _recipientController,
-                          hint: 'Enter recipient full name',
-                        ),
+              const SizedBox(height: 20),
 
-                        const SizedBox(height: 16),
+              // Security Trust Badge
+              _buildSecurityBadge(),
 
-                        // Enter Amount Input
-                        const Text(
-                          'Enter Amount',
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textGray),
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF9FAFB),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: cardBorder),
-                          ),
-                          child: Row(
-                            children: [
-                              const Text('PHP ', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: textDark)),
-                              Expanded(
-                                child: TextField(
-                                  controller: _amountController,
-                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: textDark),
-                                  decoration: const InputDecoration(border: InputBorder.none),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+              const SizedBox(height: 14),
 
-                        const SizedBox(height: 6),
-                        Text(
-                          _isAuraToAura ? 'Transfer Fee: FREE' : 'Transfer Fee: PHP 10.00',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: _isAuraToAura ? greenCredit : textGray,
-                          ),
-                        ),
+              // Primary CTA Button: "Send Money"
+              _buildSendMoneyButton(),
 
-                        const SizedBox(height: 16),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-                        // Purpose Selector
-                        const Text(
-                          'Purpose',
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textGray),
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF9FAFB),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: cardBorder),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              isDense: true,
-                              isExpanded: true,
-                              value: _selectedPurpose,
-                              items: _purposes.map((p) {
-                                return DropdownMenuItem(value: p, child: Text(p, style: const TextStyle(fontSize: 13, color: textDark, fontWeight: FontWeight.w600)));
-                              }).toList(),
-                              onChanged: (val) {
-                                if (val != null) setState(() => _selectedPurpose = val);
-                              },
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // Remarks (Optional)
-                        _buildInputField(
-                          label: 'Remarks (Optional)',
-                          controller: _remarksController,
-                          hint: 'Enter details',
-                        ),
-                      ],
+  Widget _buildTopBar() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: surfaceWhite,
+                shape: BoxShape.circle,
+                border: Border.all(color: cardBorder),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 17),
+                color: brandViolet,
+                onPressed: widget.onBack ?? () => Navigator.of(context).pop(),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              decoration: BoxDecoration(
+                color: surfaceWhite,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: cardBorder),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Row(
+                children: [
+                  AuraLogo(size: 20, style: AuraLogoStyle.violet, borderRadius: 5),
+                  SizedBox(width: 8),
+                  Text(
+                    'Aura Bank',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: textDark,
+                      letterSpacing: -0.2,
                     ),
                   ),
-                ),
-              ],
-            ),
-
-            // Bottom Sticky Button: "Send Money"
-            Positioned(
-              left: 20,
-              right: 20,
-              bottom: 18,
-              child: Container(
-                height: 48,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: AuraColors.buttonShadow,
-                ),
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: brandViolet,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                    elevation: 0,
-                  ),
-                  onPressed: () {
-                    final enteredAmount = double.tryParse(_amountController.text.replaceAll(',', '')) ?? 0.0;
-                    if (enteredAmount <= 0) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Please enter a valid amount')),
-                      );
-                      return;
-                    }
-
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => ReviewTransferScreen(
-                          senderName: _bankService.user.name,
-                          senderAccount: _bankService.savingsAccountNumber,
-                          recipientName: _recipientController.text.trim(),
-                          recipientAccount: _accountController.text.trim(),
-                          recipientBank: _isAuraToAura ? 'Aura Bank' : 'MeyBank',
-                          amount: enteredAmount,
-                          fee: fee,
-                          remarks: _remarksController.text.trim(),
-                        ),
-                      ),
-                    );
-                  },
-                  child: const Text(
-                    'Send Money',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white),
-                  ),
-                ),
+                ],
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showSelectPartnerBankSheet() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-      ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD1D5DB),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Select Destination Bank (4 Banks)',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: textDark),
-            ),
-            const SizedBox(height: 12),
-            for (int i = 0; i < _partnerBanks.length; i++)
-              ListTile(
-                contentPadding: const EdgeInsets.symmetric(vertical: 2),
-                leading: CircleAvatar(
-                  backgroundColor: _partnerBanks[i]['color'] as Color,
-                  child: Text(
-                    _partnerBanks[i]['avatar'] as String,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                title: Text(
-                  _partnerBanks[i]['name'] as String,
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-                ),
-                subtitle: Text(
-                  _partnerBanks[i]['group'] as String,
-                  style: const TextStyle(fontSize: 11, color: textGray),
-                ),
-                trailing: _selectedPartnerBankIndex == i
-                    ? const Icon(Icons.check_circle_rounded, color: brandViolet)
-                    : null,
-                onTap: () {
-                  setState(() => _selectedPartnerBankIndex = i);
-                  Navigator.of(ctx).pop();
-                },
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInputField({
-    required String label,
-    required TextEditingController controller,
-    required String hint,
-    TextInputType keyboardType = TextInputType.text,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textGray),
-        ),
-        const SizedBox(height: 6),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: const Color(0xFFF9FAFB),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: cardBorder),
+            color: const Color(0xFFF3E8FF),
+            borderRadius: BorderRadius.circular(10),
           ),
-          child: TextField(
-            controller: controller,
-            keyboardType: keyboardType,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: textDark),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: const TextStyle(fontSize: 13, color: textGray, fontWeight: FontWeight.w400),
-              border: InputBorder.none,
-            ),
+          child: const Row(
+            children: [
+              Icon(Icons.bolt_rounded, size: 14, color: brandAccent),
+              SizedBox(width: 4),
+              Text(
+                'Instant',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w800,
+                  color: brandAccent,
+                ),
+              ),
+            ],
           ),
         ),
       ],
     );
   }
 
+  Widget _buildFromCard() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: surfaceWhite,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: cardBorder, width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1E1B4B).withValues(alpha: 0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3E8FF),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                alignment: Alignment.center,
+                child: Icon(
+                  _currentSourceAccountData['icon'] as IconData,
+                  color: brandAccent,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    itemHeight: 64.0,
+                    isExpanded: true,
+                    value: _selectedSourceAccount,
+                    borderRadius: BorderRadius.circular(20),
+                    dropdownColor: surfaceWhite,
+                    selectedItemBuilder: (context) {
+                      return _sourceAccounts.map((item) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text(
+                              'From:',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5,
+                                color: textGray,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              item['title'] as String,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                color: textDark,
+                                letterSpacing: -0.2,
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList();
+                    },
+                    icon: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: cardBorder),
+                      ),
+                      child: const Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: brandViolet,
+                        size: 24,
+                      ),
+                    ),
+                    items: _sourceAccounts.map((item) {
+                      final isSelected = item['type'] == _selectedSourceAccount;
+                      return DropdownMenuItem<String>(
+                        value: item['type'] as String,
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 34,
+                              height: 34,
+                              decoration: BoxDecoration(
+                                color: isSelected ? const Color(0xFFF3E8FF) : const Color(0xFFF1F5F9),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                item['icon'] as IconData,
+                                size: 18,
+                                color: isSelected ? brandAccent : textGray,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    item['type'] as String,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 13.5,
+                                      color: isSelected ? brandViolet : textDark,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${item['accountNo']} • Available: PHP ${_formatAmountPlain(item['balance'] as double)}',
+                                    style: const TextStyle(fontSize: 11, color: textGray, fontWeight: FontWeight.w500),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (isSelected)
+                              const Icon(Icons.check_circle_rounded, color: brandAccent, size: 18),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() => _selectedSourceAccount = val);
+                      }
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(11),
+              border: Border.all(color: cardBorder),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _currentSourceAccountData['accountNo'] as String,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: textGray,
+                  ),
+                ),
+                Text(
+                  'Available: PHP ${_formatAmountPlain(_currentSourceBalance)}',
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w800,
+                    color: emeraldGreen,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecipientAndAmountCard() {
+    final destinationBank = _isAuraToAura
+        ? 'Aura Bank'
+        : (_partnerBanks[_selectedPartnerBankIndex]['name'] as String);
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: surfaceWhite,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: cardBorder, width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1E1B4B).withValues(alpha: 0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Segmented Capsule Toggle
+          Container(
+            padding: const EdgeInsets.all(3.5),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _isAuraToAura = true),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 9),
+                      decoration: BoxDecoration(
+                        color: _isAuraToAura ? surfaceWhite : Colors.transparent,
+                        borderRadius: BorderRadius.circular(11),
+                        border: _isAuraToAura ? Border.all(color: cardBorder) : null,
+                        boxShadow: _isAuraToAura
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 5,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      alignment: Alignment.center,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (_isAuraToAura) ...[
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(
+                                color: emeraldGreen,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                          ],
+                          Text(
+                            'Aura to Aura',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: _isAuraToAura ? brandPrimary : textGray,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _isAuraToAura = false),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 9),
+                      decoration: BoxDecoration(
+                        color: !_isAuraToAura ? surfaceWhite : Colors.transparent,
+                        borderRadius: BorderRadius.circular(11),
+                        border: !_isAuraToAura ? Border.all(color: cardBorder) : null,
+                        boxShadow: !_isAuraToAura
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 5,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      alignment: Alignment.center,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (!_isAuraToAura) ...[
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(
+                                color: brandAccent,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                          ],
+                          Text(
+                            'Other Bank',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: !_isAuraToAura ? brandPrimary : textGray,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Recipient Profile Card Row
+          InkWell(
+            onTap: _showEditRecipientSheet,
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: inputBg,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: cardBorder),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [brandPrimary, brandAccent],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      _getInitials(_recipientController.text),
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                _recipientController.text.trim().isNotEmpty
+                                    ? _recipientController.text.trim()
+                                    : 'Jessie Mae Dela Paz',
+                                style: const TextStyle(
+                                  fontSize: 15.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: textDark,
+                                  letterSpacing: -0.2,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(
+                              Icons.verified_rounded,
+                              size: 15,
+                              color: Color(0xFF2563EB),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 3),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEDE9FE),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                destinationBank,
+                                style: const TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: brandViolet,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                'Account No. ${_accountController.text.trim().isNotEmpty ? _accountController.text.trim() : '1234568898951'}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: textGray,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: surfaceWhite,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: cardBorder),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Change',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: brandAccent,
+                          ),
+                        ),
+                        SizedBox(width: 4),
+                        Icon(Icons.edit_outlined, size: 13, color: brandAccent),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Editorial Hero Amount Card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: inputBg,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: cardBorder),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'TRANSFER AMOUNT',
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.9,
+                        color: textMuted,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: _isAuraToAura ? const Color(0xFFE6F8F0) : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        _isAuraToAura ? 'Zero Fee' : 'Fee: PHP 10.00',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                          color: _isAuraToAura ? emeraldGreen : textGray,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+
+                // Currency and Amount Input
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEDE9FE),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Text(
+                        'PHP',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                          color: brandViolet,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: _amountController,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w900,
+                          color: textDark,
+                          letterSpacing: -0.5,
+                        ),
+                        decoration: const InputDecoration(
+                          hintText: '0',
+                          hintStyle: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFFCBD5E1),
+                          ),
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                        onChanged: (_) => setState(() {}),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 14),
+
+                // Quick Amount Preset Chips
+                Row(
+                  children: [
+                    _buildQuickChip('+500', () => _applyQuickAmount(500)),
+                    const SizedBox(width: 6),
+                    _buildQuickChip('+1,000', () => _applyQuickAmount(1000)),
+                    const SizedBox(width: 6),
+                    _buildQuickChip('+5,000', () => _applyQuickAmount(5000)),
+                    const SizedBox(width: 6),
+                    _buildQuickChip('Max', _applyMaxAmount, isMax: true),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Available Balance & Transfer Limit Strip
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      const Icon(Icons.account_balance_wallet_outlined, size: 14, color: emeraldGreen),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Available Balance: PHP ${_formatAmountPlain(_currentSourceBalance)}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF334155),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 16,
+                  color: cardBorder,
+                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+                Expanded(
+                  child: Row(
+                    children: [
+                      const Icon(Icons.shield_outlined, size: 14, color: textGray),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Transfer Limit: PHP ${_formatAmountPlain(_currentSourceBalance)}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: textGray,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickChip(String label, VoidCallback onTap, {bool isMax = false}) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          decoration: BoxDecoration(
+            color: isMax ? const Color(0xFFF3E8FF) : surfaceWhite,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isMax ? const Color(0xFFDDD6FE) : cardBorder,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w800,
+              color: isMax ? brandAccent : textDark,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPurposeAndRemarksCard() {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: surfaceWhite,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: cardBorder, width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1E1B4B).withValues(alpha: 0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Purpose Dropdown Label
+          const Text(
+            'Purpose',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: textDark,
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // Purpose Dropdown Field
+          Container(
+            height: 50,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              color: inputBg,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: cardBorder),
+            ),
+            alignment: Alignment.center,
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                isDense: true,
+                isExpanded: true,
+                value: _selectedPurpose,
+                selectedItemBuilder: (context) {
+                  return _purposes.map((p) {
+                    final name = p['name'] as String;
+                    final icon = p['icon'] as IconData;
+                    return Row(
+                      children: [
+                        Icon(icon, size: 18, color: brandAccent),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            name,
+                            style: const TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w800,
+                              color: textDark,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                      ],
+                    );
+                  }).toList();
+                },
+                hint: const Row(
+                  children: [
+                    Icon(Icons.category_outlined, size: 18, color: textMuted),
+                    SizedBox(width: 10),
+                    Text(
+                      'Select transfer purpose',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: textGray,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                icon: const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: brandAccent,
+                  size: 24,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                items: _purposes.map((p) {
+                  final name = p['name'] as String;
+                  final icon = p['icon'] as IconData;
+                  final desc = p['desc'] as String;
+
+                  return DropdownMenuItem<String>(
+                    value: name,
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF3E8FF),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(icon, color: brandAccent, size: 16),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                name,
+                                style: const TextStyle(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: textDark,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                              Text(
+                                desc,
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                  color: textGray,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() => _selectedPurpose = val);
+                  }
+                },
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Remarks Label
+          const Text(
+            'Remarks (Optional)',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: textDark,
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // Remarks Input Field
+          Container(
+            height: 50,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              color: inputBg,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: cardBorder),
+            ),
+            alignment: Alignment.center,
+            child: Row(
+              children: [
+                const Icon(Icons.edit_note_rounded, size: 22, color: textMuted),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextField(
+                    controller: _remarksController,
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                      color: textDark,
+                    ),
+                    decoration: const InputDecoration(
+                      hintText: 'Enter details',
+                      hintStyle: TextStyle(
+                        fontSize: 13,
+                        color: textMuted,
+                        fontWeight: FontWeight.w400,
+                      ),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSecurityBadge() {
+    return const Center(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.lock_outline_rounded, size: 13, color: textMuted),
+          SizedBox(width: 6),
+          Text(
+            '256-Bit Encrypted • Real-time InstaPay Settlement',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: textGray,
+              letterSpacing: 0.1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSendMoneyButton() {
+    return Container(
+      width: double.infinity,
+      height: 54,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [brandPrimary, Color(0xFF4C1D95)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: brandPrimary.withValues(alpha: 0.35),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          elevation: 0,
+        ),
+        onPressed: _onSendMoney,
+        child: const Text(
+          'Send Money',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+            letterSpacing: 0.3,
+          ),
+        ),
+      ),
+    );
+  }
+
   String _formatAmountPlain(double amount) {
-    final parts = amount.toStringAsFixed(0);
-    return parts.replaceAllMapped(
+    final parts = amount.toStringAsFixed(2);
+    final splitParts = parts.split('.');
+    final formattedInt = splitParts[0].replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
       (Match m) => '${m[1]},',
     );
+    return '$formattedInt.${splitParts[1]}';
   }
 }

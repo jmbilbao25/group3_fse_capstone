@@ -214,52 +214,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                     const SizedBox(height: 16),
 
-                    // Inset Pills (AURA CLIENT ID & REGISTERED EMAIL)
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: AuraColors.bgLavender,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: AuraColors.borderLavender),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [
-                                Text(
-                                  'AURA CLIENT ID',
-                                  style: TextStyle(
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w800,
-                                    color: AuraColors.textMuted,
-                                    letterSpacing: 0.6,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'AUR-9021-8842',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w800,
-                                    color: AuraColors.primary,
-                                    fontFamily: 'monospace',
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: AuraColors.bgLavender,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: AuraColors.borderLavender),
-                            ),
+                    // Registered Email Pill
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                      decoration: BoxDecoration(
+                        color: AuraColors.bgLavender,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AuraColors.borderLavender),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.mark_email_read_rounded, size: 16, color: AuraColors.primary),
+                          const SizedBox(width: 10),
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -272,11 +240,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     letterSpacing: 0.6,
                                   ),
                                 ),
-                                const SizedBox(height: 4),
+                                const SizedBox(height: 2),
                                 Text(
                                   user.email,
                                   style: const TextStyle(
-                                    fontSize: 11,
+                                    fontSize: 12,
                                     fontWeight: FontWeight.w700,
                                     color: AuraColors.textPrimary,
                                   ),
@@ -285,8 +253,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ],
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -441,7 +409,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       subtitle: '',
                       onTap: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Opening Aura Terms & BSP Disclosures...')),
+                          const SnackBar(content: Text('Opening Aura Terms & Privacy Policy...')),
                         );
                       },
                     ),
@@ -496,29 +464,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ),
                     ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // 2. Log Out All Other Sessions
-              Center(
-                child: TextButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('All other remote sessions have been logged out.'),
-                        backgroundColor: AuraColors.primary,
-                      ),
-                    );
-                  },
-                  style: TextButton.styleFrom(
-                    foregroundColor: const Color(0xFF991B1B),
-                  ),
-                  child: const Text(
-                    'Log Out All Other Sessions',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
                   ),
                 ),
               ),

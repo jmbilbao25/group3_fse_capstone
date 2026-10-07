@@ -10,6 +10,26 @@ enum SecurityGateMode {
   transferBlocked,
 }
 
+class ThreatWarningModel {
+  final String key;
+  final String title;
+  final String description;
+  final IconData leftIcon;
+  final IconData centerIcon;
+  final IconData rightIcon;
+  final bool isCritical;
+
+  const ThreatWarningModel({
+    required this.key,
+    required this.title,
+    required this.description,
+    required this.leftIcon,
+    required this.centerIcon,
+    required this.rightIcon,
+    required this.isCritical,
+  });
+}
+
 class SecurityGateScreen extends StatefulWidget {
   final VoidCallback? onBack;
   final SecurityGateMode initialMode;
@@ -39,11 +59,67 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
   ];
   Timer? _statusTimer;
 
-  // Screen sharing state
+  // Screen sharing state & 5 NanoJev Threat Categories
   bool _transferCancelled = false;
   bool _isPaused = false;
   int _pauseSecondsRemaining = 597; // 09:57
   Timer? _pauseTimer;
+
+  final List<ThreatWarningModel> _threats = const [
+    ThreatWarningModel(
+      key: 'Remote access',
+      title: 'Screen sharing or remote app detected',
+      description:
+          'Bank staff never ask you to share your screen. Someone may be viewing or controlling this session.',
+      leftIcon: Icons.phone_iphone_rounded,
+      centerIcon: Icons.screen_share_rounded,
+      rightIcon: Icons.visibility_outlined,
+      isCritical: true,
+    ),
+    ThreatWarningModel(
+      key: 'Live call',
+      title: 'You are on a call right now',
+      description:
+          'Impostors posing as police or bank staff stay on the line to pressure you into sending money.',
+      leftIcon: Icons.person_rounded,
+      centerIcon: Icons.phone_in_talk_rounded,
+      rightIcon: Icons.stop_circle_outlined,
+      isCritical: true,
+    ),
+    ThreatWarningModel(
+      key: 'Purpose mismatch',
+      title: 'Company payment to an unverified personal account',
+      description:
+          'Official institutions and corporate entities do not receive transfers through personal accounts.',
+      leftIcon: Icons.account_balance_rounded,
+      centerIcon: Icons.warning_amber_rounded,
+      rightIcon: Icons.person_outline_rounded,
+      isCritical: false,
+    ),
+    ThreatWarningModel(
+      key: 'Pasted account',
+      title: 'Account number pasted from another app',
+      description:
+          'Transfers requested over chat for tasks, prizes or crypto commissions are irreversible.',
+      leftIcon: Icons.chat_bubble_outline_rounded,
+      centerIcon: Icons.content_paste_rounded,
+      rightIcon: Icons.account_balance_rounded,
+      isCritical: false,
+    ),
+    ThreatWarningModel(
+      key: 'General',
+      title: 'Please re-verify the details',
+      description:
+          'Check the recipient and amount once more before you continue.',
+      leftIcon: Icons.account_balance_rounded,
+      centerIcon: Icons.shield_outlined,
+      rightIcon: Icons.person_outline_rounded,
+      isCritical: false,
+    ),
+  ];
+  int _selectedThreatIndex = 0;
+  int _continueCountdown = 3;
+  Timer? _continueTimer;
 
   @override
   void initState() {
@@ -55,6 +131,9 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
     )..repeat();
 
     _startStatusCycle();
+    if (_currentMode == SecurityGateMode.screenSharingDetected) {
+      _startContinueTimer();
+    }
   }
 
   @override
@@ -62,7 +141,31 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
     _rotationController.dispose();
     _statusTimer?.cancel();
     _pauseTimer?.cancel();
+    _continueTimer?.cancel();
     super.dispose();
+  }
+
+  void _selectThreat(int index) {
+    setState(() {
+      _selectedThreatIndex = index;
+    });
+    _startContinueTimer();
+  }
+
+  void _startContinueTimer() {
+    _continueTimer?.cancel();
+    setState(() {
+      _continueCountdown = 3;
+    });
+    _continueTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+      if (_continueCountdown > 1) {
+        setState(() => _continueCountdown--);
+      } else {
+        setState(() => _continueCountdown = 0);
+        timer.cancel();
+      }
+    });
   }
 
   void _startStatusCycle() {
@@ -249,7 +352,12 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
     final isSelected = _currentMode == mode;
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => _currentMode = mode),
+        onTap: () {
+          setState(() => _currentMode = mode);
+          if (mode == SecurityGateMode.screenSharingDetected) {
+            _startContinueTimer();
+          }
+        },
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
@@ -440,24 +548,76 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
     );
   }
 
-  // 2. SCREEN SHARING OR REMOTE APP DETECTED (image_60_0.png, image_61_0.png, image_62_0.png)
+  // 2. SCREEN SHARING OR NANOJEV THREAT WARNING VIEW (5 Threat Types)
   Widget _buildScreenSharingView() {
+    final threat = _threats[_selectedThreatIndex];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        const SizedBox(height: 20),
-
-        // Connected Device Diagram Card
+        // 5 NanoJev Threat Category Chips
         Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: List.generate(_threats.length, (index) {
+                final item = _threats[index];
+                final isSelected = _selectedThreatIndex == index;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: ChoiceChip(
+                    label: Text(
+                      item.key,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                        color: isSelected ? Colors.white : AuraColors.textSecondary,
+                      ),
+                    ),
+                    selected: isSelected,
+                    selectedColor: item.isCritical
+                        ? const Color(0xFFE11D48)
+                        : const Color(0xFFD97706),
+                    backgroundColor: const Color(0xFFF3F4F6),
+                    side: BorderSide(
+                      color: isSelected
+                          ? Colors.transparent
+                          : const Color(0xFFE5E7EB),
+                    ),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    onSelected: (selected) {
+                      if (selected) _selectThreat(index);
+                    },
+                  ),
+                );
+              }),
+            ),
+          ),
+        ),
+
+        // Connected Device / Threat Diagram Card
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 26),
           decoration: BoxDecoration(
-            color: const Color(0xFFFFF5F5),
+            color: threat.isCritical
+                ? const Color(0xFFFFF5F5)
+                : const Color(0xFFFFFBEB),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0xFFFFE4E6)),
+            border: Border.all(
+              color: threat.isCritical
+                  ? const Color(0xFFFFE4E6)
+                  : const Color(0xFFFEF3C7),
+            ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFE11D48).withValues(alpha: 0.05),
+                color: (threat.isCritical
+                        ? const Color(0xFFE11D48)
+                        : const Color(0xFFD97706))
+                    .withValues(alpha: 0.05),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
@@ -466,7 +626,7 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              // Phone icon container
+              // Left icon container
               Container(
                 width: 52,
                 height: 52,
@@ -475,20 +635,24 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: const Color(0xFFF3F4F6)),
                 ),
-                child: const Icon(
-                  Icons.phone_iphone_rounded,
+                child: Icon(
+                  threat.leftIcon,
                   color: AuraColors.textSecondary,
                   size: 26,
                 ),
               ),
 
-              // Dashed Red Line
+              // Dashed Line
               CustomPaint(
                 size: const Size(42, 2),
-                painter: _DashedLinePainter(),
+                painter: _DashedLinePainter(
+                  color: threat.isCritical
+                      ? const Color(0xFFFDA4AF)
+                      : const Color(0xFFFDE68A),
+                ),
               ),
 
-              // Center Red Alert Monitor Container
+              // Center Alert Monitor Container
               Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -496,18 +660,23 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
                     width: 66,
                     height: 66,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE11D48),
+                      color: threat.isCritical
+                          ? const Color(0xFFE11D48)
+                          : const Color(0xFFD97706),
                       borderRadius: BorderRadius.circular(18),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFFE11D48).withValues(alpha: 0.35),
+                          color: (threat.isCritical
+                                  ? const Color(0xFFE11D48)
+                                  : const Color(0xFFD97706))
+                              .withValues(alpha: 0.35),
                           blurRadius: 14,
                           offset: const Offset(0, 6),
                         ),
                       ],
                     ),
-                    child: const Icon(
-                      Icons.screen_share_rounded,
+                    child: Icon(
+                      threat.centerIcon,
                       color: Colors.white,
                       size: 32,
                     ),
@@ -536,13 +705,17 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
                 ],
               ),
 
-              // Dashed Red Line
+              // Dashed Line
               CustomPaint(
                 size: const Size(42, 2),
-                painter: _DashedLinePainter(),
+                painter: _DashedLinePainter(
+                  color: threat.isCritical
+                      ? const Color(0xFFFDA4AF)
+                      : const Color(0xFFFDE68A),
+                ),
               ),
 
-              // Eye icon container
+              // Right icon container
               Container(
                 width: 52,
                 height: 52,
@@ -551,8 +724,8 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: const Color(0xFFF3F4F6)),
                 ),
-                child: const Icon(
-                  Icons.visibility_outlined,
+                child: Icon(
+                  threat.rightIcon,
                   color: AuraColors.textSecondary,
                   size: 24,
                 ),
@@ -592,30 +765,38 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
         const SizedBox(height: 16),
 
         // Title
-        const Text(
-          'Screen sharing or remote app detected',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.5,
-            height: 1.25,
-            color: AuraColors.textPrimary,
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 250),
+          child: Text(
+            threat.title,
+            key: ValueKey<String>(threat.title),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+              height: 1.25,
+              color: AuraColors.textPrimary,
+            ),
           ),
         ),
 
         const SizedBox(height: 12),
 
         // Subtitle
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 10.0),
-          child: Text(
-            'Bank staff never ask you to share your screen. Someone may be viewing or controlling this session.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13,
-              height: 1.45,
-              color: AuraColors.textSecondary,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10.0),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 250),
+            child: Text(
+              threat.description,
+              key: ValueKey<String>(threat.description),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 13,
+                height: 1.45,
+                color: AuraColors.textSecondary,
+              ),
             ),
           ),
         ),
@@ -702,22 +883,28 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
 
         const SizedBox(height: 18),
 
-        // Text Link: I understand, continue
+        // Action 3: Mandatory 3-second delay text button
         TextButton(
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Step-up verification required to override screen share barrier.'),
-                backgroundColor: AuraColors.primary,
-              ),
-            );
-          },
-          child: const Text(
-            'I understand, continue',
+          onPressed: _continueCountdown == 0
+              ? () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Step-up verification required to override screen share barrier.'),
+                      backgroundColor: AuraColors.primary,
+                    ),
+                  );
+                }
+              : null,
+          child: Text(
+            _continueCountdown > 0
+                ? 'Continue in $_continueCountdown'
+                : 'I understand, continue',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: AuraColors.textSecondary,
+              color: _continueCountdown == 0
+                  ? AuraColors.textPrimary
+                  : const Color(0xFF9CA3AF),
             ),
           ),
         ),
@@ -895,10 +1082,14 @@ class _RadarArcPainter extends CustomPainter {
 
 // Dashed line painter
 class _DashedLinePainter extends CustomPainter {
+  final Color color;
+
+  _DashedLinePainter({this.color = const Color(0xFFFDA4AF)});
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFFFDA4AF)
+      ..color = color
       ..strokeWidth = 2.0;
 
     const dashWidth = 4.0;

@@ -27,7 +27,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _faceIdEnabled = true;
   bool _fingerprintEnabled = true;
   bool _pushAlertsEnabled = true;
-  bool _statementEmailEnabled = true;
 
   @override
   void initState() {
@@ -207,8 +206,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // Modal 1: Log out of all sessions? (Matches media_1791312890288.png)
-  void _showLogoutSessionsBottomSheet() {
+  // Modal: Log out of this device?
+  void _showLogoutThisDeviceBottomSheet() {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -246,7 +245,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 16),
 
             const Text(
-              'Log out of all sessions?',
+              'Log out of this device?',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
@@ -257,7 +256,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 8),
 
             const Text(
-              'Sign out of all active browsers and devices. Your trusted devices and biometric sign-in will remain saved.',
+              'You will be signed out of this device. You can sign back in anytime using your password or biometrics.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12.5,
@@ -268,7 +267,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             const SizedBox(height: 24),
 
-            // Primary action: Log Out All Sessions
+            // Primary action: Log Out of This Device
             SizedBox(
               width: double.infinity,
               height: 48,
@@ -287,13 +286,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   );
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('All active sessions have been signed out.'),
+                      content: Text('You have been signed out of this device.'),
                       backgroundColor: brandViolet,
                     ),
                   );
                 },
                 child: const Text(
-                  'Log Out All Sessions',
+                  'Log Out of This Device',
                   style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -324,179 +323,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  // Modal 2: Log out of all devices? (Matches media_1791312890288.png)
-  void _showLogoutAllDevicesBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Center(
-              child: Container(
-                width: 44,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE5E7EB),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Warning icon in soft violet circle
-            Container(
-              width: 56,
-              height: 56,
-              decoration: const BoxDecoration(
-                color: Color(0xFFF3E8FF),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.devices_other_rounded, color: brandViolet, size: 28),
-            ),
-
-            const SizedBox(height: 16),
-
-            const Text(
-              'Log out of all devices?',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: textDark,
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            const Text(
-              'This will remove both registered devices from your account. You will need your password and an OTP to sign in again.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12.5,
-                color: textGray,
-                height: 1.4,
-              ),
-            ),
-
-            const SizedBox(height: 18),
-
-            // Affected Devices Box
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFAFAFA),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFE5E7EB)),
-              ),
-              child: Column(
-                children: [
-                  _buildDeviceRow('iPhone 15 Pro', 'Primary', Icons.phone_iphone_rounded),
-                  const Divider(color: Color(0xFFE5E7EB), height: 16),
-                  _buildDeviceRow('iPad Air', 'Secondary', Icons.tablet_mac_rounded),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 22),
-
-            // Primary action: Log Out Everywhere
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: brandViolet,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                ),
-                onPressed: () {
-                  Navigator.of(ctx).pop();
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                    (route) => false,
-                  );
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('All trusted devices revoked. Session signed out.'),
-                      backgroundColor: brandViolet,
-                    ),
-                  );
-                },
-                child: const Text(
-                  'Log Out Everywhere',
-                  style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            // Secondary action: Cancel
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: TextButton(
-                style: TextButton.styleFrom(
-                  backgroundColor: const Color(0xFFF3F4F6),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                ),
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text(
-                  'Cancel',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: textDark,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDeviceRow(String name, String badge, IconData icon) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 18, color: brandViolet),
-            const SizedBox(width: 8),
-            Text(
-              name,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textDark),
-            ),
-          ],
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF3E8FF),
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: const Color(0xFFDDD6FE), width: 0.8),
-          ),
-          child: Text(
-            badge,
-            style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
-              color: brandViolet,
-            ),
-          ),
-        ),
-      ],
     );
   }
 
@@ -838,40 +664,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                     const SizedBox(height: 18),
 
-                    // Client ID & Registered Email Pills (Double Machined Insets)
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFAF7FF),
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: const Color(0xFFEDE9FE), width: 1.0),
-                            ),
+                    // Registered Email Pill
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFAF7FF),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFEDE9FE), width: 1.0),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.mark_email_read_rounded, size: 16, color: brandViolet),
+                          const SizedBox(width: 10),
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  children: const [
-                                    Icon(Icons.badge_rounded, size: 12, color: brandViolet),
-                                    SizedBox(width: 5),
-                                    Text(
-                                      'AURA CLIENT ID',
-                                      style: TextStyle(
-                                        fontSize: 9.5,
-                                        fontWeight: FontWeight.w700,
-                                        color: brandViolet,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
                                 const Text(
-                                  'AUR-9021-8842',
-                                  overflow: TextOverflow.ellipsis,
+                                  'REGISTERED EMAIL',
                                   style: TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: brandViolet,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  user.email,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.w800,
                                     color: textDark,
@@ -880,49 +703,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ],
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFAF7FF),
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: const Color(0xFFEDE9FE), width: 1.0),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: const [
-                                    Icon(Icons.mark_email_read_rounded, size: 12, color: brandViolet),
-                                    SizedBox(width: 5),
-                                    Text(
-                                      'REGISTERED EMAIL',
-                                      style: TextStyle(
-                                        fontSize: 9.5,
-                                        fontWeight: FontWeight.w700,
-                                        color: brandViolet,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  user.email,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w800,
-                                    color: textDark,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
 
                     const SizedBox(height: 16),
@@ -1042,16 +824,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       );
                     },
                   ),
-                  const Divider(color: Color(0xFFF3F4F6), height: 1),
-                  _buildSwitchTile(
-                    title: 'E-Statement Delivery',
-                    subtitle: 'Monthly auto-email on 1st of month',
-                    icon: Icons.receipt_long_rounded,
-                    value: _statementEmailEnabled,
-                    onChanged: (val) {
-                      setState(() => _statementEmailEnabled = val);
-                    },
-                  ),
                 ],
               ),
 
@@ -1086,16 +858,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const Divider(color: Color(0xFFF3F4F6), height: 1),
                   _buildNavigationTile(
                     title: 'Terms & Privacy Policy',
-                    subtitle: 'BSP Circulars & Data Privacy Act compliance',
+                    subtitle: 'Privacy notice & security terms',
                     icon: Icons.verified_user_rounded,
                     onTap: () {
                       showDialog(
                         context: context,
                         builder: (ctx) => AlertDialog(
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                          title: const Text('Regulatory Governance', style: TextStyle(fontWeight: FontWeight.w800)),
+                          title: const Text('Terms & Privacy Policy', style: TextStyle(fontWeight: FontWeight.w800)),
                           content: const Text(
-                            'Aura Bank operates under BSP circulars 982, 1035, and 1140. Fully compliant with the Republic Act 10173 (Data Privacy Act of 2012). Depositor balances are PDIC insured up to ₱500,000.',
+                            'Aura Bank employs end-to-end encryption, zero-trust device binding, and secure ledger controls to safeguard user account information and privacy.',
                           ),
                           actions: [
                             TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Close')),
@@ -1123,8 +895,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               const SizedBox(height: 20),
 
-              // 6. LOGOUT ACTIONS (Aligned with Deep Royal Aura Violet Palette)
-              // Primary Button: Log Out of This Device
+              // 6. LOGOUT ACTION
+              // Log Out of This Device only (Multi-device logout is on Trusted Devices & Sessions page)
               SizedBox(
                 width: double.infinity,
                 height: 50,
@@ -1145,25 +917,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       letterSpacing: 0.2,
                     ),
                   ),
-                  onPressed: _showLogoutSessionsBottomSheet,
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // Secondary Button: Log Out All Other Sessions / Devices
-              Center(
-                child: TextButton(
-                  onPressed: _showLogoutAllDevicesBottomSheet,
-                  child: const Text(
-                    'Log Out of All Devices',
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF7C3AED),
-                      letterSpacing: 0.2,
-                    ),
-                  ),
+                  onPressed: _showLogoutThisDeviceBottomSheet,
                 ),
               ),
 

@@ -906,7 +906,7 @@ class _StatementScreenState extends State<StatementScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${t.reference} • ${t.displayTime}  ${t.statusDisplay}',
+                  '${t.reference} • ${t.displayTime} • ${t.channelName} Transfer',
                   style: const TextStyle(
                     fontSize: 10.5,
                     color: textMuted,

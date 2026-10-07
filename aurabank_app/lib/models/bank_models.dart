@@ -12,6 +12,7 @@ class BankTransaction {
   final String displayTime;
   final TransactionStatus status;
   final String? remarks;
+  final String? channel;
   final String initial;
   final int avatarColorValue;
 
@@ -25,11 +26,29 @@ class BankTransaction {
     required this.displayTime,
     required this.status,
     this.remarks,
+    this.channel,
     required this.initial,
     required this.avatarColorValue,
   });
 
   bool get isIncoming => type == TransactionType.incoming;
+
+  String get channelName => channel ?? (status == TransactionStatus.inward ? 'Other Bank' : 'Same Bank');
+
+  String get transferSubtitle {
+    if (status == TransactionStatus.failed) {
+      return '$channelName Transfer • Failed';
+    }
+    return '$channelName Transfer • Settled';
+  }
+
+  String get formattedIntegerAmount {
+    final absAmount = amount.abs().toStringAsFixed(0);
+    return absAmount.replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]},',
+    );
+  }
 
   String get formattedAmount {
     final absAmount = amount.abs().toStringAsFixed(2);
@@ -56,13 +75,13 @@ class BankTransaction {
   String get statusDisplay {
     switch (status) {
       case TransactionStatus.settled:
-        return isIncoming ? 'Transfer Received' : 'Transfer Sent';
+        return '$channelName Transfer • Settled';
       case TransactionStatus.completed:
-        return 'COMPLETED';
+        return '$channelName Transfer • Completed';
       case TransactionStatus.inward:
-        return 'Interbank Inward';
+        return 'Other Bank Transfer • Settled';
       case TransactionStatus.failed:
-        return 'Failed';
+        return '$channelName Transfer • Failed';
     }
   }
 
@@ -77,6 +96,7 @@ class BankTransaction {
       displayTime: json['displayTime'] ?? '',
       status: _parseStatus(json['status']),
       remarks: json['remarks'],
+      channel: json['channel'] ?? (json['status'] == 'INWARD' ? 'Other Bank' : 'Same Bank'),
       initial: (json['counterparty'] as String?)?.isNotEmpty == true
           ? (json['counterparty'] as String)[0].toUpperCase()
           : 'A',

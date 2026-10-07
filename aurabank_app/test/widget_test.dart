@@ -13,6 +13,7 @@ import 'package:aurabank_app/screens/profile_screen.dart';
 import 'package:aurabank_app/screens/analytics_screen.dart';
 import 'package:aurabank_app/screens/app_shell.dart';
 import 'package:aurabank_app/screens/login_screen.dart';
+import 'package:aurabank_app/screens/annual_report_screen.dart';
 import 'package:aurabank_app/services/bank_service.dart';
 
 void main() {
@@ -69,15 +70,15 @@ void main() {
 
     // Title and Header
     expect(find.text('Statement of Account'), findsOneWidget);
-    expect(find.text('Oct 01 - Oct 31, 2026'), findsNWidgets(2));
+    expect(find.text('October 1 - 31, 2026'), findsOneWidget);
     expect(find.text('October 2026'), findsWidgets);
-    expect(find.text('E-STATEMENT'), findsOneWidget);
+    expect(find.text('E-Statement'), findsOneWidget);
 
     // Financial totals
-    expect(find.text('TOTAL RECEIVED'), findsOneWidget);
-    expect(find.text('TOTAL SENT'), findsOneWidget);
-    expect(find.text('₱52,000.00'), findsOneWidget);
-    expect(find.text('₱37,750.00'), findsOneWidget);
+    expect(find.text('Total Received'), findsOneWidget);
+    expect(find.text('Total Sent'), findsOneWidget);
+    expect(find.text('PHP 52,000.00'), findsOneWidget);
+    expect(find.text('PHP 22,000.00'), findsOneWidget);
 
     // Filter tabs
     expect(find.text('All'), findsOneWidget);
@@ -85,28 +86,28 @@ void main() {
     expect(find.text('Out'), findsOneWidget);
 
     // Initial 4 items visible
-    expect(find.text('Luis Tan'), findsOneWidget);
-    expect(find.text('Sofia Garcia'), findsOneWidget);
-    expect(find.text('Alex Cruz'), findsOneWidget);
-    expect(find.text('Maria Ramos'), findsOneWidget);
+    expect(find.text('Drake Montero'), findsOneWidget);
+    expect(find.text('Klare Riego'), findsOneWidget);
+    expect(find.text('Jessi Mey'), findsOneWidget);
+    expect(find.text('Angel Lou'), findsOneWidget);
 
     // Tap "In" filter tab
     await tester.tap(find.text('In'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Luis Tan'), findsOneWidget);
-    expect(find.text('Sofia Garcia'), findsOneWidget);
-    expect(find.text('Alex Cruz'), findsNothing);
-    expect(find.text('Maria Ramos'), findsNothing);
+    expect(find.text('Drake Montero'), findsOneWidget);
+    expect(find.text('Klare Riego'), findsOneWidget);
+    expect(find.text('Jessi Mey'), findsNothing);
+    expect(find.text('Angel Lou'), findsNothing);
 
     // Tap "Out" filter tab
     await tester.tap(find.text('Out'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Luis Tan'), findsNothing);
-    expect(find.text('Sofia Garcia'), findsNothing);
-    expect(find.text('Alex Cruz'), findsOneWidget);
-    expect(find.text('Maria Ramos'), findsOneWidget);
+    expect(find.text('Drake Montero'), findsNothing);
+    expect(find.text('Klare Riego'), findsNothing);
+    expect(find.text('Jessi Mey'), findsOneWidget);
+    expect(find.text('Angel Lou'), findsOneWidget);
 
     // Export as PDF button
     expect(find.text('Export as PDF'), findsOneWidget);
@@ -470,5 +471,46 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('nextYearBtn')));
     await tester.pumpAndSettle();
     expect(find.text('2026 (Current)'), findsOneWidget);
+  });
+
+  testWidgets('Annual Report screen allows choosing year and updates transfer ledgers dynamically', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: AnnualReportScreen(),
+      ),
+    );
+
+    // Initial 2026 Annual Report
+    expect(find.text('Aura Annual Report'), findsOneWidget);
+    expect(find.text('2026 Annual Report'), findsWidgets);
+    expect(find.text('Jan 01 - Dec 31, 2026'), findsWidgets);
+    expect(find.text('PHP 560,000.00'), findsOneWidget);
+    expect(find.text('PHP 415,000.00'), findsOneWidget);
+    expect(find.text('Quarter 4 (Oct-Dec 2026)'), findsOneWidget);
+
+    // Tap period dropdown button to open menu
+    await tester.tap(find.text('2026 Annual Report').first);
+    await tester.pumpAndSettle();
+
+    // Verify Option A choices appear in dropdown
+    expect(find.text('2025 Annual Report'), findsOneWidget);
+    expect(find.text('2024 Annual Report'), findsOneWidget);
+
+    // Select 2025 Annual Report
+    await tester.tap(find.text('2025 Annual Report'));
+    await tester.pumpAndSettle();
+
+    // Verify 2025 data loaded dynamically
+    expect(find.text('2025 Annual Report'), findsWidgets);
+    expect(find.text('Jan 01 - Dec 31, 2025'), findsWidgets);
+    expect(find.text('PHP 485,000.00'), findsOneWidget);
+    expect(find.text('PHP 362,000.00'), findsOneWidget);
+    expect(find.text('Quarter 4 (Oct-Dec 2025)'), findsOneWidget);
+    expect(find.text('Fiscal Year 2025 • Certified Transfer Ledger'), findsOneWidget);
   });
 }

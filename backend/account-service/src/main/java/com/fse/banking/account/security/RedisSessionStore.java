@@ -237,4 +237,23 @@ public class RedisSessionStore {
         if (userId == null || deviceId == null) return;
         stringRedisTemplate.opsForHash().delete(USER_DEVICES_PREFIX + userId, deviceId);
     }
+
+    public void deleteSessionsForDevice(String userId, String deviceId) {
+        if (userId == null || deviceId == null) return;
+        try {
+            Set<String> sessionKeys = stringRedisTemplate.keys(SESSION_PREFIX + userId + ":*");
+            if (sessionKeys != null) {
+                for (String key : sessionKeys) {
+                    Object obj = redisTemplate.opsForValue().get(key);
+                    if (obj instanceof SessionMetadata metadata) {
+                        if (deviceId.equals(metadata.getDeviceId())) {
+                            purgeEntireTokenFamily(metadata.getSessionId(), userId);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to delete sessions for device {} of user {}: {}", deviceId, userId, e.getMessage());
+        }
+    }
 }

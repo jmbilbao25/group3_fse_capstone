@@ -346,5 +346,61 @@ void main() {
     // Modal is dismissed
     expect(find.text('Security Push Alert'), findsNothing);
   });
+
+  testWidgets('3rd Device Policy: Primary device receives 3rd device confirmation alert and replaces secondary',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await tester.pumpWidget(const AuraBankApp());
+    await tester.pumpAndSettle();
+
+    final emailField = find.widgetWithText(TextFormField, 'Email Address');
+    final passwordField = find.widgetWithText(TextFormField, 'Password');
+
+    await tester.enterText(emailField, 'diana.admin@bank.com');
+    await tester.enterText(passwordField, 'password123');
+    await tester.pumpAndSettle();
+
+    final signInButton = find.widgetWithText(FilledButton, 'Sign In');
+    await tester.tap(signInButton);
+    await tester.pumpAndSettle();
+
+    // Inject 3rd device alert with replacement info
+    NotificationStreamService().injectAlert(
+      SecurityAlertEvent(
+        title: '3rd Device Login Request',
+        message: 'A 3rd device (Samsung Galaxy Tab) is requesting access. Since AuraBank only allows 2 devices (1 Primary, 1 Secondary), confirming will deregister iPad Air.',
+        deviceName: 'Samsung Galaxy Tab (3rd Device)',
+        deviceId: 'dev-galaxy-third',
+        clientIp: '192.168.1.120',
+        timestamp: DateTime.now().toIso8601String(),
+        targetDeviceId: 'dev-iphone-primary',
+        notificationId: 'NOTIF-3RD-9901',
+        isThirdDevice: true,
+        replacedDeviceId: 'dev-ipad-secondary',
+        replacedDeviceName: 'iPad Air (Secondary)',
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify 3rd device modal UI
+    expect(find.text('3rd Device Login Request'), findsOneWidget);
+    expect(find.text('Samsung Galaxy Tab (3rd Device)'), findsOneWidget);
+    expect(find.text('iPad Air (Secondary)'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Confirm & Replace Device'), findsOneWidget);
+    expect(find.widgetWithText(OutlinedButton, 'Deny Access'), findsOneWidget);
+
+    // Tap Confirm & Replace Device
+    await tester.tap(find.widgetWithText(FilledButton, 'Confirm & Replace Device'));
+    await tester.pumpAndSettle();
+
+    // Modal dismissed
+    expect(find.text('3rd Device Login Request'), findsNothing);
+  });
 }
 

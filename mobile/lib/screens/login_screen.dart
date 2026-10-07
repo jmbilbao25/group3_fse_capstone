@@ -581,7 +581,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                '1st device to log in binds as Primary; 2nd device triggers push notification.',
+                                '1st login is permanently set as Primary. Max 2 devices allowed; 3rd device login prompts Primary to confirm and deregisters the other secondary.',
                                 style: TextStyle(
                                   fontSize: 10,
                                   color: isDark ? Colors.grey[400] : Colors.grey[600],

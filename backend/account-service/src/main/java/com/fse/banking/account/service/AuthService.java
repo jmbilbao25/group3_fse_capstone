@@ -212,11 +212,28 @@ public class AuthService {
             isPrimary = resolvedDeviceId.equals(primaryDeviceId);
         }
 
+        final String effectivePrimaryDeviceId = primaryDeviceId;
         boolean isApproved = isPrimary;
+        boolean isThirdDevice = false;
+        String replacedDeviceId = null;
+        String replacedDeviceName = null;
+
         if (!isPrimary) {
             Optional<DeviceInfoDto> existing = redisSessionStore.getDevice(user.getUserId(), resolvedDeviceId);
             if (existing.isPresent() && existing.get().isApproved()) {
                 isApproved = true;
+            } else {
+                List<DeviceInfoDto> allDevices = redisSessionStore.getUserDevices(user.getUserId());
+                List<DeviceInfoDto> existingSecondaries = allDevices.stream()
+                        .filter(d -> !d.getDeviceId().equals(effectivePrimaryDeviceId) && !d.getDeviceId().equals(resolvedDeviceId))
+                        .toList();
+                if (!existingSecondaries.isEmpty()) {
+                    isThirdDevice = true;
+                    replacedDeviceId = existingSecondaries.get(0).getDeviceId();
+                    replacedDeviceName = existingSecondaries.get(0).getDeviceName();
+                    log.info("User {} attempting login from 3rd device {}. Existing secondary is {} ({})",
+                            user.getUserId(), resolvedDeviceId, replacedDeviceId, replacedDeviceName);
+                }
             }
         }
 
@@ -225,7 +242,7 @@ public class AuthService {
                 .deviceName(resolvedDeviceName)
                 .isPrimary(isPrimary)
                 .isApproved(isApproved)
-                .status(isApproved ? "APPROVED" : "PENDING_APPROVAL")
+                .status(isApproved ? "APPROVED" : (isThirdDevice ? "PENDING_CONFIRMATION" : "PENDING_APPROVAL"))
                 .clientIp(clientIp)
                 .userAgent(userAgent)
                 .registeredAt(Instant.now())
@@ -234,7 +251,16 @@ public class AuthService {
         redisSessionStore.saveUserDevice(user.getUserId(), deviceInfoDto);
 
         if (!isPrimary && !isApproved) {
-            dispatchSecondaryDeviceLoginAlert(user.getUserId(), resolvedDeviceName, clientIp, primaryDeviceId, resolvedDeviceId);
+            dispatchSecondaryDeviceLoginAlert(
+                    user.getUserId(),
+                    resolvedDeviceName,
+                    clientIp,
+                    effectivePrimaryDeviceId,
+                    resolvedDeviceId,
+                    isThirdDevice,
+                    replacedDeviceId,
+                    replacedDeviceName
+            );
         }
 
         String jti = UUID.randomUUID().toString();
@@ -297,11 +323,29 @@ public class AuthService {
     }
 
     public void setPrimaryDevice(String userId, String deviceId) {
+        String existingPrimary = redisSessionStore.getPrimaryDeviceId(userId);
+        if (existingPrimary != null && !existingPrimary.isBlank() && !existingPrimary.equals(deviceId)) {
+            log.warn("Attempt to change immutable primary device for user {} from {} to {} rejected", userId, existingPrimary, deviceId);
+            throw new IllegalArgumentException("Primary device is permanent and cannot be changed once established.");
+        }
         redisSessionStore.setPrimaryDeviceId(userId, deviceId);
-        log.info("Primary device for user {} updated to {}", userId, deviceId);
+        log.info("Primary device for user {} set to {}", userId, deviceId);
     }
 
     public void approveDevice(String userId, String deviceId) {
+        String primaryDeviceId = redisSessionStore.getPrimaryDeviceId(userId);
+        // Enforce 2-device policy (1 Primary, 1 Secondary).
+        // Approving a secondary device automatically deregisters any other secondary devices!
+        List<DeviceInfoDto> allDevices = redisSessionStore.getUserDevices(userId);
+        for (DeviceInfoDto d : allDevices) {
+            if (!d.getDeviceId().equals(primaryDeviceId) && !d.getDeviceId().equals(deviceId)) {
+                log.info("Deregistering replaced secondary device {} for user {} to maintain 2-device policy", d.getDeviceId(), userId);
+                redisSessionStore.deleteUserDevice(userId, d.getDeviceId());
+                redisSessionStore.deleteSessionsForDevice(userId, d.getDeviceId());
+                dispatchDeviceApprovalEvent(userId, d.getDeviceId(), "device-revoked");
+            }
+        }
+
         redisSessionStore.getDevice(userId, deviceId).ifPresent(device -> {
             device.setApproved(true);
             device.setStatus("APPROVED");
@@ -312,7 +356,13 @@ public class AuthService {
     }
 
     public void revokeDevice(String userId, String deviceId) {
+        String primaryDeviceId = redisSessionStore.getPrimaryDeviceId(userId);
+        if (deviceId != null && deviceId.equals(primaryDeviceId)) {
+            log.warn("Attempt to revoke primary device {} for user {} rejected", deviceId, userId);
+            throw new IllegalArgumentException("Cannot deregister the primary device.");
+        }
         redisSessionStore.deleteUserDevice(userId, deviceId);
+        redisSessionStore.deleteSessionsForDevice(userId, deviceId);
         log.info("Device {} for user {} deleted/revoked", deviceId, userId);
         dispatchDeviceApprovalEvent(userId, deviceId, "device-revoked");
     }
@@ -360,7 +410,15 @@ public class AuthService {
         return "Mobile Device";
     }
 
-    private void dispatchSecondaryDeviceLoginAlert(String userId, String newDeviceName, String clientIp, String targetPrimaryDeviceId, String newDeviceId) {
+    private void dispatchSecondaryDeviceLoginAlert(
+            String userId,
+            String newDeviceName,
+            String clientIp,
+            String targetPrimaryDeviceId,
+            String newDeviceId,
+            boolean isThirdDevice,
+            String replacedDeviceId,
+            String replacedDeviceName) {
         try {
             org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
             org.springframework.http.client.SimpleClientHttpRequestFactory factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
@@ -368,22 +426,33 @@ public class AuthService {
             factory.setReadTimeout(3000);
             restTemplate.setRequestFactory(factory);
 
-            java.util.Map<String, Object> payload = java.util.Map.of(
-                    "user_id", userId,
-                    "title", "Security Alert: New Device Login",
-                    "message", "A new device (" + newDeviceName + ") just logged into your account from IP " + clientIp + ".",
-                    "type", "SECURITY_ALERT",
-                    "device_name", newDeviceName,
-                    "device_id", newDeviceId != null ? newDeviceId : "",
-                    "client_ip", clientIp,
-                    "target_device_id", targetPrimaryDeviceId != null ? targetPrimaryDeviceId : "",
-                    "status", "PENDING_APPROVAL"
-            );
+            String title = isThirdDevice
+                    ? "Security Alert: 3rd Device Login Attempt"
+                    : "Security Alert: New Device Login";
+            String message = isThirdDevice
+                    ? "A 3rd device (" + newDeviceName + ") is requesting access. Since AuraBank only allows 2 devices (1 Primary, 1 Secondary), confirming this login will deregister and log out " + (replacedDeviceName != null ? replacedDeviceName : "the other secondary device") + "."
+                    : "A new device (" + newDeviceName + ") just logged into your account from IP " + clientIp + ".";
+
+            java.util.Map<String, Object> payload = new java.util.HashMap<>();
+            payload.put("user_id", userId);
+            payload.put("title", title);
+            payload.put("message", message);
+            payload.put("type", "SECURITY_ALERT");
+            payload.put("device_name", newDeviceName);
+            payload.put("device_id", newDeviceId != null ? newDeviceId : "");
+            payload.put("client_ip", clientIp);
+            payload.put("target_device_id", targetPrimaryDeviceId != null ? targetPrimaryDeviceId : "");
+            payload.put("status", isThirdDevice ? "PENDING_CONFIRMATION" : "PENDING_APPROVAL");
+            payload.put("is_third_device", isThirdDevice);
+            payload.put("replaced_device_id", replacedDeviceId != null ? replacedDeviceId : "");
+            payload.put("replaced_device_name", replacedDeviceName != null ? replacedDeviceName : "");
+
             String targetUrl = notificationServiceUrl + "/api/v1/notifications/security-alert";
             restTemplate.postForEntity(targetUrl, payload, java.util.Map.class);
-            log.info("Dispatched secondary device login alert for user {} (device: {}) to notification-service", userId, newDeviceName);
+            log.info("Dispatched {} device login alert for user {} (device: {}) to notification-service",
+                    isThirdDevice ? "3rd" : "secondary", userId, newDeviceName);
         } catch (Exception e) {
-            log.warn("Could not dispatch secondary device alert to notification-service: {}", e.getMessage());
+            log.warn("Could not dispatch device alert to notification-service: {}", e.getMessage());
         }
     }
 

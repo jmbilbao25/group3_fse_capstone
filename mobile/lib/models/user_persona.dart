@@ -85,6 +85,12 @@ class DevicePreset {
       label: 'Device 2 (Secondary - iPad)',
       platform: 'iPadOS',
     ),
+    DevicePreset(
+      id: 'dev-galaxy-third',
+      name: 'Samsung Galaxy Tab S9',
+      label: 'Device 3 (3rd Device - Galaxy)',
+      platform: 'Android',
+    ),
   ];
 
   static DevicePreset get defaultPreset => presets.first;

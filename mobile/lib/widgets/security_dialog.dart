@@ -48,6 +48,7 @@ class SecurityApprovalDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isThird = alert.isThirdDevice;
 
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -57,20 +58,20 @@ class SecurityApprovalDialog extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.amber.withAlpha(40),
+              color: (isThird ? Colors.orange : Colors.amber).withAlpha(40),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.warning_amber_rounded,
-              color: Colors.amber,
+            child: Icon(
+              isThird ? Icons.swap_horizontal_circle_rounded : Icons.warning_amber_rounded,
+              color: isThird ? Colors.orange : Colors.amber,
               size: 28,
             ),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Text(
-              'Security Push Alert',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              isThird ? '3rd Device Login Request' : 'Security Push Alert',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -79,13 +80,48 @@ class SecurityApprovalDialog extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'A new device just logged into your AuraBank account from another location.',
-            style: TextStyle(
-              fontSize: 13,
-              color: isDark ? Colors.grey[300] : Colors.grey[800],
+          if (isThird) ...[
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.orange.withAlpha(25),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.orange.withAlpha(80)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline_rounded, color: Colors.orange, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Device limit reached (Max 2 devices). Approving this device will automatically deregister your other secondary device.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.orange[200] : Colors.orange[900],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
+            const SizedBox(height: 12),
+            Text(
+              'A 3rd device is requesting to log in. Since only 1 Primary and 1 Secondary device are allowed, confirm if you wish to replace your active secondary device.',
+              style: TextStyle(
+                fontSize: 13,
+                color: isDark ? Colors.grey[300] : Colors.grey[800],
+              ),
+            ),
+          ] else ...[
+            Text(
+              'A new device just logged into your AuraBank account from another location.',
+              style: TextStyle(
+                fontSize: 13,
+                color: isDark ? Colors.grey[300] : Colors.grey[800],
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(14),
@@ -98,18 +134,34 @@ class SecurityApprovalDialog extends StatelessWidget {
             ),
             child: Column(
               children: [
-                _buildDetailRow('Device', alert.deviceName, Icons.phone_android_rounded, isDark),
+                _buildDetailRow(
+                  isThird ? 'Incoming 3rd Device' : 'Device',
+                  alert.deviceName,
+                  Icons.phone_android_rounded,
+                  isDark,
+                ),
                 const SizedBox(height: 8),
                 _buildDetailRow('IP Address', alert.clientIp, Icons.wifi_rounded, isDark),
                 const SizedBox(height: 8),
                 _buildDetailRow('Status', 'Pending Your Approval', Icons.lock_clock_rounded, isDark),
+                if (isThird && alert.replacedDeviceName.isNotEmpty) ...[
+                  const Divider(height: 16),
+                  _buildDetailRow(
+                    'Will Deregister',
+                    alert.replacedDeviceName,
+                    Icons.phonelink_erase_rounded,
+                    isDark,
+                  ),
+                ],
               ],
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Banking transactions are currently locked on this secondary device until you approve it.',
-            style: TextStyle(fontSize: 12, color: Color(0xFFD97706), fontWeight: FontWeight.w500),
+          Text(
+            isThird
+                ? 'Your Primary device is permanently bound. Only the Secondary device slot is replaceable.'
+                : 'Banking transactions are currently locked on this secondary device until you approve it.',
+            style: const TextStyle(fontSize: 12, color: Color(0xFFD97706), fontWeight: FontWeight.w500),
           ),
         ],
       ),
@@ -127,14 +179,16 @@ class SecurityApprovalDialog extends StatelessWidget {
             onHandled?.call();
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Remote session revoked. Access blocked.'),
+                SnackBar(
+                  content: Text(isThird
+                      ? '3rd device request denied. Existing secondary device retained.'
+                      : 'Remote session revoked. Access blocked.'),
                   backgroundColor: Colors.redAccent,
                 ),
               );
             }
           },
-          child: const Text('Revoke Access'),
+          child: Text(isThird ? 'Deny Access' : 'Revoke Access'),
         ),
         FilledButton.icon(
           icon: const Icon(Icons.check_circle_rounded, size: 16),
@@ -149,13 +203,15 @@ class SecurityApprovalDialog extends StatelessWidget {
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Approved! ${alert.deviceName} authorized for transactions.'),
+                  content: Text(isThird
+                      ? 'Confirmed! ${alert.deviceName} approved; other secondary device was deregistered.'
+                      : 'Approved! ${alert.deviceName} authorized for transactions.'),
                   backgroundColor: const Color(0xFF107C41),
                 ),
               );
             }
           },
-          label: const Text('Approve Access'),
+          label: Text(isThird ? 'Confirm & Replace Device' : 'Approve Access'),
         ),
       ],
     );

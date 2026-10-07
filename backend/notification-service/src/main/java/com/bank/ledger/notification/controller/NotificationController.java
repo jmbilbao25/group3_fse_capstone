@@ -64,6 +64,17 @@ public class NotificationController {
                 ? request.get("status").toString()
                 : "PENDING_APPROVAL";
 
+        Object isThirdObj = request != null ? request.get("is_third_device") : null;
+        boolean isThirdDevice = Boolean.TRUE.equals(isThirdObj) || "true".equalsIgnoreCase(String.valueOf(isThirdObj));
+
+        String replacedDeviceId = request != null && request.get("replaced_device_id") != null
+                ? request.get("replaced_device_id").toString()
+                : "";
+
+        String replacedDeviceName = request != null && request.get("replaced_device_name") != null
+                ? request.get("replaced_device_name").toString()
+                : "";
+
         String notificationId = "NOTIF-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
         // 1. Persist notification to database if repository is available
@@ -94,6 +105,9 @@ public class NotificationController {
         pushPayload.put("client_ip", clientIp);
         pushPayload.put("target_device_id", targetDeviceId);
         pushPayload.put("status", status);
+        pushPayload.put("is_third_device", isThirdDevice);
+        pushPayload.put("replaced_device_id", replacedDeviceId);
+        pushPayload.put("replaced_device_name", replacedDeviceName);
         pushPayload.put("timestamp", Instant.now().toString());
 
         // 3. Broadcast real-time SSE event to connected primary devices

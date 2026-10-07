@@ -212,7 +212,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                   const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF3A4CD6).withAlpha(15),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFF3A4CD6).withAlpha(40)),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.shield_outlined, size: 18, color: Color(0xFF3A4CD6)),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Policy: Max 2 devices (1 Primary, 1 Secondary). 1st login is permanently Primary. A 3rd device prompts confirmation and deregisters the old secondary.',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   if (_isLoadingDevices)
                     const Center(
                       child: Padding(
@@ -241,10 +262,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                         title: Text('${d['device_name'] ?? 'Device'} ${isCurrent ? "(This Device)" : ""}'),
                         subtitle: Text(
-                          'ID: $devId • ${isPrim ? "Primary Device" : (isAppr ? "Secondary (Approved)" : "Secondary (Pending Approval)")}',
+                          'ID: $devId • ${isPrim ? "Primary Device (Permanent)" : (isAppr ? "Secondary (Approved)" : "Secondary (Pending Confirmation)")}',
                         ),
                         trailing: isPrim
                             ? const Chip(
+                                avatar: Icon(Icons.lock_rounded, size: 12, color: Colors.white),
                                 label: Text('PRIMARY', style: TextStyle(fontSize: 10, color: Colors.white)),
                                 backgroundColor: Color(0xFF107C41),
                               )
@@ -268,34 +290,69 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         child: const Text('Approve', style: TextStyle(fontSize: 11, color: Color(0xFF107C41))),
                                       ),
                                     ),
-                                  OutlinedButton(
-                                    onPressed: () async {
-                                      final ok = await AuthApiService().setPrimaryDevice(deviceId: devId);
-                                      if (ok) {
-                                        await _loadDevices();
-                                        setSheetState(() {});
-                                        setState(() {});
-                                      }
-                                    },
-                                    child: const Text('Make Primary', style: TextStyle(fontSize: 11)),
-                                  ),
+                                  if (_isPrimary && !isCurrent)
+                                    OutlinedButton(
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: Colors.redAccent,
+                                        side: const BorderSide(color: Colors.redAccent),
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                                      ),
+                                      onPressed: () async {
+                                        final confirmed = await showDialog<bool>(
+                                          context: context,
+                                          builder: (c) => AlertDialog(
+                                            title: const Text('Deregister Device?'),
+                                            content: Text('Are you sure you want to deregister ${d['device_name'] ?? "this device"}? It will lose access.'),
+                                            actions: [
+                                              TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+                                              FilledButton(
+                                                style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
+                                                onPressed: () => Navigator.pop(c, true),
+                                                child: const Text('Deregister'),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                        if (confirmed == true) {
+                                          await AuthApiService().revokeDevice(deviceId: devId);
+                                          await _loadDevices();
+                                          setSheetState(() {});
+                                          setState(() {});
+                                        }
+                                      },
+                                      child: const Text('Deregister', style: TextStyle(fontSize: 11)),
+                                    ),
                                 ],
                               ),
                       );
                     }),
                   if (_isPrimary)
-                    Center(
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: TextButton.icon(
-                          icon: const Icon(Icons.notification_important_rounded, size: 16),
-                          label: const Text('Simulate Secondary Alert (Test)', style: TextStyle(fontSize: 12)),
-                          onPressed: () {
-                            Navigator.of(ctx).pop();
-                            _triggerTestAlert();
-                          },
+                    Column(
+                      children: [
+                        const Divider(),
+                        Wrap(
+                          spacing: 8,
+                          alignment: WrapAlignment.center,
+                          children: [
+                            TextButton.icon(
+                              icon: const Icon(Icons.notification_important_rounded, size: 16),
+                              label: const Text('Simulate 2nd Device Alert', style: TextStyle(fontSize: 11)),
+                              onPressed: () {
+                                Navigator.of(ctx).pop();
+                                _triggerTestAlert();
+                              },
+                            ),
+                            TextButton.icon(
+                              icon: const Icon(Icons.swap_horizontal_circle_outlined, size: 16, color: Colors.orange),
+                              label: const Text('Simulate 3rd Device Alert', style: TextStyle(fontSize: 11, color: Colors.orange)),
+                              onPressed: () {
+                                Navigator.of(ctx).pop();
+                                _triggerThirdDeviceAlert();
+                              },
+                            ),
+                          ],
                         ),
-                      ),
+                      ],
                     ),
                   const SizedBox(height: 12),
                 ],
@@ -317,6 +374,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
         timestamp: DateTime.now().toIso8601String(),
         targetDeviceId: _currentDeviceId,
         notificationId: 'TEST-${DateTime.now().millisecondsSinceEpoch}',
+      ),
+    );
+  }
+
+  void _triggerThirdDeviceAlert() {
+    NotificationStreamService().injectAlert(
+      SecurityAlertEvent(
+        title: '3rd Device Login Request',
+        message: 'A 3rd device (Samsung Galaxy Tab) is requesting access. Since AuraBank only allows 2 devices (1 Primary, 1 Secondary), confirming will deregister iPad Air.',
+        deviceName: 'Samsung Galaxy Tab (3rd Device)',
+        deviceId: 'dev-galaxy-third',
+        clientIp: '192.168.1.120',
+        timestamp: DateTime.now().toIso8601String(),
+        targetDeviceId: _currentDeviceId,
+        notificationId: 'TEST-3RD-${DateTime.now().millisecondsSinceEpoch}',
+        isThirdDevice: true,
+        replacedDeviceId: 'dev-ipad-secondary',
+        replacedDeviceName: 'iPad Air (Secondary)',
       ),
     );
   }

@@ -33,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -347,9 +348,46 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("Should set primary device in RedisSessionStore")
+    @DisplayName("Should set primary device in RedisSessionStore when none is set")
     void testSetPrimaryDevice() {
+        when(redisSessionStore.getPrimaryDeviceId("USR-100001")).thenReturn(null);
         authService.setPrimaryDevice("USR-100001", "dev-2");
         verify(redisSessionStore).setPrimaryDeviceId("USR-100001", "dev-2");
+    }
+
+    @Test
+    @DisplayName("Should throw exception when attempting to reassign primary device")
+    void testSetPrimaryDeviceThrowsWhenAlreadyBound() {
+        when(redisSessionStore.getPrimaryDeviceId("USR-100001")).thenReturn("dev-1");
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            authService.setPrimaryDevice("USR-100001", "dev-2");
+        });
+    }
+
+    @Test
+    @DisplayName("Should deregister existing secondary device when approving a 3rd device")
+    void testApproveThirdDeviceDeregistersExistingSecondary() {
+        when(redisSessionStore.getPrimaryDeviceId("USR-100001")).thenReturn("dev-primary");
+        DeviceInfoDto devPrimary = DeviceInfoDto.builder().deviceId("dev-primary").deviceName("iPhone").isPrimary(true).build();
+        DeviceInfoDto devSecOld = DeviceInfoDto.builder().deviceId("dev-sec-old").deviceName("Old iPad").isPrimary(false).build();
+        DeviceInfoDto devSecNew = DeviceInfoDto.builder().deviceId("dev-sec-new").deviceName("New Galaxy").isPrimary(false).build();
+
+        when(redisSessionStore.getUserDevices("USR-100001")).thenReturn(List.of(devPrimary, devSecOld, devSecNew));
+        when(redisSessionStore.getDevice("USR-100001", "dev-sec-new")).thenReturn(Optional.of(devSecNew));
+
+        authService.approveDevice("USR-100001", "dev-sec-new");
+
+        verify(redisSessionStore).deleteUserDevice("USR-100001", "dev-sec-old");
+        verify(redisSessionStore).deleteSessionsForDevice("USR-100001", "dev-sec-old");
+        verify(redisSessionStore).saveUserDevice(eq("USR-100001"), argThat(DeviceInfoDto::isApproved));
+    }
+
+    @Test
+    @DisplayName("Should throw exception when attempting to revoke primary device")
+    void testRevokePrimaryDeviceThrowsException() {
+        when(redisSessionStore.getPrimaryDeviceId("USR-100001")).thenReturn("dev-primary");
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            authService.revokeDevice("USR-100001", "dev-primary");
+        });
     }
 }

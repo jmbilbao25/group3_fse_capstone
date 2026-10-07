@@ -158,8 +158,12 @@ public class AuthController {
         if (userId == null || deviceId == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "user_id and device_id are required"));
         }
-        authService.setPrimaryDevice(userId, deviceId);
-        return ResponseEntity.ok(Map.of("status", "SUCCESS", "primary_device_id", deviceId));
+        try {
+            authService.setPrimaryDevice(userId, deviceId);
+            return ResponseEntity.ok(Map.of("status", "SUCCESS", "primary_device_id", deviceId));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("status", "ERROR", "error", e.getMessage()));
+        }
     }
 
     @PostMapping("/devices/approve")
@@ -196,8 +200,12 @@ public class AuthController {
         if (userId == null || deviceId == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "user_id and device_id are required"));
         }
-        authService.revokeDevice(userId, deviceId);
-        return ResponseEntity.ok(Map.of("status", "SUCCESS", "revoked_device_id", deviceId));
+        try {
+            authService.revokeDevice(userId, deviceId);
+            return ResponseEntity.ok(Map.of("status", "SUCCESS", "revoked_device_id", deviceId));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("status", "ERROR", "error", e.getMessage()));
+        }
     }
 
     private ResponseCookie createRefreshTokenCookie(String value, Duration maxAge) {

@@ -16,6 +16,9 @@ class SecurityAlertEvent {
   final String targetDeviceId;
   final String notificationId;
   final String status;
+  final bool isThirdDevice;
+  final String replacedDeviceId;
+  final String replacedDeviceName;
 
   SecurityAlertEvent({
     required this.title,
@@ -27,6 +30,9 @@ class SecurityAlertEvent {
     required this.targetDeviceId,
     required this.notificationId,
     this.status = 'PENDING_APPROVAL',
+    this.isThirdDevice = false,
+    this.replacedDeviceId = '',
+    this.replacedDeviceName = '',
   });
 
   factory SecurityAlertEvent.fromJson(Map<String, dynamic> json) {
@@ -40,6 +46,10 @@ class SecurityAlertEvent {
       targetDeviceId: json['target_device_id'] as String? ?? '',
       notificationId: json['notification_id'] as String? ?? '',
       status: json['status'] as String? ?? 'PENDING_APPROVAL',
+      isThirdDevice: json['is_third_device'] == true ||
+          (json['message']?.toString().toLowerCase().contains('3rd device') == true),
+      replacedDeviceId: json['replaced_device_id'] as String? ?? '',
+      replacedDeviceName: json['replaced_device_name'] as String? ?? '',
     );
   }
 }
@@ -274,9 +284,9 @@ class NotificationStreamService {
         if (context != null) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Access Revoked: Your session was terminated by your primary device.'),
+              content: Text('⚠️ Device Deregistered: Access revoked because another device was authorized (2 devices maximum).'),
               backgroundColor: Colors.redAccent,
-              duration: Duration(seconds: 4),
+              duration: Duration(seconds: 5),
             ),
           );
         }

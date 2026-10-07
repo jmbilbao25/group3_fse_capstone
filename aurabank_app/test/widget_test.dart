@@ -13,6 +13,7 @@ import 'package:aurabank_app/screens/profile_screen.dart';
 import 'package:aurabank_app/screens/analytics_screen.dart';
 import 'package:aurabank_app/screens/app_shell.dart';
 import 'package:aurabank_app/screens/login_screen.dart';
+import 'package:aurabank_app/screens/annual_report_screen.dart';
 import 'package:aurabank_app/services/bank_service.dart';
 
 void main() {
@@ -470,5 +471,46 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('nextYearBtn')));
     await tester.pumpAndSettle();
     expect(find.text('2026 (Current)'), findsOneWidget);
+  });
+
+  testWidgets('Annual Report screen allows choosing year and updates transfer ledgers dynamically', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: AnnualReportScreen(),
+      ),
+    );
+
+    // Initial 2026 Annual Report
+    expect(find.text('Aura Annual Report'), findsOneWidget);
+    expect(find.text('2026 Annual Report'), findsWidgets);
+    expect(find.text('Jan 01 - Dec 31, 2026'), findsWidgets);
+    expect(find.text('PHP 560,000.00'), findsOneWidget);
+    expect(find.text('PHP 415,000.00'), findsOneWidget);
+    expect(find.text('Quarter 4 (Oct-Dec 2026)'), findsOneWidget);
+
+    // Tap period dropdown button to open menu
+    await tester.tap(find.text('2026 Annual Report').first);
+    await tester.pumpAndSettle();
+
+    // Verify Option A choices appear in dropdown
+    expect(find.text('2025 Annual Report'), findsOneWidget);
+    expect(find.text('2024 Annual Report'), findsOneWidget);
+
+    // Select 2025 Annual Report
+    await tester.tap(find.text('2025 Annual Report'));
+    await tester.pumpAndSettle();
+
+    // Verify 2025 data loaded dynamically
+    expect(find.text('2025 Annual Report'), findsWidgets);
+    expect(find.text('Jan 01 - Dec 31, 2025'), findsWidgets);
+    expect(find.text('PHP 485,000.00'), findsOneWidget);
+    expect(find.text('PHP 362,000.00'), findsOneWidget);
+    expect(find.text('Quarter 4 (Oct-Dec 2025)'), findsOneWidget);
+    expect(find.text('Fiscal Year 2025 • Certified Transfer Ledger'), findsOneWidget);
   });
 }

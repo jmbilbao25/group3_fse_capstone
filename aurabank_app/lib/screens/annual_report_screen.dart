@@ -33,6 +33,24 @@ class AnnualTxItem {
   });
 }
 
+class YearReportData {
+  final String yearLabel;
+  final String year;
+  final String dateRange;
+  final double totalReceived;
+  final double totalSent;
+  final List<AnnualTxItem> items;
+
+  const YearReportData({
+    required this.yearLabel,
+    required this.year,
+    required this.dateRange,
+    required this.totalReceived,
+    required this.totalSent,
+    required this.items,
+  });
+}
+
 class AnnualReportScreen extends StatefulWidget {
   final VoidCallback? onBack;
 
@@ -44,7 +62,7 @@ class AnnualReportScreen extends StatefulWidget {
 
 class _AnnualReportScreenState extends State<AnnualReportScreen> {
   final BankService _bankService = BankService();
-  String _selectedPeriod = 'Annual Report (2026)';
+  String _selectedPeriod = '2026 Annual Report';
   bool _isPeriodDropdownOpen = false;
   String _filterTab = 'All'; // 'All', 'In', 'Out'
   final TextEditingController _searchController = TextEditingController();
@@ -62,12 +80,15 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
   static const Color bannerBg = Color(0xFFF5F3FF);
 
   final List<String> _availablePeriods = [
-    'Annual Report (2026)',
-    'FY 2025 Annual Dossier',
-    'FY 2024 Historical Ledger',
+    '2026 Annual Report',
+    '2025 Annual Report',
+    '2024 Annual Report',
   ];
 
-  late final List<AnnualTxItem> _allYearlyItems;
+  late final Map<String, YearReportData> _annualReports;
+
+  YearReportData get _currentReport =>
+      _annualReports[_selectedPeriod] ?? _annualReports['2026 Annual Report']!;
 
   @override
   void initState() {
@@ -78,67 +99,191 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
       });
     });
 
-    _allYearlyItems = [
-      // Quarter 4 (Oct-Dec 2026)
-      const AnnualTxItem(
-        id: 'ann_q4_in',
-        title: 'Quarter 4 (Oct-Dec 2026)',
-        subtitle: 'Q4 2026',
-        quarter: 'Quarter 4 (Oct-Dec 2026)',
-        amount: 26000.0,
-        isIncoming: true,
-        counterparty: 'Temenos Core Clearing',
-        reference: 'Q4-DISB-9901',
-        initial: 'IN',
-        avatarBg: Color(0xFF059669),
-        status: '53 Transfer Settled',
+    _annualReports = {
+      '2026 Annual Report': const YearReportData(
+        yearLabel: '2026 Annual Report',
+        year: '2026',
+        dateRange: 'Jan 01 - Dec 31, 2026',
+        totalReceived: 560000.0,
+        totalSent: 415000.0,
+        items: [
+          AnnualTxItem(
+            id: 'ann_q4_2026',
+            title: 'Quarter 4 (Oct-Dec 2026)',
+            subtitle: 'Q4 2026',
+            quarter: 'Quarter 4 (Oct-Dec 2026)',
+            amount: 26000.0,
+            isIncoming: true,
+            counterparty: 'Temenos Core Clearing',
+            reference: 'Q4-DISB-9901',
+            initial: 'IN',
+            avatarBg: Color(0xFF059669),
+            status: '53 Transfer Settled',
+          ),
+          AnnualTxItem(
+            id: 'ann_q3_2026',
+            title: 'Quarter 3 (July-Sept 2026)',
+            subtitle: '05 Oct 2026 - 10:00 AM',
+            quarter: 'Quarter 3 (July-Sept 2026)',
+            amount: 56700.0,
+            isIncoming: true,
+            counterparty: 'Aura Capital Equity',
+            reference: 'DIV-2026-Q3',
+            initial: 'IN',
+            avatarBg: Color(0xFF059669),
+            status: '63 Transfer Settled',
+          ),
+          AnnualTxItem(
+            id: 'ann_q2_2026',
+            title: 'Quarter 2 (April-June 2026)',
+            subtitle: 'Q2 2026',
+            quarter: 'Quarter 2 (April-June 2026)',
+            amount: 90000.0,
+            isIncoming: true,
+            counterparty: 'BDO Unibank Remittance',
+            reference: 'CLR-2026-Q2',
+            initial: 'IN',
+            avatarBg: Color(0xFF059669),
+            status: '78 Transfer Settled',
+          ),
+          AnnualTxItem(
+            id: 'ann_q1_2026',
+            title: 'Quarter 1 (Jan-March 2026)',
+            subtitle: 'Q1 2026',
+            quarter: 'Quarter 1 (Jan-March 2026)',
+            amount: 50000.0,
+            isIncoming: true,
+            counterparty: 'Central Treasury Ledger',
+            reference: 'Q1-EARN-2026',
+            initial: 'IN',
+            avatarBg: Color(0xFF059669),
+            status: '42 Transfer Settled',
+          ),
+        ],
       ),
-
-      // Quarter 3 (July-Sept 2026)
-      const AnnualTxItem(
-        id: 'ann_q3_in',
-        title: 'Quarter 3 (July-Sept 2026)',
-        subtitle: '05 Oct 2026 - 10:00 AM',
-        quarter: 'Quarter 3 (July-Sept 2026)',
-        amount: 56700.0,
-        isIncoming: true,
-        counterparty: 'Aura Capital Equity',
-        reference: 'DIV-2026-Q3',
-        initial: 'IN',
-        avatarBg: Color(0xFF059669),
-        status: '63 Transfer Settled',
+      '2025 Annual Report': const YearReportData(
+        yearLabel: '2025 Annual Report',
+        year: '2025',
+        dateRange: 'Jan 01 - Dec 31, 2025',
+        totalReceived: 485000.0,
+        totalSent: 362000.0,
+        items: [
+          AnnualTxItem(
+            id: 'ann_q4_2025',
+            title: 'Quarter 4 (Oct-Dec 2025)',
+            subtitle: 'Q4 2025',
+            quarter: 'Quarter 4 (Oct-Dec 2025)',
+            amount: 48500.0,
+            isIncoming: true,
+            counterparty: 'InstaPay Clearing Network',
+            reference: 'Q4-SETL-2025',
+            initial: 'IN',
+            avatarBg: Color(0xFF059669),
+            status: '61 Transfer Settled',
+          ),
+          AnnualTxItem(
+            id: 'ann_q3_2025',
+            title: 'Quarter 3 (July-Sept 2025)',
+            subtitle: 'Q3 2025',
+            quarter: 'Quarter 3 (July-Sept 2025)',
+            amount: 39200.0,
+            isIncoming: true,
+            counterparty: 'PESONet Interbank Hub',
+            reference: 'Q3-DISB-2025',
+            initial: 'IN',
+            avatarBg: Color(0xFF059669),
+            status: '54 Transfer Settled',
+          ),
+          AnnualTxItem(
+            id: 'ann_q2_2025',
+            title: 'Quarter 2 (April-June 2025)',
+            subtitle: 'Q2 2025',
+            quarter: 'Quarter 2 (April-June 2025)',
+            amount: 74000.0,
+            isIncoming: true,
+            counterparty: 'BDO Unibank Remittance',
+            reference: 'Q2-CLR-2025',
+            initial: 'IN',
+            avatarBg: Color(0xFF059669),
+            status: '82 Transfer Settled',
+          ),
+          AnnualTxItem(
+            id: 'ann_q1_2025',
+            title: 'Quarter 1 (Jan-March 2025)',
+            subtitle: 'Q1 2025',
+            quarter: 'Quarter 1 (Jan-March 2025)',
+            amount: 46000.0,
+            isIncoming: true,
+            counterparty: 'Central Treasury Ledger',
+            reference: 'Q1-EARN-2025',
+            initial: 'IN',
+            avatarBg: Color(0xFF059669),
+            status: '49 Transfer Settled',
+          ),
+        ],
       ),
-
-      // Quarter 2 (April-June 2026)
-      const AnnualTxItem(
-        id: 'ann_q2_in',
-        title: 'Quarter 2 (April-June 2026)',
-        subtitle: 'Q2 2026',
-        quarter: 'Quarter 2 (April-June 2026)',
-        amount: 90000.0,
-        isIncoming: true,
-        counterparty: 'BDO Unibank Remittance',
-        reference: 'CLR-2026-Q2',
-        initial: 'IN',
-        avatarBg: Color(0xFF059669),
-        status: '78 Transfer Settled',
+      '2024 Annual Report': const YearReportData(
+        yearLabel: '2024 Annual Report',
+        year: '2024',
+        dateRange: 'Jan 01 - Dec 31, 2024',
+        totalReceived: 390000.0,
+        totalSent: 295000.0,
+        items: [
+          AnnualTxItem(
+            id: 'ann_q4_2024',
+            title: 'Quarter 4 (Oct-Dec 2024)',
+            subtitle: 'Q4 2024',
+            quarter: 'Quarter 4 (Oct-Dec 2024)',
+            amount: 34000.0,
+            isIncoming: true,
+            counterparty: 'UnionBank Direct Clearing',
+            reference: 'Q4-SETL-2024',
+            initial: 'IN',
+            avatarBg: Color(0xFF059669),
+            status: '45 Transfer Settled',
+          ),
+          AnnualTxItem(
+            id: 'ann_q3_2024',
+            title: 'Quarter 3 (July-Sept 2024)',
+            subtitle: 'Q3 2024',
+            quarter: 'Quarter 3 (July-Sept 2024)',
+            amount: 51500.0,
+            isIncoming: true,
+            counterparty: 'PESONet Interbank Hub',
+            reference: 'Q3-DISB-2024',
+            initial: 'IN',
+            avatarBg: Color(0xFF059669),
+            status: '58 Transfer Settled',
+          ),
+          AnnualTxItem(
+            id: 'ann_q2_2024',
+            title: 'Quarter 2 (April-June 2024)',
+            subtitle: 'Q2 2024',
+            quarter: 'Quarter 2 (April-June 2024)',
+            amount: 58000.0,
+            isIncoming: true,
+            counterparty: 'Metrobank Remittance',
+            reference: 'Q2-CLR-2024',
+            initial: 'IN',
+            avatarBg: Color(0xFF059669),
+            status: '66 Transfer Settled',
+          ),
+          AnnualTxItem(
+            id: 'ann_q1_2024',
+            title: 'Quarter 1 (Jan-March 2024)',
+            subtitle: 'Q1 2024',
+            quarter: 'Quarter 1 (Jan-March 2024)',
+            amount: 38000.0,
+            isIncoming: true,
+            counterparty: 'Central Treasury Ledger',
+            reference: 'Q1-EARN-2024',
+            initial: 'IN',
+            avatarBg: Color(0xFF059669),
+            status: '39 Transfer Settled',
+          ),
+        ],
       ),
-
-      // Quarter 1 (Jan-March 2026)
-      const AnnualTxItem(
-        id: 'ann_q1_in',
-        title: 'Quarter 1 (Jan-March 2026)',
-        subtitle: 'Q1 2026',
-        quarter: 'Quarter 1 (Jan-March 2026)',
-        amount: 50000.0,
-        isIncoming: true,
-        counterparty: 'Central Treasury Ledger',
-        reference: 'Q1-EARN-2026',
-        initial: 'IN',
-        avatarBg: Color(0xFF059669),
-        status: '42 Transfer Settled',
-      ),
-    ];
+    };
   }
 
   @override
@@ -147,13 +292,16 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
     super.dispose();
   }
 
-  double get _totalReceivedYear => 560000.0;
-  double get _totalSentYear => 415000.0;
+  double get _totalReceivedYear => _currentReport.totalReceived;
+  double get _totalSentYear => _currentReport.totalSent;
 
   @override
   Widget build(BuildContext context) {
+    final currentData = _currentReport;
+    final allItems = currentData.items;
+
     // Filter items based on Tab
-    var filteredList = _allYearlyItems.where((t) {
+    var filteredList = allItems.where((t) {
       if (_filterTab == 'In') return t.isIncoming;
       if (_filterTab == 'Out') return !t.isIncoming;
       return true;
@@ -170,9 +318,9 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
       }).toList();
     }
 
-    final totalCount = _allYearlyItems.length;
-    final inCount = _allYearlyItems.where((t) => t.isIncoming).length;
-    final outCount = _allYearlyItems.where((t) => !t.isIncoming).length;
+    final totalCount = allItems.length;
+    final inCount = allItems.where((t) => t.isIncoming).length;
+    final outCount = allItems.where((t) => !t.isIncoming).length;
     final filteredCount = filteredList.length;
 
     return Scaffold(
@@ -221,15 +369,19 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Text(
-                              'Transfer Record ($filteredCount)',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: textDark,
-                                letterSpacing: -0.3,
+                            Expanded(
+                              child: Text(
+                                'Transfer Record ($filteredCount)',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: textDark,
+                                  letterSpacing: -0.3,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                            const SizedBox(width: 8),
                             _buildFilterTabs(totalCount, inCount, outCount),
                           ],
                         ),
@@ -252,16 +404,16 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
                         // System Generated Audit Stamp
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: const [
+                          children: [
                             Expanded(
                               child: Text(
-                                'Fiscal Year 2026 • Certified Audit Dossier',
-                                style: TextStyle(fontSize: 10, color: textMuted),
+                                'Fiscal Year ${_currentReport.year} • Certified Transfer Ledger',
+                                style: const TextStyle(fontSize: 10, color: textMuted),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            SizedBox(width: 8),
-                            Text(
+                            const SizedBox(width: 8),
+                            const Text(
                               'BSP REGULATED',
                               style: TextStyle(fontSize: 10, color: textMuted),
                             ),
@@ -317,27 +469,32 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
           ),
 
           // Center Title & Date Subtitle
-          Column(
-            children: const [
-              Text(
-                'Aura Annual Report',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                  color: textDark,
-                  letterSpacing: -0.3,
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Aura Annual Report',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: textDark,
+                    letterSpacing: -0.3,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              SizedBox(height: 2),
-              Text(
-                'Jan 01 - Dec 31, 2026',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: textMuted,
+                const SizedBox(height: 2),
+                Text(
+                  _currentReport.dateRange,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: textMuted,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
 
           // Circular Plus Button
@@ -502,20 +659,26 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: const [
-                    Row(
-                      children: [
-                        Icon(Icons.calendar_month_rounded, size: 16, color: brandAccent),
-                        SizedBox(width: 10),
-                        Text(
-                          'Switch to Monthly Statement (October 2026)',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w800,
-                            color: brandAccent,
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Icon(Icons.calendar_month_rounded, size: 16, color: brandAccent),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Switch to Monthly Statement (October 2026)',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w800,
+                                color: brandAccent,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
+                    SizedBox(width: 6),
                     Icon(Icons.arrow_forward_ios_rounded, size: 12, color: brandAccent),
                   ],
                 ),
@@ -684,8 +847,8 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
+                    children: [
+                      const Text(
                         'Statement Period',
                         style: TextStyle(
                           fontSize: 9.5,
@@ -693,17 +856,17 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
                           color: textMuted,
                         ),
                       ),
-                      SizedBox(height: 3),
+                      const SizedBox(height: 3),
                       Text(
-                        'Jan 01 - Dec 31, 2026',
-                        style: TextStyle(
+                        _currentReport.dateRange,
+                        style: const TextStyle(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w800,
                           color: textDark,
                         ),
                       ),
-                      SizedBox(height: 2),
-                      Text(
+                      const SizedBox(height: 2),
+                      const Text(
                         'Currency: PHP',
                         style: TextStyle(
                           fontSize: 9.5,
@@ -1058,21 +1221,22 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
         onPressed: () {
+          final currentData = _currentReport;
           final annualStatement = MonthlyStatement(
-            monthKey: '2026-ANNUAL',
-            title: 'Annual Report (2026)',
-            dateRange: 'Jan 01 - Dec 31, 2026',
-            totalReceived: _totalReceivedYear,
-            totalSent: _totalSentYear,
+            monthKey: '${currentData.year}-ANNUAL',
+            title: currentData.yearLabel,
+            dateRange: currentData.dateRange,
+            totalReceived: currentData.totalReceived,
+            totalSent: currentData.totalSent,
             transactions: [
-              for (final item in _allYearlyItems)
+              for (final item in currentData.items)
                 BankTransaction(
                   id: item.id,
                   reference: item.reference,
                   counterparty: item.counterparty,
                   type: item.isIncoming ? TransactionType.incoming : TransactionType.outgoing,
                   amount: item.amount,
-                  timestamp: DateTime(2026, 12, 31),
+                  timestamp: DateTime(int.tryParse(currentData.year) ?? 2026, 12, 31),
                   displayTime: item.subtitle,
                   status: TransactionStatus.settled,
                   initial: item.initial,

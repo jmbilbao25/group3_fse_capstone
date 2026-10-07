@@ -3,6 +3,7 @@ import '../models/bank_models.dart';
 import '../services/bank_service.dart';
 import '../theme/aura_theme.dart';
 import 'analytics_screen.dart';
+import 'cards_screen.dart';
 import 'scan_screen.dart';
 import 'send_money_screen.dart';
 import 'statement_screen.dart';
@@ -338,8 +339,17 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
+            _buildActionItem(
+              icon: Icons.swap_horiz_rounded,
+              label: 'Transfer',
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const SendMoneyScreen()),
+                );
+              },
+            ),
             _buildActionItem(
               icon: Icons.qr_code_scanner_rounded,
               label: 'Scan',
@@ -354,12 +364,16 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
             _buildActionItem(
-              icon: Icons.swap_horiz_rounded,
-              label: 'Transfer',
+              icon: Icons.credit_card_rounded,
+              label: 'Cards',
               onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const SendMoneyScreen()),
-                );
+                if (widget.onNavigateTab != null) {
+                  widget.onNavigateTab!(1);
+                } else {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const CardsScreen()),
+                  );
+                }
               },
             ),
             _buildActionItem(
@@ -433,37 +447,37 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         children: [
           Container(
-            width: 64,
-            height: 64,
+            width: 58,
+            height: 58,
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(color: cardBorder, width: 1.2),
               boxShadow: [
                 BoxShadow(
                   color: const Color(0xFF1E1B4B).withValues(alpha: 0.04),
-                  blurRadius: 10,
+                  blurRadius: 8,
                   offset: const Offset(0, 3),
                 ),
               ],
             ),
             alignment: Alignment.center,
             child: Container(
-              width: 44,
-              height: 44,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
                 color: const Color(0xFFF5F3FF),
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(12),
               ),
               alignment: Alignment.center,
-              child: Icon(icon, color: brandViolet, size: 24),
+              child: Icon(icon, color: brandViolet, size: 22),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 7),
           Text(
             label,
             style: const TextStyle(
-              fontSize: 12.5,
+              fontSize: 12,
               fontWeight: FontWeight.w700,
               color: textDark,
               letterSpacing: -0.1,

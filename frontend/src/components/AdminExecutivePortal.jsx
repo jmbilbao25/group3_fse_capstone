@@ -157,7 +157,10 @@ const ADMIN_ROSTER = [
     badge: 'Fraud Ops Analyst',
     capability: 'SIMULATION',
     capabilityLabel: 'Security Simulation & Threat Radar',
-    desc: 'Authorized to inject Geo jumps, simulate threat vectors, and monitor live AI threat radar.'
+    desc: 'Authorized to inject Geo jumps, simulate threat vectors, and monitor live AI threat radar.',
+    allowedViews: ['overview', 'threat_radar', 'geo_surveillance'],
+    defaultView: 'threat_radar',
+    menuSection: 'Fraud & Threat Center',
   },
   {
     userId: 'usr-1006-mgr-002',
@@ -167,7 +170,10 @@ const ADMIN_ROSTER = [
     badge: 'Branch Operations Officer',
     capability: 'ACCOUNT_LOCK_UNLOCK',
     capabilityLabel: 'Account Freeze/Unfreeze & 360 Governance',
-    desc: 'Authorized to freeze/unfreeze customer accounts and manage Customer 360° profiles.'
+    desc: 'Authorized to freeze/unfreeze customer accounts and manage Customer 360° profiles.',
+    allowedViews: ['overview', 'accounts', 'transactions'],
+    defaultView: 'accounts',
+    menuSection: 'Branch Operations Center',
   },
   {
     userId: 'usr-1004-adm-001',
@@ -177,7 +183,10 @@ const ADMIN_ROSTER = [
     badge: 'Compliance Lead (Checker)',
     capability: 'REVERSAL_APPROVAL',
     capabilityLabel: 'Maker-Checker Reversal Sign-Off',
-    desc: 'Authorized to approve T24 compensating reversals (Maker-Checker) and inspect WORM vault.'
+    desc: 'Authorized to approve T24 compensating reversals (Maker-Checker) and inspect WORM vault.',
+    allowedViews: ['overview', 'transactions', 'audit_vault', 'sar_queue'],
+    defaultView: 'transactions',
+    menuSection: 'Compliance & Audit Center',
   }
 ];
 
@@ -313,6 +322,24 @@ export default function AdminExecutivePortal() {
   const currentAdmin = useMemo(() => {
     return ADMIN_ROSTER.find(a => a.userId === activeAdminId) || ADMIN_ROSTER[0];
   }, [activeAdminId]);
+
+  // Sync activeAdminId when activeAuthUser changes (e.g. from top Navbar switcher)
+  useEffect(() => {
+    if (activeAuthUser?.email?.includes('alex')) {
+      setActiveAdminId('usr-1007-sec-003');
+    } else if (activeAuthUser?.email?.includes('carlos')) {
+      setActiveAdminId('usr-1006-mgr-002');
+    } else if (activeAuthUser?.email?.includes('diana')) {
+      setActiveAdminId('usr-1004-adm-001');
+    }
+  }, [activeAuthUser?.email]);
+
+  // Strict Segregation of Duties (SoD): auto-redirect if current view is not permitted for this role
+  useEffect(() => {
+    if (currentAdmin?.allowedViews && !currentAdmin.allowedViews.includes(activeView)) {
+      setActiveView(currentAdmin.defaultView || currentAdmin.allowedViews[0]);
+    }
+  }, [currentAdmin, activeView]);
 
   // Copy helper
   const handleCopy = (id, text, e) => {
@@ -504,6 +531,14 @@ export default function AdminExecutivePortal() {
 
   // Set Location Preset for Selected Customer
   const handleApplyLocation = async (preset) => {
+    if (currentAdmin.capability !== 'SIMULATION') {
+      setNotification({
+        type: 'alert',
+        title: 'Segregation of Duties Enforced',
+        message: 'Only Fraud Ops Analysts (Alex Rivera) are authorized to inject geolocation threat vectors.'
+      });
+      return;
+    }
     setIsUpdatingLocation(true);
     try {
       const targetCity = preset.id === 'MNL' ? selectedSimCustomer.baselineCity : preset.name;
@@ -544,6 +579,14 @@ export default function AdminExecutivePortal() {
 
   // Execute Protective Account Lock / Unlock (Branch Operations Officer)
   const handleToggleAccountStatus = async (account, targetStatus) => {
+    if (currentAdmin.capability !== 'ACCOUNT_LOCK_UNLOCK') {
+      setNotification({
+        type: 'alert',
+        title: 'Segregation of Duties Enforced',
+        message: 'Only Branch Operations Officers (Carlos Mendoza) are authorized to freeze or unfreeze customer accounts.'
+      });
+      return;
+    }
     setIsSubmittingLock(true);
     try {
       const accId = account.account_id || account.account_number;
@@ -589,6 +632,14 @@ export default function AdminExecutivePortal() {
   // Execute Reversal / Rollback
   const handleExecuteRollback = async () => {
     if (!rollbackTarget) return;
+    if (currentAdmin.capability !== 'REVERSAL_APPROVAL') {
+      setNotification({
+        type: 'alert',
+        title: 'Segregation of Duties Enforced',
+        message: 'Only the Compliance & Settlement Checker (Diana Vance) is authorized to sign off on compensating contra-entries.'
+      });
+      return;
+    }
     setIsSubmittingRollback(true);
     try {
       const payload = {
@@ -682,49 +733,67 @@ export default function AdminExecutivePortal() {
         <div className="space-y-6">
           {/* Section: Main Menu */}
           <div>
-            <span className="px-3 text-[10px] font-bold uppercase tracking-wider text-fg-subtle">
-              Operations Center
-            </span>
+            <div className="flex items-center justify-between px-3">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-accent font-mono">
+                {currentAdmin.menuSection || 'Operations Center'}
+              </span>
+              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-accent/10 text-accent font-semibold">
+                SoD
+              </span>
+            </div>
             <nav className="mt-2 space-y-1">
               {[
                 { id: 'overview', label: 'Overview & Telemetry', icon: BarChart3 },
-                { id: 'accounts', label: 'Customer Accounts & 360°', icon: Users, count: accounts.length },
-                { id: 'transactions', label: 'Transactions & Reversals', icon: Layers, count: transactions.length },
                 { id: 'threat_radar', label: 'Two-Stage Threat Radar', icon: Zap },
                 { id: 'geo_surveillance', label: 'Geo & Device Signals', icon: Globe, alert: stats.isAnomaly },
+                { id: 'accounts', label: 'Customer Accounts & 360°', icon: Users, count: accounts.length },
+                { id: 'transactions', label: 'Transactions & Reversals', icon: Layers, count: transactions.length },
                 { id: 'audit_vault', label: 'Immutable Audit Vault', icon: Database, count: auditLogs.length },
                 { id: 'sar_queue', label: 'AMLC SAR Reports', icon: FileText }
-              ].map((item) => {
-                const Icon = item.icon;
-                const active = activeView === item.id;
+              ]
+                .filter(item => currentAdmin.allowedViews?.includes(item.id))
+                .map((item) => {
+                  const Icon = item.icon;
+                  const active = activeView === item.id;
 
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => setActiveView(item.id)}
-                    className={cn(
-                      "flex w-full items-center justify-between rounded-2xl px-3.5 py-2.5 text-xs font-medium transition",
-                      active
-                        ? "bg-gradient-to-r from-accent/20 to-accent/5 text-accent font-semibold border border-accent/30 shadow-xs"
-                        : "text-fg-muted hover:bg-sunken hover:text-fg"
-                    )}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Icon className={cn("h-4 w-4", active ? "text-accent" : "text-fg-subtle")} />
-                      <span>{item.label}</span>
-                    </div>
-                    {item.count !== undefined && (
-                      <span className="rounded-full bg-sunken px-2 py-0.5 text-[10px] font-mono text-fg-subtle">
-                        {item.count}
-                      </span>
-                    )}
-                    {item.alert && (
-                      <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
-                    )}
-                  </button>
-                );
-              })}
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveView(item.id)}
+                      className={cn(
+                        "flex w-full items-center justify-between rounded-2xl px-3.5 py-2.5 text-xs font-medium transition",
+                        active
+                          ? "bg-gradient-to-r from-accent/20 to-accent/5 text-accent font-semibold border border-accent/30 shadow-xs"
+                          : "text-fg-muted hover:bg-sunken hover:text-fg"
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon className={cn("h-4 w-4", active ? "text-accent" : "text-fg-subtle")} />
+                        <span>{item.label}</span>
+                      </div>
+                      {item.count !== undefined && (
+                        <span className="rounded-full bg-sunken px-2 py-0.5 text-[10px] font-mono text-fg-subtle">
+                          {item.count}
+                        </span>
+                      )}
+                      {item.alert && (
+                        <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
+                      )}
+                    </button>
+                  );
+                })}
             </nav>
+
+            {/* Segregated Duty Capsule */}
+            <div className="mt-3 px-3 py-2.5 rounded-2xl border border-line bg-sunken/40 space-y-1">
+              <div className="flex items-center gap-1.5 font-semibold text-fg text-xs">
+                <ShieldCheck className="h-3.5 w-3.5 text-accent" />
+                <span>Duty Assignment:</span>
+              </div>
+              <p className="text-[10px] text-fg-muted leading-tight font-medium">
+                {currentAdmin.capabilityLabel}
+              </p>
+            </div>
           </div>
 
           {/* Section: System Status */}
@@ -803,8 +872,13 @@ export default function AdminExecutivePortal() {
               <select
                 value={activeAdminId}
                 onChange={(e) => {
-                  setActiveAdminId(e.target.value);
-                  setRollbackApproverId(ADMIN_ROSTER.find(a => a.userId !== e.target.value)?.userId || 'usr-1004-adm-001');
+                  const newId = e.target.value;
+                  setActiveAdminId(newId);
+                  const selectedAdmin = ADMIN_ROSTER.find(a => a.userId === newId);
+                  if (selectedAdmin && !selectedAdmin.allowedViews.includes(activeView)) {
+                    setActiveView(selectedAdmin.defaultView);
+                  }
+                  setRollbackApproverId(ADMIN_ROSTER.find(a => a.userId !== newId)?.userId || 'usr-1004-adm-001');
                 }}
                 className="bg-transparent text-xs font-medium text-fg focus:outline-none cursor-pointer"
               >
@@ -852,6 +926,34 @@ export default function AdminExecutivePortal() {
             >
               <X className="h-3.5 w-3.5" />
             </button>
+          </div>
+        )}
+
+        {/* =========================================================================
+            SEGREGATION OF DUTIES (SoD) ENFORCEMENT ACCESS GUARD
+            ========================================================================= */}
+        {!currentAdmin.allowedViews?.includes(activeView) && (
+          <div className="rounded-3xl border border-amber-500/30 bg-surface p-8 shadow-xs text-center space-y-4 max-w-xl mx-auto my-12 animate-fade-in">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500">
+              <Lock className="h-7 w-7" />
+            </div>
+            <div className="space-y-1.5">
+              <h2 className="text-base font-bold text-fg">Segregation of Duties (SoD) Enforced</h2>
+              <p className="text-xs text-fg-muted leading-relaxed">
+                The <span className="font-semibold text-fg capitalize">{activeView.replace('_', ' ')}</span> module is restricted from your assigned role as <strong>{currentAdmin.role}</strong> ({currentAdmin.badge}).
+              </p>
+              <p className="text-[11px] text-fg-subtle">
+                Under Philippine Banking Least-Privilege RBAC guidelines, operations outside your duty profile are restricted.
+              </p>
+            </div>
+            <div className="pt-2">
+              <button
+                onClick={() => setActiveView(currentAdmin.defaultView)}
+                className="rounded-xl bg-accent px-4 py-2 text-xs font-semibold text-white hover:bg-accent-hover transition shadow-xs"
+              >
+                Go to Authorized Workspace ({currentAdmin.defaultView.replace('_', ' ')})
+              </button>
+            </div>
           </div>
         )}
 
@@ -1400,15 +1502,21 @@ export default function AdminExecutivePortal() {
                         </td>
                         <td className="py-3 px-3 text-right">
                           {(tx.status === 'COMMITTED' || tx.status === 'POSTED') && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setRollbackTarget(tx);
-                              }}
-                              className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-400 hover:bg-amber-500/20"
-                            >
-                              Rollback
-                            </button>
+                            currentAdmin.capability === 'REVERSAL_APPROVAL' ? (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setRollbackTarget(tx);
+                                }}
+                                className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-400 hover:bg-amber-500/20"
+                              >
+                                Rollback
+                              </button>
+                            ) : (
+                              <span className="text-[10px] text-fg-subtle italic">
+                                View Only
+                              </span>
+                            )
                           )}
                         </td>
                       </tr>
@@ -1576,32 +1684,34 @@ export default function AdminExecutivePortal() {
                               <Eye className="h-3 w-3" />
                               <span>360° View</span>
                             </button>
-                            <button
-                              onClick={() => {
-                                setLockTargetAccount(acc);
-                                setLockReason(acc.status === 'LOCKED' ? 'CUSTOMER_VOLUNTARY_REQUEST' : 'SUSPECTED_PHISHING_COERCION');
-                                setLockMemo(acc.status === 'LOCKED' ? 'Customer identity verified at branch. Restoring normal account access.' : 'Customer reported suspicious activity. Freezing debit access.');
-                              }}
-                              className={cn(
-                                "inline-flex items-center gap-1 rounded-xl border px-2.5 py-1 text-[11px] font-semibold transition shadow-xs",
-                                acc.status === 'LOCKED'
-                                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
-                                  : "border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20"
-                              )}
-                              title={acc.status === 'LOCKED' ? "Unlock Customer Account" : "Freeze / Lock Customer Account"}
-                            >
-                              {acc.status === 'LOCKED' ? (
-                                <>
-                                  <Unlock className="h-3 w-3" />
-                                  <span>Unlock</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Lock className="h-3 w-3" />
-                                  <span>Lock</span>
-                                </>
-                              )}
-                            </button>
+                            {currentAdmin.capability === 'ACCOUNT_LOCK_UNLOCK' && (
+                              <button
+                                onClick={() => {
+                                  setLockTargetAccount(acc);
+                                  setLockReason(acc.status === 'LOCKED' ? 'CUSTOMER_VOLUNTARY_REQUEST' : 'SUSPECTED_PHISHING_COERCION');
+                                  setLockMemo(acc.status === 'LOCKED' ? 'Customer identity verified at branch. Restoring normal account access.' : 'Customer reported suspicious activity. Freezing debit access.');
+                                }}
+                                className={cn(
+                                  "inline-flex items-center gap-1 rounded-xl border px-2.5 py-1 text-[11px] font-semibold transition shadow-xs",
+                                  acc.status === 'LOCKED'
+                                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
+                                    : "border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20"
+                                )}
+                                title={acc.status === 'LOCKED' ? "Unlock Customer Account" : "Freeze / Lock Customer Account"}
+                              >
+                                {acc.status === 'LOCKED' ? (
+                                  <>
+                                    <Unlock className="h-3 w-3" />
+                                    <span>Unlock</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Lock className="h-3 w-3" />
+                                    <span>Lock</span>
+                                  </>
+                                )}
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -1718,15 +1828,21 @@ export default function AdminExecutivePortal() {
                           <td className="py-4 px-6 text-right">
                             <div className="flex items-center justify-end gap-2">
                               {isCommitted && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setRollbackTarget(tx);
-                                  }}
-                                  className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-400 hover:bg-amber-500/20 transition shadow-xs"
-                                >
-                                  Rollback
-                                </button>
+                                currentAdmin.capability === 'REVERSAL_APPROVAL' ? (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setRollbackTarget(tx);
+                                    }}
+                                    className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-400 hover:bg-amber-500/20 transition shadow-xs"
+                                  >
+                                    Rollback
+                                  </button>
+                                ) : (
+                                  <span className="rounded-lg bg-sunken px-2 py-0.5 text-[10px] text-fg-subtle italic">
+                                    Checker Req.
+                                  </span>
+                                )
                               )}
                               <ChevronRight className="h-4 w-4 text-fg-subtle group-hover:text-fg group-hover:translate-x-0.5 transition" />
                             </div>
@@ -1914,14 +2030,22 @@ export default function AdminExecutivePortal() {
                     )}
                   </div>
 
+                  {currentAdmin.capability !== 'SIMULATION' && (
+                    <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-2.5 text-[11px] text-amber-400 flex items-center gap-2">
+                      <Lock className="h-3.5 w-3.5 shrink-0" />
+                      <span>Simulation vector injection restricted to Fraud Ops Analyst ({ADMIN_ROSTER[0].name}).</span>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {GEO_PRESETS.map((preset) => (
                       <button
                         key={preset.id}
                         onClick={() => handleApplyLocation(preset)}
-                        disabled={isUpdatingLocation}
+                        disabled={isUpdatingLocation || currentAdmin.capability !== 'SIMULATION'}
                         className={cn(
                           "flex flex-col text-left rounded-2xl border p-3.5 transition shadow-xs",
+                          currentAdmin.capability !== 'SIMULATION' && "opacity-50 cursor-not-allowed",
                           preset.type === 'FRAUD' 
                             ? "border-rose-500/30 bg-rose-500/5 hover:bg-rose-500/10" 
                             : "border-line bg-surface hover:bg-sunken",
@@ -2325,7 +2449,7 @@ export default function AdminExecutivePortal() {
                 <span>Audited via append-only PostgreSQL ledger with SHA-256 digest sealing.</span>
               </div>
               <div className="flex items-center gap-2 w-full sm:w-auto">
-                {(selectedTx.status === 'COMMITTED' || selectedTx.status === 'POSTED' || selectedTx.status === 'SETTLED') && (
+                {(selectedTx.status === 'COMMITTED' || selectedTx.status === 'POSTED' || selectedTx.status === 'SETTLED') && currentAdmin.capability === 'REVERSAL_APPROVAL' && (
                   <button
                     onClick={() => {
                       const txToRollback = selectedTx;
@@ -2382,31 +2506,33 @@ export default function AdminExecutivePortal() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    setLockTargetAccount(selectedAccount);
-                    setLockReason(selectedAccount.status === 'LOCKED' ? 'CUSTOMER_VOLUNTARY_REQUEST' : 'SUSPECTED_PHISHING_COERCION');
-                    setLockMemo(selectedAccount.status === 'LOCKED' ? 'Customer identity verified at branch. Restoring normal account access.' : 'Customer reported suspicious activity. Freezing debit access.');
-                  }}
-                  className={cn(
-                    "inline-flex items-center gap-1.5 rounded-2xl border px-3 py-1.5 text-xs font-semibold transition shadow-xs",
-                    selectedAccount.status === 'LOCKED'
-                      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
-                      : "border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20"
-                  )}
-                >
-                  {selectedAccount.status === 'LOCKED' ? (
-                    <>
-                      <Unlock className="h-3.5 w-3.5" />
-                      <span>Unlock Account</span>
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="h-3.5 w-3.5" />
-                      <span>Freeze / Lock Account</span>
-                    </>
-                  )}
-                </button>
+                {currentAdmin.capability === 'ACCOUNT_LOCK_UNLOCK' && (
+                  <button
+                    onClick={() => {
+                      setLockTargetAccount(selectedAccount);
+                      setLockReason(selectedAccount.status === 'LOCKED' ? 'CUSTOMER_VOLUNTARY_REQUEST' : 'SUSPECTED_PHISHING_COERCION');
+                      setLockMemo(selectedAccount.status === 'LOCKED' ? 'Customer identity verified at branch. Restoring normal account access.' : 'Customer reported suspicious activity. Freezing debit access.');
+                    }}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 rounded-2xl border px-3 py-1.5 text-xs font-semibold transition shadow-xs",
+                      selectedAccount.status === 'LOCKED'
+                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
+                        : "border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20"
+                    )}
+                  >
+                    {selectedAccount.status === 'LOCKED' ? (
+                      <>
+                        <Unlock className="h-3.5 w-3.5" />
+                        <span>Unlock Account</span>
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="h-3.5 w-3.5" />
+                        <span>Freeze / Lock Account</span>
+                      </>
+                    )}
+                  </button>
+                )}
                 <button
                   onClick={() => setSelectedAccount(null)}
                   className="rounded-2xl p-2 text-fg-subtle hover:text-fg hover:bg-sunken transition"

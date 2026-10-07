@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../models/bank_models.dart';
 import '../services/bank_service.dart';
 import '../theme/aura_theme.dart';
+import 'analytics_screen.dart';
+import 'scan_screen.dart';
 import 'send_money_screen.dart';
 import 'statement_screen.dart';
 
@@ -19,10 +21,11 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isBalanceVisible = true;
   bool _isAccountNumVisible = true;
 
-  static const Color brandViolet = AuraColors.primary;
+  static const Color brandPrimary = AuraColors.primary;
+  static const Color brandViolet = Color(0xFF4C1D95);
   static const Color textDark = AuraColors.textPrimary;
   static const Color textGray = AuraColors.textMuted;
-  static const Color cardBorder = AuraColors.cardBorder;
+  static const Color cardBorder = Color(0xFFE2E8F0);
   static const Color greenCredit = AuraColors.creditGreen;
 
   @override
@@ -41,32 +44,42 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) setState(() {});
   }
 
+  String _getInitials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.isEmpty || parts[0].isEmpty) return 'A';
+    if (parts.length == 1) {
+      return parts[0].substring(0, parts[0].length >= 2 ? 2 : 1).toUpperCase();
+    }
+    return '${parts[0][0]}${parts[parts.length - 1][0]}'.toUpperCase();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF8FAFC),
       body: SafeArea(
         child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 12.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. Top User Profile Header
+              // 1. Top Institutional Client Profile Header
               _buildProfileHeader(),
 
               const SizedBox(height: 18),
 
-              // 2. Available Balance Hero Card
+              // 2. High-End Available Balance Hero Card
               _buildBalanceCard(),
 
-              const SizedBox(height: 22),
+              const SizedBox(height: 20),
 
-              // 3. Quick Actions Grid
+              // 3. Quick Actions: Scan, Transfer, Analytics
               _buildQuickActions(),
 
               const SizedBox(height: 22),
 
-              // 4. Recent Transactions
+              // 4. Recent Transactions Ledger
               _buildRecentTransactions(),
 
               const SizedBox(height: 16),
@@ -84,41 +97,69 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           children: [
             Container(
-              width: 44,
-              height: 44,
+              width: 46,
+              height: 46,
               decoration: const BoxDecoration(
-                color: AuraColors.primary,
+                gradient: LinearGradient(
+                  colors: [brandPrimary, brandViolet],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.person, color: Colors.white, size: 24),
+              alignment: Alignment.center,
+              child: Text(
+                _getInitials(_bankService.user.name),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16,
+                  letterSpacing: -0.3,
+                ),
+              ),
             ),
             const SizedBox(width: 12),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  _bankService.user.name,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: textDark,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      _bankService.user.name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        color: textDark,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    const Icon(
+                      Icons.verified_rounded,
+                      size: 15,
+                      color: Color(0xFF2563EB),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 3),
                 Row(
                   children: [
                     Text(
                       _isAccountNumVisible
                           ? 'Account Number: ${_bankService.savingsAccountNumber}'
                           : 'Account Number: •••• •••• •••• 1327',
-                      style: const TextStyle(fontSize: 11, color: textGray),
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: textGray,
+                      ),
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 5),
                     GestureDetector(
                       onTap: () => setState(() => _isAccountNumVisible = !_isAccountNumVisible),
                       child: Icon(
                         _isAccountNumVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                        size: 14,
+                        size: 15,
                         color: textGray,
                       ),
                     ),
@@ -131,18 +172,25 @@ class _HomeScreenState extends State<HomeScreen> {
         Stack(
           children: [
             Container(
-              width: 38,
-              height: 38,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
                 border: Border.all(color: cardBorder),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: const Icon(Icons.notifications_none_rounded, size: 20, color: textDark),
             ),
             Positioned(
-              top: 7,
-              right: 7,
+              top: 8,
+              right: 8,
               child: Container(
                 width: 7,
                 height: 7,
@@ -165,10 +213,14 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         gradient: AuraColors.balanceHeroGradient,
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.14),
+          width: 1.2,
+        ),
         boxShadow: [
           BoxShadow(
             color: AuraColors.primary.withValues(alpha: 0.35),
-            blurRadius: 18,
+            blurRadius: 20,
             offset: const Offset(0, 8),
           ),
         ],
@@ -178,34 +230,47 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text(
-                'SAVINGS • PRIMARY',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.0,
-                  color: Color(0xFFD8B4FE),
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  'SAVINGS • PRIMARY',
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.0,
+                    color: Color(0xFFE9D5FF),
+                  ),
                 ),
               ),
-              Text(
-                'AURA',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.5,
-                  color: Colors.white,
-                ),
+              const Row(
+                children: [
+                  Icon(Icons.shield_outlined, size: 13, color: Color(0xFFD8B4FE)),
+                  SizedBox(width: 4),
+                  Text(
+                    'AURA',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.5,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           Row(
             children: [
               const Text(
                 'Available Balance',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 13.5,
                   fontWeight: FontWeight.w500,
                   color: Color(0xFFE9D5FF),
                 ),
@@ -225,7 +290,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Text(
             _isBalanceVisible ? _formatBalance(_bankService.availableBalance) : '₱ ••••••••',
             style: const TextStyle(
-              fontSize: 32,
+              fontSize: 34,
               fontWeight: FontWeight.w900,
               color: Colors.white,
               letterSpacing: -0.6,
@@ -242,6 +307,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   fontWeight: FontWeight.w700,
                   fontFamily: 'monospace',
                   color: Color(0xFFD8B4FE),
+                  letterSpacing: 0.5,
                 ),
               ),
               Container(
@@ -275,49 +341,68 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             _buildActionItem(
+              icon: Icons.qr_code_scanner_rounded,
+              label: 'Scan',
+              onTap: () {
+                if (widget.onNavigateTab != null) {
+                  widget.onNavigateTab!(2);
+                } else {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ScanScreen()),
+                  );
+                }
+              },
+            ),
+            _buildActionItem(
               icon: Icons.swap_horiz_rounded,
               label: 'Transfer',
               onTap: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const SendMoneyScreen()),
+                  MaterialPageRoute(builder: (_) => const SendMoneyScreen()),
                 );
               },
             ),
             _buildActionItem(
-              icon: Icons.account_balance_rounded,
-              label: 'Banks',
-              onTap: _showFourBanksTransferSheet,
-            ),
-            _buildActionItem(
-              icon: Icons.receipt_long_rounded,
-              label: 'Statement',
+              icon: Icons.insights_rounded,
+              label: 'Analytics',
               onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const StatementScreen()),
-                );
+                if (widget.onNavigateTab != null) {
+                  widget.onNavigateTab!(3);
+                } else {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const AnalyticsScreen()),
+                  );
+                }
               },
             ),
           ],
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
 
-        // Hardware Trust Pill Banner (Figma image_51_0.png)
+        // Institutional Hardware Trust Pill Banner
         InkWell(
           onTap: () {
             Navigator.of(context).pushNamed('/devices');
           },
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
-              color: const Color(0xFFF9FAFB),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFE5E7EB)),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: cardBorder, width: 1.2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.02),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            child: Row(
-              children: const [
-                Icon(Icons.circle, color: Color(0xFF10B981), size: 7),
+            child: const Row(
+              children: [
+                Icon(Icons.verified_user_rounded, color: Color(0xFF059669), size: 16),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -325,11 +410,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: AuraColors.textPrimary,
+                      color: textDark,
                     ),
                   ),
                 ),
-                Icon(Icons.arrow_forward_ios_rounded, size: 12, color: AuraColors.textMuted),
+                Icon(Icons.arrow_forward_ios_rounded, size: 12, color: textGray),
               ],
             ),
           ),
@@ -337,218 +422,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
-
-
-
-
-
-  void _showFourBanksTransferSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD1D5DB),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Container(
-                  width: 3.5,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    color: brandViolet,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                const Text(
-                  'Bank Interbank Transfer',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: AuraColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Capstone Network Interbank Settlement & Clearing',
-              style: TextStyle(fontSize: 12, color: textGray),
-            ),
-            const SizedBox(height: 16),
-            _buildPartnerBankTile(
-              initial: 'A',
-              color: brandViolet,
-              name: 'Aura Bank',
-              group: 'Group 3 • Our Core Digital Bank (Interbank)',
-              code: 'AUR-003',
-              fee: 'Free • Zero Fee • Instant',
-              onTap: () {
-                Navigator.of(ctx).pop();
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const SendMoneyScreen(initialIsAuraToAura: true)),
-                );
-              },
-            ),
-            _buildPartnerBankTile(
-              initial: 'M',
-              color: const Color(0xFF701A75),
-              name: 'MeyBank',
-              group: 'Group 2 • Partner Commercial Bank',
-              code: 'MEY-002',
-              fee: '₱10.00 • InstaPay Real-time',
-              onTap: () {
-                Navigator.of(ctx).pop();
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const SendMoneyScreen(
-                      initialIsAuraToAura: false,
-                      initialPartnerBankIndex: 0,
-                    ),
-                  ),
-                );
-              },
-            ),
-            _buildPartnerBankTile(
-              initial: 'A',
-              color: const Color(0xFF047857),
-              name: 'Apex Digital Bank',
-              group: 'Group 1 • Partner NeoBank',
-              code: 'APX-001',
-              fee: '₱10.00 • InstaPay Real-time',
-              onTap: () {
-                Navigator.of(ctx).pop();
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const SendMoneyScreen(
-                      initialIsAuraToAura: false,
-                      initialPartnerBankIndex: 1,
-                    ),
-                  ),
-                );
-              },
-            ),
-            _buildPartnerBankTile(
-              initial: 'N',
-              color: const Color(0xFF1E3A8A),
-              name: 'Nexus Core Bank',
-              group: 'Group 4 • Partner Clearing Bank',
-              code: 'NEX-004',
-              fee: '₱10.00 • InstaPay Real-time',
-              onTap: () {
-                Navigator.of(ctx).pop();
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const SendMoneyScreen(
-                      initialIsAuraToAura: false,
-                      initialPartnerBankIndex: 2,
-                    ),
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPartnerBankTile({
-    required String initial,
-    required Color color,
-    required String name,
-    required String group,
-    required String code,
-    required String fee,
-    required VoidCallback onTap,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFEDE9FE)),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-        leading: Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Center(
-            child: Text(
-              initial,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w900,
-                fontSize: 16,
-              ),
-            ),
-          ),
-        ),
-        title: Row(
-          children: [
-            Text(
-              name,
-              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: textDark),
-            ),
-            const SizedBox(width: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF3E8FF),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                code,
-                style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: brandViolet),
-              ),
-            ),
-          ],
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 2),
-            Text(group, style: const TextStyle(fontSize: 11, color: textGray)),
-            Text(fee, style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF059669))),
-          ],
-        ),
-        trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 13, color: textGray),
-        onTap: onTap,
-      ),
-    );
-  }
-
-
 
   Widget _buildActionItem({
     required IconData icon,
@@ -560,29 +433,40 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         children: [
           Container(
-            width: 58,
-            height: 58,
+            width: 64,
+            height: 64,
             decoration: BoxDecoration(
-              color: AuraColors.bgLavender,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AuraColors.borderLavender),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: cardBorder, width: 1.2),
               boxShadow: [
                 BoxShadow(
-                  color: AuraColors.primary.withValues(alpha: 0.05),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
+                  color: const Color(0xFF1E1B4B).withValues(alpha: 0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
                 ),
               ],
             ),
-            child: Icon(icon, color: brandViolet, size: 26),
+            alignment: Alignment.center,
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F3FF),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              alignment: Alignment.center,
+              child: Icon(icon, color: brandViolet, size: 24),
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             label,
             style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
               color: textDark,
+              letterSpacing: -0.1,
             ),
           ),
         ],
@@ -594,18 +478,40 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Recent Transactions',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
-            color: textDark,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Recent Transactions',
+              style: TextStyle(
+                fontSize: 16.5,
+                fontWeight: FontWeight.w900,
+                color: textDark,
+                letterSpacing: -0.2,
+              ),
+            ),
+            GestureDetector(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const StatementScreen()),
+                );
+              },
+              child: const Text(
+                'View All',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: brandViolet,
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 12),
         ..._bankService.recentTransactions.map((t) {
           final isDebit = t.type == TransactionType.outgoing;
-          final Color badgeColor = t.status == TransactionStatus.failed
+          final isFailed = t.status == TransactionStatus.failed;
+          final Color badgeColor = isFailed
               ? const Color(0xFFDC2626)
               : (isDebit ? textDark : greenCredit);
 
@@ -614,26 +520,31 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: cardBorder),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: cardBorder, width: 1.2),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.02),
-                  blurRadius: 6,
+                  blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
               ],
             ),
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor: Color(t.avatarColorValue),
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: Color(t.avatarColorValue),
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
                   child: Text(
                     t.initial,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w900,
                       fontSize: 15,
                     ),
                   ),
@@ -646,19 +557,37 @@ class _HomeScreenState extends State<HomeScreen> {
                       Text(
                         t.counterparty,
                         style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w800,
                           color: textDark,
                         ),
                       ),
                       const SizedBox(height: 2),
-                      Text(
-                        t.transferSubtitle,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: t.status == TransactionStatus.failed ? const Color(0xFFDC2626) : textGray,
-                          fontWeight: t.status == TransactionStatus.failed ? FontWeight.w700 : FontWeight.w500,
-                        ),
+                      Row(
+                        children: [
+                          if (isFailed) ...[
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFDC2626),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                          ],
+                          Expanded(
+                            child: Text(
+                              t.transferSubtitle,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: isFailed ? const Color(0xFFDC2626) : textGray,
+                                fontWeight: isFailed ? FontWeight.w700 : FontWeight.w500,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -666,8 +595,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(
                   '${isDebit ? '- ' : '+ '}${_formatAmountPlain(t.amount)}',
                   style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w900,
                     color: badgeColor,
                   ),
                 ),

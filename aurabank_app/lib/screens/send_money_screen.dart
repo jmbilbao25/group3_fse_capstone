@@ -51,7 +51,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
   String _selectedPurpose = 'Personal / Family';
   final List<String> _purposes = [
     'Personal / Family',
-    'Bills & Utilities',
+    'Allowance / Support',
     'Business / Supplier',
     'Investment / Savings',
     'Emergency',

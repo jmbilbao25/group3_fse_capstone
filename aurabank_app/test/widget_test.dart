@@ -147,6 +147,15 @@ void main() {
     expect(find.text('Bills'), findsNothing);
     expect(find.text('More'), findsNothing);
     expect(find.text('Recent Transactions'), findsOneWidget);
+    expect(find.text('Angel Lou F. Yabut'), findsOneWidget);
+    expect(find.text('Same Bank Transfer • Settled'), findsOneWidget);
+    expect(find.text('- 150,000'), findsOneWidget);
+    expect(find.text('Mae G. Mercado'), findsOneWidget);
+    expect(find.text('Other Bank Transfer • Settled'), findsOneWidget);
+    expect(find.text('+ 25,000'), findsOneWidget);
+    expect(find.text('Jessie Mae Dela Paz'), findsOneWidget);
+    expect(find.text('Same Bank Transfer • Failed'), findsOneWidget);
+    expect(find.text('- 25,000'), findsOneWidget);
   });
 
   testWidgets('AppShell renders luxury floating navbar with elevated scan action',
@@ -174,6 +183,13 @@ void main() {
 
     expect(find.text('Card Control'), findsOneWidget);
     expect(find.text('Lock Card'), findsOneWidget);
+    expect(find.text('Transaction History'), findsOneWidget);
+    expect(find.text('Angel Lou F. Yabut'), findsOneWidget);
+    expect(find.text('Same Bank Transfer • Settled'), findsOneWidget);
+    expect(find.text('Mae G. Mercado'), findsOneWidget);
+    expect(find.text('Other Bank Transfer • Settled'), findsOneWidget);
+    expect(find.text('Jessie Mae Dela Paz'), findsOneWidget);
+    expect(find.text('Same Bank Transfer • Failed'), findsOneWidget);
 
     // Tap Lock Card
     await tester.tap(find.text('Lock Card'));
@@ -193,6 +209,7 @@ void main() {
     expect(find.text('Aura to Aura'), findsOneWidget);
     expect(find.text('Other Bank'), findsOneWidget);
     expect(find.text('Send Money'), findsOneWidget);
+    expect(find.text('Bills & Utilities'), findsNothing);
   });
 
   testWidgets('OTP Verification screen renders PIN boxes, countdown, and incomplete alert',

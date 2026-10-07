@@ -772,7 +772,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        t.status == TransactionStatus.settled ? 'Settled' : t.statusDisplay,
+                        t.transferSubtitle,
                         style: TextStyle(
                           fontSize: 11,
                           color: t.status == TransactionStatus.failed ? const Color(0xFFDC2626) : textGray,

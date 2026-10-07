@@ -409,7 +409,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       subtitle: '',
                       onTap: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Opening Aura Terms & BSP Disclosures...')),
+                          const SnackBar(content: Text('Opening Aura Terms & Privacy Policy...')),
                         );
                       },
                     ),

@@ -858,16 +858,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const Divider(color: Color(0xFFF3F4F6), height: 1),
                   _buildNavigationTile(
                     title: 'Terms & Privacy Policy',
-                    subtitle: 'BSP Circulars & Data Privacy Act compliance',
+                    subtitle: 'Privacy notice & security terms',
                     icon: Icons.verified_user_rounded,
                     onTap: () {
                       showDialog(
                         context: context,
                         builder: (ctx) => AlertDialog(
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                          title: const Text('Regulatory Governance', style: TextStyle(fontWeight: FontWeight.w800)),
+                          title: const Text('Terms & Privacy Policy', style: TextStyle(fontWeight: FontWeight.w800)),
                           content: const Text(
-                            'Aura Bank operates under BSP circulars 982, 1035, and 1140. Fully compliant with the Republic Act 10173 (Data Privacy Act of 2012). Depositor balances are PDIC insured up to ₱500,000.',
+                            'Aura Bank employs end-to-end encryption, zero-trust device binding, and secure ledger controls to safeguard user account information and privacy.',
                           ),
                           actions: [
                             TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Close')),

@@ -291,34 +291,25 @@ class _CardsScreenState extends State<CardsScreen> {
               const SizedBox(height: 14),
 
               // Transaction List Items
-              _buildTransactionCard(
-                initial: 'A',
-                avatarBgColor: const Color(0xFF380084),
-                name: 'Angel Lou F. Yabut',
-                subtitle: 'Settled',
-                amount: '- 150,000',
-                amountColor: textDark,
-              ),
-              const SizedBox(height: 12),
-              _buildTransactionCard(
-                initial: 'M',
-                avatarBgColor: const Color(0xFF8B5CF6),
-                name: 'Mae G. Mercado',
-                subtitle: 'Interbank Inward',
-                amount: '+ 25,000',
-                amountColor: const Color(0xFF059669),
-              ),
-              const SizedBox(height: 12),
-              _buildTransactionCard(
-                initial: 'J',
-                avatarBgColor: const Color(0xFF6366F1),
-                name: 'Jessie Mae Dela Paz',
-                subtitle: 'Failed',
-                amount: '+ 25,000',
-                amountColor: const Color(0xFF059669),
-              ),
+              ..._bankService.recentTransactions.map((t) {
+                final isDebit = t.type == TransactionType.outgoing;
+                final Color amountColor = t.status == TransactionStatus.failed
+                    ? const Color(0xFFDC2626)
+                    : (isDebit ? textDark : const Color(0xFF059669));
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _buildTransactionCard(
+                    initial: t.initial,
+                    avatarBgColor: Color(t.avatarColorValue),
+                    name: t.counterparty,
+                    subtitle: t.transferSubtitle,
+                    amount: '${isDebit ? '- ' : '+ '}${t.formattedIntegerAmount}',
+                    amountColor: amountColor,
+                  ),
+                );
+              }),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
             ],
           ),
         ),

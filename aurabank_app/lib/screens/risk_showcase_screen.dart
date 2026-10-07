@@ -91,9 +91,9 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
     ),
     ThreatModel(
       key: 'Purpose mismatch',
-      title: 'Biller payment to a personal account',
+      title: 'Company payment to an unverified personal account',
       description:
-          'Utility companies and official billers do not receive payments through personal accounts.',
+          'Official institutions and corporate entities do not receive transfers through personal accounts.',
       leftIcon: Icons.account_balance_rounded,
       centerIcon: Icons.warning_amber_rounded,
       rightIcon: Icons.person_outline_rounded,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'app_shell.dart';
 
 /// Screen: Login Page - Fingerprint
 class LoginPageFingerprint extends StatefulWidget {
@@ -228,7 +229,14 @@ class _LoginPageFingerprintState extends State<LoginPageFingerprint> {
 
                     // Fingerprint Biometric Action Icon
                     GestureDetector(
-                      onTap: widget.onFingerprintTap,
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AppShell(),
+                          ),
+                        );
+                      },
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(

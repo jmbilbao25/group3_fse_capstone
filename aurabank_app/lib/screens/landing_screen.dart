@@ -1,74 +1,109 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../widgets/aura_logo.dart';
 import 'login_screen.dart';
 
-class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
+class LandingScreen extends StatefulWidget {
+  const LandingScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  State<LandingScreen> createState() => _LandingScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _LandingScreenState extends State<LandingScreen> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scaleAnimation;
+  late final Animation<double> _opacityAnimation;
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
 
-    Timer(
-      const Duration(seconds: 3),
-          () {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const LoginScreen(),
+    _scaleAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
+    );
+
+    _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
+    );
+
+    _controller.forward();
+
+    _timer = Timer(const Duration(milliseconds: 2200), () {
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          PageRouteBuilder(
+            pageBuilder: (context, anim, secAnim) => const LoginScreen(),
+            transitionsBuilder: (context, anim, secAnim, child) =>
+                FadeTransition(opacity: anim, child: child),
+            transitionDuration: const Duration(milliseconds: 500),
           ),
         );
-      },
-    );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F2),
-
+      backgroundColor: Colors.white,
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-
-            Container(
-              width: 90,
-              height: 90,
-              decoration: BoxDecoration(
-                color: const Color(0xFF4B0FAF),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Center(
-                child: Text(
-                  "A",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 42,
-                    fontWeight: FontWeight.bold,
-                  ),
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            return Opacity(
+              opacity: _opacityAnimation.value,
+              child: Transform.scale(
+                scale: _scaleAnimation.value,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    AuraLogo(
+                      size: 90,
+                      style: AuraLogoStyle.violet,
+                      borderRadius: 24,
+                    ),
+                    SizedBox(height: 24),
+                    Text(
+                      'Aura Bank',
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF1E1E2D),
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    SizedBox(height: 32),
+                    SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF5E17EB)),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-
-            const SizedBox(height: 20),
-
-            const Text(
-              "Aura Bank",
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
   }
 }
+
+/// Backward compatibility alias
+typedef SplashScreen = LandingScreen;

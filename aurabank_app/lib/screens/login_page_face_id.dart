@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'app_shell.dart';
 
 /// Custom Face ID Icon Widget matching the Aura Bank biometric design
 class FaceIdIcon extends StatelessWidget {
@@ -12,6 +13,8 @@ class FaceIdIcon extends StatelessWidget {
     this.color = Colors.white,
     this.backgroundColor = const Color(0xFF3A0088),
   });
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -355,7 +358,14 @@ class _LoginPageFaceIdState extends State<LoginPageFaceId> {
 
                     // Face ID Biometric Action Icon
                     GestureDetector(
-                      onTap: widget.onFaceIdTap,
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AppShell(),
+                          ),
+                        );
+                      },
                       child: const FaceIdIcon(
                         size: 68,
                         backgroundColor: Color(0xFF3A0088),

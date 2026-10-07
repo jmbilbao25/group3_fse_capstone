@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'screens/splash_screen.dart';
-import 'screens/login_screen.dart';
+import 'screens/landing_screen.dart';
 import 'screens/app_shell.dart';
 import 'screens/statement_screen.dart';
 import 'screens/annual_report_screen.dart';
@@ -12,6 +11,7 @@ import 'screens/otp_verification_screen.dart';
 import 'screens/devices_sessions_screen.dart';
 import 'screens/security_gate_screen.dart';
 import 'theme/aura_theme.dart';
+import 'screens/biometric_router_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -49,8 +49,8 @@ class AuraBankApp extends StatelessWidget {
       ),
       initialRoute: '/',
       routes: {
-        '/': (context) => const SplashScreen(),
-        '/login': (context) => const LoginScreen(),
+        '/': (context) => const LandingScreen(),
+        '/login': (context) => const BiometricRouterScreen(),
         '/dashboard': (context) => const AppShell(initialIndex: 0),
         '/cards': (context) => const CardsScreen(),
         '/analytics': (context) => const AppShell(initialIndex: 3),

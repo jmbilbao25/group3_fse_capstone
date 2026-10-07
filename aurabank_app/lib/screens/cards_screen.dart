@@ -16,7 +16,7 @@ class CardsScreen extends StatefulWidget {
 class _CardsScreenState extends State<CardsScreen> {
   final BankService _bankService = BankService();
   int _activeCardIndex = 0;
-  bool _showNumbers = false;
+  int _revealedCard = -1;
   late final PageController _pageController;
 
   static const Color brandViolet = AuraColors.primary;
@@ -27,7 +27,10 @@ class _CardsScreenState extends State<CardsScreen> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(viewportFraction: 0.92);
+    _pageController = PageController(
+      viewportFraction: 0.96,
+      initialPage: _activeCardIndex,
+    );
     _bankService.addListener(_onServiceUpdate);
   }
 
@@ -45,6 +48,8 @@ class _CardsScreenState extends State<CardsScreen> {
   void _toggleLock() {
     _bankService.toggleCardLock(_activeCardIndex);
     final card = _bankService.cards[_activeCardIndex];
+    final cardColor = _getCardGradient(card, _activeCardIndex).first;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -52,7 +57,7 @@ class _CardsScreenState extends State<CardsScreen> {
               ? '${card.title} card is now locked for security.'
               : '${card.title} card is now unlocked and active.',
         ),
-        backgroundColor: card.isLocked ? AuraColors.primary : AuraColors.creditGreen,
+        backgroundColor: card.isLocked ? cardColor : AuraColors.creditGreen,
         duration: const Duration(seconds: 2),
       ),
     );
@@ -116,6 +121,29 @@ class _CardsScreenState extends State<CardsScreen> {
     );
   }
 
+  List<Color> _getCardGradient(BankCard card, int index) {
+    final title = card.title.toLowerCase();
+    if (title.contains('saving') || index % 3 == 0) {
+      return const [
+        Color(0xFF430897),
+        Color(0xFF7A45C6),
+        Color(0xFFB183F4),
+      ];
+    } else if (title.contains('current') || index % 3 == 1) {
+      return const [
+        Color(0xFF3E104B),
+        Color(0xFF87608E),
+        Color(0xFFD1B1D3),
+      ];
+    } else {
+      return const [
+        Color(0xFF8C0C83),
+        Color(0xFFA965A5),
+        Color(0xFFC7C0C6),
+      ];
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final activeCard = _bankService.cards[_activeCardIndex];
@@ -124,201 +152,225 @@ class _CardsScreenState extends State<CardsScreen> {
       backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+          padding: const EdgeInsets.symmetric(vertical: 12.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header: Back, Card Control, +
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: cardBorder),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+              // Header: Back, Card Control, + (with 18 horizontal padding)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 18.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: cardBorder),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: textDark),
+                        onPressed: () {
+                          if (widget.onBack != null) {
+                            widget.onBack!();
+                          } else {
+                            Navigator.of(context).maybePop();
+                          }
+                        },
+                        padding: EdgeInsets.zero,
+                      ),
                     ),
-                    child: IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: textDark),
-                      onPressed: () {
-                        if (widget.onBack != null) {
-                          widget.onBack!();
-                        } else {
-                          Navigator.of(context).maybePop();
-                        }
-                      },
-                      padding: EdgeInsets.zero,
+                    const Text(
+                      'Card Control',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.4,
+                        color: textDark,
+                      ),
                     ),
-                  ),
-                  const Text(
-                    'Card Control',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.4,
-                      color: textDark,
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: cardBorder),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.add, size: 22, color: textDark),
+                        onPressed: _addNewCard,
+                        padding: EdgeInsets.zero,
+                      ),
                     ),
-                  ),
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: cardBorder),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.add, size: 22, color: textDark),
-                      onPressed: _addNewCard,
-                      padding: EdgeInsets.zero,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
 
               const SizedBox(height: 22),
 
-              // Card Carousel (Horizontal Aspect Ratio matching page_8.png)
+              // Full-Width Carousel: Natural edge-to-edge
               SizedBox(
-                height: 228,
+                height: 205,
                 child: PageView.builder(
                   controller: _pageController,
+                  clipBehavior: Clip.none,
                   itemCount: _bankService.cards.length,
                   onPageChanged: (i) => setState(() => _activeCardIndex = i),
                   itemBuilder: (context, index) {
                     final card = _bankService.cards[index];
+                    final isActive = _activeCardIndex == index;
+
                     return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                      child: _buildBankCard(card),
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: AnimatedScale(
+                        duration: const Duration(milliseconds: 280),
+                        curve: Curves.easeOutCubic,
+                        scale: isActive ? 1.0 : 0.93,
+                        child: AnimatedOpacity(
+                          duration: const Duration(milliseconds: 280),
+                          opacity: isActive ? 1.0 : 0.72,
+                          child: _buildBankCard(card, index),
+                        ),
+                      ),
                     );
                   },
                 ),
               ),
 
-              const SizedBox(height: 12),
-
-              // Page Indicators
-              if (_bankService.cards.length > 1)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(_bankService.cards.length, (i) {
-                    final isSelected = i == _activeCardIndex;
-                    return AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      width: isSelected ? 18 : 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: isSelected ? brandViolet : const Color(0xFFD1D5DB),
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                    );
-                  }),
-                ),
-
-              const SizedBox(height: 20),
-
-              // Lock / Unlock Card Action Button (matching page_8.png & page_23.png)
-              Container(
-                width: double.infinity,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: cardBorder),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: InkWell(
-                  onTap: _toggleLock,
-                  borderRadius: BorderRadius.circular(16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        activeCard.isLocked ? Icons.lock_open_rounded : Icons.lock_outline_rounded,
-                        color: brandViolet,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        activeCard.isLocked ? 'Unlock Card' : 'Lock Card',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: brandViolet,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 26),
-
-              // Section: Transaction History (matching page_8.png)
-              const Text(
-                'Transaction History',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: textDark,
-                  letterSpacing: -0.2,
-                ),
-              ),
-
               const SizedBox(height: 14),
 
-              // Transaction List Items
-              _buildTransactionCard(
-                initial: 'A',
-                avatarBgColor: const Color(0xFF380084),
-                name: 'Angel Lou F. Yabut',
-                subtitle: 'Settled',
-                amount: '- 150,000',
-                amountColor: textDark,
-              ),
-              const SizedBox(height: 12),
-              _buildTransactionCard(
-                initial: 'M',
-                avatarBgColor: const Color(0xFF8B5CF6),
-                name: 'Mae G. Mercado',
-                subtitle: 'Interbank Inward',
-                amount: '+ 25,000',
-                amountColor: const Color(0xFF059669),
-              ),
-              const SizedBox(height: 12),
-              _buildTransactionCard(
-                initial: 'J',
-                avatarBgColor: const Color(0xFF6366F1),
-                name: 'Jessie Mae Dela Paz',
-                subtitle: 'Failed',
-                amount: '+ 25,000',
-                amountColor: const Color(0xFF059669),
-              ),
+              // Lower Content Section (18.0 horizontal padding)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 18.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Page Indicators
+                    if (_bankService.cards.length > 1)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(_bankService.cards.length, (i) {
+                          final isSelected = i == _activeCardIndex;
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            width: isSelected ? 18 : 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: isSelected ? brandViolet : const Color(0xFFD1D5DB),
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                          );
+                        }),
+                      ),
 
-              const SizedBox(height: 24),
+                    const SizedBox(height: 20),
+
+                    // Lock / Unlock Card Action Button
+                    Container(
+                      width: double.infinity,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: cardBorder),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: InkWell(
+                        onTap: _toggleLock,
+                        borderRadius: BorderRadius.circular(16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              activeCard.isLocked ? Icons.lock_open_rounded : Icons.lock_outline_rounded,
+                              color: brandViolet,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              activeCard.isLocked ? 'Unlock Card' : 'Lock Card',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: brandViolet,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 26),
+
+                    // Section: Transaction History
+                    const Text(
+                      'Transaction History',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: textDark,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    // Transaction List Items
+                    _buildTransactionCard(
+                      initial: 'A',
+                      avatarBgColor: const Color(0xFF380084),
+                      name: 'Angel Lou F. Yabut',
+                      subtitle: 'Settled',
+                      amount: '- 150,000',
+                      amountColor: textDark,
+                    ),
+                    const SizedBox(height: 8),
+                    _buildTransactionCard(
+                      initial: 'M',
+                      avatarBgColor: const Color(0xFF8B5CF6),
+                      name: 'Mae G. Mercado',
+                      subtitle: 'Interbank Inward',
+                      amount: '+ 25,000',
+                      amountColor: const Color(0xFF059669),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildTransactionCard(
+                      initial: 'J',
+                      avatarBgColor: const Color(0xFF6366F1),
+                      name: 'Jessie Mae Dela Paz',
+                      subtitle: 'Failed',
+                      amount: '+ 25,000',
+                      amountColor: const Color(0xFF059669),
+                    ),
+
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -326,54 +378,56 @@ class _CardsScreenState extends State<CardsScreen> {
     );
   }
 
-  // Horizontal Card Builder matching page_8.png and page_16.png
-  Widget _buildBankCard(BankCard card) {
+  // Card Builder
+  Widget _buildBankCard(BankCard card, int index) {
     final cleanNum = card.cardNumber.replaceAll(' ', '');
     final last4 = cleanNum.length >= 4 ? cleanNum.substring(cleanNum.length - 4) : '0809';
+    final isRevealed = _revealedCard == index;
+    final gradientColors = _getCardGradient(card, index);
 
     return Container(
-      width: double.infinity,
-      height: 224,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(24),
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(card.gradientStart),
-            const Color(0xFF380084),
-            Color(card.gradientEnd),
-          ],
+          colors: gradientColors,
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: Color(card.gradientStart).withValues(alpha: 0.35),
+            color: gradientColors.first.withValues(alpha: 0.35),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(24),
         child: Stack(
           children: [
-            // Card Content
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 18.0),
+              padding: const EdgeInsets.symmetric(horizontal: 22.0, vertical: 20.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Top Row: Aura Bank badge & Savings pill
+                  // --- TOP ROW: Aura Bank badge & Account type pill ---
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      // Aura Bank Badge
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.16),
+                          color: Colors.white.withValues(alpha: 0.18),
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.15),
+                              blurRadius: 6,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -382,48 +436,60 @@ class _CardsScreenState extends State<CardsScreen> {
                               width: 18,
                               height: 18,
                               decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(4),
+                                color: const Color(0xFF3C0092),
+                                borderRadius: BorderRadius.circular(5),
                               ),
                               alignment: Alignment.center,
                               child: const Text(
                                 'A',
                                 style: TextStyle(
-                                  color: AuraColors.primary,
+                                  color: Colors.white,
                                   fontWeight: FontWeight.w900,
-                                  fontSize: 12,
+                                  fontSize: 11,
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 8),
                             const Text(
                               'Aura Bank',
                               style: TextStyle(
                                 color: Colors.white,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12.5,
+                                decoration: TextDecoration.underline,
+                                decorationColor: Colors.white,
+                                decorationThickness: 1.5,
                               ),
                             ),
                           ],
                         ),
                       ),
+
+                      // Pill: ● Savings / ● Current / ● Credit
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 4.5),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.16),
-                          borderRadius: BorderRadius.circular(12),
+                          color: Colors.white.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.circle, color: Color(0xFF4ADE80), size: 7),
-                            const SizedBox(width: 5),
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF4ADE80),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
                             Text(
                               card.title,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
@@ -432,146 +498,174 @@ class _CardsScreenState extends State<CardsScreen> {
                     ],
                   ),
 
-                  // Middle Row: Card Number & Eye Icon
+                  // --- MIDDLE ROW: Card Number & Eye Icon ---
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Text(
+                          Text(
                             'Card Number',
                             style: TextStyle(
-                              color: Color(0xFFE9D5FF),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
+                              color: Colors.white.withValues(alpha: 0.72),
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                           const SizedBox(width: 6),
                           GestureDetector(
-                            onTap: () => setState(() => _showNumbers = !_showNumbers),
+                            onTap: () {
+                              setState(() {
+                                _revealedCard = isRevealed ? -1 : index;
+                              });
+                            },
                             child: Icon(
-                              _showNumbers ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                              color: Colors.white,
-                              size: 16,
+                              isRevealed ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                              color: Colors.white.withValues(alpha: 0.85),
+                              size: 15,
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _showNumbers
-                            ? card.cardNumber
-                            : '••••  ••••  ••••  $last4',
+                        isRevealed ? card.cardNumber : '●●●●  ●●●●  ●●●●  $last4',
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 18,
-                          fontFamily: 'monospace',
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.5,
+                          fontSize: 14.5,
+                          letterSpacing: 2.0,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],
                   ),
 
-                  // Bottom Row: Expiry, CVV, Cardholder, and Mastercard Emblem
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                  // --- BOTTOM SECTION: Expires, CVV, Cardholder, and Mastercard ---
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      // Sub-row 1: Expires & CVV
+                      Row(
                         children: [
-                          const Text(
-                            'Expires',
-                            style: TextStyle(
-                              color: Color(0xFFE9D5FF),
-                              fontSize: 9,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Expires',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.7),
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                card.expiry,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            card.expiry,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Cardholder',
-                            style: TextStyle(
-                              color: Color(0xFFE9D5FF),
-                              fontSize: 8.5,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            card.holderName,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                            ),
+                          const SizedBox(width: 42),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'CVV',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.7),
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                isRevealed ? card.cvv : '●●●',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  letterSpacing: 1.5,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
 
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      const SizedBox(height: 6),
+
+                      // Sub-row 2: Cardholder name & Mastercard emblem
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          const Text(
-                            'CVV',
-                            style: TextStyle(
-                              color: Color(0xFFE9D5FF),
-                              fontSize: 9,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Cardholder',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.65),
+                                  fontSize: 8.5,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                card.holderName,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            _showNumbers ? card.cvv : '•••',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
+                          _buildMastercardLogo(),
                         ],
                       ),
-
-                      // Mastercard / Card Network Logo
-                      _buildMastercardLogo(),
                     ],
                   ),
                 ],
               ),
             ),
 
-            // Blurred overlay when Card is Locked (matching page_23.png)
+            // Blurred overlay matching the specific card's own gradient colors
             if (card.isLocked)
               Positioned.fill(
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(22),
+                  borderRadius: BorderRadius.circular(24),
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
                     child: Container(
-                      color: const Color(0xFF2A085C).withValues(alpha: 0.55),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            // Darkened tint derived from card's own gradient
+                            Color.lerp(gradientColors.first, Colors.black, 0.40)!.withValues(alpha: 0.75),
+                            Color.lerp(gradientColors.last, Colors.black, 0.35)!.withValues(alpha: 0.65),
+                          ],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                      ),
                       child: Center(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: const [
-                            Icon(Icons.lock_rounded, color: Colors.white, size: 32),
+                            Icon(Icons.lock_rounded, color: Colors.white, size: 30),
                             SizedBox(height: 6),
                             Text(
                               'Card Locked',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w800,
-                                fontSize: 15,
+                                fontSize: 14,
                                 letterSpacing: 0.5,
                               ),
                             ),
@@ -588,28 +682,28 @@ class _CardsScreenState extends State<CardsScreen> {
     );
   }
 
-  // Overlapping Circles Mastercard Logo matching page_8.png
+  // Overlapping Circles Mastercard Logo
   Widget _buildMastercardLogo() {
     return SizedBox(
-      width: 44,
-      height: 28,
+      width: 36,
+      height: 22,
       child: Stack(
         children: [
           Container(
-            width: 26,
-            height: 26,
+            width: 22,
+            height: 22,
             decoration: const BoxDecoration(
               color: Color(0xFFEB001B),
               shape: BoxShape.circle,
             ),
           ),
           Positioned(
-            left: 16,
+            left: 14,
             child: Container(
-              width: 26,
-              height: 26,
+              width: 22,
+              height: 22,
               decoration: BoxDecoration(
-                color: const Color(0xFFF79E1B).withValues(alpha: 0.92),
+                color: const Color(0xFFF79E1B).withValues(alpha: 0.95),
                 shape: BoxShape.circle,
               ),
             ),
@@ -619,7 +713,7 @@ class _CardsScreenState extends State<CardsScreen> {
     );
   }
 
-  // Transaction item card matching page_8.png
+  // Transaction item card
   Widget _buildTransactionCard({
     required String initial,
     required Color avatarBgColor,
@@ -629,7 +723,7 @@ class _CardsScreenState extends State<CardsScreen> {
     required Color amountColor,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
@@ -645,8 +739,8 @@ class _CardsScreenState extends State<CardsScreen> {
       child: Row(
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
               color: avatarBgColor,
               shape: BoxShape.circle,
@@ -669,7 +763,7 @@ class _CardsScreenState extends State<CardsScreen> {
                 Text(
                   name,
                   style: const TextStyle(
-                    fontSize: 14,
+                    fontSize: 13,
                     fontWeight: FontWeight.w800,
                     color: textDark,
                   ),
@@ -678,7 +772,7 @@ class _CardsScreenState extends State<CardsScreen> {
                 Text(
                   subtitle,
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: FontWeight.w500,
                     color: textGray,
                   ),
@@ -689,7 +783,7 @@ class _CardsScreenState extends State<CardsScreen> {
           Text(
             amount,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.w800,
               color: amountColor,
             ),

@@ -285,427 +285,480 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.52),
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setModalState) => Container(
-          decoration: const BoxDecoration(
-            color: surfaceWhite,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-            boxShadow: [
-              BoxShadow(
-                color: Color(0x2A000000),
-                blurRadius: 30,
-                offset: Offset(0, -6),
-              ),
-            ],
-          ),
-          padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 14,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Sleek Drag Handle
-              Center(
-                child: Container(
-                  width: 44,
-                  height: 4.5,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFCBD5E1),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
+        builder: (context, setModalState) {
+          final viewInsets = MediaQuery.of(context).viewInsets;
+          final viewPadding = MediaQuery.of(context).viewPadding;
+
+          return Align(
+            alignment: Alignment.bottomCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: Container(
+                margin: EdgeInsets.only(
+                  left: 14,
+                  right: 14,
+                  bottom: viewInsets.bottom > 0
+                      ? viewInsets.bottom + 14
+                      : (viewPadding.bottom > 0 ? viewPadding.bottom + 12 : 20),
                 ),
-              ),
-              const SizedBox(height: 18),
-
-              // Sheet Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Recipient Information',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          color: textDark,
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-                      SizedBox(height: 3),
-                      Text(
-                        'Choose a recent contact or enter new details',
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w500,
-                          color: textGray,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: cardBorder),
+                decoration: BoxDecoration(
+                  color: surfaceWhite,
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(color: cardBorder.withValues(alpha: 0.9), width: 1),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x380F172A),
+                      blurRadius: 36,
+                      spreadRadius: 0,
+                      offset: Offset(0, 10),
                     ),
-                    child: IconButton(
-                      padding: EdgeInsets.zero,
-                      icon: const Icon(Icons.close_rounded, size: 18, color: textGray),
-                      onPressed: () => Navigator.of(ctx).pop(),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-
-              // Recent Contacts Quick Pick
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'QUICK SELECT RECENT',
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.9,
-                      color: textMuted,
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF3E8FF),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Text(
-                      'Tap to fill',
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w700,
-                        color: brandAccent,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-
-              // Horizontal Recent Contacts Carousel
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                child: Row(
-                  children: _recentRecipients.map((r) {
-                    final isSelected =
-                        _recipientController.text == (r['name'] as String);
-                    final gradient = r['gradient'] as List<Color>;
-
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _recipientController.text = r['name'] as String;
-                          _accountController.text = r['account'] as String;
-                          _isAuraToAura = r['isAura'] as bool;
-                          _selectedPartnerBankIndex = r['partnerIndex'] as int;
-                        });
-                        setModalState(() {});
-                      },
-                      child: Container(
-                        margin: const EdgeInsets.only(right: 10),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFFFAF5FF) : inputBg,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: isSelected ? brandAccent : cardBorder,
-                            width: isSelected ? 1.6 : 1,
-                          ),
-                          boxShadow: isSelected
-                              ? [
-                                  BoxShadow(
-                                    color: brandAccent.withValues(alpha: 0.12),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 3),
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: gradient,
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                shape: BoxShape.circle,
-                              ),
-                              alignment: Alignment.center,
-                              child: Text(
-                                _getInitials(r['name'] as String),
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w900,
-                                  color: Colors.white,
-                                ),
-                              ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(28),
+                  clipBehavior: Clip.antiAlias,
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Sleek Drag Handle
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFCBD5E1),
+                              borderRadius: BorderRadius.circular(2),
                             ),
-                            const SizedBox(width: 9),
-                            Column(
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Sheet Header
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  r['name'] as String,
+                                  'Recipient Information',
                                   style: TextStyle(
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w800,
-                                    color: isSelected ? brandViolet : textDark,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w900,
+                                    color: textDark,
+                                    letterSpacing: -0.3,
                                   ),
                                 ),
+                                SizedBox(height: 3),
                                 Text(
-                                  '${r['bank']} • ${(r['account'] as String).substring((r['account'] as String).length - 4)}',
-                                  style: const TextStyle(
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.w600,
+                                  'Choose a recent contact or enter new details',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w500,
                                     color: textGray,
                                   ),
                                 ),
                               ],
                             ),
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF1F5F9),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: cardBorder),
+                              ),
+                              child: IconButton(
+                                padding: EdgeInsets.zero,
+                                icon: const Icon(Icons.close_rounded, size: 18, color: textGray),
+                                onPressed: () => Navigator.of(ctx).pop(),
+                              ),
+                            ),
                           ],
                         ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
+                        const SizedBox(height: 16),
 
-              const SizedBox(height: 18),
-
-              // Name Field
-              const Text(
-                'Account Holder Name',
-                style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w700,
-                  color: textGray,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Container(
-                decoration: BoxDecoration(
-                  color: inputBg,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: cardBorder),
-                ),
-                child: TextField(
-                  controller: _recipientController,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: textDark,
-                  ),
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.person_outline_rounded, size: 20, color: brandAccent),
-                    hintText: 'Enter recipient name',
-                    hintStyle: TextStyle(fontSize: 13, color: textMuted),
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                  ),
-                  onChanged: (_) => setState(() {}),
-                ),
-              ),
-
-              const SizedBox(height: 14),
-
-              // Account Number Field
-              const Text(
-                'Account Number',
-                style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w700,
-                  color: textGray,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Container(
-                decoration: BoxDecoration(
-                  color: inputBg,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: cardBorder),
-                ),
-                child: TextField(
-                  controller: _accountController,
-                  keyboardType: TextInputType.number,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: textDark,
-                    letterSpacing: 0.5,
-                  ),
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.tag_rounded, size: 20, color: brandAccent),
-                    hintText: 'Enter account number',
-                    hintStyle: TextStyle(fontSize: 13, color: textMuted),
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                  ),
-                  onChanged: (_) => setState(() {}),
-                ),
-              ),
-
-              if (!_isAuraToAura) ...[
-                const SizedBox(height: 14),
-                const Text(
-                  'Destination Partner Bank',
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
-                    color: textGray,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: inputBg,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: cardBorder),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<int>(
-                      isExpanded: true,
-                      value: _selectedPartnerBankIndex,
-                      icon: const Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        color: brandAccent,
-                        size: 24,
-                      ),
-                      items: List.generate(_partnerBanks.length, (idx) {
-                        final b = _partnerBanks[idx];
-                        return DropdownMenuItem(
-                          value: idx,
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 28,
-                                height: 28,
-                                decoration: BoxDecoration(
-                                  color: (b['color'] as Color).withValues(alpha: 0.15),
-                                  shape: BoxShape.circle,
-                                ),
-                                alignment: Alignment.center,
-                                child: Text(
-                                  b['avatar'] as String,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w900,
-                                    color: b['color'] as Color,
-                                  ),
+                        // Recent Contacts Quick Pick Header
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'QUICK SELECT RECENT',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.9,
+                                color: textMuted,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF3E8FF),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Text(
+                                'Tap to fill',
+                                style: TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: brandAccent,
                                 ),
                               ),
-                              const SizedBox(width: 10),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    b['name'] as String,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 13,
-                                      color: textDark,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Responsive Grid / Row for Recent Contacts (No overflow, fully mobile-native)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: _recentRecipients.map((r) {
+                            final isSelected =
+                                _recipientController.text == (r['name'] as String);
+                            final gradient = r['gradient'] as List<Color>;
+                            final firstName = (r['name'] as String).split(' ').first;
+                            final shortBank = (r['bank'] as String)
+                                .replaceAll(' Digital Bank', '')
+                                .replaceAll(' Bank', '');
+
+                            return Expanded(
+                              child: GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () {
+                                  setState(() {
+                                    _recipientController.text = r['name'] as String;
+                                    _accountController.text = r['account'] as String;
+                                    _isAuraToAura = r['isAura'] as bool;
+                                    _selectedPartnerBankIndex = r['partnerIndex'] as int;
+                                  });
+                                  setModalState(() {});
+                                },
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Stack(
+                                      clipBehavior: Clip.none,
+                                      alignment: Alignment.center,
+                                      children: [
+                                        AnimatedContainer(
+                                          duration: const Duration(milliseconds: 200),
+                                          width: 48,
+                                          height: 48,
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              colors: gradient,
+                                              begin: Alignment.topLeft,
+                                              end: Alignment.bottomRight,
+                                            ),
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: isSelected ? brandAccent : Colors.white,
+                                              width: isSelected ? 2.5 : 1.5,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: isSelected
+                                                    ? brandAccent.withValues(alpha: 0.35)
+                                                    : Colors.black.withValues(alpha: 0.08),
+                                                blurRadius: isSelected ? 8 : 4,
+                                                offset: const Offset(0, 3),
+                                              ),
+                                            ],
+                                          ),
+                                          alignment: Alignment.center,
+                                          child: Text(
+                                            _getInitials(r['name'] as String),
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w900,
+                                              color: Colors.white,
+                                              letterSpacing: 0.5,
+                                            ),
+                                          ),
+                                        ),
+                                        if (isSelected)
+                                          Positioned(
+                                            right: -2,
+                                            bottom: -2,
+                                            child: Container(
+                                              width: 18,
+                                              height: 18,
+                                              decoration: BoxDecoration(
+                                                color: brandAccent,
+                                                shape: BoxShape.circle,
+                                                border: Border.all(color: Colors.white, width: 1.5),
+                                              ),
+                                              child: const Icon(
+                                                Icons.check_rounded,
+                                                size: 11,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
                                     ),
-                                  ),
-                                  Text(
-                                    b['group'] as String,
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w500,
-                                      color: textGray,
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      firstName,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                        color: isSelected ? brandViolet : textDark,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(height: 1),
+                                    Text(
+                                      shortBank,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w500,
+                                        color: isSelected ? brandAccent : textGray,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+
+                        const SizedBox(height: 18),
+
+                        // Name Field
+                        const Text(
+                          'Account Holder Name',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: textGray,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: inputBg,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: cardBorder),
+                          ),
+                          child: TextField(
+                            controller: _recipientController,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: textDark,
+                            ),
+                            decoration: const InputDecoration(
+                              prefixIcon: Icon(Icons.person_outline_rounded, size: 20, color: brandAccent),
+                              hintText: 'Enter recipient name',
+                              hintStyle: TextStyle(fontSize: 13, color: textMuted),
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                            ),
+                            onChanged: (_) {
+                              setModalState(() {});
+                              setState(() {});
+                            },
+                          ),
+                        ),
+
+                        const SizedBox(height: 14),
+
+                        // Account Number Field
+                        const Text(
+                          'Account Number',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: textGray,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: inputBg,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: cardBorder),
+                          ),
+                          child: TextField(
+                            controller: _accountController,
+                            keyboardType: TextInputType.number,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: textDark,
+                              letterSpacing: 0.5,
+                            ),
+                            decoration: const InputDecoration(
+                              prefixIcon: Icon(Icons.tag_rounded, size: 20, color: brandAccent),
+                              hintText: 'Enter account number',
+                              hintStyle: TextStyle(fontSize: 13, color: textMuted),
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                            ),
+                            onChanged: (_) {
+                              setModalState(() {});
+                              setState(() {});
+                            },
+                          ),
+                        ),
+
+                        if (!_isAuraToAura) ...[
+                          const SizedBox(height: 14),
+                          const Text(
+                            'Destination Partner Bank',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                              color: textGray,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: inputBg,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: cardBorder),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<int>(
+                                isExpanded: true,
+                                value: _selectedPartnerBankIndex,
+                                icon: const Icon(
+                                  Icons.keyboard_arrow_down_rounded,
+                                  color: brandAccent,
+                                  size: 24,
+                                ),
+                                items: List.generate(_partnerBanks.length, (idx) {
+                                  final b = _partnerBanks[idx];
+                                  return DropdownMenuItem(
+                                    value: idx,
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          width: 28,
+                                          height: 28,
+                                          decoration: BoxDecoration(
+                                            color: (b['color'] as Color).withValues(alpha: 0.15),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          alignment: Alignment.center,
+                                          child: Text(
+                                            b['avatar'] as String,
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w900,
+                                              color: b['color'] as Color,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              b['name'] as String,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w800,
+                                                fontSize: 13,
+                                                color: textDark,
+                                              ),
+                                            ),
+                                            Text(
+                                              b['group'] as String,
+                                              style: const TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w500,
+                                                color: textGray,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }),
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    setModalState(() => _selectedPartnerBankIndex = val);
+                                    setState(() => _selectedPartnerBankIndex = val);
+                                  }
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
+
+                        const SizedBox(height: 20),
+
+                        // Save Details Button
+                        Container(
+                          width: double.infinity,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [brandPrimary, brandAccent],
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: brandPrimary.withValues(alpha: 0.3),
+                                blurRadius: 14,
+                                offset: const Offset(0, 5),
                               ),
                             ],
                           ),
-                        );
-                      }),
-                      onChanged: (val) {
-                        if (val != null) {
-                          setModalState(() => _selectedPartnerBankIndex = val);
-                          setState(() => _selectedPartnerBankIndex = val);
-                        }
-                      },
-                    ),
-                  ),
-                ),
-              ],
-
-              const SizedBox(height: 22),
-
-              // Save Details Button
-              Container(
-                width: double.infinity,
-                height: 50,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [brandPrimary, brandAccent],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: brandPrimary.withValues(alpha: 0.3),
-                      blurRadius: 14,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  onPressed: () => Navigator.of(ctx).pop(),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.check_circle_outline_rounded, color: Colors.white, size: 18),
-                      SizedBox(width: 8),
-                      Text(
-                        'Save Details',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.3,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            ),
+                            onPressed: () => Navigator.of(ctx).pop(),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.check_circle_outline_rounded, color: Colors.white, size: 18),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Save Details',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }

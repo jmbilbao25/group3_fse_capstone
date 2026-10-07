@@ -48,37 +48,6 @@ class AuraBankApp extends StatelessWidget {
           elevation: 0,
         ),
       ),
-      builder: (context, child) {
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            // When viewed on wide screens (desktop/web browser), wrap in a sleek mobile frame
-            if (constraints.maxWidth > 500) {
-              return Container(
-                color: const Color(0xFF0B0F19),
-                alignment: Alignment.center,
-                child: Container(
-                  constraints: const BoxConstraints(maxWidth: 430),
-                  clipBehavior: Clip.antiAlias,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(44),
-                    border: Border.all(color: const Color(0xFF1E293B), width: 8),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x66000000),
-                        blurRadius: 40,
-                        offset: Offset(0, 18),
-                      ),
-                    ],
-                  ),
-                  child: child ?? const SizedBox(),
-                ),
-              );
-            }
-            return child ?? const SizedBox();
-          },
-        );
-      },
       initialRoute: '/',
       routes: {
         '/': (context) => const SplashScreen(),

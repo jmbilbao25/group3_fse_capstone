@@ -1191,15 +1191,19 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                       children: [
                         Row(
                           children: [
-                            Text(
-                              _recipientController.text.trim().isNotEmpty
-                                  ? _recipientController.text.trim()
-                                  : 'Jessie Mae Dela Paz',
-                              style: const TextStyle(
-                                fontSize: 15.5,
-                                fontWeight: FontWeight.w800,
-                                color: textDark,
-                                letterSpacing: -0.2,
+                            Flexible(
+                              child: Text(
+                                _recipientController.text.trim().isNotEmpty
+                                    ? _recipientController.text.trim()
+                                    : 'Jessie Mae Dela Paz',
+                                style: const TextStyle(
+                                  fontSize: 15.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: textDark,
+                                  letterSpacing: -0.2,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                               ),
                             ),
                             const SizedBox(width: 4),
@@ -1229,12 +1233,16 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                               ),
                             ),
                             const SizedBox(width: 6),
-                            Text(
-                              'Account No. ${_accountController.text.trim().isNotEmpty ? _accountController.text.trim() : '1234568898951'}',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: textGray,
+                            Expanded(
+                              child: Text(
+                                'Account No. ${_accountController.text.trim().isNotEmpty ? _accountController.text.trim() : '1234568898951'}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: textGray,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                               ),
                             ),
                           ],
@@ -1522,6 +1530,30 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                 isDense: true,
                 isExpanded: true,
                 value: _selectedPurpose,
+                selectedItemBuilder: (context) {
+                  return _purposes.map((p) {
+                    final name = p['name'] as String;
+                    final icon = p['icon'] as IconData;
+                    return Row(
+                      children: [
+                        Icon(icon, size: 18, color: brandAccent),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            name,
+                            style: const TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w800,
+                              color: textDark,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                      ],
+                    );
+                  }).toList();
+                },
                 hint: const Row(
                   children: [
                     Icon(Icons.category_outlined, size: 18, color: textMuted),
@@ -1561,27 +1593,33 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                           child: Icon(icon, color: brandAccent, size: 16),
                         ),
                         const SizedBox(width: 10),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              name,
-                              style: const TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w800,
-                                color: textDark,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                name,
+                                style: const TextStyle(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: textDark,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                               ),
-                            ),
-                            Text(
-                              desc,
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
-                                color: textGray,
+                              Text(
+                                desc,
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                  color: textGray,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -1700,33 +1738,14 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
           elevation: 0,
         ),
         onPressed: _onSendMoney,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'Send Money',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-                letterSpacing: 0.3,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.16),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.arrow_forward_rounded,
-                color: Colors.white,
-                size: 17,
-              ),
-            ),
-          ],
+        child: const Text(
+          'Send Money',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+            letterSpacing: 0.3,
+          ),
         ),
       ),
     );

@@ -146,6 +146,7 @@ void main() {
     expect(find.text('Statement'), findsOneWidget);
     expect(find.text('Bills'), findsNothing);
     expect(find.text('More'), findsNothing);
+    expect(find.text('Risk Engine Showcase'), findsNothing);
     expect(find.text('Recent Transactions'), findsOneWidget);
     expect(find.text('Angel Lou F. Yabut'), findsOneWidget);
     expect(find.text('Same Bank Transfer • Settled'), findsOneWidget);

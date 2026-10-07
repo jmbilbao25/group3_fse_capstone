@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../models/bank_models.dart';
 import '../services/bank_service.dart';
 import '../theme/aura_theme.dart';
-import 'risk_showcase_screen.dart';
 import 'send_money_screen.dart';
 import 'statement_screen.dart';
 
@@ -65,14 +64,9 @@ class _HomeScreenState extends State<HomeScreen> {
               // 3. Quick Actions Grid
               _buildQuickActions(),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 22),
 
-              // 4. Interactive Risk Engine Showcase Banner
-              _buildRiskEngineBanner(),
-
-              const SizedBox(height: 24),
-
-              // 5. Recent Transactions
+              // 4. Recent Transactions
               _buildRecentTransactions(),
 
               const SizedBox(height: 16),
@@ -592,134 +586,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildRiskEngineBanner() {
-    return GestureDetector(
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => const RiskEngineShowcaseScreen(),
-          ),
-        );
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF22004F), Color(0xFF4A0E78)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(22),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF380084).withValues(alpha: 0.28),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // Shield Icon with Halo
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.25),
-                  width: 1.5,
-                ),
-              ),
-              child: const Icon(
-                Icons.security_rounded,
-                color: Colors.white,
-                size: 24,
-              ),
-            ),
-
-            const SizedBox(width: 14),
-
-            // Text Info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFBBF24),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: const Text(
-                          'INTERACTIVE DEMO',
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.5,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      const Text(
-                        'Aura Defense',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFFD8B4FE),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Risk Engine Showcase',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  const Text(
-                    'Simulate Allowed, Warning, & Blocked transfers live.',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.white70,
-                      height: 1.25,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(width: 8),
-
-            // Play Arrow Icon
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.18),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 13,
-                color: Colors.white,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

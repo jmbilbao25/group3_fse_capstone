@@ -142,8 +142,11 @@ void main() {
 
     expect(find.text('Available Balance'), findsOneWidget);
     expect(find.text('Transfer'), findsOneWidget);
-    expect(find.text('Banks'), findsOneWidget);
-    expect(find.text('Statement'), findsOneWidget);
+    expect(find.text('Scan'), findsOneWidget);
+    expect(find.text('Cards'), findsOneWidget);
+    expect(find.text('Analytics'), findsOneWidget);
+    expect(find.text('Banks'), findsNothing);
+    expect(find.text('Statement'), findsNothing);
     expect(find.text('Bills'), findsNothing);
     expect(find.text('More'), findsNothing);
     expect(find.text('Risk Engine Showcase'), findsNothing);
@@ -168,9 +171,9 @@ void main() {
     );
 
     expect(find.text('Home'), findsOneWidget);
-    expect(find.text('Cards'), findsOneWidget);
-    expect(find.text('Scan'), findsOneWidget);
-    expect(find.text('Analytics'), findsOneWidget);
+    expect(find.text('Cards'), findsWidgets);
+    expect(find.text('Scan'), findsWidgets);
+    expect(find.text('Analytics'), findsWidgets);
     expect(find.text('Profile'), findsOneWidget);
   });
 

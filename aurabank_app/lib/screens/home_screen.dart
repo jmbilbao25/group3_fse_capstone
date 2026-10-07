@@ -68,22 +68,22 @@ class _HomeScreenState extends State<HomeScreen> {
               // 1. Top Institutional Client Profile Header
               _buildProfileHeader(),
 
-              const SizedBox(height: 18),
+              const SizedBox(height: 20),
 
               // 2. High-End Available Balance Hero Card
               _buildBalanceCard(),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 22),
 
-              // 3. Quick Actions: Scan, Transfer, Analytics
+              // 3. Quick Actions: Transfer, Scan, Cards, Analytics
               _buildQuickActions(),
 
-              const SizedBox(height: 22),
+              const SizedBox(height: 26),
 
               // 4. Recent Transactions Ledger
               _buildRecentTransactions(),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 18),
             ],
           ),
         ),
@@ -336,101 +336,62 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildQuickActions() {
-    return Column(
+    return Row(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildActionItem(
-              icon: Icons.swap_horiz_rounded,
-              label: 'Transfer',
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const SendMoneyScreen()),
-                );
-              },
-            ),
-            _buildActionItem(
-              icon: Icons.qr_code_scanner_rounded,
-              label: 'Scan',
-              onTap: () {
-                if (widget.onNavigateTab != null) {
-                  widget.onNavigateTab!(2);
-                } else {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const ScanScreen()),
-                  );
-                }
-              },
-            ),
-            _buildActionItem(
-              icon: Icons.credit_card_rounded,
-              label: 'Cards',
-              onTap: () {
-                if (widget.onNavigateTab != null) {
-                  widget.onNavigateTab!(1);
-                } else {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const CardsScreen()),
-                  );
-                }
-              },
-            ),
-            _buildActionItem(
-              icon: Icons.insights_rounded,
-              label: 'Analytics',
-              onTap: () {
-                if (widget.onNavigateTab != null) {
-                  widget.onNavigateTab!(3);
-                } else {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const AnalyticsScreen()),
-                  );
-                }
-              },
-            ),
-          ],
+        Expanded(
+          child: _buildActionItem(
+            icon: Icons.swap_horiz_rounded,
+            label: 'Transfer',
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SendMoneyScreen()),
+              );
+            },
+          ),
         ),
-
-        const SizedBox(height: 18),
-
-        // Institutional Hardware Trust Pill Banner
-        InkWell(
-          onTap: () {
-            Navigator.of(context).pushNamed('/devices');
-          },
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: cardBorder, width: 1.2),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.02),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.verified_user_rounded, color: Color(0xFF059669), size: 16),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'iPhone 15 Pro • Primary Trusted Hardware',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: textDark,
-                    ),
-                  ),
-                ),
-                Icon(Icons.arrow_forward_ios_rounded, size: 12, color: textGray),
-              ],
-            ),
+        Expanded(
+          child: _buildActionItem(
+            icon: Icons.qr_code_scanner_rounded,
+            label: 'Scan',
+            onTap: () {
+              if (widget.onNavigateTab != null) {
+                widget.onNavigateTab!(2);
+              } else {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ScanScreen()),
+                );
+              }
+            },
+          ),
+        ),
+        Expanded(
+          child: _buildActionItem(
+            icon: Icons.credit_card_rounded,
+            label: 'Cards',
+            onTap: () {
+              if (widget.onNavigateTab != null) {
+                widget.onNavigateTab!(1);
+              } else {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const CardsScreen()),
+                );
+              }
+            },
+          ),
+        ),
+        Expanded(
+          child: _buildActionItem(
+            icon: Icons.insights_rounded,
+            label: 'Analytics',
+            onTap: () {
+              if (widget.onNavigateTab != null) {
+                widget.onNavigateTab!(3);
+              } else {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const AnalyticsScreen()),
+                );
+              }
+            },
           ),
         ),
       ],
@@ -442,9 +403,12 @@ class _HomeScreenState extends State<HomeScreen> {
     required String label,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
             width: 58,
@@ -473,9 +437,12 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Icon(icon, color: brandViolet, size: 22),
             ),
           ),
-          const SizedBox(height: 7),
+          const SizedBox(height: 8),
           Text(
             label,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,

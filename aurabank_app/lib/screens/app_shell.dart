@@ -7,6 +7,11 @@ import 'profile/profile_screen.dart';
 import '../services/bank_service.dart';
 import '../theme/aura_theme.dart';
 
+import 'web/web_sidebar.dart';
+import 'web/web_header.dart';
+import 'web/web_dashboard_screen.dart';
+import 'transfer/send_money_screen.dart';
+
 class AppShell extends StatefulWidget {
   final int initialIndex;
 
@@ -35,6 +40,70 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth >= 960) {
+          return _buildWebDesktopShell();
+        }
+        return _buildMobileShell();
+      },
+    );
+  }
+
+  Widget _buildWebDesktopShell() {
+    final webScreens = [
+      WebDashboardScreen(onNavigateTab: _onNavigateTab),
+      const CardsScreen(),
+      ScanScreen(onBack: () => _onNavigateTab(0)),
+      const AnalyticsScreen(),
+      const ProfileScreen(),
+    ];
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF9FAFB),
+      body: Row(
+        children: [
+          // 1. Persistent 260px Left Sidebar
+          WebSidebar(
+            selectedIndex: _currentIndex,
+            onDestinationSelected: _onNavigateTab,
+            onLogout: () {
+              Navigator.of(context).pushReplacementNamed('/login');
+            },
+          ),
+
+          // 2. Main Content Viewport
+          Expanded(
+            child: Column(
+              children: [
+                // Top Header Bar
+                WebHeader(
+                  onQuickTransfer: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const SendMoneyScreen()),
+                    );
+                  },
+                  onRefresh: () {
+                    BankService().syncWithBackend();
+                  },
+                ),
+                // Body View
+                Expanded(
+                  child: IndexedStack(
+                    index: _currentIndex,
+                    children: webScreens,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileShell() {
     final screens = [
       HomeScreen(onNavigateTab: _onNavigateTab),
       const CardsScreen(),

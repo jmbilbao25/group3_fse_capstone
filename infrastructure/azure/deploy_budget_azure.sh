@@ -43,9 +43,26 @@ if [ -z "$RESOURCE_GROUP" ]; then
   fi
 fi
 
-ACR_NAME="${ACR_NAME:-acrbanking$RANDOM_SUFFIX}"
+# Detect existing ACR in the resource group if already created
+EXISTING_ACR=$(az acr list --resource-group "$RESOURCE_GROUP" --query "[0].name" -o tsv 2>/dev/null || true)
+if [ -n "$EXISTING_ACR" ] && [ "$EXISTING_ACR" != "None" ]; then
+  ACR_NAME="$EXISTING_ACR"
+  echo "Detected existing ACR: $ACR_NAME"
+else
+  ACR_NAME="${ACR_NAME:-acrbanking$RANDOM_SUFFIX}"
+fi
+
 AKS_CLUSTER_NAME="${AKS_CLUSTER_NAME:-aks-banking-budget}"
-SQL_SERVER_NAME="${SQL_SERVER_NAME:-sql-banking-$RANDOM_SUFFIX}"
+
+# Detect existing Azure SQL Server in the resource group if already created
+EXISTING_SQL=$(az sql server list --resource-group "$RESOURCE_GROUP" --query "[0].name" -o tsv 2>/dev/null || true)
+if [ -n "$EXISTING_SQL" ] && [ "$EXISTING_SQL" != "None" ]; then
+  SQL_SERVER_NAME="$EXISTING_SQL"
+  echo "Detected existing Azure SQL Server: $SQL_SERVER_NAME"
+else
+  SQL_SERVER_NAME="${SQL_SERVER_NAME:-sql-banking-$RANDOM_SUFFIX}"
+fi
+
 SQL_DB_NAME="sqldb-master"
 SQL_ADMIN_USER="sqladminuser"
 SQL_ADMIN_PASS="Capst0ne!Secure${RANDOM_SUFFIX}#"
@@ -66,32 +83,38 @@ else
 fi
 
 echo ""
-echo "[2/7] Provisioning Azure SQL Logical Server & Basic 5 DTU Database (~$0.16/day)..."
-az sql server create \
-  --name "$SQL_SERVER_NAME" \
-  --resource-group "$RESOURCE_GROUP" \
-  --location "$LOCATION" \
-  --admin-user "$SQL_ADMIN_USER" \
-  --admin-password "$SQL_ADMIN_PASS" \
-  -o table
+if az sql server show --name "$SQL_SERVER_NAME" --resource-group "$RESOURCE_GROUP" &>/dev/null; then
+  echo "[2/7] Using existing Azure SQL Server: $SQL_SERVER_NAME..."
+  # Synchronize admin password with the current deployment secrets
+  az sql server update --name "$SQL_SERVER_NAME" --resource-group "$RESOURCE_GROUP" --admin-password "$SQL_ADMIN_PASS" -o none 2>/dev/null || true
+else
+  echo "[2/7] Provisioning Azure SQL Logical Server & Basic 5 DTU Database (~$0.16/day)..."
+  az sql server create \
+    --name "$SQL_SERVER_NAME" \
+    --resource-group "$RESOURCE_GROUP" \
+    --location "$LOCATION" \
+    --admin-user "$SQL_ADMIN_USER" \
+    --admin-password "$SQL_ADMIN_PASS" \
+    -o table
 
-# Open firewall to all Azure services (0.0.0.0 to 0.0.0.0)
-az sql server firewall-rule create \
-  --server "$SQL_SERVER_NAME" \
-  --resource-group "$RESOURCE_GROUP" \
-  --name "AllowAzureInternal" \
-  --start-ip-address 0.0.0.0 \
-  --end-ip-address 0.0.0.0 \
-  -o table
+  # Open firewall to all Azure services (0.0.0.0 to 0.0.0.0)
+  az sql server firewall-rule create \
+    --server "$SQL_SERVER_NAME" \
+    --resource-group "$RESOURCE_GROUP" \
+    --name "AllowAzureInternal" \
+    --start-ip-address 0.0.0.0 \
+    --end-ip-address 0.0.0.0 \
+    -o table
 
-az sql db create \
-  --server "$SQL_SERVER_NAME" \
-  --resource-group "$RESOURCE_GROUP" \
-  --name "$SQL_DB_NAME" \
-  --edition Basic \
-  --service-objective Basic \
-  --capacity 5 \
-  -o table
+  az sql db create \
+    --server "$SQL_SERVER_NAME" \
+    --resource-group "$RESOURCE_GROUP" \
+    --name "$SQL_DB_NAME" \
+    --edition Basic \
+    --service-objective Basic \
+    --capacity 5 \
+    -o table
+fi
 
 echo ""
 if [ "$USE_MANAGED_POSTGRES" = "true" ]; then
@@ -133,24 +156,43 @@ else
 fi
 
 echo ""
-echo "[4/7] Provisioning Azure Container Registry (Basic SKU, ~\$0.17/day)..."
-az acr create \
-  --name "$ACR_NAME" \
-  --resource-group "$RESOURCE_GROUP" \
-  --sku Basic \
-  --admin-enabled true \
-  -o table
+if az acr show --name "$ACR_NAME" --resource-group "$RESOURCE_GROUP" &>/dev/null; then
+  echo "[4/7] Using existing Azure Container Registry: $ACR_NAME..."
+else
+  echo "[4/7] Provisioning Azure Container Registry (Basic SKU, ~\$0.17/day)..."
+  az acr create \
+    --name "$ACR_NAME" \
+    --resource-group "$RESOURCE_GROUP" \
+    --sku Basic \
+    --admin-enabled true \
+    -o table
+fi
 
 echo ""
-echo "[5/7] Provisioning Single-Node AKS Cluster (Standard_B2s, Free Control Plane, ~\$1.00/day)..."
-az aks create \
-  --name "$AKS_CLUSTER_NAME" \
-  --resource-group "$RESOURCE_GROUP" \
-  --node-count 1 \
-  --node-vm-size Standard_B2s \
-  --tier free \
-  --generate-ssh-keys \
-  -o table
+AKS_VM_SIZE="${AKS_VM_SIZE:-standard_b2s_v2}"
+echo "[5/7] Provisioning Single-Node AKS Cluster ($AKS_VM_SIZE, Free Control Plane, ~\$1.00/day)..."
+if az aks show --name "$AKS_CLUSTER_NAME" --resource-group "$RESOURCE_GROUP" &>/dev/null; then
+  echo "Using existing AKS Cluster: $AKS_CLUSTER_NAME..."
+else
+  if ! az aks create \
+    --name "$AKS_CLUSTER_NAME" \
+    --resource-group "$RESOURCE_GROUP" \
+    --node-count 1 \
+    --node-vm-size "$AKS_VM_SIZE" \
+    --tier free \
+    --generate-ssh-keys \
+    -o table; then
+    echo "Retrying AKS creation with alternative budget VM size standard_b2as_v2..."
+    az aks create \
+      --name "$AKS_CLUSTER_NAME" \
+      --resource-group "$RESOURCE_GROUP" \
+      --node-count 1 \
+      --node-vm-size "standard_b2as_v2" \
+      --tier free \
+      --generate-ssh-keys \
+      -o table
+  fi
+fi
 
 az aks update -n "$AKS_CLUSTER_NAME" -g "$RESOURCE_GROUP" --attach-acr "$ACR_NAME" 2>/dev/null || true
 

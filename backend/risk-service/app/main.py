@@ -117,12 +117,28 @@ analyst_store = AnalystDecisionStore()
 reviewer_metrics = ReviewerMetrics()
 decision_store = DecisionStore()
 
-nanojev_engine = NanoJevSecondLookEngine(
-    intra_op_threads=ONNX_INTRA_OP_THREADS,
-    temperature=5.0,
-    theta_block=0.40,
-    theta_2fa=0.60
-)
+RISK_ENGINE_BACKEND = os.environ.get("RISK_ENGINE_BACKEND", "laya").lower()
+
+if RISK_ENGINE_BACKEND == "laya":
+    from app.reviewer import LayaSecondLookEngine
+    from app.laya_engine import LayaEngine
+    laya_engine_instance = LayaEngine()
+    nanojev_engine = LayaSecondLookEngine(
+        model_name="laya-multilingual",
+        intra_op_threads=4,
+        temperature=5.0,
+        theta_block=0.40,
+        theta_2fa=0.60
+    )
+    typology_engine = laya_engine_instance
+else:
+    nanojev_engine = NanoJevSecondLookEngine(
+        intra_op_threads=ONNX_INTRA_OP_THREADS,
+        temperature=5.0,
+        theta_block=0.40,
+        theta_2fa=0.60
+    )
+    typology_engine = nanojev_typology_engine
 
 worker_pool = AsyncReviewWorkerPool(
     engine=nanojev_engine,
@@ -147,11 +163,12 @@ def health_check():
     return {
         "status": "UP",
         "service": "risk-service",
-        "architecture": "Decoupled Sync S2 + Async NanoJev Reviewer",
+        "architecture": f"Decoupled Sync S2 + Async {'Laya' if RISK_ENGINE_BACKEND == 'laya' else 'NanoJev'} Reviewer",
         "version": "2.0.0",
         "sync_engine": "Gate 0 + XGBoost (S2)",
         "async_reviewer": {
-            "model": "Qwen2.5-0.5B INT8 ONNX",
+            "model": "Laya ModernBERT / mmBERT" if RISK_ENGINE_BACKEND == "laya" else "Qwen2.5-0.5B INT8 ONNX",
+            "backend": RISK_ENGINE_BACKEND,
             "model_loaded": nanojev_engine.model_loaded,
             "intra_op_threads": nanojev_engine.intra_op_threads,
             "settlement_window_seconds": SETTLEMENT_WINDOW_SECONDS
@@ -375,6 +392,20 @@ def analyze_transfer_risk(req: RiskAnalysisRequest):
             tabular_data=tabular_row
         )
 
+    # 8. Synchronous Memo Analysis (powered by Laya, executed inline in < 0.2ms)
+    memo_analysis = None
+    if has_memo and typology_engine is not None and getattr(typology_engine, "model_loaded", False):
+        try:
+            memo_analysis = typology_engine.score_memo(
+                memo=memo,
+                amount=amount,
+                payee_age_days=req.payee_age_days,
+                balance_drain_ratio=balance_drain,
+                spike_ratio=spike_ratio
+            )
+        except Exception:
+            pass
+
     elapsed_ms = (time.perf_counter() - start_time) * 1000.0
 
     return RiskAnalysisResponse(
@@ -409,7 +440,8 @@ def analyze_transfer_risk(req: RiskAnalysisRequest):
         evaluation_time_ms=round(elapsed_ms, 2),
         status=status,
         review_enqueued=review_enqueued,
-        settlement_window_seconds=SETTLEMENT_WINDOW_SECONDS
+        settlement_window_seconds=SETTLEMENT_WINDOW_SECONDS,
+        memo_analysis=memo_analysis
     )
 
 
@@ -702,8 +734,8 @@ def evaluate_stage_b(req: StageBMemoCheckRequest):
         typology_prob = 0.75
         tier = "MEDIUM"
         rec_action = "REQUIRE_2FA"
-    elif nanojev_typology_engine is not None and nanojev_typology_engine.model_loaded and memo.strip():
-        score_res = nanojev_typology_engine.score_memo(
+    elif typology_engine is not None and getattr(typology_engine, "model_loaded", False) and memo.strip():
+        score_res = typology_engine.score_memo(
             memo=memo,
             amount=amount,
             payee_age_days=payee_age,

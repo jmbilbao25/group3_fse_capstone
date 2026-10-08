@@ -5,5 +5,6 @@ public enum MutationType {
     DEBIT,
     CREDIT,
     HOLD,
-    RELEASE
+    RELEASE,
+    REVERSAL
 }

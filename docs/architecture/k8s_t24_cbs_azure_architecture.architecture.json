@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Kubernetes Architecture: Control Plane, Nodes, Pods & Account Service",
+    "output": "k8s_t24_cbs_azure_architecture.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "k8s-hierarchy",
+        "label": "K8s Hierarchy & Nodes",
+        "focus": ["k8s_cp", "gateway_pod", "account_pod", "orch_pod", "risk_pod", "t24_pod"],
+        "note": "AKS Control Plane manages scheduling and scaling across Worker Node Pool 1 (App Services) and Worker Node Pool 2 (Dedicated CBS Core)."
+      },
+      {
+        "id": "auth-and-identity",
+        "label": "Account Service & Auth Flow",
+        "focus": ["clients", "gateway_pod", "account_pod", "azure_redis", "azure_pg"],
+        "note": "Gateway delegates auth and KYC to Account Service Pod (:8081), storing user profiles in PostgreSQL and tokens in Redis."
+      },
+      {
+        "id": "funds-transfer-pipeline",
+        "label": "Transfer Orchestration & OFS",
+        "focus": ["clients", "gateway_pod", "orch_pod", "risk_pod", "t24_pod", "azure_sql"],
+        "note": "Orchestrator coordinates with Risk Engine (<200ms SLA), serializes requests to Temenos OFS syntax, and sends to T24 CBS."
+      },
+      {
+        "id": "cbs-ledger-and-eod",
+        "label": "T24 CBS Core Ledger & EOD",
+        "focus": ["t24_pod", "azure_sql", "azure_pg"],
+        "note": "T24 CBS holds exclusive primary connections to Azure SQL Database for balance mutations, fee schedules, and EOD batch."
+      }
+    ]
+  },
+  "components": [
+    { "id": "clients", "type": "frontend", "label": "Retail Clients", "sublabel": "Web & Mobile Banking", "brand": "react", "pos": [30, 200], "size": [130, 56], "tag": "Omnichannel" },
+    { "id": "azure_redis", "type": "database", "label": "Azure Redis", "sublabel": "Tokens & OTP :6380", "brand": "redis", "pos": [220, 70], "size": [140, 56], "tag": "Managed Cache" },
+    { "id": "gateway_pod", "type": "security", "label": "API Gateway Pod", "sublabel": "Spring Cloud Gateway", "brand": "spring", "pos": [220, 200], "size": [140, 56], "tag": "Pod (Node 1)" },
+    { "id": "account_pod", "type": "backend", "label": "Account Service Pod", "sublabel": "Auth, KYC & JWT :8081", "brand": "spring", "pos": [470, 70], "size": [150, 56], "tag": "Pod (Node 1)" },
+    { "id": "orch_pod", "type": "backend", "label": "Orchestrator Pod", "sublabel": "JSON to OFS Parser :8082", "brand": "spring", "pos": [470, 200], "size": [150, 56], "tag": "Pod (Node 1)" },
+    { "id": "risk_pod", "type": "backend", "label": "Risk Engine Pod", "sublabel": "Python asyncio :8084", "brand": "python", "pos": [470, 330], "size": [150, 56], "tag": "Pod (Node 1)" },
+    { "id": "azure_pg", "type": "database", "label": "Azure PostgreSQL", "sublabel": "Users, KYC & Audit Logs", "brand": "postgresql", "pos": [730, 70], "size": [150, 56], "tag": "Managed DB" },
+    { "id": "t24_pod", "type": "backend", "label": "Temenos T24 CBS Pod", "sublabel": "Ledger, Fees, EOD Batch", "brand": "kubernetes", "pos": [730, 200], "size": [150, 56], "tag": "Pod (Node 2)" },
+    { "id": "k8s_cp", "type": "cloud", "label": "AKS Control Plane", "sublabel": "API, etcd, Scheduler", "brand": "kubernetes", "pos": [730, 330], "size": [150, 56], "tag": "Azure Managed" },
+    { "id": "azure_sql", "type": "database", "label": "Azure SQL Database", "sublabel": "Master CBS Relational DB", "pos": [980, 200], "size": [150, 56], "tag": "Exclusive T24 Conn" }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "Worker Node Pool 1: App Services Pool (Standard_D4s_v5)",
+      "wraps": ["gateway_pod", "account_pod", "orch_pod", "risk_pod"],
+      "pad": 14
+    },
+    {
+      "kind": "security-group",
+      "label": "Worker Node Pool 2: Dedicated Core Banking Pool (Standard_E16ds_v5)",
+      "wraps": ["t24_pod"],
+      "pad": 14
+    },
+    {
+      "kind": "security-group",
+      "label": "AKS Control Plane (Azure-Managed Master)",
+      "wraps": ["k8s_cp"],
+      "pad": 12
+    },
+    {
+      "kind": "region",
+      "label": "Azure Managed Cloud Services",
+      "wraps": ["azure_redis", "azure_pg", "azure_sql"],
+      "pad": 14
+    }
+  ],
+  "connections": [
+    { "from": "clients", "to": "gateway_pod", "label": "HTTPS" },
+    { "from": "gateway_pod", "to": "azure_redis", "label": "Token Check", "fromSide": "top", "toSide": "bottom", "labelDy": -25 },
+    { "from": "gateway_pod", "to": "account_pod", "label": "Auth / KYC", "fromSide": "right", "toSide": "left" },
+    { "from": "gateway_pod", "to": "orch_pod", "label": "Transfer Req", "labelDy": 16 },
+    { "from": "account_pod", "to": "azure_pg", "label": "User Credentials" },
+    { "from": "orch_pod", "to": "risk_pod", "label": "Risk Score", "fromSide": "bottom", "toSide": "top", "labelDy": 25 },
+    { "from": "orch_pod", "to": "t24_pod", "label": "OFS Message" },
+    { "from": "t24_pod", "to": "azure_sql", "label": "Exclusive SQL" },
+    { "from": "t24_pod", "to": "azure_pg", "label": "Audit Trail", "fromSide": "top", "toSide": "bottom", "labelDy": -25 },
+    { "from": "k8s_cp", "to": "t24_pod", "label": "Pod Scaling", "fromSide": "top", "toSide": "bottom", "variant": "dashed", "labelDy": -25 },
+    { "from": "k8s_cp", "to": "risk_pod", "label": "HPA Autoscale", "fromSide": "left", "toSide": "right", "variant": "dashed" }
+  ],
+  "cards": [
+    {
+      "title": "Control Plane vs Worker Nodes",
+      "dot": "cyan",
+      "items": [
+        "Control plane: Azure-managed API server, scheduler, and etcd managing cluster nodes.",
+        "Worker node pools: Node 1 runs app microservices; Node 2 runs dedicated Temenos T24 CBS."
+      ]
+    },
+    {
+      "title": "Account Service & Core Banking Pods",
+      "dot": "emerald",
+      "items": [
+        "Account service pod: Issues JWT tokens, manages user KYC, and stores profile data in PostgreSQL.",
+        "Orchestrator & T24 pods: Coordinate fraud scoring, OFS translation, and exclusive Azure SQL updates."
+      ]
+    }
+  ]
+}

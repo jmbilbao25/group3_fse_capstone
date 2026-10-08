@@ -7,5 +7,6 @@ public enum EventType {
     MAKER_CHECKER_APPROVAL,
     CREDIT_DRAW,
     CREDIT_PAYMENT,
-    FEE_DEDUCTION
+    FEE_DEDUCTION,
+    REVERSAL
 }

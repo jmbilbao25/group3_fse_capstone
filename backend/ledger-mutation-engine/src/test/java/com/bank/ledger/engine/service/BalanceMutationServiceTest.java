@@ -3,6 +3,10 @@ package com.bank.ledger.engine.service;
 import com.bank.ledger.contracts.dto.CheckerActionRequest;
 import com.bank.ledger.contracts.dto.MutationRequest;
 import com.bank.ledger.contracts.dto.MutationResponse;
+import com.bank.ledger.contracts.dto.T24FundsTransferRequest;
+import com.bank.ledger.contracts.dto.T24FundsTransferResponse;
+import com.bank.ledger.contracts.dto.T24ReversalRequest;
+import com.bank.ledger.contracts.dto.T24ReversalResponse;
 import com.bank.ledger.contracts.enums.EventType;
 import com.bank.ledger.contracts.enums.MutationType;
 import com.bank.ledger.contracts.exception.InsufficientFundsException;
@@ -398,5 +402,153 @@ class BalanceMutationServiceTest {
         org.mockito.InOrder inOrderReverse = inOrder(balanceRepository);
         inOrderReverse.verify(balanceRepository).findByAccountIdWithLock(SENDER_ACCOUNT);
         inOrderReverse.verify(balanceRepository).findByAccountIdWithLock(RECEIVER_ACCOUNT);
+    }
+
+    @Test
+    @DisplayName("T24 FUNDS.TRANSFER: Successfully executes atomic dual-account transfer")
+    void testT24FundsTransferSuccess() {
+        when(balanceRepository.findByAccountIdWithLock(SENDER_ACCOUNT)).thenReturn(Optional.of(senderBalance));
+        when(balanceRepository.findByAccountIdWithLock(RECEIVER_ACCOUNT)).thenReturn(Optional.of(receiverBalance));
+        when(balanceRepository.findByAccountId(RECEIVER_ACCOUNT)).thenReturn(Optional.of(receiverBalance));
+
+        T24FundsTransferRequest request = T24FundsTransferRequest.builder()
+                .transactionReference("FT261007A111")
+                .debitAccountId(SENDER_ACCOUNT)
+                .creditAccountId(RECEIVER_ACCOUNT)
+                .amount(new BigDecimal("5000.0000"))
+                .currency("PHP")
+                .paymentDetails("Invoice settlement")
+                .customerId("usr-1001")
+                .build();
+
+        T24FundsTransferResponse response = mutationService.executeT24FundsTransfer(request);
+
+        assertNotNull(response);
+        assertEquals("FT261007A111", response.getT24Reference());
+        assertEquals("COMMITTED", response.getStatus());
+        assertEquals(SENDER_ACCOUNT, response.getDebitAccountId());
+        assertEquals(RECEIVER_ACCOUNT, response.getCreditAccountId());
+        assertEquals(new BigDecimal("95000.0000"), response.getDebitBalanceAfter());
+        assertTrue(response.getOfsResponse().contains("FT261007A111//1/COMMITTED"));
+
+        verify(balanceRepository).save(senderBalance);
+        verify(balanceRepository).save(receiverBalance);
+        verify(transactionRepository).save(any(TransactionMaster.class));
+    }
+
+    @Test
+    @DisplayName("T24 REVERSAL: Successfully executes compensating double-entry reversal")
+    void testT24ReversalSuccess() {
+        TransactionMaster originalTx = TransactionMaster.builder()
+                .transactionId("TX-ORIG-999")
+                .fromAccountId(SENDER_ACCOUNT)
+                .toAccountId(RECEIVER_ACCOUNT)
+                .amount(new BigDecimal("5000.0000"))
+                .beforeBalance(new BigDecimal("50000.0000"))
+                .afterBalance(new BigDecimal("45000.0000"))
+                .status("COMMITTED")
+                .requires2FaOtp(0)
+                .createdAt(Instant.now().minusSeconds(3600))
+                .updatedAt(Instant.now().minusSeconds(3600))
+                .build();
+
+        when(transactionRepository.findById("TX-ORIG-999")).thenReturn(Optional.of(originalTx));
+        when(balanceRepository.findByAccountIdWithLock(SENDER_ACCOUNT)).thenReturn(Optional.of(senderBalance));
+        when(balanceRepository.findByAccountIdWithLock(RECEIVER_ACCOUNT)).thenReturn(Optional.of(receiverBalance));
+
+        T24ReversalRequest reversalRequest = T24ReversalRequest.builder()
+                .originalTransactionId("TX-ORIG-999")
+                .reversalReason("DUPLICATE_TRANSFER")
+                .checkerId("OP-SUPERVISOR")
+                .makerId("OP-TELLER")
+                .build();
+
+        T24ReversalResponse response = mutationService.executeT24Reversal(reversalRequest);
+
+        assertNotNull(response);
+        assertEquals("TX-ORIG-999", response.getOriginalTransactionId());
+        assertEquals("REVERSED", response.getStatus());
+        assertEquals("DUPLICATE_TRANSFER", response.getReversalReason());
+        assertEquals(new BigDecimal("5000.0000"), response.getAmount());
+        assertEquals(RECEIVER_ACCOUNT, response.getDebitedAccountId());
+        assertEquals(SENDER_ACCOUNT, response.getCreditedAccountId());
+        // Receiver debited: 50,000 - 5,000 = 45,000
+        assertEquals(new BigDecimal("45000.0000"), response.getDebitedBalanceAfter());
+        // Sender credited: 100,000 + 5,000 = 105,000
+        assertEquals(new BigDecimal("105000.0000"), response.getCreditedBalanceAfter());
+        assertTrue(response.getOfsResponse().contains("TX-ORIG-999//1/REVERSED"));
+
+        // Verify original transaction updated to REVERSED
+        assertEquals("REVERSED", originalTx.getStatus());
+        verify(transactionRepository).save(originalTx);
+
+        // Verify compensating reversal transaction saved
+        ArgumentCaptor<TransactionMaster> txCaptor = ArgumentCaptor.forClass(TransactionMaster.class);
+        verify(transactionRepository, atLeastOnce()).save(txCaptor.capture());
+        TransactionMaster savedReversal = txCaptor.getAllValues().stream()
+                .filter(t -> "REVERSAL".equals(t.getType()))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(savedReversal);
+        assertEquals(RECEIVER_ACCOUNT, savedReversal.getFromAccountId());
+        assertEquals(SENDER_ACCOUNT, savedReversal.getToAccountId());
+
+        // Verify audit record saved
+        verify(auditRepository).save(any(LedgerMutationAudit.class));
+    }
+
+    @Test
+    @DisplayName("T24 REVERSAL: Rejects when beneficiary has insufficient funds to reverse")
+    void testT24ReversalInsufficientFunds() {
+        TransactionMaster originalTx = TransactionMaster.builder()
+                .transactionId("TX-ORIG-HIGH")
+                .fromAccountId(SENDER_ACCOUNT)
+                .toAccountId(RECEIVER_ACCOUNT)
+                .amount(new BigDecimal("60000.0000")) // higher than receiver's 50,000 balance
+                .status("COMMITTED")
+                .requires2FaOtp(0)
+                .build();
+
+        when(transactionRepository.findById("TX-ORIG-HIGH")).thenReturn(Optional.of(originalTx));
+        when(balanceRepository.findByAccountIdWithLock(SENDER_ACCOUNT)).thenReturn(Optional.of(senderBalance));
+        when(balanceRepository.findByAccountIdWithLock(RECEIVER_ACCOUNT)).thenReturn(Optional.of(receiverBalance));
+
+        T24ReversalRequest request = T24ReversalRequest.builder()
+                .originalTransactionId("TX-ORIG-HIGH")
+                .build();
+
+        assertThrows(InsufficientFundsException.class, () -> mutationService.executeT24Reversal(request));
+    }
+
+    @Test
+    @DisplayName("T24 REVERSAL: Rejects when transaction is already reversed")
+    void testT24ReversalAlreadyReversed() {
+        TransactionMaster alreadyReversed = TransactionMaster.builder()
+                .transactionId("TX-REV-DONE")
+                .fromAccountId(SENDER_ACCOUNT)
+                .toAccountId(RECEIVER_ACCOUNT)
+                .amount(new BigDecimal("1000.0000"))
+                .status("REVERSED")
+                .build();
+
+        when(transactionRepository.findById("TX-REV-DONE")).thenReturn(Optional.of(alreadyReversed));
+
+        T24ReversalRequest request = T24ReversalRequest.builder()
+                .originalTransactionId("TX-REV-DONE")
+                .build();
+
+        assertThrows(IllegalStateException.class, () -> mutationService.executeT24Reversal(request));
+    }
+
+    @Test
+    @DisplayName("T24 REVERSAL: Rejects when original transaction is not found")
+    void testT24ReversalNotFound() {
+        when(transactionRepository.findById("TX-UNKNOWN")).thenReturn(Optional.empty());
+
+        T24ReversalRequest request = T24ReversalRequest.builder()
+                .originalTransactionId("TX-UNKNOWN")
+                .build();
+
+        assertThrows(IllegalArgumentException.class, () -> mutationService.executeT24Reversal(request));
     }
 }

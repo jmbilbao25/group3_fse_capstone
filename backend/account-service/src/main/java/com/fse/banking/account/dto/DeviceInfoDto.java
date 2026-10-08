@@ -46,4 +46,7 @@ public class DeviceInfoDto implements Serializable {
 
     @JsonProperty("last_login_at")
     private Instant lastLoginAt;
+
+    @JsonProperty("screen_sharing")
+    private Boolean screenSharing;
 }

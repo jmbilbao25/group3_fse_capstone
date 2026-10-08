@@ -3,6 +3,7 @@ import 'dart:io' show Directory, File, Platform, Socket, exit;
 import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show MethodChannel, SystemNavigator;
+import '../widgets/screen_sharing_warning_sheet.dart';
 
 class SecurityAssessment {
   final bool isCompromised;
@@ -58,11 +59,16 @@ class SecurityService {
   ///      flutter run --dart-define=SECURITY_THREAT=bootloader
   ///      flutter run --dart-define=SECURITY_THREAT=emulator
   ///      flutter run --dart-define=SIMULATE_COMPROMISED=true
+  ///      flutter run --dart-define=SIMULATE_SCREEN_SHARING=true
   static const String _envThreat = String.fromEnvironment('SECURITY_THREAT', defaultValue: '');
   static const bool _envSimulate = bool.fromEnvironment('SIMULATE_COMPROMISED', defaultValue: false);
+  static const bool _envSimulateScreenSharing = bool.fromEnvironment('SIMULATE_SCREEN_SHARING', defaultValue: false);
 
   /// Set to true in development/test if you want to simulate a compromised device in code
   static bool simulateCompromised = false;
+
+  /// Set to true in development/test if you want to simulate active screen sharing in code
+  static bool simulateScreenSharing = false;
 
   /// Performs full device security assessment.
   static Future<SecurityAssessment> assessDevice() async {
@@ -247,6 +253,59 @@ class SecurityService {
         delaySeconds: delaySeconds,
         onExit: onExit,
       ),
+    );
+  }
+
+  /// Evaluates whether an app or display service is currently recording or sharing the screen.
+  static Future<bool> isScreenSharingActive() async {
+    // 1. Check in-memory simulation flag or compile-time dart-define
+    if (simulateScreenSharing ||
+        _envSimulateScreenSharing ||
+        _envThreat.toLowerCase().contains('screen_share') ||
+        _envThreat.toLowerCase().contains('screenshare')) {
+      return true;
+    }
+
+    // 2. Check external runtime file trigger (allows zero-code testing on live devices/emulators)
+    if (!kIsWeb) {
+      try {
+        final tempFile = File('${Directory.systemTemp.path}/.bank_security_screen_sharing');
+        if (tempFile.existsSync()) {
+          return true;
+        }
+      } catch (_) {}
+    }
+
+    // 3. Query native Android layer for active virtual displays, MediaProjection, or presentation displays
+    if (!kIsWeb) {
+      try {
+        if (Platform.isAndroid) {
+          final dynamic nativeResult = await _channel.invokeMethod('isScreenSharingActive');
+          if (nativeResult == true) {
+            return true;
+          }
+        }
+      } catch (e) {
+        debugPrint('[SecurityService] Native isScreenSharingActive query error: $e');
+      }
+    }
+
+    return false;
+  }
+
+  /// Displays the screen sharing warning bottom sheet modal.
+  /// Returns the action chosen by the user (cancel, pause, or continue).
+  static Future<ScreenSharingUserAction?> showScreenSharingWarning(
+    BuildContext context, {
+    VoidCallback? onCancel,
+    VoidCallback? onPause,
+    VoidCallback? onContinue,
+  }) async {
+    return ScreenSharingWarningSheet.show(
+      context,
+      onCancel: onCancel,
+      onPause: onPause,
+      onContinue: onContinue,
     );
   }
 }

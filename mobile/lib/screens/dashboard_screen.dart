@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../models/user_persona.dart';
 import '../services/auth_api_service.dart';
 import '../services/notification_stream_service.dart';
+import '../services/security_service.dart';
 import '../widgets/brand_logo.dart';
+import '../widgets/screen_sharing_warning_sheet.dart';
 
 class DashboardScreen extends StatefulWidget {
   final UserPersona user;
@@ -185,17 +187,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _showDevicesSheet() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+            return SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
@@ -363,6 +367,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           alignment: WrapAlignment.center,
                           children: [
                             TextButton.icon(
+                              key: const Key('simulate_screen_sharing_btn'),
+                              icon: const Icon(Icons.screen_share_rounded, size: 16, color: Color(0xFFD97706)),
+                              label: const Text('Simulate Screen Sharing Alert', style: TextStyle(fontSize: 11, color: Color(0xFFD97706))),
+                              onPressed: () {
+                                Navigator.of(ctx).pop();
+                                _triggerScreenSharingAlert();
+                              },
+                            ),
+                            TextButton.icon(
                               icon: const Icon(Icons.laptop_mac_rounded, size: 16, color: Color(0xFF3A4CD6)),
                               label: const Text('Simulate Desktop Alert', style: TextStyle(fontSize: 11, color: Color(0xFF3A4CD6))),
                               onPressed: () {
@@ -393,12 +406,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(height: 12),
                 ],
               ),
-            );
-          },
-        );
-      },
-    );
-  }
+            ),
+          );
+        },
+      );
+    },
+  );
+}
 
   void _triggerDesktopSessionAlert() {
     NotificationStreamService().injectAlert(
@@ -446,6 +460,229 @@ class _DashboardScreenState extends State<DashboardScreen> {
         replacedDeviceId: 'dev-ipad-secondary',
         replacedDeviceName: 'iPad Air (Secondary)',
       ),
+    );
+  }
+
+  void _triggerScreenSharingAlert() async {
+    final action = await ScreenSharingWarningSheet.show(context);
+    if (!mounted || action == null) return;
+    switch (action) {
+      case ScreenSharingUserAction.cancelTransaction:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✕ Transaction Cancelled safely. AuraBank protected your account against screen viewing.'),
+            backgroundColor: Color(0xFFB91C1C),
+            duration: Duration(seconds: 4),
+          ),
+        );
+        break;
+      case ScreenSharingUserAction.pauseFor10Minutes:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('⏸ Transaction paused for 10 minutes. Transfers placed on temporary security hold.'),
+            backgroundColor: Color(0xFFD97706),
+            duration: Duration(seconds: 4),
+          ),
+        );
+        break;
+      case ScreenSharingUserAction.continueAnyway:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✓ Screen sharing acknowledged. Transaction proceeding with enhanced monitoring.'),
+            backgroundColor: Color(0xFF107C41),
+            duration: Duration(seconds: 3),
+          ),
+        );
+        break;
+    }
+  }
+
+  void _handleTransferTap() {
+    _executeProtectedAction(() {
+      _showTransferFlow();
+    }, actionName: 'Fund Transfer');
+  }
+
+  void _showTransferFlow() async {
+    // 1. If screen sharing is actively running, prompt immediately
+    final isSharing = await SecurityService.isScreenSharingActive();
+    if (isSharing && mounted) {
+      final action = await ScreenSharingWarningSheet.show(context);
+      if (!mounted || action == null) return;
+      if (action == ScreenSharingUserAction.cancelTransaction) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✕ Transfer Cancelled safely. Screen sharing protection activated.'),
+            backgroundColor: Color(0xFFB91C1C),
+            duration: Duration(seconds: 4),
+          ),
+        );
+        return;
+      } else if (action == ScreenSharingUserAction.pauseFor10Minutes) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('⏸ Transfer paused for 10 minutes. Account placed on temporary security hold.'),
+            backgroundColor: Color(0xFFD97706),
+            duration: Duration(seconds: 4),
+          ),
+        );
+        return;
+      }
+    }
+
+    if (!mounted) return;
+
+    bool simulateScreenShareInModal = false;
+    final amountController = TextEditingController(text: '10,000.00');
+    final recipientController = TextEditingController(text: 'Maria Santos (ACC-883921)');
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.send_rounded, color: Color(0xFF3A4CD6), size: 22),
+                          SizedBox(width: 8),
+                          Text(
+                            'Send Money / Transfer',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () => Navigator.of(ctx).pop(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: recipientController,
+                    decoration: const InputDecoration(
+                      labelText: 'Recipient',
+                      prefixIcon: Icon(Icons.person_outline_rounded),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: amountController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Amount (PHP)',
+                      prefixText: '₱ ',
+                      prefixIcon: Icon(Icons.attach_money_rounded),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: simulateScreenShareInModal
+                          ? Colors.amber.withAlpha(25)
+                          : (isDark ? const Color(0xFF232730) : const Color(0xFFF8FAFC)),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: simulateScreenShareInModal
+                            ? Colors.amber
+                            : (isDark ? const Color(0xFF333A48) : const Color(0xFFE2E8F0)),
+                      ),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    child: SwitchListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      secondary: Icon(
+                        Icons.screen_share_rounded,
+                        color: simulateScreenShareInModal ? const Color(0xFFD97706) : Colors.grey,
+                      ),
+                      title: const Text(
+                        'Simulate Screen Sharing Active',
+                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: const Text(
+                        'Tests remote access defense popup on transfer submission',
+                        style: TextStyle(fontSize: 11),
+                      ),
+                      value: simulateScreenShareInModal,
+                      onChanged: (val) {
+                        setSheetState(() {
+                          simulateScreenShareInModal = val;
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  FilledButton(
+                    key: const Key('submit_transfer_btn'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF32007D),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () async {
+                      Navigator.of(ctx).pop();
+                      final messenger = ScaffoldMessenger.of(context);
+                      final transferAmt = amountController.text;
+                      if (simulateScreenShareInModal) {
+                        final action = await ScreenSharingWarningSheet.show(context);
+                        if (!mounted || action == null) return;
+                        if (action == ScreenSharingUserAction.cancelTransaction) {
+                          messenger.showSnackBar(
+                            const SnackBar(
+                              content: Text('✕ Transfer Cancelled. Screen sharing threat blocked.'),
+                              backgroundColor: Color(0xFFB91C1C),
+                              duration: Duration(seconds: 4),
+                            ),
+                          );
+                          return;
+                        } else if (action == ScreenSharingUserAction.pauseFor10Minutes) {
+                          messenger.showSnackBar(
+                            const SnackBar(
+                              content: Text('⏸ Transfer paused for 10 minutes. Placed on safety hold.'),
+                              backgroundColor: Color(0xFFD97706),
+                              duration: Duration(seconds: 4),
+                            ),
+                          );
+                          return;
+                        }
+                      }
+                      if (!mounted) return;
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text('✓ Transfer of ₱$transferAmt sent successfully!'),
+                          backgroundColor: const Color(0xFF107C41),
+                          duration: const Duration(seconds: 3),
+                        ),
+                      );
+                    },
+                    child: const Text('Confirm Transfer', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -771,11 +1008,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       context,
                       Icons.send_rounded,
                       'Transfer',
-                      onTap: () => _executeProtectedAction(() {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Fund transfer initiated (Active)'), duration: Duration(seconds: 1)),
-                        );
-                      }, actionName: 'Fund Transfer'),
+                      onTap: _handleTransferTap,
                     ),
                     _buildActionItem(
                       context,

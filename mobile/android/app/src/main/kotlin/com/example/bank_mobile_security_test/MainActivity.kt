@@ -3,6 +3,8 @@ package com.example.bank_mobile_security_test
 import android.content.Context
 import android.hardware.Sensor
 import android.hardware.SensorManager
+import android.hardware.display.DisplayManager
+import android.view.Display
 import android.os.Build
 import android.os.Debug
 import android.provider.Settings
@@ -20,21 +22,32 @@ class MainActivity : FlutterActivity() {
         super.configureFlutterEngine(flutterEngine)
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
-            if (call.method == "getAndroidSecurityReport") {
-                try {
-                    val report = mapOf(
-                        "isDevOptionsEnabled" to isDevOptionsEnabled(),
-                        "isAdbEnabled" to isAdbEnabled(),
-                        "isBootloaderUnlocked" to isBootloaderUnlocked(),
-                        "isEmulator" to isEmulator(),
-                        "isDebuggerAttached" to isDebuggerAttached()
-                    )
-                    result.success(report)
-                } catch (e: Exception) {
-                    result.error("SECURITY_CHECK_ERROR", e.localizedMessage, null)
+            when (call.method) {
+                "getAndroidSecurityReport" -> {
+                    try {
+                        val report = mapOf(
+                            "isDevOptionsEnabled" to isDevOptionsEnabled(),
+                            "isAdbEnabled" to isAdbEnabled(),
+                            "isBootloaderUnlocked" to isBootloaderUnlocked(),
+                            "isEmulator" to isEmulator(),
+                            "isDebuggerAttached" to isDebuggerAttached(),
+                            "isScreenSharingActive" to isScreenSharingActive()
+                        )
+                        result.success(report)
+                    } catch (e: Exception) {
+                        result.error("SECURITY_CHECK_ERROR", e.localizedMessage, null)
+                    }
                 }
-            } else {
-                result.notImplemented()
+                "isScreenSharingActive" -> {
+                    try {
+                        result.success(isScreenSharingActive())
+                    } catch (e: Exception) {
+                        result.error("SCREEN_SHARING_CHECK_ERROR", e.localizedMessage, null)
+                    }
+                }
+                else -> {
+                    result.notImplemented()
+                }
             }
         }
     }
@@ -103,5 +116,41 @@ class MainActivity : FlutterActivity() {
 
     private fun isDebuggerAttached(): Boolean {
         return Debug.isDebuggerConnected() || Debug.waitingForDebugger()
+    }
+
+    private fun isScreenSharingActive(): Boolean {
+        return try {
+            val displayManager = getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager
+            if (displayManager != null) {
+                val displays = displayManager.displays
+                for (display in displays) {
+                    if (display.displayId != Display.DEFAULT_DISPLAY) {
+                        return true
+                    }
+                    if ((display.flags and Display.FLAG_PRESENTATION) != 0) {
+                        return true
+                    }
+                }
+            }
+
+            val packageManager = packageManager
+            val knownRemoteTools = listOf(
+                "com.teamviewer.host.market",
+                "com.teamviewer.quicksupport.market",
+                "com.anydesk.anydeskandroid",
+                "com.zoho.assist",
+                "com.splashtop.remote"
+            )
+            for (pkg in knownRemoteTools) {
+                try {
+                    packageManager.getPackageInfo(pkg, 0)
+                    return true
+                } catch (_: Exception) {}
+            }
+
+            false
+        } catch (e: Exception) {
+            false
+        }
     }
 }

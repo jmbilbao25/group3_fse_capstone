@@ -1,4 +1,5 @@
 import 'services/bank_service.dart';
+import 'services/device_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'screens/auth/landing_screen.dart';
@@ -15,8 +16,11 @@ import 'screens/auth/security_gate_screen.dart';
 import 'screens/profile/risk_showcase_screen.dart';
 import 'theme/aura_theme.dart';
 
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await DeviceStorage.init();
   await BankService().initPreferences();
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -33,6 +37,7 @@ class AuraBankApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: rootNavigatorKey,
       title: 'Aura Bank',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(

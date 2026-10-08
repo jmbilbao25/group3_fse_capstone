@@ -71,6 +71,11 @@ spring:
                 redis-rate-limiter.burstCapacity: 40
                 key-resolver: "#{@userKeyResolver}"
 
+        - id: mailhog-api
+          uri: ${MAILHOG_API_URI:http://mailhog:8025}
+          predicates:
+            - Path=/api/v2/messages, /api/v2/messages/**
+
         - id: risk-service
           uri: ${RISK_SERVICE_URI:http://localhost:8084}
           predicates:

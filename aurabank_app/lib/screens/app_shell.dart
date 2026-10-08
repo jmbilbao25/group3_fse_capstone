@@ -4,7 +4,9 @@ import 'cards/cards_screen.dart';
 import 'scan/scan_screen.dart';
 import 'analytics/analytics_screen.dart';
 import 'profile/profile_screen.dart';
+import '../services/auth_api_service.dart';
 import '../services/bank_service.dart';
+import '../services/notification_stream_service.dart';
 import '../theme/aura_theme.dart';
 
 class AppShell extends StatefulWidget {
@@ -27,6 +29,14 @@ class _AppShellState extends State<AppShell> {
     super.initState();
     _currentIndex = widget.initialIndex;
     BankService().syncWithBackend();
+    final uid = AuthApiService().currentUserId ?? 'USR-0001';
+    NotificationStreamService().connect(uid);
+  }
+
+  @override
+  void dispose() {
+    NotificationStreamService().disconnect();
+    super.dispose();
   }
 
   void _onNavigateTab(int index) {

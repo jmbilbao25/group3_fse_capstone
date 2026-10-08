@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>First-Time Login Verification</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+            margin: 0;
+            padding: 36px 16px;
+            -webkit-font-smoothing: antialiased;
+        }
+        .wrapper {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+        .card {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 32px 28px;
+            box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04);
+        }
+        .brand {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #0f172a;
+            margin-bottom: 24px;
+        }
+        h1 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #0f172a;
+            margin: 0 0 8px;
+            letter-spacing: -0.02em;
+        }
+        p {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #4a5568;
+            margin: 0 0 20px;
+        }
+        .otp-container {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 24px 16px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .otp-code {
+            font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+            font-size: 34px;
+            font-weight: 700;
+            letter-spacing: 8px;
+            color: #3b50df;
+            line-height: 1;
+            padding-left: 8px;
+        }
+        .otp-caption {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 10px;
+        }
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 24px;
+        }
+        .details-table tr {
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .details-table tr:last-child {
+            border-bottom: none;
+        }
+        .details-table td {
+            padding: 10px 0;
+            font-size: 13px;
+        }
+        .label {
+            color: #64748b;
+            width: 40%;
+        }
+        .value {
+            color: #0f172a;
+            text-align: right;
+            font-weight: 500;
+        }
+        .security-notice {
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid #f1f5f9;
+            font-size: 12px;
+            line-height: 1.5;
+            color: #64748b;
+        }
+        .footer {
+            margin-top: 24px;
+            text-align: center;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <div class="card">
+            <div class="brand">Aura Bank</div>
+
+            <h1>First-Time Login Verification</h1>
+            <p>
+                Welcome to Aura Bank. Because this is your first login to your account, please enter the one-time verification code below to authorize your session:
+            </p>
+
+            <div class="otp-container">
+                <div class="otp-code" th:text="${verificationCode}">------</div>
+                <div class="otp-caption">Expires in 5 minutes &bull; Validated strictly by backend Redis store</div>
+            </div>
+
+            <table class="details-table">
+                <tr>
+                    <td class="label">Action</td>
+                    <td class="value">First-Time Login Verification</td>
+                </tr>
+                <tr th:if="${recipientName != null}">
+                    <td class="label">User</td>
+                    <td class="value" th:text="${recipientName}">Juan Dela Cruz</td>
+                </tr>
+                <tr th:if="${recipientEmail != null}">
+                    <td class="label">Registered Email</td>
+                    <td class="value" th:text="${recipientEmail}">juan.dc@email.com</td>
+                </tr>
+                <tr th:if="${formattedDate != null}">
+                    <td class="label">Timestamp</td>
+                    <td class="value" th:text="${formattedDate}">2026-10-06 09:30:00 PST</td>
+                </tr>
+            </table>
+
+            <div class="security-notice">
+                Aura Bank will never contact you asking for this code. If you did not attempt to sign in to Aura Bank, please contact customer support immediately.
+            </div>
+        </div>
+
+        <div class="footer">
+            Aura Bank &bull; Regulated by Bangko Sentral ng Pilipinas (BSP)
+        </div>
+    </div>
+</body>
+</html>

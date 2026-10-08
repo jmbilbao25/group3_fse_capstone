@@ -24,12 +24,234 @@ public class NotificationController {
     private final EmailNotificationService emailService;
     private final TransactionEventConsumer transactionEventConsumer;
     private final NotificationRepository notificationRepository;
+    private final NotificationStreamController streamController;
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
+
+    @PostMapping("/security-alert")
+    public ResponseEntity<Map<String, Object>> handleSecurityAlert(
+            @RequestBody(required = false) Map<String, Object> request) {
+
+        String userId = request != null && request.get("user_id") != null
+                ? request.get("user_id").toString()
+                : (request != null && request.get("userId") != null ? request.get("userId").toString() : "USR-UNKNOWN");
+
+        String title = request != null && request.get("title") != null
+                ? request.get("title").toString()
+                : "Security Alert: New Device Login";
+
+        String message = request != null && request.get("message") != null
+                ? request.get("message").toString()
+                : "A new device just logged in to your account.";
+
+        String deviceName = request != null && request.get("device_name") != null
+                ? request.get("device_name").toString()
+                : (request != null && request.get("deviceName") != null ? request.get("deviceName").toString() : "Unknown Device");
+
+        String clientIp = request != null && request.get("client_ip") != null
+                ? request.get("client_ip").toString()
+                : (request != null && request.get("clientIp") != null ? request.get("clientIp").toString() : "Unknown IP");
+
+        String targetDeviceId = request != null && request.get("target_device_id") != null
+                ? request.get("target_device_id").toString()
+                : (request != null && request.get("targetDeviceId") != null ? request.get("targetDeviceId").toString() : "");
+
+        String deviceId = request != null && request.get("device_id") != null
+                ? request.get("device_id").toString()
+                : (request != null && request.get("deviceId") != null ? request.get("deviceId").toString() : "");
+
+        String status = request != null && request.get("status") != null
+                ? request.get("status").toString()
+                : "PENDING_APPROVAL";
+
+        Object isThirdObj = request != null ? request.get("is_third_device") : null;
+        boolean isThirdDevice = Boolean.TRUE.equals(isThirdObj) || "true".equalsIgnoreCase(String.valueOf(isThirdObj));
+
+        String replacedDeviceId = request != null && request.get("replaced_device_id") != null
+                ? request.get("replaced_device_id").toString()
+                : "";
+
+        String replacedDeviceName = request != null && request.get("replaced_device_name") != null
+                ? request.get("replaced_device_name").toString()
+                : "";
+
+        String deviceType = request != null && request.get("device_type") != null
+                ? request.get("device_type").toString()
+                : (request != null && request.get("deviceType") != null ? request.get("deviceType").toString() : "MOBILE");
+
+        String notificationId = "NOTIF-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+
+        // 1. Persist notification to database if repository is available
+        if (notificationRepository != null) {
+            try {
+                NotificationEntity entity = NotificationEntity.builder()
+                        .notificationId(notificationId)
+                        .userId(userId)
+                        .type("SECURITY_ALERT")
+                        .message(message)
+                        .sentAt(Instant.now())
+                        .build();
+                notificationRepository.save(entity);
+            } catch (Exception e) {
+                log.warn("Could not persist security alert to database: {}", e.getMessage());
+            }
+        }
+
+        // 2. Prepare real-time SSE payload
+        Map<String, Object> pushPayload = new LinkedHashMap<>();
+        pushPayload.put("notification_id", notificationId);
+        pushPayload.put("type", "SECURITY_ALERT");
+        pushPayload.put("title", title);
+        pushPayload.put("message", message);
+        pushPayload.put("user_id", userId);
+        pushPayload.put("device_name", deviceName);
+        pushPayload.put("device_id", deviceId);
+        pushPayload.put("device_type", deviceType);
+        pushPayload.put("client_ip", clientIp);
+        pushPayload.put("target_device_id", targetDeviceId);
+        pushPayload.put("status", status);
+        pushPayload.put("is_third_device", isThirdDevice);
+        pushPayload.put("replaced_device_id", replacedDeviceId);
+        pushPayload.put("replaced_device_name", replacedDeviceName);
+        pushPayload.put("timestamp", Instant.now().toString());
+
+        // 3. Broadcast real-time SSE event to connected primary devices
+        if (streamController != null) {
+            streamController.pushSecurityAlert(userId, pushPayload);
+        }
+
+        Map<String, Object> response = new LinkedHashMap<>(pushPayload);
+        response.put("status", "DISPATCHED");
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/device-approved")
+    public ResponseEntity<Map<String, Object>> handleDeviceApproved(
+            @RequestBody(required = false) Map<String, Object> request) {
+        String userId = "";
+        if (request != null) {
+            if (request.get("user_id") != null) userId = request.get("user_id").toString();
+            else if (request.get("userId") != null) userId = request.get("userId").toString();
+        }
+        String deviceId = "";
+        if (request != null) {
+            if (request.get("device_id") != null) deviceId = request.get("device_id").toString();
+            else if (request.get("deviceId") != null) deviceId = request.get("deviceId").toString();
+        }
+        String notificationId = "NOTIF-APPRV-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+
+        if (notificationRepository != null && !userId.isBlank()) {
+            try {
+                NotificationEntity entity = NotificationEntity.builder()
+                        .notificationId(notificationId)
+                        .userId(userId)
+                        .type("DEVICE_APPROVED")
+                        .message("Device approved: " + deviceId)
+                        .sentAt(Instant.now())
+                        .build();
+                notificationRepository.save(entity);
+            } catch (Exception e) {
+                log.warn("Could not persist device approval notification: {}", e.getMessage());
+            }
+        }
+
+        Map<String, Object> payload = Map.of(
+                "notification_id", notificationId,
+                "type", "DEVICE_APPROVED",
+                "user_id", userId,
+                "device_id", deviceId,
+                "status", "APPROVED",
+                "timestamp", Instant.now().toString()
+        );
+        if (streamController != null) {
+            streamController.pushSecurityAlert(userId, payload);
+        }
+        return ResponseEntity.ok(payload);
+    }
+
+    @PostMapping("/device-revoked")
+    public ResponseEntity<Map<String, Object>> handleDeviceRevoked(
+            @RequestBody(required = false) Map<String, Object> request) {
+        String userId = "";
+        if (request != null) {
+            if (request.get("user_id") != null) userId = request.get("user_id").toString();
+            else if (request.get("userId") != null) userId = request.get("userId").toString();
+        }
+        String deviceId = "";
+        if (request != null) {
+            if (request.get("device_id") != null) deviceId = request.get("device_id").toString();
+            else if (request.get("deviceId") != null) deviceId = request.get("deviceId").toString();
+        }
+        String notificationId = "NOTIF-REVOKE-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+
+        if (notificationRepository != null && !userId.isBlank()) {
+            try {
+                NotificationEntity entity = NotificationEntity.builder()
+                        .notificationId(notificationId)
+                        .userId(userId)
+                        .type("DEVICE_REVOKED")
+                        .message("Secondary device (" + deviceId + ") was automatically logged out because another mobile device logged in.")
+                        .sentAt(Instant.now())
+                        .build();
+                notificationRepository.save(entity);
+            } catch (Exception e) {
+                log.warn("Could not persist device revocation notification: {}", e.getMessage());
+            }
+        }
+
+        Map<String, Object> payload = Map.of(
+                "notification_id", notificationId,
+                "type", "DEVICE_REVOKED",
+                "user_id", userId,
+                "device_id", deviceId,
+                "status", "REVOKED",
+                "timestamp", Instant.now().toString()
+        );
+        if (streamController != null) {
+            streamController.pushSecurityAlert(userId, payload);
+        }
+        return ResponseEntity.ok(payload);
+    }
 
     @PostMapping("/send-otp")
     public ResponseEntity<Map<String, Object>> sendOtpNotification(
             @RequestBody(required = false) Map<String, Object> request) {
+
+        boolean isLoginOtp = request != null && (
+                "LOGIN_OTP".equalsIgnoreCase(String.valueOf(request.get("type"))) ||
+                "LOGIN".equalsIgnoreCase(String.valueOf(request.get("type"))) ||
+                "LOGIN".equalsIgnoreCase(String.valueOf(request.get("purpose"))) ||
+                (request.get("transfer_id") == null && request.get("transferId") == null && request.get("amount") == null)
+        );
+
+        if (isLoginOtp) {
+            String recipientEmail = request != null && request.get("recipient_email") != null
+                    ? request.get("recipient_email").toString()
+                    : (request != null && request.get("recipientEmail") != null ? request.get("recipientEmail").toString() : "juan.dc@email.com");
+            String recipientName = request != null && request.get("recipient_name") != null
+                    ? request.get("recipient_name").toString()
+                    : (request != null && request.get("recipientName") != null ? request.get("recipientName").toString() : "Valued Customer");
+            String verificationCode = request != null && request.get("verification_code") != null
+                    ? request.get("verification_code").toString()
+                    : (request != null && request.get("verificationCode") != null
+                            ? request.get("verificationCode").toString()
+                            : (request != null && request.get("otp") != null ? request.get("otp").toString() : null));
+
+            if (verificationCode == null || verificationCode.isBlank()) {
+                verificationCode = String.format("%06d", new java.security.SecureRandom().nextInt(1000000));
+            }
+
+            log.info("Sending First-Time Login OTP verification email to recipient={}", recipientEmail);
+            boolean dispatched = emailService.sendLoginOtp(recipientEmail, recipientName, verificationCode);
+
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("status", dispatched ? "DISPATCHED" : "BUFFERED");
+            response.put("type", "LOGIN_OTP");
+            response.put("recipientEmail", recipientEmail);
+            response.put("verificationCode", verificationCode);
+            response.put("message", "First-Time Login Verification OTP email dispatched to " + recipientEmail + " via MailHog.");
+            return ResponseEntity.ok(response);
+        }
 
         String transferId = "TRX-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         String recipientEmail = "juan.dc@email.com";

@@ -67,6 +67,29 @@ public class NotificationStreamController {
         }
     }
 
+    public void pushSecurityAlert(String userId, Object payload) {
+        log.info("Pushing SECURITY_ALERT event for userId: {}", userId);
+        // Send to specific user's connected devices
+        if (userId != null && userEmitters.containsKey(userId)) {
+            for (SseEmitter emitter : userEmitters.get(userId)) {
+                try {
+                    emitter.send(SseEmitter.event().name("SECURITY_ALERT").data(payload));
+                } catch (Exception e) {
+                    removeEmitter(emitter, userId);
+                }
+            }
+        }
+
+        // Also broadcast to active general stream listeners
+        for (SseEmitter emitter : activeEmitters) {
+            try {
+                emitter.send(SseEmitter.event().name("SECURITY_ALERT").data(payload));
+            } catch (Exception e) {
+                removeEmitter(emitter, userId);
+            }
+        }
+    }
+
     private void removeEmitter(SseEmitter emitter, String userId) {
         activeEmitters.remove(emitter);
         if (userId != null && userEmitters.containsKey(userId)) {

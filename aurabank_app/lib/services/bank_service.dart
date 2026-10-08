@@ -1,3 +1,4 @@
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -20,8 +21,8 @@ class BankService extends ChangeNotifier {
     dob: 'July 10, 1999',
     gender: 'Male',
     civilStatus: 'Married',
-    faceIdEnabled: true,
-    fingerprintEnabled: true,
+    faceIdEnabled: false,
+    fingerprintEnabled: false,
     pushAlertsEnabled: true,
   );
 
@@ -170,7 +171,7 @@ class BankService extends ChangeNotifier {
     '2026-10': MonthlyStatement(
       monthKey: '2026-10',
       title: 'October 2026',
-      dateRange: 'Oct 01 - Oct 31, 2026',
+      dateRange: 'October 1 - 31, 2026',
       totalReceived: 52000.00,
       totalSent: 22000.00,
       transactions: [
@@ -183,9 +184,9 @@ class BankService extends ChangeNotifier {
           timestamp: DateTime(2026, 10, 1, 8, 0),
           displayTime: '01 Oct 2026 - 8:00 AM',
           status: TransactionStatus.settled,
-          channel: 'Transfer Received',
+          channel: 'Same Bank',
           initial: 'D',
-          avatarColorValue: 0xFF2A0054,
+          avatarColorValue: 0xFF3B0764,
         ),
         BankTransaction(
           id: 'TXN-OCT-02',
@@ -196,9 +197,9 @@ class BankService extends ChangeNotifier {
           timestamp: DateTime(2026, 10, 5, 10, 0),
           displayTime: '05 Oct 2026 - 10:00 AM',
           status: TransactionStatus.settled,
-          channel: 'Transfer Received',
+          channel: 'Same Bank',
           initial: 'K',
-          avatarColorValue: 0xFF7C3AED,
+          avatarColorValue: 0xFF581C87,
         ),
         BankTransaction(
           id: 'TXN-OCT-03',
@@ -206,12 +207,12 @@ class BankService extends ChangeNotifier {
           counterparty: 'Jessi Mey',
           type: TransactionType.outgoing,
           amount: 10000.00,
-          timestamp: DateTime(2026, 10, 7, 14, 30),
-          displayTime: '07 Oct 2026 - 2:30 PM',
+          timestamp: DateTime(2026, 10, 10, 14, 0),
+          displayTime: '10 Oct 2026 - 2:00 PM',
           status: TransactionStatus.settled,
-          channel: 'Transfer Sent',
+          channel: 'Other Bank',
           initial: 'J',
-          avatarColorValue: 0xFF4C1D95,
+          avatarColorValue: 0xFF7E22CE,
         ),
         BankTransaction(
           id: 'TXN-OCT-04',
@@ -219,12 +220,12 @@ class BankService extends ChangeNotifier {
           counterparty: 'Angel Lou',
           type: TransactionType.outgoing,
           amount: 12000.00,
-          timestamp: DateTime(2026, 10, 10, 16, 15),
-          displayTime: '10 Oct 2026 - 4:15 PM',
+          timestamp: DateTime(2026, 10, 15, 16, 0),
+          displayTime: '15 Oct 2026 - 4:00 PM',
           status: TransactionStatus.settled,
-          channel: 'Transfer Sent',
+          channel: 'Other Bank',
           initial: 'A',
-          avatarColorValue: 0xFF6D28D9,
+          avatarColorValue: 0xFF9333EA,
         ),
       ],
     ),
@@ -439,7 +440,7 @@ class BankService extends ChangeNotifier {
         BankTransaction(
           id: 'TXN-APR-02',
           reference: 'AUR-880402',
-          counterparty: 'Q2 Scheduled Outgoing Transfer',
+          counterparty: 'Q2 Tax Pre-settlement',
           type: TransactionType.outgoing,
           amount: 22000.00,
           timestamp: DateTime(2026, 4, 28, 15, 15),
@@ -601,6 +602,33 @@ class BankService extends ChangeNotifier {
     }
   }
 
+    Future<void> initPreferences() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      user.faceIdEnabled = prefs.getBool('face_id_enabled') ?? false;
+      user.fingerprintEnabled = prefs.getBool('fingerprint_enabled') ?? false;
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  Future<void> setFaceIdEnabled(bool enabled) async {
+    user.faceIdEnabled = enabled;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('face_id_enabled', enabled);
+    } catch (_) {}
+  }
+
+  Future<void> setFingerprintEnabled(bool enabled) async {
+    user.fingerprintEnabled = enabled;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('fingerprint_enabled', enabled);
+    } catch (_) {}
+  }
+
   void updateUserProfile({
     String? name,
     String? phoneNumber,
@@ -712,24 +740,12 @@ class BankService extends ChangeNotifier {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         _applyLocalTransfer(amount, recipientName, ref, remarks);
         return {'success': true, 'reference': ref, 'amount': amount};
-      } else {
-        try {
-          final decoded = jsonDecode(response.body);
-          final errorMsg = decoded['message'] ?? decoded['error'] ?? 'Destination Bank Timeout';
-          return {'success': false, 'message': errorMsg, 'reference': ref, 'amount': amount};
-        } catch (_) {
-          return {'success': false, 'message': 'Destination Bank Timeout', 'reference': ref, 'amount': amount};
-        }
       }
     } catch (_) {
-      // Backend unavailable; local simulation fallback
+      // Backend unavailable; seamlessly proceed with local state simulation
     }
 
-    // 2. Local fallback: if exceeds balance or transfer limit of 50,000, trigger failure
-    if (amount > availableBalance || amount > 50000.0) {
-      return {'success': false, 'message': 'Destination Bank Timeout', 'reference': ref, 'amount': amount};
-    }
-
+    // 2. Perform in-memory mutation
     _applyLocalTransfer(amount, recipientName, ref, remarks);
     return {'success': true, 'reference': ref, 'amount': amount};
   }

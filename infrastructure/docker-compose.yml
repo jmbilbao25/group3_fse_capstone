@@ -180,6 +180,8 @@ services:
     restart: unless-stopped
     ports:
       - "5540:5540" # Web UI
+    volumes:
+      - redisinsight_data:/data
     networks:
       - banking-net
     depends_on:
@@ -198,17 +200,30 @@ services:
     restart: unless-stopped
     ports:
       - "8081:8081"
+    volumes:
+      - ./datadog/dd-java-agent.jar:/app/dd-java-agent.jar:ro
     environment:
+      - JAVA_TOOL_OPTIONS=-javaagent:/app/dd-java-agent.jar
+      - DD_AGENT_HOST=dd-agent
+      - DD_TRACE_AGENT_PORT=8126
+      - DD_SERVICE=account-service
+      - DD_ENV=local
+      - DD_VERSION=1.0.0
+      - DD_LOGS_INJECTION=true
+      - DD_TRACE_SAMPLE_RATE=1.0
       - SPRING_DATASOURCE_URL=jdbc:oracle:thin:@oracle-xe-master:1521/XEPDB1
       - SPRING_DATASOURCE_USERNAME=fse_user
       - SPRING_DATASOURCE_PASSWORD=fse_password
       - SPRING_DATA_REDIS_HOST=redis-cache
       - SPRING_DATA_REDIS_PORT=6379
+    labels:
+      com.datadoghq.ad.logs: '[{"source": "java", "service": "account-service"}]'
     networks:
       - banking-net
     depends_on:
       - oracle-xe-master
       - redis-cache
+      - dd-agent
 
   # ============================================================================
   # 9. Core Ledger & Balance Mutation Engine (Spring Boot :8082)
@@ -223,7 +238,17 @@ services:
     restart: unless-stopped
     ports:
       - "8082:8082"
+    volumes:
+      - ./datadog/dd-java-agent.jar:/app/dd-java-agent.jar:ro
     environment:
+      - JAVA_TOOL_OPTIONS=-javaagent:/app/dd-java-agent.jar
+      - DD_AGENT_HOST=dd-agent
+      - DD_TRACE_AGENT_PORT=8126
+      - DD_SERVICE=ledger-mutation-engine
+      - DD_ENV=local
+      - DD_VERSION=1.0.0
+      - DD_LOGS_INJECTION=true
+      - DD_TRACE_SAMPLE_RATE=1.0
       - SPRING_DATASOURCE_ORACLE_URL=jdbc:oracle:thin:@oracle-xe-master:1521/XEPDB1
       - SPRING_DATASOURCE_ORACLE_JDBC_URL=jdbc:oracle:thin:@oracle-xe-master:1521/XEPDB1
       - SPRING_DATASOURCE_ORACLE_USERNAME=fse_user
@@ -238,6 +263,8 @@ services:
       - SPRING_DATA_REDIS_PORT=6379
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka-broker:29092
       - APP_RISK_SERVICE_URL=http://risk-service:8084
+    labels:
+      com.datadoghq.ad.logs: '[{"source": "java", "service": "ledger-mutation-engine"}]'
     networks:
       - banking-net
     depends_on:
@@ -246,6 +273,7 @@ services:
       - redis-cache
       - kafka-broker
       - risk-service
+      - dd-agent
 
   # ============================================================================
   # 9b. Local NanoJev Risk Engine (FastAPI / Threaded Python :8084)
@@ -268,7 +296,7 @@ services:
       - DD_AGENT_HOST=dd-agent
       - DD_TRACE_AGENT_PORT=8126
       - DD_SERVICE=risk-service
-      - DD_ENV=production
+      - DD_ENV=local
       - DD_VERSION=2.0.0
       - DD_LOGS_INJECTION=true
       - SETTLEMENT_WINDOW_SECONDS=60.0
@@ -303,7 +331,17 @@ services:
     restart: unless-stopped
     ports:
       - "8083:8083"
+    volumes:
+      - ./datadog/dd-java-agent.jar:/app/dd-java-agent.jar:ro
     environment:
+      - JAVA_TOOL_OPTIONS=-javaagent:/app/dd-java-agent.jar
+      - DD_AGENT_HOST=dd-agent
+      - DD_TRACE_AGENT_PORT=8126
+      - DD_SERVICE=notification-service
+      - DD_ENV=local
+      - DD_VERSION=1.0.0
+      - DD_LOGS_INJECTION=true
+      - DD_TRACE_SAMPLE_RATE=1.0
       - SPRING_DATASOURCE_URL=jdbc:oracle:thin:@oracle-xe-master:1521/XEPDB1
       - SPRING_DATASOURCE_USERNAME=fse_user
       - SPRING_DATASOURCE_PASSWORD=fse_password
@@ -312,6 +350,8 @@ services:
       - SPRING_MAIL_HOST=mailhog
       - SPRING_MAIL_PORT=1025
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka-broker:29092
+    labels:
+      com.datadoghq.ad.logs: '[{"source": "java", "service": "notification-service"}]'
     networks:
       - banking-net
     depends_on:
@@ -319,6 +359,7 @@ services:
       - redis-cache
       - mailhog
       - kafka-broker
+      - dd-agent
 
   # ============================================================================
   # 11. API Gateway Service (Spring Cloud Gateway :8080)
@@ -333,12 +374,24 @@ services:
     restart: unless-stopped
     ports:
       - "8080:8080"
+    volumes:
+      - ./datadog/dd-java-agent.jar:/app/dd-java-agent.jar:ro
     environment:
+      - JAVA_TOOL_OPTIONS=-javaagent:/app/dd-java-agent.jar
+      - DD_AGENT_HOST=dd-agent
+      - DD_TRACE_AGENT_PORT=8126
+      - DD_SERVICE=gateway-service
+      - DD_ENV=local
+      - DD_VERSION=1.0.0
+      - DD_LOGS_INJECTION=true
+      - DD_TRACE_SAMPLE_RATE=1.0
       - REDIS_HOST=redis-cache
       - REDIS_PORT=6379
       - ACCOUNT_SERVICE_URI=http://account-service:8081
       - LEDGER_ENGINE_URI=http://ledger-mutation-engine:8082
       - NOTIFICATION_SERVICE_URI=http://notification-service:8083
+    labels:
+      com.datadoghq.ad.logs: '[{"source": "java", "service": "gateway-service"}]'
     networks:
       - banking-net
     depends_on:
@@ -346,6 +399,7 @@ services:
       - account-service
       - ledger-mutation-engine
       - notification-service
+      - dd-agent
 
   # ============================================================================
   # 12. Core Retail Banking Single Page Application (React / Vite / Nginx :3000)
@@ -452,6 +506,8 @@ services:
     environment:
       - DD_API_KEY=38f78a4f829a542181926e4e9499146d
       - DD_SITE=datadoghq.com
+      - DD_ENV=local
+      - DD_TAGS=env:local
       - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true
       - DD_APM_ENABLED=true
       - DD_APM_NON_LOCAL_TRAFFIC=true
@@ -494,5 +550,6 @@ volumes:
   postgres_data:
   prometheus_data:
   grafana_data:
+  redisinsight_data:
 
 

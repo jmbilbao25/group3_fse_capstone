@@ -112,8 +112,8 @@ CREATE TABLE transactions (
     CONSTRAINT fk_tx_from_account FOREIGN KEY (from_account_id) REFERENCES accounts(account_id),
     CONSTRAINT fk_tx_to_account FOREIGN KEY (to_account_id) REFERENCES accounts(account_id),
     CONSTRAINT fk_tx_approved_by FOREIGN KEY (approved_by_user_id) REFERENCES users(user_id),
-    CONSTRAINT chk_tx_type CHECK (type IN ('DEPOSIT', 'WITHDRAWAL', 'TRANSFER')),
-    CONSTRAINT chk_tx_status CHECK (status IN ('PENDING_APPROVAL', 'COMMITTED', 'FAILED')),
+    CONSTRAINT chk_tx_type CHECK (type IN ('DEPOSIT', 'WITHDRAWAL', 'TRANSFER', 'REVERSAL')),
+    CONSTRAINT chk_tx_status CHECK (status IN ('PENDING_APPROVAL', 'COMMITTED', 'FAILED', 'REVERSED')),
     CONSTRAINT chk_tx_2fa_otp CHECK (requires_2fa_otp IN (0, 1)),
     CONSTRAINT chk_tx_amount CHECK (amount > 0)
 );
@@ -133,8 +133,8 @@ CREATE TABLE outbox_events (
     created_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     published_at   TIMESTAMP WITH TIME ZONE,
     CONSTRAINT fk_oe_aggregate FOREIGN KEY (aggregate_id) REFERENCES transactions(transaction_id),
-    CONSTRAINT chk_oe_aggregate_type CHECK (aggregate_type IN ('TRANSACTION', 'BALANCE_MUTATION', 'CUSTOMER_VERIFICATION')),
-    CONSTRAINT chk_oe_event_type CHECK (event_type IN ('VERIFICATION_PENDING', 'VERIFICATION_CONFIRMED', 'MUTATION_COMMITTED', 'TRANSFER_PENDING_APPROVAL', 'TRANSFER_EXECUTED')),
+    CONSTRAINT chk_oe_aggregate_type CHECK (aggregate_type IN ('TRANSACTION', 'BALANCE_MUTATION', 'CUSTOMER_VERIFICATION', 'MAKER_CHECKER')),
+    CONSTRAINT chk_oe_event_type CHECK (event_type IN ('VERIFICATION_PENDING', 'VERIFICATION_CONFIRMED', 'MAKER_PENDING', 'CHECKER_APPROVED', 'MUTATION_COMMITTED', 'TRANSFER_PENDING_APPROVAL', 'TRANSFER_EXECUTED', 'TRANSFER_REVERSED')),
     CONSTRAINT chk_oe_status CHECK (status IN ('PENDING', 'PUBLISHED', 'FAILED'))
 );
 

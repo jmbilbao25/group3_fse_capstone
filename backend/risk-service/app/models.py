@@ -132,6 +132,7 @@ class RiskAnalysisResponse(BaseModel):
     status: Optional[str] = Field(default="SETTLED", description="Settlement status: PENDING_SETTLEMENT, HELD, SETTLED, BLOCKED")
     review_enqueued: Optional[bool] = Field(default=False, description="True if transfer was enqueued for async second-look review")
     settlement_window_seconds: Optional[float] = Field(default=60.0, description="Simulated settlement holding window")
+    memo_analysis: Optional[Dict[str, Any]] = Field(default=None, description="Real-time synchronous memo analysis (typology, probability, consistency)")
 
 
 class AnalystDecisionRequest(BaseModel):

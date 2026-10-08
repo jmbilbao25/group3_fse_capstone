@@ -27,7 +27,7 @@ spring:
         - id: ledger-mutation-engine
           uri: ${LEDGER_ENGINE_URI:http://localhost:8082}
           predicates:
-            - Path=/api/transactions/**, /api/v1/transactions/**, /api/v1/ledger/**
+            - Path=/api/transactions/**, /api/v1/transactions/**, /api/v1/ledger/**, /api/v1/t24/**, /api/t24/**
           filters:
             - name: RequestRateLimiter
               args:

@@ -1,0 +1,58 @@
+================================================================================
+SUSPICIOUS TRANSACTION REPORT (STR / SAR)
+Anti-Money Laundering Council (AMLC) - Republic Act No. 9160 / 11521
+Status: PENDING_HUMAN_SIGN_OFF | Priority: HIGH_CONFIDENCE_FRAUD
+================================================================================
+
+1. INCIDENT REFERENCE
+- Report Number: SAR-20261007-UNKNOWN_TX
+- Transaction ID: UNKNOWN_TX
+- Interception Timestamp: 2026-10-07 01:02:52 UTC
+- Triage Gate: GATE_0_HARD_RULES
+- Automated Action: BLOCK
+- Primary Reason Code: IMPOSSIBLE_TRAVEL_VELOCITY
+- Fraud Risk Score: 100.0 / 100.0
+
+2. SUBJECT IDENTIFICATION & BASELINE
+- Subject Account ID: UNKNOWN_USER
+- Channel: mobile_banking
+- 30-Day Historical Average: PHP 15,000.00
+- Current Transaction Amount: PHP 15,000.00
+- Spike Ratio: 1.00x
+- Balance Drain Ratio: 0.0%
+
+3. TECHNICAL AND PHYSICAL TELEMETRY
+- Device Attestation: PASS
+- Rooted: False | Hooking: False | Emulator: False | Tampered: False
+- Distance from Registered Home: 2,430.9 km
+- Elapsed Time Since Prior Activity: 0.0 minutes
+- Calculated Velocity: 6,987.0 km/h
+- VPN / Proxy Masking Detected: False
+
+4. BENEFICIARY COUNTERPARTY & TRANSACTION PURPOSE
+- Declared Purpose: Funds Transfer
+- Payee Classification: third_party_individual
+- Payee Account Status: ESTABLISHED_BENEFICIARY
+- Beneficiary Velocity: 1 inbound senders in last 24h (Mule Risk Factor)
+
+5. NATURAL LANGUAGE MEMO SEMANTIC ANALYSIS
+- Submitted Memo: "[NO MEMO ENTERED]"
+- Semantic Risk Category: NONE
+
+6. PRIMARY RED FLAG INDICATORS
+  - Impossible travel speed (6,987.0 km/h) indicating remote session compromise or credential stuffing.
+
+7. FORENSIC COMPLIANCE NARRATIVE
+On 2026-10-07 01:02:52 UTC, the automated risk monitoring system intercepted and blocked a high-value transfer request of PHP 15,000.00 initiated under customer account UNKNOWN_USER. The transaction represents a 1.0x surge above the customer's established baseline of PHP 15,000.00, resulting in an acute balance liquidation of 0.0%.
+
+Forensic telemetry revealed immediate indicators of compromise: the originating endpoint reported an attestation verdict of 'PASS' with device tampering indicators (Hooking=False, Emulator=False, Rooted=False). Physical transit velocity was calculated at 6,987.0 km/h, which is physically impossible under standard commercial travel. The destination account (third_party_individual) exhibits mule routing characteristics with 1 distinct originating transfers within a 24-hour window, inconsistent with stated transfer purpose 'Funds Transfer'. Pursuant to Bangko Sentral ng Pilipinas (BSP) Circular No. 1108 and Republic Act No. 9160, this transaction has been quarantined and referred for formal regulatory STR submission.
+
+8. RECOMMENDED REMEDIATION & NEXT STEPS
+- [X] Immediate Transaction Rejection (Executed in real-time)
+- [X] Beneficiary Account Temporary Credit Freeze (P.O. Request to Receiving Bank)
+- [X] Customer Account Step-up Verification (Mandatory in-branch biometric KYC)
+- [ ] AMLC Official STR Electronic Dispatch (Pending Compliance Officer Sign-off)
+
+Investigator Sign-off: [  ] APPROVED FOR FILING    [  ] REJECT / FALSE POSITIVE
+Compliance Officer Name: _____________________ Date: _________________
+================================================================================

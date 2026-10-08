@@ -814,32 +814,21 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                               });
                             },
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                               decoration: BoxDecoration(
                                 color: isSelected ? brandViolet.withValues(alpha: 0.08) : Colors.transparent,
                                 border: purpose != _purposeOptions.last
                                     ? const Border(bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1.0))
                                     : null,
                               ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                                    color: isSelected ? brandViolet : const Color(0xFF94A3B8),
-                                    size: 19,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      purpose,
-                                      style: TextStyle(
-                                        fontSize: 13.5,
-                                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                                        color: isSelected ? brandViolet : textDark,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                              child: Text(
+                                purpose,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                  color: isSelected ? brandViolet : textDark,
+                                ),
                               ),
                             ),
                           );

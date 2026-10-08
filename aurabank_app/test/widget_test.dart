@@ -562,18 +562,25 @@ void main() {
     expect(find.text('Confirm & Send'), findsOneWidget);
     expect(find.text('Cancel Transaction'), findsOneWidget);
 
-    // Tap Confirm & Send opens Biometric Authorization modal (Face ID / Fingerprint)
+    // Tap Confirm & Send navigates to dedicated Face ID Verification screen
     await tester.tap(find.text('Confirm & Send'));
     await tester.pumpAndSettle();
+    expect(find.text('Face ID Verification'), findsOneWidget);
     expect(find.text('Authorize with Face ID'), findsOneWidget);
     expect(find.text('Authorize Face ID'), findsOneWidget);
-    expect(find.text('Fingerprint'), findsOneWidget);
+    expect(find.text('PHP 50,000.00'), findsOneWidget);
 
-    // Toggle to Fingerprint
-    await tester.tap(find.text('Fingerprint'));
+    // Tap Authorize Face ID and verify transition to receipt
+    await tester.tap(find.text('Authorize Face ID'));
+    await tester.pump();
+    expect(find.text('Scanning Face...'), findsOneWidget);
+
+    await tester.pump(const Duration(milliseconds: 750));
+    expect(find.text('Face ID Verified!'), findsOneWidget);
+
+    await tester.pump(const Duration(milliseconds: 450));
     await tester.pumpAndSettle();
-    expect(find.text('Authorize with Fingerprint'), findsOneWidget);
-    expect(find.text('Authorize Fingerprint'), findsOneWidget);
+    expect(find.text('Transaction Receipt'), findsOneWidget);
   });
 
   testWidgets('ScanScreen supports Gallery QR upload, accurate QR modal text, and back button navigation', (WidgetTester tester) async {

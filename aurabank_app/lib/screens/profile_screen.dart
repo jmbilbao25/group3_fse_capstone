@@ -588,7 +588,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                         const SizedBox(width: 14),
 
-                        // Name, Privilege Badge & Phone
+                        // Name with Verified Badge & Phone
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -600,28 +600,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       user.name,
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(
-                                        fontSize: 16.5,
-                                        fontWeight: FontWeight.w800,
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w900,
                                         color: textDark,
+                                        letterSpacing: -0.3,
                                       ),
                                     ),
                                   ),
                                   const SizedBox(width: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFF3E8FF),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: const Text(
-                                      'PRIVILEGE',
-                                      style: TextStyle(
-                                        fontSize: 8.5,
-                                        fontWeight: FontWeight.w800,
-                                        color: brandViolet,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
+                                  const Icon(
+                                    Icons.verified_rounded,
+                                    size: 17,
+                                    color: Color(0xFF3B82F6),
                                   ),
                                 ],
                               ),
@@ -639,20 +629,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
 
-                        // Edit Button
+                        // Edit Button (Fintech-grade pill)
                         OutlinedButton.icon(
                           style: OutlinedButton.styleFrom(
-                            backgroundColor: const Color(0xFFF5EEFF),
-                            side: const BorderSide(color: Color(0xFFDDD6FE), width: 1.0),
+                            backgroundColor: brandViolet.withValues(alpha: 0.08),
+                            side: BorderSide(color: brandViolet.withValues(alpha: 0.2), width: 1.0),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                             minimumSize: Size.zero,
                           ),
-                          icon: const Icon(Icons.edit_outlined, size: 13, color: brandViolet),
+                          icon: const Icon(Icons.edit_rounded, size: 13, color: brandViolet),
                           label: const Text(
                             'Edit',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 12.5,
                               fontWeight: FontWeight.w800,
                               color: brandViolet,
                             ),
@@ -664,18 +654,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                     const SizedBox(height: 18),
 
-                    // Registered Email Pill
+                    // Registered Email Pill with Verified Tag
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFAF7FF),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: const Color(0xFFEDE9FE), width: 1.0),
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.mark_email_read_rounded, size: 16, color: brandViolet),
+                          Container(
+                            width: 34,
+                            height: 34,
+                            decoration: BoxDecoration(
+                              color: brandViolet.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.email_outlined, size: 16, color: brandViolet),
+                          ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Column(
@@ -686,7 +684,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   style: TextStyle(
                                     fontSize: 9.5,
                                     fontWeight: FontWeight.w700,
-                                    color: brandViolet,
+                                    color: Color(0xFF64748B),
                                     letterSpacing: 0.5,
                                   ),
                                 ),
@@ -695,12 +693,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   user.email,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
-                                    fontSize: 12.5,
+                                    fontSize: 13,
                                     fontWeight: FontWeight.w800,
                                     color: textDark,
                                   ),
                                 ),
                               ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFDCFCE7),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              'Verified',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF16A34A),
+                              ),
                             ),
                           ),
                         ],
@@ -899,21 +912,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
               // Log Out of This Device only (Multi-device logout is on Trusted Devices & Sessions page)
               SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: 52,
                 child: OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFAF7FF),
-                    side: const BorderSide(color: Color(0xFFEDE9FE), width: 1.4),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+                    backgroundColor: Colors.white,
+                    side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.2),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                     elevation: 0,
                   ),
-                  icon: const Icon(Icons.logout_rounded, size: 19, color: brandViolet),
+                  icon: const Icon(Icons.logout_rounded, size: 19, color: Color(0xFFEF4444)),
                   label: const Text(
                     'Log Out of This Device',
                     style: TextStyle(
-                      fontSize: 14.5,
+                      fontSize: 15,
                       fontWeight: FontWeight.w800,
-                      color: brandViolet,
+                      color: Color(0xFFEF4444),
                       letterSpacing: 0.2,
                     ),
                   ),
@@ -944,10 +957,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Text(
           title,
           style: const TextStyle(
-            fontSize: 11,
+            fontSize: 11.5,
             fontWeight: FontWeight.w800,
-            color: brandViolet,
-            letterSpacing: 0.9,
+            color: Color(0xFF475569),
+            letterSpacing: 0.8,
           ),
         ),
       ],
@@ -958,12 +971,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFEDE9FE), width: 1.0),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: brandViolet.withValues(alpha: 0.04),
-            blurRadius: 14,
+            color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+            blurRadius: 16,
             offset: const Offset(0, 4),
           ),
         ],
@@ -1096,22 +1109,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildInfoColumn(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textGray),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          value,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: textDark),
-        ),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            value,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: textDark),
+          ),
+        ],
+      ),
     );
   }
 

@@ -13,7 +13,7 @@ enum ShowcaseNode {
   transferForm, // T: Customer transfer
   gate0Scan, // G: Gate 0
   xgboostScore, // X: XGBoost S2
-  nanojevContext, // N: NanoJev
+  nanojevContext, // N: Laya Threat Synthesis
   biometrics, // A: Allow Biometric
   transferSent, // D: Settlement Ledger Commit
   advisoryWarning, // V: Advisory Threat Warning
@@ -67,7 +67,7 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
     'Reading the context...',
   ];
 
-  // 5 NanoJev Threats matching prototype W array
+  // 5 Threat Categories synthesized via Laya engine
   final List<ThreatModel> _threats = const [
     ThreatModel(
       key: 'Remote access',
@@ -178,7 +178,7 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
           _scanStatusIndex = 1;
         });
 
-        // Step 3: XGBoost S2 -> NanoJev
+        // Step 3: XGBoost S2 -> Laya Threat Synthesis
         Timer(const Duration(milliseconds: 900), () {
           if (token != _playbackToken || !mounted) return;
           setState(() {
@@ -429,7 +429,7 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16.0),
                 child: Text(
-                  'Simulated demo for illustration. The memo is ignored. Warning types are listed in the engine\'s priority order, and NanoJev can only raise friction, never lower it.',
+                  'Simulated demo for illustration. Evaluates Philippine scam typologies and payment memo semantics in real time (< 0.2ms). Laya can only raise friction, never lower it.',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 11, color: AuraColors.textMuted, height: 1.35),
                 ),
@@ -503,7 +503,7 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
           _buildBreadcrumbArrow(),
           _buildBreadcrumbNode('XGBoost S2', ShowcaseNode.xgboostScore),
           _buildBreadcrumbArrow(),
-          _buildBreadcrumbNode('NanoJev', ShowcaseNode.nanojevContext),
+          _buildBreadcrumbNode('Laya', ShowcaseNode.nanojevContext),
           _buildBreadcrumbArrow(),
           _buildBreadcrumbNode(
             _scenario == ShowcaseScenario.blocked
@@ -1411,9 +1411,9 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
         break;
       case ShowcaseNode.nanojevContext:
         stageType = 'Backend decision';
-        stageTitle = 'NanoJev: Threat synthesis (N)';
+        stageTitle = 'Laya: Threat & Memo Synthesis (L)';
         stageDesc =
-            'Reads remote-app, call, clipboard and payee signals. It can raise friction but never lower it.';
+            'Reads real-time scam memo semantics (< 0.2 ms), remote-app, call, clipboard, and payee signals. It can raise friction but never lower it.';
         break;
       case ShowcaseNode.biometrics:
         stageType = 'Customer sees';

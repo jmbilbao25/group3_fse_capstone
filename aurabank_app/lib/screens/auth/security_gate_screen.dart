@@ -52,14 +52,14 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
   // Gate 0 progressive messages
   int _statusIndex = 0;
   final List<String> _scanStatuses = [
-    'Securing cryptographic session...',
-    'Reading the context...',
-    'Scoring the transfer...',
-    'Aura neural anomaly check...',
+    'Securing connection...',
+    'Verifying transfer details...',
+    'Checking account protection...',
+    'Finalizing verification...',
   ];
   Timer? _statusTimer;
 
-  // Screen sharing state & 5 NanoJev Threat Categories
+  // Screen sharing state & 5 Laya Threat Categories
   bool _transferCancelled = false;
   bool _isPaused = false;
   int _pauseSecondsRemaining = 597; // 09:57
@@ -217,7 +217,7 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
               ),
               child: Row(
                 children: [
-                  _buildTabItem('Gate 0 Scan', SecurityGateMode.gate0Scanning),
+                  _buildTabItem('Security Scan', SecurityGateMode.gate0Scanning),
                   _buildTabItem('Screen Share', SecurityGateMode.screenSharingDetected),
                   _buildTabItem('Blocked Anomaly', SecurityGateMode.transferBlocked),
                 ],
@@ -272,7 +272,7 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
                           Icon(Icons.shield_rounded, size: 12, color: AuraColors.primary),
                           SizedBox(width: 4),
                           Text(
-                            'Gate 0 Engine',
+                            'Security Shield',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w800,
@@ -548,14 +548,14 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
     );
   }
 
-  // 2. SCREEN SHARING OR NANOJEV THREAT WARNING VIEW (5 Threat Types)
+  // 2. SCREEN SHARING OR LAYA THREAT WARNING VIEW (5 Threat Types)
   Widget _buildScreenSharingView() {
     final threat = _threats[_selectedThreatIndex];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // 5 NanoJev Threat Category Chips
+        // 5 Laya Threat Category Chips
         Container(
           margin: const EdgeInsets.only(bottom: 16),
           child: SingleChildScrollView(

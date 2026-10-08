@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway-service
+  namespace: banking
+  labels:
+    app: gateway-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gateway-service
+  template:
+    metadata:
+      labels:
+        app: gateway-service
+    spec:
+      containers:
+        - name: gateway-service
+          image: __ACR_NAME__.azurecr.io/gateway-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 25
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 35
+            periodSeconds: 15
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:+UseSerialGC -Xms128m -Xmx320m"
+            - name: REDIS_HOST
+              value: "redis.banking.svc.cluster.local"
+            - name: REDIS_PORT
+              value: "6379"
+            - name: ACCOUNT_SERVICE_URI
+              value: "http://account-service.banking.svc.cluster.local:8081"
+            - name: LEDGER_ENGINE_URI
+              value: "http://ledger-mutation-engine.banking.svc.cluster.local:8082"
+            - name: NOTIFICATION_SERVICE_URI
+              value: "http://notification-service.banking.svc.cluster.local:8083"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: banking-secrets
+                  key: jwt-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-service
+  namespace: banking
+  labels:
+    app: gateway-service
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 8080
+      name: http
+    - port: 8080
+      targetPort: 8080
+      name: direct-gateway
+  selector:
+    app: gateway-service

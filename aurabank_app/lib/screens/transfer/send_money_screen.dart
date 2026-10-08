@@ -39,12 +39,12 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
   final TextEditingController _remarksController =
       TextEditingController();
 
-  static const List<Map<String, dynamic>> _sourceAccounts = [
+  List<Map<String, dynamic>> get _sourceAccounts => [
     {
       'type': 'Savings',
       'title': 'Savings Account',
-      'accountNo': 'AUR-SAV-9821',
-      'balance': 50000.0,
+      'accountNo': 'AUR-SAV-9821 (${_bankService.activeAccountId})',
+      'balance': _bankService.availableBalance,
       'icon': Icons.account_balance_rounded,
     },
     {
@@ -162,6 +162,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
     super.initState();
     _isAuraToAura = widget.initialIsAuraToAura;
     _selectedPartnerBankIndex = widget.initialPartnerBankIndex;
+    _bankService.addListener(_onServiceUpdate);
     _accountController = TextEditingController(
       text: widget.initialAccountNo ?? '1234568898951',
     );
@@ -175,11 +176,16 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
 
   @override
   void dispose() {
+    _bankService.removeListener(_onServiceUpdate);
     _accountController.dispose();
     _recipientController.dispose();
     _amountController.dispose();
     _remarksController.dispose();
     super.dispose();
+  }
+
+  void _onServiceUpdate() {
+    if (mounted) setState(() {});
   }
 
   double get _currentSourceBalance {

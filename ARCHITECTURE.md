@@ -17,8 +17,8 @@ Every containerized service in the Docker Compose bridge network (`banking-net`)
 | `client` | `banking-frontend` | `3000` | `80` / `3000` | HTTP | Public Browser | React 18 SPA: Customer (email 2FA) & Admin telemetry portals |
 | `gateway` | `gateway-service` | `8080` | `8080` | HTTP / REST | Public API Entry | Perimeter Security, JWT validation, rate limiting |
 | `acc_svc` | `account-service` | `8081` | `8081` | HTTP / REST | Internal Network | Customer KYC, user onboarding, account provisioning |
-| `tx_engine`| `transfer-orchestrator`| `8082` | `8082` | HTTP / REST | Internal Network | Transfer lifecycle orchestrator: Risk Engine evaluation, JSON-to-OFS conversion, T24 dispatch |
-| `t24_cbs`  | `temenos-t24-cbs`       | `9100` | `9100` | OFS / TCP   | Internal Network | Temenos T24 Core Banking System: balances, EOD/batch processing, fees, interest |
+| `tx_engine`| `transfer-orchestrator`| `8082` | `8082` | HTTP / REST | Internal Network | Transfer lifecycle orchestrator: Risk Engine evaluation, Saga compensation, T24 dispatch |
+| `t24_cbs`  | `temenos-t24-cbs`       | `9100` | `9100` | HTTP / OFS  | Internal Network | Temenos T24 Core Banking System: Dual Ingress (1: Funds Transfer, 2: Reversal) |
 | `notif_svc`| `notification-service` | `8083` | `8083` | HTTP / REST | Internal Network | Kafka listener, receipt generation, email 2FA OTP delivery |
 | `mailhog`  | `mailhog-smtp`         | `8025` / `1025` | `8025` / `1025` | HTTP / SMTP | Web Inbox / Host | Mock email inbox UI (:8025) and SMTP receiver (:1025) for OTP codes |
 | `auth_cache`| `redis-cache` | `6379` | `6379` | RESP / TCP | Internal Network | Token blacklist, 2FA OTP cache (300s TTL), rate limiting |
@@ -52,9 +52,9 @@ Every containerized service in the Docker Compose bridge network (`banking-net`)
   4. `RouteConfiguration`:
      - `/api/v1/auth/**` routes to `account-service:8081`
      - `/api/v1/accounts/**` routes to `account-service:8081`
-     - `/api/v1/ledger/**` routes to `ledger-mutation-engine:8082`
-     - `/api/v1/transfers/**` routes to `ledger-mutation-engine:8082`
-     - `/api/v1/bills/**` routes to `ledger-mutation-engine:8082`
+     - `/api/v1/ledger/**` routes to `transfer-orchestrator:8082`
+     - `/api/v1/transfers/**` routes to `transfer-orchestrator:8082`
+     - `/api/v1/bills/**` routes to `transfer-orchestrator:8082`
 
 ---
 
@@ -72,7 +72,7 @@ Every containerized service in the Docker Compose bridge network (`banking-net`)
      - `POST /api/v1/accounts`: Generates unique account number, links to customer profile, creates initial `balance_master` record with `0.0000 PHP`.
      - `PATCH /api/v1/accounts/{id}/status`: Locks or closes accounts upon fraud flags.
    4. `BalanceInquiryService`:
-     - `GET /api/v1/accounts/{id}/balance`: Inspects Redis cache (`account:balance:<id>`). On cache miss, queries Oracle XE and writes to Redis with 30-second TTL.
+     - `GET /api/v1/accounts/{id}/balance`: Inspects Redis cache (`account:balance:<id>`). On cache miss, queries Azure SQL and writes to Redis with 30-second TTL.
 
 ---
 
@@ -86,26 +86,29 @@ Every containerized service in the Docker Compose bridge network (`banking-net`)
      - Receives risk evaluation verdict (`ALLOW`, `2FA_CHALLENGE`, or `BLOCK`).
   4. `StepUpChallengeCoordinator`:
      - If risk evaluation mandates 2FA or transfer > PHP 50,000.00, coordinates with `notification-service` to deliver 6-digit OTP to the customer and verifies the OTP before proceeding.
-  5. `OfsMessageBuilder & T24 Dispatcher`:
-     - Converts validated JSON transfer request into standard Temenos Open Financial Services (OFS) syntax:
-       `FUNDS.TRANSFER,AUTH/I/PROCESS,//PH100223,TXN.REF=...,DEBIT.ACCT=...,CREDIT.ACCT=...,AMOUNT=...`
-     - Dispatches OFS message to Temenos T24 CBS via high-performance TCP / message queue socket.
-     - Parses OFS response (`TXN-XXXX//1/SUCCESS` or error code).
+  5. `T24 Dispatcher & Saga Compensation Coordinator`:
+     - **Funds Transfer (Endpoint 1)**: Converts validated transfer request into OFS syntax (`FUNDS.TRANSFER,AUTH/I/PROCESS`) and dispatches to `POST /api/v1/t24/funds-transfer`.
+     - **Compensating Reversal (Endpoint 2)**: Upon downstream timeout, circuit breaker abort, or notification failure, dispatches compensating reversal (`FUNDS.TRANSFER,REVERSE/I/PROCESS`) to `POST /api/v1/t24/reversal` with the original `TXN.REF` to restore debited customer balances immediately.
   6. `TransferEventProducer`:
-     - Publishes state change events to `banking.transfers.events` (`TransferExecuted`, `TransferPendingVerification`, `TransferFailed`).
+     - Publishes state change events to `banking.transfers.events` (`TransferExecuted`, `TransferPendingVerification`, `TransferFailed`, `TransferReversed`).
 
 ---
 
 ### E. Temenos T24 Core Banking System (`temenos-t24-cbs` :9100)
 - **Runtime**: Temenos T24 Core Banking System runtime / Enterprise CBS.
-- **Datasource**: Direct and main connection point to `azure-sql-db:1433`.
+- **Datasource**: Direct and exclusive connection point to `azure-sql-db:1433`.
+- **Dual Ingress Endpoints**:
+  1. **Endpoint 1: Funds Transfer (`POST /api/v1/t24/funds-transfer`)**:
+     - OFS command: `FUNDS.TRANSFER,AUTH/I/PROCESS,//PH100223,TXN.REF=...,DEBIT.ACCT=...,CREDIT.ACCT=...,AMOUNT=...`
+     - Validates balances, executes atomic debit and credit mutations, posts GL ledger lines, and records fee tariffs.
+  2. **Endpoint 2: Financial Reversal (`POST /api/v1/t24/reversal`)**:
+     - OFS command: `FUNDS.TRANSFER,REVERSE/I/PROCESS,//PH100223,TXN.REF=...,ORIGINAL.REF=...`
+     - Compensating transaction: restores debited funds, offsets recipient credits, and registers reversal audit trails.
 - **Core Functions**:
-  1. `OFS Ingestion Engine`: Listens on port 9100 for OFS financial strings, deserializes commands, and manages application locks.
-  2. `Double-Entry Balance Engine`: Primary owner of accounts, customer ledgers, and transaction postings in Azure SQL Database.
-  3. `End-of-Day (EOD) & Batch Processing`: Automated daily batch cycles, balance rollups, GL reconciliation, and statement generation.
-  4. `Fee Engine`: Computes and posts real-time and batch service fees, remittance tariffs, and transaction charges.
-  5. `Interest Engine`: Calculates interest accruals, periodic capitalization, and regulatory withholding tax.
-  6. `ACID Concurrency Kernel`: Acquires row-level pessimistic locks (`SELECT ... WITH (UPDLOCK, ROWLOCK)`) directly on Azure SQL tables.
+  1. `Double-Entry Balance Engine`: Primary owner of accounts, customer ledgers, and transaction postings in Azure SQL Database.
+  2. `End-of-Day (EOD) & Batch Processing`: Automated daily batch cycles, balance rollups, GL reconciliation, and statement generation.
+  3. `Fee & Interest Engines`: Computes real-time transfer tariffs, interest accruals, and regulatory withholding tax.
+  4. `ACID Concurrency Kernel`: Acquires row-level pessimistic locks (`SELECT ... WITH (UPDLOCK, ROWLOCK)`) directly on Azure SQL tables.
 
 ---
 
@@ -268,3 +271,42 @@ sequenceDiagram
         Kafka->>Notif: Notification Consumer dispatches HTML Email Receipt & Push
     end
 ```
+
+---
+
+## 3. Dual-Storage Persistence Architecture: CBS Master Database vs Immutable Audit Vault
+
+The platform enforces a dual-storage persistence architecture, partitioning live operational financial transactions from immutable regulatory audit trails:
+
+| Architectural Dimension | CBS Master Ledger Database (`azure-sql-db` :1433) | Immutable Audit Vault (`azure-postgres-vault` :5432) |
+| :--- | :--- | :--- |
+| **Primary Owner** | `temenos-t24-cbs` (:9100) exclusively | Audit Consumer Worker (`notification-workers`) |
+| **Storage Engine** | Azure SQL Database (Relational ACID Kernel) | Azure Database for PostgreSQL 16 Alpine |
+| **Data Scope** | Core accounts, customer master ledgers, GL double-entry journals, EOD balances | Append-only financial audit records (`ledger_mutation_audit`), mutation receipts |
+| **Concurrency Model** | Strict row-level pessimistic locking (`UPDLOCK, ROWLOCK`), ACID serialization | High-throughput append-only streaming; database trigger strictly blocks UPDATE & DELETE |
+| **SLA & Scaling** | Mission-critical core financial SLA; failover-protected double-entry integrity | Independent read-heavy compliance reporting, sub-5ms indexed auditor lookups |
+| **External Architecture** | No extraneous presentation databases; direct service integration | Zero direct browser writes; pure asynchronous Kafka event projection |
+
+### Architectural Principles
+1. **Pessimistic Balance Integrity**: Temenos T24 CBS serializes high-frequency balance mutations using database row locks on Azure SQL, preventing race conditions and double-spending.
+2. **Regulatory Non-Repudiation**: The PostgreSQL audit vault is isolated from operational mutations. A custom trigger (`trg_no_update_delete_mutation_audit`) rejects any tampering attempts, satisfying Bangko Sentral ng Pilipinas (BSP) compliance requirements.
+3. **Lean Persistence Footprint**: Business flows operate cleanly through standard microservices and core banking databases without introducing unnecessary intermediate storage layers.
+
+---
+
+## 4. C1–C4 Architectural Hierarchy & Interactive Presentation Explorer
+
+The system is formalized across the C4 model hierarchy to facilitate presentations ranging from executive high-level overviews down to low-level engineering execution flows:
+
+* **Interactive Presentation Navigator**: [`c_model_explorer.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c_model_explorer.html)
+  An interactive canvas that allows clicking any component node to smoothly zoom in from high-level C1 System Context down to C2 Containers, C3 Components, and C4 Sequence execution flows. Includes keyboard navigation (`1..4` to jump levels, `Esc` to zoom out), node inspection drawer, and instant theme switching.
+* **C1: System Context Diagram**: [`c1_system_context.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c1_system_context.html)
+  Depicts Retail Customers, Back-Office Ops, the Core Platform Boundary, Notification Gateways, and the external Temenos T24 CBS with its dual ingress capabilities.
+* **C2: Container Diagram**: [`c2_container.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c2_container.html)
+  Depicts all containerized deployment units: Frontends, Gateway (:8080), Account Service (:8081), Transfer Orchestrator (:8082), T24 CBS (:9100 with EP1 & EP2), and CBS Master DB (:1433).
+* **C3: Component Diagram**: [`c3_component.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c3_component.html)
+  Exposes the internal code-level modules: Idempotency Guard, Risk Coordinator, Saga Compensation Coordinator, T24 Transfer Client (EP1), T24 Reversal Client (EP2), and T24 Core Accounting Kernel.
+* **C4: Sequence / Flow Diagram**: [`c4_sequence.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c4_sequence.html)
+  Details the execution sequence of a funds transfer via T24 Endpoint 1, followed by a simulated downstream timeout that triggers an automated compensating reversal via T24 Endpoint 2.
+* **Full Primary System Architecture**: [`architecture.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/architecture.html)
+  The comprehensive showcase diagram compiled and verified under Archify v3.

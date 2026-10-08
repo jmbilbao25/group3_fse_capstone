@@ -21,6 +21,15 @@ UNOFFICIAL_INSTALLERS = [
 ]
 
 
+# Suspicious keywords in payment memo and transfer narratives
+SCAM_MEMO_KEYWORDS = [
+    "crypto", "bitcoin", "investment", "guaranteed", "profit", "task", "commission",
+    "bail", "police", "remote", "support fee", "it remote", "release fee",
+    "processing fee", "unlock", "raffle", "lottery", "prize", "pampadulas", "customs",
+    "meralco", "electricity bill", "telegram"
+]
+
+
 def has_threat_context(request: RiskAnalysisRequest) -> bool:
     """
     Returns True if any unstructured threat signals or counterparty anomalies are present.
@@ -41,7 +50,10 @@ def has_threat_context(request: RiskAnalysisRequest) -> bool:
             return True
 
         # Live voice call in progress
-        if dev.telephony and dev.telephony.call_state in ["CALL_STATE_OFFHOOK", "IN_CALL"]:
+        if dev.telephony and (
+            dev.telephony.call_state in ["CALL_STATE_OFFHOOK", "IN_CALL", "ACTIVE_CALL", "CALL_ACTIVE"]
+            or (dev.telephony.call_state and dev.telephony.call_state.upper() not in ["IDLE", "NONE", ""])
+        ):
             return True
 
         # Sideloaded APK origin
@@ -51,7 +63,7 @@ def has_threat_context(request: RiskAnalysisRequest) -> bool:
                 return True
 
         # Account pasted from external app
-        if dev.interaction and dev.interaction.account_input_mode in ["PASTED_FROM_EXTERNAL_APP", "PASTED_FROM_CLIPBOARD"]:
+        if dev.interaction and dev.interaction.account_input_mode in ["PASTED_FROM_EXTERNAL_APP", "PASTED_FROM_CLIPBOARD", "PASTED"]:
             return True
 
     # 2. Check Counterparty Context
@@ -67,6 +79,11 @@ def has_threat_context(request: RiskAnalysisRequest) -> bool:
         if cp.payee_age_hours is not None and cp.payee_age_hours < 24.0:
             if cp.sender_assigned_nickname:
                 return True
+
+    # 3. Check Memo Semantics
+    memo_lower = (request.memo or "").lower()
+    if any(kw in memo_lower for kw in SCAM_MEMO_KEYWORDS):
+        return True
 
     return False
 
@@ -88,8 +105,17 @@ def detect_threat_category(request: RiskAnalysisRequest) -> str:
     if dev and dev.media_projection and dev.media_projection.is_screen_sharing:
         return "REMOTE_ACCESS_MALWARE"
 
+    if "remote" in memo or "support fee" in memo or "anydesk" in memo or "teamviewer" in memo:
+        return "REMOTE_ACCESS_MALWARE"
+
     # Priority 2: Live Phone Call Coercion
-    if dev and dev.telephony and dev.telephony.call_state in ["CALL_STATE_OFFHOOK", "IN_CALL"]:
+    if dev and dev.telephony and (
+        dev.telephony.call_state in ["CALL_STATE_OFFHOOK", "IN_CALL", "ACTIVE_CALL", "CALL_ACTIVE"]
+        or (dev.telephony.call_state and dev.telephony.call_state.upper() not in ["IDLE", "NONE", ""])
+    ):
+        return "LIVE_CALL_COERCION"
+
+    if "bail" in memo or "police" in memo:
         return "LIVE_CALL_COERCION"
 
     # Priority 3: Purpose / Account Mismatch
@@ -99,9 +125,16 @@ def detect_threat_category(request: RiskAnalysisRequest) -> str:
         if "BILL" in purpose and ("INDIVIDUAL" in acct_type or "SAVING" in acct_type):
             return "PURPOSE_ACCOUNT_MISMATCH"
 
+    if "meralco" in memo or "electricity bill" in memo:
+        return "PURPOSE_ACCOUNT_MISMATCH"
+
     # Priority 4: External Clipboard Paste
-    if dev and dev.interaction and dev.interaction.account_input_mode in ["PASTED_FROM_EXTERNAL_APP", "PASTED_FROM_CLIPBOARD"]:
+    if dev and dev.interaction and dev.interaction.account_input_mode in ["PASTED_FROM_EXTERNAL_APP", "PASTED_FROM_CLIPBOARD", "PASTED"]:
         return "EXTERNAL_CLIPBOARD_PASTE"
+
+    # Priority 5: Memo Typology Patterns
+    if any(kw in memo for kw in ["crypto", "bitcoin", "guaranteed", "profit", "investment", "task", "commission", "prize", "lottery"]):
+        return "MEMO_SCAM_PATTERN"
 
     return "GENERAL_ADVISORY"
 

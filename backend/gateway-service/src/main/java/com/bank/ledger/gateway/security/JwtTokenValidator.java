@@ -58,6 +58,8 @@ public class JwtTokenValidator {
             return subject != null && !subject.isBlank();
 
         } catch (Exception e) {
+            System.err.println("[GATEWAY JWT ERROR] " + e.getClass().getName() + ": " + e.getMessage());
+            e.printStackTrace();
             return false;
         }
     }

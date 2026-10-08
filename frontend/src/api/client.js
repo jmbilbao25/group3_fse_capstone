@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-// Base API client pointing to Gateway Service (:8080) via Vite proxy
+// Base API client pointing to Gateway Service (:8080) via Vite proxy or cloud URL
 export const apiClient = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

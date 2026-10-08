@@ -390,6 +390,7 @@ services:
       - ACCOUNT_SERVICE_URI=http://account-service:8081
       - LEDGER_ENGINE_URI=http://ledger-mutation-engine:8082
       - NOTIFICATION_SERVICE_URI=http://notification-service:8083
+      - RISK_SERVICE_URI=http://risk-service:8084
     labels:
       com.datadoghq.ad.logs: '[{"source": "java", "service": "gateway-service"}]'
     networks:
@@ -399,6 +400,7 @@ services:
       - account-service
       - ledger-mutation-engine
       - notification-service
+      - risk-service
       - dd-agent
 
   # ============================================================================

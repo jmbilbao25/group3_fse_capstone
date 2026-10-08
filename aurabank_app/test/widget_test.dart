@@ -618,7 +618,8 @@ void main() {
 
     // Form view should be rendered with decoded recipient
     expect(find.text('Marco Vance'), findsOneWidget);
-    expect(find.text('BDO Unibank • Account No. 0029481928471'), findsOneWidget);
+    expect(find.text('BDO Unibank'), findsOneWidget);
+    expect(find.text('Account No. 0029481928471'), findsOneWidget);
     expect(find.text('Send Money'), findsOneWidget);
 
     // 3. Test Back button from form returns to viewfinder
@@ -658,10 +659,37 @@ void main() {
     expect(find.text('Marco Vance'), findsOneWidget);
     expect(find.text('Send Money'), findsOneWidget);
 
+    // Initial From card shows 'Select source account' matching Scan-image 5
+    expect(find.text('From:'), findsOneWidget);
+    expect(find.text('Select source account'), findsOneWidget);
+    expect(find.text('Available Balance: PHP 50,000.00'), findsOneWidget);
+    expect(find.text('Transfer Limit: PHP 50,000.00'), findsOneWidget);
+
+    // Tap From card to open Source Account selector sheet
+    await tester.tap(find.text('Select source account'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Select Source Account'), findsOneWidget);
+    expect(find.text('Savings Account'), findsOneWidget);
+    expect(find.text('Current Account'), findsOneWidget);
+    expect(find.text('Credit Account'), findsOneWidget);
+
+    // Select Current Account
+    await tester.tap(find.text('Current Account'));
+    await tester.pumpAndSettle();
+
+    // From card and available balance now updated
+    expect(find.text('Current Account'), findsOneWidget);
+    expect(find.text('Available Balance: PHP 125,000.00'), findsOneWidget);
+
     // Initial amount is empty (hint 0) -> tapping Send Money triggers validation SnackBar
     await tester.tap(find.text('Send Money'));
     await tester.pumpAndSettle();
     expect(find.text('Please enter a valid amount'), findsOneWidget);
+
+    // Clear SnackBar so it does not block hit-test of button
+    ScaffoldMessenger.of(tester.element(find.text('Send Money'))).clearSnackBars();
+    await tester.pumpAndSettle();
 
     // Enter amount manually
     await tester.enterText(find.byType(TextField).first, '25000');

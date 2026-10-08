@@ -33,11 +33,40 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
 
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _remarksController = TextEditingController();
-  String _selectedPurpose = 'Fund Transfer';
+  String? _selectedPurpose;
 
-  String _recipientName = 'Jessie Mae R. Dela Paz';
-  String _recipientAccount = '1154848785378';
+  String _recipientName = 'Jessie Mae Dela Paz';
+  String _recipientAccount = '1234568898951';
   String _recipientBank = 'MeyBank';
+
+  static const List<Map<String, dynamic>> _sourceAccounts = [
+    {
+      'type': 'Savings',
+      'title': 'Savings Account',
+      'accountNo': '123456789123',
+      'bankLabel': 'Aura Bank',
+      'balance': 50000.0,
+      'icon': Icons.account_balance_rounded,
+    },
+    {
+      'type': 'Current',
+      'title': 'Current Account',
+      'accountNo': '123456789124',
+      'bankLabel': 'Aura Bank',
+      'balance': 125000.0,
+      'icon': Icons.account_balance_wallet_rounded,
+    },
+    {
+      'type': 'Credit',
+      'title': 'Credit Account',
+      'accountNo': '123456789125',
+      'bankLabel': 'Aura Bank',
+      'balance': 75000.0,
+      'icon': Icons.credit_card_rounded,
+    },
+  ];
+
+  int? _selectedSourceIndex;
 
   static const Color brandViolet = AuraColors.primary;
   static const Color textDark = Color(0xFF0F172A);
@@ -305,6 +334,10 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   // 3. SCANNED DETAILS & SEND FORM (Scan-image 5)
   // -------------------------------------------------------------
   Widget _buildScannedFormView() {
+    final currentBalance = _selectedSourceIndex != null
+        ? (_sourceAccounts[_selectedSourceIndex!]['balance'] as double)
+        : 50000.0;
+
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -325,51 +358,62 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
 
           const SizedBox(height: 18),
 
-          // 1. Source Account Card ("From:")
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: cardBorder, width: 1.2),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF0F172A).withValues(alpha: 0.04),
-                  blurRadius: 14,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'From:',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
-                    color: textMuted,
+          // 1. Source Account Card ("From:" - Scan-image 5)
+          InkWell(
+            borderRadius: BorderRadius.circular(22),
+            onTap: _showSourceAccountSelector,
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: cardBorder, width: 1.2),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF0F172A).withValues(alpha: 0.05),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
                   ),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'From:',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: textDark,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      if (_selectedSourceIndex == null)
                         const Text(
-                          'Savings Account',
+                          'Select source account',
                           style: TextStyle(
-                            fontSize: 14.5,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w500,
+                            color: textMuted,
+                          ),
+                        )
+                      else ...[
+                        Text(
+                          _sourceAccounts[_selectedSourceIndex!]['title'] as String,
+                          style: const TextStyle(
+                            fontSize: 14,
                             fontWeight: FontWeight.w800,
                             color: textDark,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Aura Bank: ${_bankService.savingsAccountNumber}',
+                          '${_sourceAccounts[_selectedSourceIndex!]['bankLabel']}: ${_sourceAccounts[_selectedSourceIndex!]['accountNo']}',
                           style: const TextStyle(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w600,
@@ -377,18 +421,33 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                           ),
                         ),
                       ],
+                    ],
+                  ),
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.06),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(10),
+                    child: const Center(
+                      child: Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: brandViolet,
+                        size: 28,
                       ),
-                      child: const Icon(Icons.keyboard_arrow_down_rounded, color: textMuted, size: 20),
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
 
@@ -433,7 +492,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                           Text(
                             _recipientName,
                             style: const TextStyle(
-                              fontSize: 15,
+                              fontSize: 15.5,
                               fontWeight: FontWeight.w800,
                               color: textDark,
                               letterSpacing: -0.2,
@@ -441,9 +500,17 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            '$_recipientBank • Account No. $_recipientAccount',
+                            _recipientBank,
                             style: const TextStyle(
-                              fontSize: 11.5,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: textMuted,
+                            ),
+                          ),
+                          Text(
+                            'Account No. $_recipientAccount',
+                            style: const TextStyle(
+                              fontSize: 12,
                               fontWeight: FontWeight.w600,
                               color: textMuted,
                             ),
@@ -458,9 +525,9 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
 
                 // Amount Input Box (Gray Pill Box in Scan-image 5)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE2E8F0).withValues(alpha: 0.6),
+                    color: const Color(0xFFE2E8F0),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
@@ -468,9 +535,10 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                       const Text(
                         'PHP ',
                         style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
                           color: textDark,
+                          letterSpacing: -0.3,
                         ),
                       ),
                       Expanded(
@@ -501,25 +569,25 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                   ),
                 ),
 
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
 
-                // Balance & Limit Subtext
-                const Wrap(
-                  alignment: WrapAlignment.spaceBetween,
-                  runSpacing: 4,
+                // Balance & Limit Stacked (Scan-image 5)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Available: PHP 50,000.00',
-                      style: TextStyle(
-                        fontSize: 11,
+                      'Available Balance: PHP ${_formatAmount(currentBalance)}',
+                      style: const TextStyle(
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: textMuted,
                       ),
                     ),
-                    Text(
-                      'Limit: PHP 50,000.00',
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Transfer Limit: PHP 50,000.00',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: textMuted,
                       ),
@@ -542,9 +610,9 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
               border: Border.all(color: cardBorder, width: 1.2),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF0F172A).withValues(alpha: 0.04),
-                  blurRadius: 14,
-                  offset: const Offset(0, 3),
+                  color: const Color(0xFF0F172A).withValues(alpha: 0.05),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
@@ -554,8 +622,8 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                 const Text(
                   'Purpose',
                   style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w800,
                     color: textDark,
                   ),
                 ),
@@ -566,23 +634,28 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                   borderRadius: BorderRadius.circular(14),
                   onTap: _showPurposeSelector,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
+                      color: const Color(0xFFE2E8F0),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          _selectedPurpose,
-                          style: const TextStyle(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w700,
-                            color: textDark,
+                        Expanded(
+                          child: Text(
+                            _selectedPurpose ?? 'Select transfer purpose',
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w600,
+                              color: _selectedPurpose != null ? textDark : const Color(0xFF64748B),
+                            ),
                           ),
                         ),
-                        const Icon(Icons.keyboard_arrow_down_rounded, color: textMuted, size: 20),
+                        const Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: brandViolet,
+                          size: 24,
+                        ),
                       ],
                     ),
                   ),
@@ -593,8 +666,8 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                 const Text(
                   'Remarks (Optional)',
                   style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w800,
                     color: textDark,
                   ),
                 ),
@@ -604,7 +677,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
+                    color: const Color(0xFFE2E8F0),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: TextField(
@@ -612,7 +685,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                     style: const TextStyle(fontSize: 13.5, color: textDark, fontWeight: FontWeight.w600),
                     decoration: const InputDecoration(
                       hintText: 'Enter details',
-                      hintStyle: TextStyle(fontSize: 13, color: textMuted, fontWeight: FontWeight.w500),
+                      hintStyle: TextStyle(fontSize: 13, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
                       border: InputBorder.none,
                     ),
                   ),
@@ -664,6 +737,172 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
         ],
       ),
     );
+  }
+
+  void _showSourceAccountSelector() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Align(
+          alignment: Alignment.bottomCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Container(
+              margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+              padding: const EdgeInsets.all(22),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x380F172A),
+                    blurRadius: 36,
+                    offset: Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Select Source Account',
+                                style: TextStyle(
+                                  fontSize: 16.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: textDark,
+                                  letterSpacing: -0.2,
+                                ),
+                              ),
+                              SizedBox(height: 3),
+                              Text(
+                                'Choose account to debit funds from',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: textMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 20, color: textMuted),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    ...List.generate(_sourceAccounts.length, (index) {
+                      final acc = _sourceAccounts[index];
+                      final isSelected = _selectedSourceIndex == index;
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        decoration: BoxDecoration(
+                          color: isSelected ? brandViolet.withValues(alpha: 0.06) : const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isSelected ? brandViolet : const Color(0xFFE2E8F0),
+                            width: isSelected ? 1.5 : 1.0,
+                          ),
+                        ),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: () {
+                            setState(() {
+                              _selectedSourceIndex = index;
+                            });
+                            Navigator.of(context).pop();
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: isSelected ? brandViolet : brandViolet.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    acc['icon'] as IconData,
+                                    color: isSelected ? Colors.white : brandViolet,
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        acc['title'] as String,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w800,
+                                          color: isSelected ? brandViolet : textDark,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        '${acc['bankLabel']} • ${acc['accountNo']}',
+                                        style: const TextStyle(fontSize: 11, color: textMuted, fontWeight: FontWeight.w500),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      'PHP ${_formatAmount(acc['balance'] as double)}',
+                                      style: const TextStyle(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w800,
+                                        color: textDark,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    const Text(
+                                      'Available',
+                                      style: TextStyle(fontSize: 10, color: textMuted, fontWeight: FontWeight.w600),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+              ),
+            ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String _formatAmount(double amount) {
+    final parts = amount.toStringAsFixed(2).split('.');
+    final intPart = parts[0].replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]},',
+    );
+    return '$intPart.${parts[1]}';
   }
 
   void _showPurposeSelector() {
@@ -777,7 +1016,9 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
         builder: (context) => TransactionReceiptScreen(
           isSuccess: isSuccess,
           senderName: _bankService.user.name,
-          senderAccount: _bankService.savingsAccountNumber,
+          senderAccount: _selectedSourceIndex != null
+              ? _sourceAccounts[_selectedSourceIndex!]['accountNo'] as String
+              : _sourceAccounts[0]['accountNo'] as String,
           recipientName: _recipientName,
           recipientAccount: _recipientAccount,
           recipientBank: _recipientBank,
@@ -1199,27 +1440,6 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       _recipientBank = bank;
       _step = ScanStep.form;
     });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Decoded QR for $name ($bank)',
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: brandViolet,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
   }
 
   Widget _buildGalleryQrItem({

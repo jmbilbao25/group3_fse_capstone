@@ -231,28 +231,8 @@ class _StatementScreenState extends State<StatementScreen> {
             ),
           ),
 
-          // Circular Plus Button (Quick Menu)
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              border: Border.all(color: cardBorder, width: 1.2),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.add_rounded, size: 24, color: brandAccent),
-              padding: EdgeInsets.zero,
-              onPressed: _showQuickActionsSheet,
-            ),
-          ),
+          // Symmetrical spacer balancing back button
+          const SizedBox(width: 42, height: 42),
         ],
       ),
     );
@@ -1313,85 +1293,6 @@ class _StatementScreenState extends State<StatementScreen> {
     );
   }
 
-  void _showQuickActionsSheet() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Align(
-        alignment: Alignment.bottomCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 440),
-          child: Container(
-            margin: const EdgeInsets.fromLTRB(14, 0, 14, 20),
-            padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(28),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x380F172A),
-                  blurRadius: 36,
-                  offset: Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFCBD5E1),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Statement Operations',
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: textDark),
-                ),
-                const SizedBox(height: 12),
-                ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: const Color(0xFFF3E8FF), borderRadius: BorderRadius.circular(10)),
-                    child: const Icon(Icons.auto_graph_rounded, color: brandAccent, size: 20),
-                  ),
-                  title: const Text('View Aura Annual Report (2026)', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
-                  subtitle: const Text('Access full fiscal year dossier & quarterly audit', style: TextStyle(fontSize: 11, color: textMuted)),
-                  onTap: () {
-                    Navigator.of(ctx).pop();
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (c) => const AnnualReportScreen()),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: const Color(0xFFECFDF5), borderRadius: BorderRadius.circular(10)),
-                    child: const Icon(Icons.verified_outlined, color: greenCredit, size: 20),
-                  ),
-                  title: const Text('Certificate of Balance Verification', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
-                  subtitle: const Text('Generate BSP certified digital proof of funds', style: TextStyle(fontSize: 11, color: textMuted)),
-                  onTap: () {
-                    Navigator.of(ctx).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Balance Certificate verified via Aura Core.')),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
   String _formatCurrency(double amount) {
     final parts = amount.toStringAsFixed(2).split('.');

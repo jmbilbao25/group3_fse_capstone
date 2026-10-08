@@ -14,6 +14,8 @@ import 'package:aurabank_app/screens/analytics_screen.dart';
 import 'package:aurabank_app/screens/app_shell.dart';
 import 'package:aurabank_app/screens/login_screen.dart';
 import 'package:aurabank_app/screens/annual_report_screen.dart';
+import 'package:aurabank_app/screens/review_transfer_screen.dart';
+import 'package:aurabank_app/screens/scan_screen.dart';
 import 'package:aurabank_app/services/bank_service.dart';
 
 void main() {
@@ -512,5 +514,283 @@ void main() {
     expect(find.text('PHP 362,000.00'), findsOneWidget);
     expect(find.text('Quarter 4 (Oct-Dec 2025)'), findsOneWidget);
     expect(find.text('Fiscal Year 2025 • Certified Transfer Ledger'), findsOneWidget);
+  });
+
+  testWidgets('Review Transfer screen renders Image 2 fintech UI with sender, recipient, heroic amount, and CTAs', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ReviewTransferScreen(
+          senderName: 'Elijah Riley Montefalco',
+          senderAccount: '123256847878',
+          recipientName: 'Jessie Mae Dela Paz',
+          recipientAccount: '154847878751',
+          recipientBank: 'Aura Bank',
+          amount: 50000.0,
+          fee: 0.0,
+        ),
+      ),
+    );
+
+    // Title & Header
+    expect(find.text('Review Transfer'), findsOneWidget);
+
+    // Sender & Recipient dossier card
+    expect(find.text('Elijah Riley Montefalco'), findsOneWidget);
+    expect(find.text('Account No. 123256847878'), findsOneWidget);
+    expect(find.text('Jessie Mae Dela Paz'), findsOneWidget);
+    expect(find.text('Account No. 154847878751'), findsOneWidget);
+
+    // Heroic Amount & Summary Card
+    expect(find.text('Transfer Amount'), findsOneWidget);
+    expect(find.text('50,000.00'), findsOneWidget);
+    expect(find.text('Transfer Fee'), findsOneWidget);
+    expect(find.text('FREE'), findsOneWidget);
+    expect(find.text('Total Amount'), findsOneWidget);
+    expect(find.text('PHP 50,000.00'), findsOneWidget);
+
+    // Add as Favorite
+    expect(find.text('Add as Favorite'), findsOneWidget);
+    await tester.tap(find.text('Add as Favorite'));
+    await tester.pumpAndSettle();
+
+    // CTAs
+    expect(find.text('Confirm & Send'), findsOneWidget);
+    expect(find.text('Cancel Transaction'), findsOneWidget);
+
+    // Tap Confirm & Send navigates to dedicated Face ID Verification screen
+    await tester.tap(find.text('Confirm & Send'));
+    await tester.pumpAndSettle();
+    expect(find.text('Face ID Verification'), findsOneWidget);
+    expect(find.text('Authorize with Face ID'), findsOneWidget);
+    expect(find.text('Authorize Face ID'), findsOneWidget);
+    expect(find.text('PHP 50,000.00'), findsOneWidget);
+
+    // Tap Authorize Face ID and verify transition to receipt
+    await tester.tap(find.text('Authorize Face ID'));
+    await tester.pump();
+    expect(find.text('Scanning Face...'), findsOneWidget);
+
+    await tester.pump(const Duration(milliseconds: 750));
+    expect(find.text('Face ID Verified!'), findsOneWidget);
+
+    await tester.pump(const Duration(milliseconds: 450));
+    await tester.pumpAndSettle();
+    expect(find.text('Transaction Receipt'), findsOneWidget);
+  });
+
+  testWidgets('ScanScreen supports Gallery QR upload, accurate QR modal text, and back button navigation', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    bool backCalled = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ScanScreen(
+          enableAnimation: false,
+          onBack: () => backCalled = true,
+        ),
+      ),
+    );
+
+    // Initial Viewfinder renders with buttons
+    expect(find.text('Aura Bank'), findsOneWidget);
+    expect(find.text('Stop Scan'), findsOneWidget);
+    expect(find.text('Upload\nfrom Gallery'), findsOneWidget);
+    expect(find.text('Generate\nQR'), findsOneWidget);
+
+    // 1. Test Generate QR modal and verify accurate copy
+    await tester.tap(find.text('Generate\nQR'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Receive Money via QR'), findsOneWidget);
+    expect(find.text('Scan to transfer funds instantly.'), findsOneWidget);
+
+    // Close modal
+    Navigator.of(tester.element(find.text('Receive Money via QR'))).pop();
+    await tester.pumpAndSettle();
+
+    // 2. Test Upload from Gallery modal
+    await tester.tap(find.text('Upload\nfrom Gallery'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Upload from Gallery'), findsOneWidget);
+    expect(find.text('Select QR image from your photos'), findsOneWidget);
+    expect(find.text('Browse Photo Library'), findsOneWidget);
+    expect(find.text('Marco Vance'), findsOneWidget);
+
+    // Tap a gallery item to decode QR
+    await tester.tap(find.text('Marco Vance'));
+    await tester.pumpAndSettle();
+
+    // Form view should be rendered with decoded recipient
+    expect(find.text('Marco Vance'), findsOneWidget);
+    expect(find.text('BDO Unibank'), findsOneWidget);
+    expect(find.text('Account No. 0029481928471'), findsOneWidget);
+    expect(find.text('Send Money'), findsOneWidget);
+
+    // 3. Test Back button from form returns to viewfinder
+    final backButtons = find.byIcon(Icons.arrow_back_ios_new_rounded);
+    expect(backButtons, findsWidgets);
+    await tester.tap(backButtons.first);
+    await tester.pumpAndSettle();
+
+    // Back in viewfinder
+    expect(find.text('Upload\nfrom Gallery'), findsOneWidget);
+
+    // 4. Test Back button from viewfinder triggers onBack callback
+    await tester.tap(backButtons.first);
+    await tester.pumpAndSettle();
+
+    expect(backCalled, isTrue);
+  });
+
+  testWidgets('ScanScreen viewfinder auto-scan runs 5-second timer before opening form', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ScanScreen(enableAnimation: true),
+      ),
+    );
+
+    // Initial state: scanning
+    expect(find.text('Stop Scan'), findsOneWidget);
+    expect(find.text('Scanning QR code... (5s)'), findsNothing);
+    expect(find.text('Send Money'), findsNothing);
+
+    // After 2.5 seconds: still scanning in viewfinder
+    await tester.pump(const Duration(milliseconds: 2500));
+    expect(find.text('Stop Scan'), findsOneWidget);
+    expect(find.text('Send Money'), findsNothing);
+
+    // After another 2.6 seconds (total > 5s): 5-second timer transitions to form
+    await tester.pump(const Duration(milliseconds: 2600));
+    await tester.pump();
+    expect(find.text('Send Money'), findsOneWidget);
+    expect(find.text('Jessie Mae Dela Paz'), findsOneWidget);
+  });
+
+  testWidgets('Scan flow: manual amount input -> Send Money -> Passed/Failed Receipt with X mark', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ScanScreen(enableAnimation: false),
+      ),
+    );
+
+    // Upload from gallery to enter form
+    await tester.tap(find.text('Upload\nfrom Gallery'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Marco Vance'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Marco Vance'), findsOneWidget);
+    expect(find.text('Send Money'), findsOneWidget);
+
+    // Initial From card shows 'Select source account' matching Scan-image 5
+    expect(find.text('From:'), findsOneWidget);
+    expect(find.text('Select source account'), findsOneWidget);
+    expect(find.text('Available Balance: PHP 50,000.00'), findsOneWidget);
+    expect(find.text('Transfer Limit: PHP 50,000.00'), findsOneWidget);
+
+    // Tap From card to open inline Source Account dropdown
+    await tester.tap(find.text('Select source account'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Savings Account'), findsOneWidget);
+    expect(find.text('Current Account'), findsOneWidget);
+    expect(find.text('Credit Account'), findsOneWidget);
+
+    // Select Current Account inline
+    await tester.tap(find.text('Current Account'));
+    await tester.pumpAndSettle();
+
+    // From card and available balance now updated
+    expect(find.text('Current Account'), findsOneWidget);
+    expect(find.text('Available Balance: PHP 125,000.00'), findsOneWidget);
+
+    // Purpose inline dropdown test: initial state shows 'Select transfer purpose'
+    expect(find.text('Select transfer purpose'), findsOneWidget);
+    await tester.tap(find.text('Select transfer purpose'));
+    await tester.pumpAndSettle();
+
+    // Verify all 4 required options are rendered inline
+    expect(find.text('Remittance'), findsOneWidget);
+    expect(find.text('Funds Transfer'), findsOneWidget);
+    expect(find.text('Bills Payment'), findsOneWidget);
+    expect(find.text('Savings'), findsOneWidget);
+
+    // Select 'Funds Transfer' inline
+    await tester.tap(find.text('Funds Transfer'));
+    await tester.pumpAndSettle();
+
+    // Verify selected purpose is displayed and inline menu is closed
+    expect(find.text('Funds Transfer'), findsOneWidget);
+    expect(find.text('Remittance'), findsNothing);
+
+    // Initial amount is empty (hint 0) -> tapping Send Money triggers validation SnackBar
+    await tester.tap(find.text('Send Money'));
+    await tester.pumpAndSettle();
+    expect(find.text('Please enter a valid amount'), findsOneWidget);
+
+    // Clear SnackBar so it does not block hit-test of button
+    ScaffoldMessenger.of(tester.element(find.text('Send Money'))).clearSnackBars();
+    await tester.pumpAndSettle();
+
+    // Enter amount manually
+    await tester.enterText(find.byType(TextField).first, '25000');
+    await tester.pumpAndSettle();
+
+    // Tap Send Money -> routes to FaceIdVerificationScreen
+    await tester.tap(find.text('Send Money'));
+    await tester.pumpAndSettle();
+
+    // Verify Face ID Verification Screen is rendered
+    expect(find.text('Face ID Verification'), findsOneWidget);
+    expect(find.text('Authorize Face ID'), findsOneWidget);
+    expect(find.text('PHP 25,000.00'), findsOneWidget);
+
+    // Tap Authorize Face ID and verify scanning feedback
+    await tester.tap(find.text('Authorize Face ID'));
+    await tester.pump();
+    expect(find.text('Scanning Face...'), findsOneWidget);
+
+    await tester.pump(const Duration(milliseconds: 750));
+    expect(find.text('Face ID Verified!'), findsOneWidget);
+
+    await tester.pump(const Duration(milliseconds: 450));
+    await tester.pumpAndSettle();
+
+    // Verify Receipt Screen rendered (Backend error -> renders Failed state with X mark)
+    expect(find.text('Receipt'), findsOneWidget);
+    expect(find.text('PHP 25,000.00'), findsWidgets);
+    expect(find.text('Back to home'), findsOneWidget);
+
+    // Verify Failed state shows X MARK, fail text, and Try Again button
+    expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+    expect(find.text('Your money has not been deducted'), findsOneWidget);
+    expect(find.text('Try Again'), findsOneWidget);
+
+    // Tap status circle to toggle to Passed state (interactive demo)
+    await tester.tap(find.byIcon(Icons.close_rounded));
+    await tester.pumpAndSettle();
+
+    // Verify Passed state shows green check mark
+    expect(find.byIcon(Icons.check_rounded), findsOneWidget);
   });
 }

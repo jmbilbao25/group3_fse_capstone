@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/bank_service.dart';
 import '../theme/aura_theme.dart';
-import 'receipt_screen.dart';
+import 'face_id_verification_screen.dart';
 
 class ReviewTransferScreen extends StatefulWidget {
   final String senderName;
@@ -30,396 +29,513 @@ class ReviewTransferScreen extends StatefulWidget {
 }
 
 class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
-  final BankService _bankService = BankService();
   bool _isFavorite = false;
 
   static const Color brandViolet = AuraColors.primary;
-  static const Color textDark = AuraColors.textPrimary;
-  static const Color textGray = AuraColors.textMuted;
-  static const Color cardBorder = AuraColors.cardBorder;
-  static const Color greenSuccess = AuraColors.creditGreen;
+  static const Color textDark = Color(0xFF0F172A);
+  static const Color textMuted = Color(0xFF64748B);
+  static const Color cardBorder = Color(0xFFF1F5F9);
+  static const Color greenSuccess = Color(0xFF10B981);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AuraColors.canvas,
+      backgroundColor: const Color(0xFFF8FAFC),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Top Bar
-              Row(
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(vertical: 12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
-                    color: textDark,
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Review Transfer',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: textDark,
-                    ),
-                  ),
+                  // Top Header (Symmetrical 42x42 Back Button + Centered Title)
+                  _buildTopHeader(),
+
+                  const SizedBox(height: 18),
+
+                  // Sender & Recipient Flow Card (Image 2 style)
+                  _buildSenderRecipientCard(),
+
+                  const SizedBox(height: 16),
+
+                  // Heroic Amount & Transfer Summary Card (Image 2 style)
+                  _buildAmountSummaryCard(),
+
+                  const SizedBox(height: 16),
+
+                  // "Add as Favorite" Card
+                  _buildFavoriteCard(),
+
+                  const SizedBox(height: 24),
+
+                  // Dual High-Impact Action CTAs (Image 2 style)
+                  _buildActionButtons(),
+
+                  const SizedBox(height: 28),
                 ],
               ),
-
-              const SizedBox(height: 20),
-
-              // Sender & Recipient Card
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: cardBorder),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.03),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    // Sender
-                    Row(
-                      children: [
-                        Container(
-                          width: 42,
-                          height: 42,
-                          decoration: const BoxDecoration(
-                            color: AuraColors.primary,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.person, color: Colors.white, size: 22),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.senderName,
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w800,
-                                  color: textDark,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'Account No. ${widget.senderAccount}',
-                                style: const TextStyle(fontSize: 11, color: textGray),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 12),
-                    const Center(
-                      child: Icon(Icons.keyboard_double_arrow_down_rounded, color: textGray, size: 24),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Recipient
-                    Row(
-                      children: [
-                        Container(
-                          width: 42,
-                          height: 42,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF7928CA).withValues(alpha: 0.15),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.account_balance_rounded, color: Color(0xFF7928CA), size: 22),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.recipientName,
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w800,
-                                  color: textDark,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                '${widget.recipientBank} No. ${widget.recipientAccount}',
-                                style: const TextStyle(fontSize: 11, color: textGray),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 18),
-
-              // Amount Card
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: cardBorder),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.03),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    _buildAmountRow('Transfer Amount', 'PHP ${_formatAmount(widget.amount)}'),
-                    const SizedBox(height: 14),
-                    _buildAmountRow('Transfer Fee', widget.fee == 0.0 ? 'FREE' : 'PHP ${_formatAmount(widget.fee)}', feeColor: greenSuccess),
-                    const Divider(color: cardBorder, height: 28),
-                    _buildAmountRow('Total Amount', 'PHP ${_formatAmount(widget.amount + widget.fee)}', isTotal: true),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 18),
-
-              // Add as Favorite
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: cardBorder),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Add as Favorite',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textDark),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        _isFavorite ? Icons.favorite : Icons.favorite_border_rounded,
-                        color: _isFavorite ? const Color(0xFFEF4444) : textGray,
-                      ),
-                      onPressed: () => setState(() => _isFavorite = !_isFavorite),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 36),
-
-              // Confirm & Send Button
-              Container(
-                width: double.infinity,
-                height: 50,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(25),
-                  boxShadow: AuraColors.buttonShadow,
-                ),
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: brandViolet,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-                    elevation: 0,
-                  ),
-                  onPressed: _showConfirmationModal,
-                  child: const Text(
-                    'Confirm & Send',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 14),
-
-              Center(
-                child: TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text(
-                    'Cancel Transaction',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textGray),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildAmountRow(String label, String value, {Color? feeColor, bool isTotal = false}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: isTotal ? 14 : 13,
-            fontWeight: isTotal ? FontWeight.w700 : FontWeight.w500,
-            color: isTotal ? textDark : textGray,
+  /// Symmetrical top navigation header with elevated circular back button
+  Widget _buildTopHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Circular Elevated Back Button
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 17, color: textDark),
+              padding: EdgeInsets.zero,
+              onPressed: () => Navigator.of(context).pop(),
+            ),
           ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: isTotal ? 16 : 14,
-            fontWeight: isTotal ? FontWeight.w900 : FontWeight.w700,
-            color: feeColor ?? textDark,
+
+          // Centered Title
+          const Text(
+            'Review Transfer',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+              color: textDark,
+              letterSpacing: -0.3,
+            ),
           ),
-        ),
-      ],
+
+          // Symmetrical spacer to guarantee title remains optically centered
+          const SizedBox(width: 42, height: 42),
+        ],
+      ),
     );
   }
 
-  void _showConfirmationModal() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: const BoxDecoration(
-            color: AuraColors.primary,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+  /// Sender & Recipient dossier card matching Image 2 layout
+  Widget _buildSenderRecipientCard() {
+    final senderDisplay = widget.senderName.trim().isNotEmpty ? widget.senderName : 'Elijah Riley Montefalco';
+    final senderAccDisplay = widget.senderAccount.trim().isNotEmpty ? widget.senderAccount : '123256847878';
+    final recipientDisplay = widget.recipientName.trim().isNotEmpty ? widget.recipientName : 'Jessie Mae Dela Paz';
+    final recipientAccDisplay = widget.recipientAccount.trim().isNotEmpty ? widget.recipientAccount : '154847878751';
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: cardBorder, width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 4),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+        ],
+      ),
+      child: Column(
+        children: [
+          // Sender Section
+          Row(
             children: [
               Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE11D48).withValues(alpha: 0.2),
+                width: 44,
+                height: 44,
+                decoration: const BoxDecoration(
+                  color: brandViolet,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.warning_amber_rounded, color: Color(0xFFE11D48), size: 36),
+                child: const Icon(Icons.person_rounded, color: Colors.white, size: 24),
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'Do you want to continue?',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'You are sending PHP ${_formatAmount(widget.amount)}. Please make sure the recipient details are correct, as completed transfers cannot be reversed.',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 13, color: Colors.white70, height: 1.4),
-              ),
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Amount', style: TextStyle(fontSize: 11, color: textGray)),
-                        const SizedBox(height: 2),
-                        Text(
-                          'PHP ${_formatAmount(widget.amount)}',
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: textDark),
-                        ),
-                      ],
+                    Text(
+                      senderDisplay,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: textDark,
+                        letterSpacing: -0.2,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        const Text('To', style: TextStyle(fontSize: 11, color: textGray)),
-                        const SizedBox(height: 2),
-                        Text(
-                          widget.recipientName,
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: textDark),
-                        ),
-                      ],
+                    const SizedBox(height: 3),
+                    Text(
+                      'Account No. $senderAccDisplay',
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: textMuted,
+                      ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: brandViolet,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                  ),
-                  onPressed: () async {
-                    final navigator = Navigator.of(context);
-                    navigator.pop();
-                    final result = await _bankService.executeTransfer(
-                      targetAccount: widget.recipientAccount,
-                      recipientName: widget.recipientName,
-                      amount: widget.amount,
-                      destinationBank: widget.recipientBank,
-                      remarks: widget.remarks,
-                    );
+            ],
+          ),
 
-                    if (!mounted) return;
-                    navigator.pushReplacement(
-                      MaterialPageRoute(
-                        builder: (context) => TransactionReceiptScreen(
-                          isSuccess: result['success'] == true,
-                          senderName: widget.senderName,
-                          senderAccount: widget.senderAccount,
-                          recipientName: widget.recipientName,
-                          recipientAccount: widget.recipientAccount,
-                          recipientBank: widget.recipientBank,
-                          amount: widget.amount,
-                          fee: widget.fee,
-                          referenceNumber: result['reference'] ?? 'AUR-990123',
-                        ),
-                      ),
-                    );
-                  },
-                  child: const Text('Confirm Transfer', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+          const SizedBox(height: 12),
+
+          // Double Arrow Down Directional Transfer Glyph
+          const Center(
+            child: Icon(
+              Icons.keyboard_double_arrow_down_rounded,
+              color: Color(0xFF7C3AED),
+              size: 26,
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Recipient Section
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF3E8FF), // Mauve/Lilac background
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.person_rounded,
+                  color: brandViolet,
+                  size: 24,
                 ),
               ),
-              const SizedBox(height: 10),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancel Transaction', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600)),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      recipientDisplay,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: textDark,
+                        letterSpacing: -0.2,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'Account No. $recipientAccDisplay',
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: textMuted,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
-        );
-      },
+        ],
+      ),
+    );
+  }
+
+  /// Heroic Transfer Summary Card matching Image 2 typography
+  Widget _buildAmountSummaryCard() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: cardBorder, width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Transfer Amount Line with Heroic Typography
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Transfer Amount',
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF475569),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      const Text(
+                        'PHP ',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: textDark,
+                        ),
+                      ),
+                      Text(
+                        _formatAmount(widget.amount),
+                        style: const TextStyle(
+                          fontSize: 23,
+                          fontWeight: FontWeight.w900,
+                          color: textDark,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Transfer Fee Line
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Transfer Fee',
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF475569),
+                ),
+              ),
+              const SizedBox(width: 8),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: Text(
+                  widget.fee == 0.0 ? 'FREE' : 'PHP ${_formatAmount(widget.fee)}',
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w800,
+                    color: widget.fee == 0.0 ? greenSuccess : textDark,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Subtle hairline divider
+          const Divider(color: cardBorder, height: 1, thickness: 1),
+
+          const SizedBox(height: 16),
+
+          // Total Amount Line
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Total Amount',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: textDark,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    'PHP ${_formatAmount(widget.amount + widget.fee)}',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: textDark,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// "Add as Favorite" Card with interactive heart toggle
+  Widget _buildFavoriteCard() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: cardBorder, width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text(
+            'Add as Favorite',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: textDark,
+            ),
+          ),
+          GestureDetector(
+            onTap: () => setState(() => _isFavorite = !_isFavorite),
+            behavior: HitTestBehavior.opaque,
+            child: Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: Icon(
+                _isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                color: _isFavorite ? const Color(0xFFE11D48) : brandViolet,
+                size: 22,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Dual High-Contrast Action CTAs (Image 2 Elevated Style)
+  Widget _buildActionButtons() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: [
+          // Primary CTA: "Confirm & Send"
+          Container(
+            width: double.infinity,
+            height: 52,
+            decoration: BoxDecoration(
+              color: brandViolet,
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                  color: brandViolet.withValues(alpha: 0.35),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              ),
+              onPressed: _navigateToFaceIdVerification,
+              child: const Text(
+                'Confirm & Send',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Secondary CTA: "Cancel Transaction" (Image 2 Elevated White Pill Button)
+          Container(
+            width: double.infinity,
+            height: 52,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: TextButton(
+              style: TextButton.styleFrom(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              ),
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                'Cancel Transaction',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: brandViolet,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _navigateToFaceIdVerification() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => FaceIdVerificationScreen(
+          senderName: widget.senderName,
+          senderAccount: widget.senderAccount,
+          recipientName: widget.recipientName,
+          recipientAccount: widget.recipientAccount,
+          recipientBank: widget.recipientBank,
+          amount: widget.amount,
+          fee: widget.fee,
+          remarks: widget.remarks,
+        ),
+      ),
     );
   }
 

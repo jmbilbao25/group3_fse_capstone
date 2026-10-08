@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../../models/user_persona.dart';
 import '../../services/auth_api_service.dart';
 import '../../services/notification_stream_service.dart';
 import '../../theme/aura_theme.dart';
@@ -46,8 +48,8 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
           _trustedDevices.add({
             'id': d['device_id'] ?? '',
             'name': d['device_name'] ?? 'Mobile Device',
-            'os': isPrim ? 'Primary Trusted Enclave' : (isAppr ? 'Secondary Device (Approved)' : 'Secondary Device (Pending Approval)'),
-            'location': d['client_ip'] != null ? 'IP: ${d['client_ip']}' : 'Hardware Bound',
+            'os': isPrim ? 'Primary Trusted Device' : (isAppr ? 'Secondary Device (Approved)' : 'Secondary Device (Pending Approval)'),
+            'location': d['client_ip'] != null ? 'IP: ${d['client_ip']}' : 'Registered Device',
             'isPrimary': isPrim,
             'isApproved': isAppr,
             'status': isPrim ? 'Active Now' : (isAppr ? 'Approved' : 'Pending Approval'),
@@ -56,6 +58,24 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
           });
         }
       }
+      final currentType = AuthApiService().currentDeviceType.isNotEmpty
+          ? AuthApiService().currentDeviceType
+          : DeviceIdentity().type;
+      final isRunningOnWeb = kIsWeb || currentType.toUpperCase() == 'WEB';
+      if (_webSessions.isEmpty && isRunningOnWeb) {
+        final currentId = AuthApiService().currentDeviceId.isNotEmpty
+            ? AuthApiService().currentDeviceId
+            : DeviceIdentity().id;
+        final currentName = AuthApiService().currentDeviceName.isNotEmpty
+            ? AuthApiService().currentDeviceName
+            : DeviceIdentity().name;
+        _webSessions.add({
+          'id': currentId,
+          'browser': currentName,
+          'details': 'Active Web Session • Connected',
+          'icon': Icons.laptop_mac_rounded,
+        });
+      }
     });
   }
   // Device list state
@@ -63,7 +83,7 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
     {
       'id': 'dev_1',
       'name': 'iPhone 15 Pro',
-      'os': 'iOS 19 • Secure Enclave Key #0x7F2B',
+      'os': 'iOS 19 • Registered Device',
       'location': 'Pasig, Metro Manila',
       'isPrimary': true,
       'status': 'Active Now',
@@ -73,7 +93,7 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
     {
       'id': 'dev_2',
       'name': 'iPad Air',
-      'os': 'iPadOS 19 • Biometric Touch ID Binding',
+      'os': 'iPadOS 19 • Biometric Login',
       'location': 'Quezon City • Active 2h ago',
       'isPrimary': false,
       'status': 'Idle',
@@ -86,7 +106,7 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
     {
       'id': 'web_1',
       'browser': 'Chrome • macOS',
-      'details': 'Makati City • Active 15m ago',
+      'details': 'Makati City • Active now',
       'icon': Icons.laptop_mac_rounded,
     },
     {
@@ -128,8 +148,8 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
             const SizedBox(height: 10),
             Text(
               isPrimary
-                  ? 'This hardware cryptographic trust key will be invalidated. Any biometric authorization from primary device (${dev['name']}) will be blocked until re-authenticated with OTP.'
-                  : 'This hardware cryptographic trust key will be invalidated. Any biometric authorization from this device will be blocked until re-authenticated with OTP.',
+                  ? 'This primary device will be unlinked. Any authorization from ${dev['name']} will be blocked until verified again with OTP.'
+                  : 'This secondary device will be unlinked. Any authorization from this device will be blocked until verified again with OTP.',
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 12.5, color: textGray, height: 1.4),
             ),
@@ -176,8 +196,8 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(isPrimary
-                              ? '${dev['name']} primary hardware trust revoked.'
-                              : '${dev['name']} hardware trust revoked.'),
+                              ? '${dev['name']} primary device access revoked.'
+                              : '${dev['name']} device access revoked.'),
                           backgroundColor: brandViolet,
                         ),
                       );
@@ -260,7 +280,7 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Sign out of all active browsers and sessions. Your trusted hardware binding and biometric credentials will remain secured.',
+              'Sign out of all active browsers and sessions. Your registered mobile devices and login credentials will remain secure.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12.5,
@@ -506,6 +526,18 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final currentId = AuthApiService().currentDeviceId.isNotEmpty
+        ? AuthApiService().currentDeviceId
+        : DeviceIdentity().id;
+    final currentType = AuthApiService().currentDeviceType.isNotEmpty
+        ? AuthApiService().currentDeviceType
+        : DeviceIdentity().type;
+    final isWebPersona = currentType.toUpperCase() == 'WEB';
+    final isRunningOnWeb = kIsWeb && isWebPersona;
+
+    final hasMatchingDeviceId = _trustedDevices.any((d) => d['id'] == currentId);
+    final hasMatchingSessionId = _webSessions.any((w) => w['id'] == currentId);
+
     return Scaffold(
       backgroundColor: const Color(0xFFFBFBFD),
       body: SafeArea(
@@ -589,7 +621,7 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: const [
                           Text(
-                            'Hardware Cryptographic Binding',
+                            'Device & Session Security',
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w800,
@@ -598,7 +630,7 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                           ),
                           SizedBox(height: 2),
                           Text(
-                            'Zero-Trust Secure Enclave keys actively verify biometric authorization.',
+                            'Your account is secured with verified device authorization and active session controls.',
                             style: TextStyle(
                               fontSize: 11,
                               color: textGray,
@@ -661,7 +693,7 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                       ),
                       SizedBox(height: 4),
                       Text(
-                        'Register a new hardware device using biometric enrollment.',
+                        'Sign in on another mobile device to register it to your account.',
                         style: TextStyle(fontSize: 11.5, color: textGray),
                         textAlign: TextAlign.center,
                       ),
@@ -672,6 +704,8 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                 ..._trustedDevices.asMap().entries.map((entry) {
                   final index = entry.key;
                   final dev = entry.value;
+                  final isCurrentDevice = (dev['id'] == currentId) ||
+                      (!isRunningOnWeb && !hasMatchingDeviceId && index == 0);
 
                   return Container(
                     margin: const EdgeInsets.only(bottom: 14),
@@ -680,7 +714,7 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: dev['isPrimary'] == true
+                        color: (isCurrentDevice || dev['isPrimary'] == true)
                             ? brandViolet.withValues(alpha: 0.25)
                             : borderLavender,
                         width: 1.2,
@@ -717,13 +751,37 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    dev['name'] as String,
-                                    style: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w800,
-                                      color: textDark,
-                                    ),
+                                  Wrap(
+                                    crossAxisAlignment: WrapCrossAlignment.center,
+                                    spacing: 6,
+                                    runSpacing: 3,
+                                    children: [
+                                      Text(
+                                        dev['name'] as String,
+                                        style: const TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w800,
+                                          color: textDark,
+                                        ),
+                                      ),
+                                      if (isCurrentDevice)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFECFDF5),
+                                            borderRadius: BorderRadius.circular(6),
+                                            border: Border.all(color: const Color(0xFFA7F3D0), width: 0.8),
+                                          ),
+                                          child: const Text(
+                                            '(Current device)',
+                                            style: TextStyle(
+                                              fontSize: 10.5,
+                                              fontWeight: FontWeight.w700,
+                                              color: Color(0xFF059669),
+                                            ),
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
@@ -785,17 +843,17 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                                 Icon(
                                   Icons.circle,
                                   size: 8,
-                                  color: dev['isActive'] == true
+                                  color: (isCurrentDevice || dev['isActive'] == true)
                                       ? const Color(0xFF10B981)
                                       : const Color(0xFF9CA3AF),
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  dev['status'] as String,
+                                  isCurrentDevice ? 'Active Now' : (dev['status'] as String),
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
-                                    color: dev['isActive'] == true
+                                    color: (isCurrentDevice || dev['isActive'] == true)
                                         ? const Color(0xFF059669)
                                         : const Color(0xFF6B7280),
                                   ),
@@ -942,6 +1000,8 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                         final idx = entry.key;
                         final s = entry.value;
                         final isLast = idx == _webSessions.length - 1;
+                        final isCurrentSession = (s['id'] == currentId) ||
+                            (isRunningOnWeb && !hasMatchingSessionId && idx == 0);
 
                         return Column(
                           children: [
@@ -968,17 +1028,43 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text(
-                                          s['browser'] as String,
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w700,
-                                            color: textDark,
-                                          ),
+                                        Wrap(
+                                          crossAxisAlignment: WrapCrossAlignment.center,
+                                          spacing: 6,
+                                          runSpacing: 3,
+                                          children: [
+                                            Text(
+                                              s['browser'] as String,
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w700,
+                                                color: textDark,
+                                              ),
+                                            ),
+                                            if (isCurrentSession)
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFFECFDF5),
+                                                  borderRadius: BorderRadius.circular(6),
+                                                  border: Border.all(color: const Color(0xFFA7F3D0), width: 0.8),
+                                                ),
+                                                child: const Text(
+                                                  '(This current session)',
+                                                  style: TextStyle(
+                                                    fontSize: 10.5,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: Color(0xFF059669),
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
-                                          s['details'] as String,
+                                          isCurrentSession && !(s['details'] as String).toLowerCase().contains('active')
+                                              ? '${s['details']} • Active now'
+                                              : s['details'] as String,
                                           style: const TextStyle(
                                             fontSize: 11,
                                             color: textGray,
@@ -990,17 +1076,20 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                                   OutlinedButton(
                                     onPressed: () => _endWebSession(idx),
                                     style: OutlinedButton.styleFrom(
-                                      foregroundColor: brandViolet,
-                                      backgroundColor: bgLavender,
-                                      side: const BorderSide(color: borderLavender, width: 1.0),
+                                      foregroundColor: isCurrentSession ? const Color(0xFFDC2626) : brandViolet,
+                                      backgroundColor: isCurrentSession ? const Color(0xFFFEF2F2) : bgLavender,
+                                      side: BorderSide(
+                                        color: isCurrentSession ? const Color(0xFFFECACA) : borderLavender,
+                                        width: 1.0,
+                                      ),
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                       minimumSize: Size.zero,
                                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                     ),
-                                    child: const Text(
-                                      'End',
-                                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                                    child: Text(
+                                      isCurrentSession ? 'Sign Out' : 'End',
+                                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
                                     ),
                                   ),
                                 ],

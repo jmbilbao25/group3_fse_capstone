@@ -36,12 +36,12 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
   final TextEditingController _remarksController =
       TextEditingController();
 
-  static const List<Map<String, dynamic>> _sourceAccounts = [
+  List<Map<String, dynamic>> get _sourceAccounts => [
     {
       'type': 'Savings',
       'title': 'Savings Account',
-      'accountNo': 'AUR-SAV-9821',
-      'balance': 50000.0,
+      'accountNo': 'AUR-SAV-9821 (${_bankService.activeAccountId})',
+      'balance': _bankService.availableBalance,
       'icon': Icons.account_balance_rounded,
     },
     {
@@ -159,15 +159,21 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
     super.initState();
     _isAuraToAura = widget.initialIsAuraToAura;
     _selectedPartnerBankIndex = widget.initialPartnerBankIndex;
+    _bankService.addListener(_onServiceUpdate);
   }
 
   @override
   void dispose() {
+    _bankService.removeListener(_onServiceUpdate);
     _accountController.dispose();
     _recipientController.dispose();
     _amountController.dispose();
     _remarksController.dispose();
     super.dispose();
+  }
+
+  void _onServiceUpdate() {
+    if (mounted) setState(() {});
   }
 
   double get _currentSourceBalance {
@@ -1744,15 +1750,18 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
   }
 
   Widget _buildSecurityBadge() {
-    return const Center(
+    final settlementLabel = _isAuraToAura
+        ? 'Direct Bank Transfer'
+        : 'Real-Time InstaPay Network';
+    return Center(
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.lock_outline_rounded, size: 13, color: textMuted),
-          SizedBox(width: 6),
+          const Icon(Icons.lock_outline_rounded, size: 13, color: textMuted),
+          const SizedBox(width: 6),
           Text(
-            '256-Bit Encrypted • Real-time InstaPay Settlement',
-            style: TextStyle(
+            '256-Bit Encrypted • $settlementLabel',
+            style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
               color: textGray,

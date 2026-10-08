@@ -153,9 +153,12 @@ class TransactionReceiptScreen extends StatelessWidget {
                     const SizedBox(height: 12),
                     _buildSimpleRow('Transaction Time', timeStr),
 
+                    const Divider(color: cardBorder, height: 24),
+                    _buildSimpleRow('Payment Channel', referenceNumber.startsWith('FT') ? 'Aura Direct Transfer' : 'InstaPay Network'),
+                    const SizedBox(height: 12),
+                    _buildSimpleRow('Status', isSuccess ? 'Completed' : 'Failed', feeColor: isSuccess ? greenSuccess : redFail, isBold: true),
+
                     if (!isSuccess) ...[
-                      const Divider(color: cardBorder, height: 24),
-                      _buildSimpleRow('Status', 'Failed', feeColor: redFail, isBold: true),
                       const SizedBox(height: 12),
                       _buildSimpleRow('Failure Reason', failureReason ?? 'Destination Bank Timeout'),
                     ],

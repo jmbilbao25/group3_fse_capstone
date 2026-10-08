@@ -112,7 +112,7 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
             quarter: 'Quarter 4 (Oct-Dec 2026)',
             amount: 26000.0,
             isIncoming: true,
-            counterparty: 'Temenos Core Clearing',
+            counterparty: 'Central Bank Clearing',
             reference: 'Q4-DISB-9901',
             initial: 'IN',
             avatarBg: Color(0xFF059669),

@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "C4 Sequence: T24 Funds Transfer (EP1) & Automatic Reversal (EP2) with BFF Store",
+    "output": "c4_sequence.html",
+    "viewBox": [1070, 690],
+    "animation": "trace",
+    "quality_profile": "standard",
+    "column_fit": "spread"
+  },
+  "participants": [
+    { "id": "client", "type": "external", "label": "Client App", "sublabel": "Web / Mobile" },
+    { "id": "bff", "type": "backend", "label": "BFF Service", "sublabel": "Port :8085" },
+    { "id": "bff_db", "type": "database", "label": "BFF Database", "sublabel": "PostgreSQL :5433" },
+    { "id": "orch", "type": "backend", "label": "Orchestrator", "sublabel": "Saga Engine :8082" },
+    { "id": "t24_cbs", "type": "external", "label": "Temenos T24 CBS", "sublabel": "EP1 & EP2 Ingress" },
+    { "id": "cbs_db", "type": "database", "label": "CBS Master DB", "sublabel": "Azure SQL :1433" },
+    { "id": "kafka", "type": "messagebus", "label": "Kafka Broker", "sublabel": "KRaft :9092" }
+  ],
+  "segments": [
+    { "from": 140, "to": 355, "label": "Phase 1: Ingestion & T24 Funds Transfer (EP1)" },
+    { "from": 365, "to": 495, "label": "Phase 2: Downstream Timeout & T24 Reversal (EP2)" },
+    { "from": 505, "to": 595, "label": "Phase 3: BFF State Finalization & Client Notice" }
+  ],
+  "messages": [
+    { "id": "msg-post-transfer", "from": "client", "to": "bff", "y": 165, "label": "POST /api/v1/transfers", "variant": "emphasis" },
+    { "id": "msg-save-draft", "from": "bff", "to": "bff_db", "y": 200, "label": "INSERT draft (status: PENDING)", "variant": "emphasis" },
+    { "id": "msg-forward-orch", "from": "bff", "to": "orch", "y": 235, "label": "POST /orchestrate/transfer", "variant": "default" },
+    { "id": "msg-call-t24-ep1", "from": "orch", "to": "t24_cbs", "y": 268, "label": "POST /funds-transfer (EP1 OFS)", "variant": "emphasis" },
+    { "id": "msg-lock-cbs", "from": "t24_cbs", "to": "cbs_db", "y": 300, "label": "UPDATE balance (UPDLOCK)", "variant": "emphasis" },
+    { "id": "msg-ep1-ok", "from": "t24_cbs", "to": "orch", "y": 332, "label": "200 OK (ref: TXN-9021)", "variant": "return" },
+
+    { "id": "msg-detect-failure", "from": "kafka", "to": "orch", "y": 380, "label": "downstream timeout (2000ms)", "variant": "security" },
+    { "id": "msg-call-t24-ep2", "from": "orch", "to": "t24_cbs", "y": 412, "label": "POST /reversal (EP2 ref: TXN-9021)", "variant": "security" },
+    { "id": "msg-reverse-cbs", "from": "t24_cbs", "to": "cbs_db", "y": 444, "label": "INSERT compensating entry", "variant": "security" },
+    { "id": "msg-ep2-ok", "from": "t24_cbs", "to": "orch", "y": 476, "label": "200 OK (ref: REV-9021)", "variant": "return" },
+
+    { "id": "msg-orch-reply", "from": "orch", "to": "bff", "y": 520, "label": "saga failed: reversed", "variant": "return" },
+    { "id": "msg-update-draft", "from": "bff", "to": "bff_db", "y": 552, "label": "UPDATE draft (REVERSED)", "variant": "default" },
+    { "id": "msg-client-resp", "from": "bff", "to": "client", "y": 582, "label": "HTTP 200 (Status: REVERSED)", "variant": "return" }
+  ],
+  "activations": [
+    { "participant": "bff", "from": 160, "to": 245, "type": "backend" },
+    { "participant": "bff_db", "from": 195, "to": 220, "type": "database" },
+    { "participant": "orch", "from": 230, "to": 340, "type": "backend" },
+    { "participant": "t24_cbs", "from": 265, "to": 335, "type": "external" },
+    { "participant": "cbs_db", "from": 295, "to": 325, "type": "database" },
+    { "participant": "orch", "from": 375, "to": 525, "type": "backend" },
+    { "participant": "t24_cbs", "from": 408, "to": 480, "type": "external" },
+    { "participant": "cbs_db", "from": 440, "to": 470, "type": "database" },
+    { "participant": "bff", "from": 515, "to": 590, "type": "backend" },
+    { "participant": "bff_db", "from": 548, "to": 565, "type": "database" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "BFF Store & State Isolation",
+      "items": [
+        "Pre-Mutation Drafts: Client requests first record an active draft in bff_db (:5433), enabling client reconnects and crash recovery.",
+        "Zero Lock Bleed: Draft status transitions in bff_db execute completely isolated from Azure SQL CBS Master DB."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "T24 Endpoint 1 vs Endpoint 2 Invocation",
+      "items": [
+        "Endpoint 1 (/funds-transfer): Executes debit/credit settlement, serializing customer balance locks in Azure SQL (:1433).",
+        "Endpoint 2 (/reversal): Called during downstream timeout or error to trigger an atomic compensating rollback and balance restitution."
+      ]
+    }
+  ]
+}

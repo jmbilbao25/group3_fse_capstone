@@ -16,9 +16,11 @@ Every containerized service in the Docker Compose bridge network (`banking-net`)
 | :--- | :--- | :---: | :---: | :--- | :--- | :--- |
 | `client` | `banking-frontend` | `3000` | `80` / `3000` | HTTP | Public Browser | React 18 SPA: Customer (email 2FA) & Admin telemetry portals |
 | `gateway` | `gateway-service` | `8080` | `8080` | HTTP / REST | Public API Entry | Perimeter Security, JWT validation, rate limiting |
+| `bff_svc` | `bff-service` | `8085` | `8085` | HTTP / REST | Internal Network | Backend for Frontend: aggregation, draft form persistence, client preferences |
+| `bff_db`  | `bff-postgres-db` | `5433` | `5432` | PostgreSQL  | Internal Network | Dedicated BFF DB: isolated draft transfers, UI preferences, and session state |
 | `acc_svc` | `account-service` | `8081` | `8081` | HTTP / REST | Internal Network | Customer KYC, user onboarding, account provisioning |
-| `tx_engine`| `transfer-orchestrator`| `8082` | `8082` | HTTP / REST | Internal Network | Transfer lifecycle orchestrator: Risk Engine evaluation, JSON-to-OFS conversion, T24 dispatch |
-| `t24_cbs`  | `temenos-t24-cbs`       | `9100` | `9100` | OFS / TCP   | Internal Network | Temenos T24 Core Banking System: balances, EOD/batch processing, fees, interest |
+| `tx_engine`| `transfer-orchestrator`| `8082` | `8082` | HTTP / REST | Internal Network | Transfer lifecycle orchestrator: Risk Engine evaluation, Saga compensation, T24 dispatch |
+| `t24_cbs`  | `temenos-t24-cbs`       | `9100` | `9100` | HTTP / OFS  | Internal Network | Temenos T24 Core Banking System: Dual Ingress (1: Funds Transfer, 2: Reversal) |
 | `notif_svc`| `notification-service` | `8083` | `8083` | HTTP / REST | Internal Network | Kafka listener, receipt generation, email 2FA OTP delivery |
 | `mailhog`  | `mailhog-smtp`         | `8025` / `1025` | `8025` / `1025` | HTTP / SMTP | Web Inbox / Host | Mock email inbox UI (:8025) and SMTP receiver (:1025) for OTP codes |
 | `auth_cache`| `redis-cache` | `6379` | `6379` | RESP / TCP | Internal Network | Token blacklist, 2FA OTP cache (300s TTL), rate limiting |

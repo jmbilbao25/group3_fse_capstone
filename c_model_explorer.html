@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>C1–C4 Interactive Architecture Navigator | FSE Capstone Banking Platform</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --surface: #111827;
+      --surface-elevated: #1f2937;
+      --border: #374151;
+      --border-focus: #6366f1;
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
+      --text-dim: #6b7280;
+      --primary: #4f46e5;
+      --primary-light: #818cf8;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+      --cyan: #06b6d4;
+      --violet: #8b5cf6;
+      --card-bg: rgba(17, 24, 39, 0.85);
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    [data-theme="light"] {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-elevated: #f1f5f9;
+      --border: #e2e8f0;
+      --border-focus: #4f46e5;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --text-dim: #94a3b8;
+      --primary: #4f46e5;
+      --primary-light: #6366f1;
+      --card-bg: rgba(255, 255, 255, 0.9);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg);
+      color: var(--text-main);
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Bar */
+    header {
+      height: 56px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 50;
+      flex-shrink: 0;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 600;
+      font-size: 15px;
+      letter-spacing: -0.01em;
+    }
+    .brand-badge {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      background: rgba(99, 102, 241, 0.15);
+      color: var(--primary-light);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    /* Breadcrumbs */
+    .breadcrumbs {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface-elevated);
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .crumb-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-weight: 500;
+      padding: 4px 8px;
+      border-radius: 12px;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .crumb-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .crumb-btn.active {
+      background: var(--primary);
+      color: #fff;
+    }
+    .crumb-sep {
+      color: var(--text-dim);
+      font-size: 11px;
+    }
+
+    /* Controls & Links */
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn {
+      background: var(--surface-elevated);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+    .btn:hover {
+      border-color: var(--border-focus);
+      background: rgba(99, 102, 241, 0.1);
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+    .btn-primary:hover {
+      background: #4338ca;
+    }
+
+    /* Main Workspace */
+    .workspace {
+      flex: 1;
+      display: flex;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Canvas Viewport */
+    .canvas-container {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      cursor: grab;
+      user-select: none;
+      background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.04) 0%, transparent 80%);
+    }
+    .canvas-container:active {
+      cursor: grabbing;
+    }
+
+    .viewport {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform-origin: 50% 50%;
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Diagrams Level Layers */
+    .level-layer {
+      position: absolute;
+      width: 1180px;
+      height: 720px;
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.92);
+      transition: opacity 0.45s ease, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .level-layer.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1);
+    }
+
+    /* SVG Diagram Styling */
+    svg.c-diagram {
+      width: 100%;
+      height: 100%;
+      border-radius: 12px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .node {
+      cursor: pointer;
+      transition: filter 0.2s ease, transform 0.2s ease;
+    }
+    .node:hover {
+      filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.6));
+    }
+    .node rect {
+      transition: stroke 0.2s ease, fill 0.2s ease;
+    }
+    .node:hover rect {
+      stroke: var(--primary-light) !important;
+      stroke-width: 2px !important;
+    }
+
+    .node-clickable {
+      animation: pulse-border 2.5s infinite;
+    }
+    @keyframes pulse-border {
+      0%, 100% { filter: drop-shadow(0 0 4px rgba(99, 102, 241, 0.4)); }
+      50% { filter: drop-shadow(0 0 14px rgba(99, 102, 241, 0.8)); }
+    }
+
+    /* Inspector Drawer */
+    .inspector {
+      width: 380px;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      z-index: 40;
+      transition: transform 0.3s ease;
+    }
+    .inspector-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .inspector-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .inspector-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .inspector-card {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+    }
+    .card-label {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+    }
+    .card-value {
+      color: var(--text-main);
+      font-weight: 500;
+    }
+    .tag-pill {
+      display: inline-block;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-right: 4px;
+      margin-bottom: 4px;
+      background: rgba(99, 102, 241, 0.15);
+      color: var(--primary-light);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+    }
+    .tag-emerald { background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.3); }
+    .tag-amber { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(245, 158, 11, 0.3); }
+    .tag-rose { background: rgba(244, 63, 94, 0.15); color: #fb7185; border-color: rgba(244, 63, 94, 0.3); }
+
+    /* Overlay Help Badge */
+    .hud-hint {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      background: var(--card-bg);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      pointer-events: none;
+      z-index: 30;
+    }
+    .hud-kbd {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-main);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <span>FSE Banking C-Model</span>
+      <span class="brand-badge">Dual-Endpoint T24 + BFF DB</span>
+    </div>
+
+    <!-- C1 to C4 Breadcrumbs -->
+    <nav class="breadcrumbs">
+      <button class="crumb-btn active" id="btn-c1" onclick="navigateTo(1)">
+        <span>1</span> C1: Context
+      </button>
+      <span class="crumb-sep">/</span>
+      <button class="crumb-btn" id="btn-c2" onclick="navigateTo(2)">
+        <span>2</span> C2: Container
+      </button>
+      <span class="crumb-sep">/</span>
+      <button class="crumb-btn" id="btn-c3" onclick="navigateTo(3)">
+        <span>3</span> C3: Component
+      </button>
+      <span class="crumb-sep">/</span>
+      <button class="crumb-btn" id="btn-c4" onclick="navigateTo(4)">
+        <span>4</span> C4: Sequence Flow
+      </button>
+    </nav>
+
+    <!-- External Links & Actions -->
+    <div class="actions">
+      <button class="btn" onclick="toggleTheme()" title="Toggle Dark/Light Mode">Theme</button>
+      <button class="btn" onclick="resetZoom()" title="Reset Zoom">Fit View</button>
+      <div style="height: 18px; width: 1px; background: var(--border); margin: 0 4px;"></div>
+      <a class="btn btn-primary" id="open-archify-btn" href="c1_system_context.html" target="_blank" title="Open full Archify interactive HTML in new tab">
+        Open Archify Standalone ↗
+      </a>
+    </div>
+  </header>
+
+  <!-- Workspace -->
+  <div class="workspace">
+    <div class="canvas-container" id="canvas">
+      <div class="viewport" id="viewport">
+
+        <!-- ========================================== -->
+        <!-- LEVEL 1: C1 SYSTEM CONTEXT DIAGRAM -->
+        <!-- ========================================== -->
+        <div class="level-layer active" id="layer-c1">
+          <svg class="c-diagram" viewBox="0 0 1100 680">
+            <!-- Grid Lines -->
+            <defs>
+              <pattern id="grid1" width="30" height="30" patternUnits="userSpaceOnUse">
+                <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+              </pattern>
+              <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1 L 9 5 L 0 9 z" fill="#818cf8"/>
+              </marker>
+              <marker id="arrow-sec" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1 L 9 5 L 0 9 z" fill="#f43f5e"/>
+              </marker>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid1)"/>
+
+            <text x="40" y="45" fill="#f9fafb" font-size="18" font-weight="700">C1: System Context</text>
+            <text x="40" y="68" fill="#9ca3af" font-size="12">High-level landscape: Retail Users, Platform Boundary, Dual-Endpoint T24 CBS & Infrastructure</text>
+
+            <!-- Actors -->
+            <g class="node" onclick="inspectNode('customer')">
+              <rect x="60" y="150" width="200" height="90" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+              <text x="80" y="185" fill="#38bdf8" font-size="11" font-family="monospace">PERSON [EXTERNAL]</text>
+              <text x="80" y="208" fill="#ffffff" font-size="14" font-weight="600">Retail Customer</text>
+              <text x="80" y="226" fill="#94a3b8" font-size="11">Initiates transfers & 2FA OTP</text>
+            </g>
+
+            <g class="node" onclick="inspectNode('admin')">
+              <rect x="60" y="380" width="200" height="90" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+              <text x="80" y="415" fill="#38bdf8" font-size="11" font-family="monospace">PERSON [EXTERNAL]</text>
+              <text x="80" y="438" fill="#ffffff" font-size="14" font-weight="600">Bank Ops & Compliance</text>
+              <text x="80" y="456" fill="#94a3b8" font-size="11">KYC review & AMLA audit</text>
+            </g>
+
+            <!-- Central Platform Node (Click to Zoom) -->
+            <g class="node node-clickable" onclick="navigateTo(2)">
+              <rect x="380" y="220" width="310" height="190" rx="12" fill="#1e1b4b" stroke="#6366f1" stroke-width="2.5"/>
+              <text x="405" y="255" fill="#818cf8" font-size="11" font-family="monospace">SOFTWARE SYSTEM [TARGET]</text>
+              <text x="405" y="282" fill="#ffffff" font-size="18" font-weight="700">Retail Banking Platform</text>
+              <text x="405" y="306" fill="#c7d2fe" font-size="12">BFF + Transfer Orchestrator + BFF DB</text>
+              <text x="405" y="326" fill="#94a3b8" font-size="11">Saga Compensation & Outbox Relays</text>
+              
+              <!-- Zoom Pill -->
+              <rect x="405" y="352" width="220" height="30" rx="15" fill="#4f46e5"/>
+              <text x="440" y="372" fill="#ffffff" font-size="12" font-weight="600">🔍 Click Node to Zoom In (C2)</text>
+            </g>
+
+            <!-- External CBS (Temenos T24) -->
+            <g class="node" onclick="inspectNode('t24_cbs')">
+              <rect x="800" y="140" width="240" height="130" rx="10" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/>
+              <text x="820" y="170" fill="#f59e0b" font-size="11" font-family="monospace">CORE BANKING SYSTEM</text>
+              <text x="820" y="195" fill="#ffffff" font-size="16" font-weight="700">Temenos T24 CBS</text>
+              <text x="820" y="218" fill="#34d399" font-size="11" font-weight="600">✓ EP1: /funds-transfer</text>
+              <text x="820" y="236" fill="#f43f5e" font-size="11" font-weight="600">✓ EP2: /reversal (Saga Rollback)</text>
+              <text x="820" y="254" fill="#94a3b8" font-size="10">Connected to CBS Master DB</text>
+            </g>
+
+            <!-- External Notif Gateway -->
+            <g class="node" onclick="inspectNode('notif_gateway')">
+              <rect x="800" y="360" width="240" height="90" rx="8" fill="#1e293b" stroke="#a855f7" stroke-width="1.5"/>
+              <text x="820" y="390" fill="#a855f7" font-size="11" font-family="monospace">COMMUNICATION GATEWAY</text>
+              <text x="820" y="413" fill="#ffffff" font-size="14" font-weight="600">MailHog & SMS Relay</text>
+              <text x="820" y="432" fill="#94a3b8" font-size="11">Customer 2FA OTPs & Receipts</text>
+            </g>
+
+            <!-- Connections -->
+            <path d="M 260 195 L 380 280" stroke="#818cf8" stroke-width="1.5" marker-end="url(#arrow)"/>
+            <text x="275" y="230" fill="#818cf8" font-size="11" font-family="monospace">HTTPS / REST</text>
+
+            <path d="M 260 425 L 380 340" stroke="#818cf8" stroke-width="1.5" marker-end="url(#arrow)"/>
+            <text x="275" y="390" fill="#818cf8" font-size="11" font-family="monospace">mTLS Audit</text>
+
+            <path d="M 690 270 L 800 200" stroke="#34d399" stroke-width="2" marker-end="url(#arrow)"/>
+            <text x="695" y="230" fill="#34d399" font-size="11" font-weight="600" font-family="monospace">EP1: Funds Transfer</text>
+
+            <path d="M 690 320 L 800 230" stroke="#f43f5e" stroke-width="2" marker-end="url(#arrow-sec)"/>
+            <text x="705" y="290" fill="#f43f5e" font-size="11" font-weight="600" font-family="monospace">EP2: Reversal</text>
+
+            <path d="M 690 370 L 800 400" stroke="#818cf8" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arrow)"/>
+            <text x="700" y="405" fill="#9ca3af" font-size="11" font-family="monospace">Kafka / SMTP</text>
+          </svg>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- LEVEL 2: C2 CONTAINER DIAGRAM -->
+        <!-- ========================================== -->
+        <div class="level-layer" id="layer-c2">
+          <svg class="c-diagram" viewBox="0 0 1160 700">
+            <defs>
+              <pattern id="grid2" width="30" height="30" patternUnits="userSpaceOnUse">
+                <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid2)"/>
+
+            <text x="40" y="42" fill="#f9fafb" font-size="18" font-weight="700">C2: Container Architecture</text>
+            <text x="40" y="64" fill="#9ca3af" font-size="12">Microservice Containers, Isolated BFF Database, Dual-Endpoint T24 CBS & Master DB</text>
+
+            <!-- Subsystem Boundaries -->
+            <rect x="360" y="85" width="260" height="370" rx="10" fill="none" stroke="rgba(99, 102, 241, 0.4)" stroke-dasharray="6 6"/>
+            <text x="375" y="105" fill="#818cf8" font-size="10" font-family="monospace">BFF SUBSYSTEM (ISOLATED STORE)</text>
+
+            <rect x="900" y="85" width="230" height="370" rx="10" fill="none" stroke="rgba(245, 158, 11, 0.4)" stroke-dasharray="6 6"/>
+            <text x="915" y="105" fill="#f59e0b" font-size="10" font-family="monospace">TEMENOS T24 CORE SUBSYSTEM</text>
+
+            <!-- Frontends -->
+            <g class="node" onclick="inspectNode('client_web')">
+              <rect x="40" y="150" width="140" height="70" rx="6" fill="#1e293b" stroke="#38bdf8"/>
+              <text x="55" y="178" fill="#ffffff" font-size="13" font-weight="600">Retail Web SPA</text>
+              <text x="55" y="196" fill="#94a3b8" font-size="11">React 18 + Vite :3000</text>
+            </g>
+
+            <g class="node" onclick="inspectNode('client_mobile')">
+              <rect x="40" y="260" width="140" height="70" rx="6" fill="#1e293b" stroke="#38bdf8"/>
+              <text x="55" y="288" fill="#ffffff" font-size="13" font-weight="600">Mobile App</text>
+              <text x="55" y="306" fill="#94a3b8" font-size="11">Flutter iOS/Android</text>
+            </g>
+
+            <!-- API Gateway -->
+            <g class="node" onclick="inspectNode('gateway')">
+              <rect x="210" y="200" width="130" height="80" rx="6" fill="#1e293b" stroke="#6366f1"/>
+              <text x="225" y="230" fill="#ffffff" font-size="13" font-weight="600">API Gateway</text>
+              <text x="225" y="248" fill="#94a3b8" font-size="11">Spring Cloud :8080</text>
+              <text x="225" y="266" fill="#818cf8" font-size="10">JWT & Rate Limit</text>
+            </g>
+
+            <!-- BFF Dedicated Database (KEY REQUIREMENT) -->
+            <g class="node" onclick="inspectNode('bff_db')">
+              <rect x="390" y="130" width="190" height="75" rx="8" fill="#064e3b" stroke="#10b981" stroke-width="2"/>
+              <text x="405" y="155" fill="#34d399" font-size="11" font-family="monospace">DEDICATED BFF STORE</text>
+              <text x="405" y="175" fill="#ffffff" font-size="14" font-weight="700">BFF Database</text>
+              <text x="405" y="193" fill="#a7f3d0" font-size="10">PostgreSQL :5433 (Drafts & Caches)</text>
+            </g>
+
+            <!-- BFF Service (Click to Zoom C3) -->
+            <g class="node node-clickable" onclick="navigateTo(3)">
+              <rect x="390" y="250" width="190" height="85" rx="8" fill="#312e81" stroke="#818cf8" stroke-width="2"/>
+              <text x="405" y="275" fill="#818cf8" font-size="10" font-family="monospace">BACKEND FOR FRONTEND</text>
+              <text x="405" y="296" fill="#ffffff" font-size="15" font-weight="700">BFF Service :8085</text>
+              <text x="405" y="315" fill="#c7d2fe" font-size="10">UI Aggregation & Draft Engine</text>
+              <text x="405" y="328" fill="#34d399" font-size="9" font-weight="600">🔍 Click to inspect C3</text>
+            </g>
+
+            <!-- Account Service -->
+            <g class="node" onclick="inspectNode('acc_svc')">
+              <rect x="390" y="360" width="190" height="65" rx="6" fill="#1e293b" stroke="#6366f1"/>
+              <text x="405" y="388" fill="#ffffff" font-size="13" font-weight="600">Account & Auth</text>
+              <text x="405" y="406" fill="#94a3b8" font-size="11">Spring Boot :8081 (KYC)</text>
+            </g>
+
+            <!-- Transfer Orchestrator -->
+            <g class="node node-clickable" onclick="navigateTo(3)">
+              <rect x="650" y="235" width="200" height="115" rx="8" fill="#1e1b4b" stroke="#6366f1" stroke-width="2"/>
+              <text x="665" y="260" fill="#818cf8" font-size="10" font-family="monospace">CORE SAGA ORCHESTRATOR</text>
+              <text x="665" y="282" fill="#ffffff" font-size="15" font-weight="700">Transfer Orchestrator</text>
+              <text x="665" y="302" fill="#c7d2fe" font-size="11">Spring Boot :8082</text>
+              <text x="665" y="320" fill="#fbbf24" font-size="10">Saga Rollback & Outbox</text>
+              <text x="665" y="338" fill="#34d399" font-size="9" font-weight="600">🔍 Click to inspect C3</text>
+            </g>
+
+            <!-- Kafka Broker -->
+            <g class="node" onclick="inspectNode('kafka')">
+              <rect x="650" y="390" width="200" height="65" rx="6" fill="#1e293b" stroke="#a855f7"/>
+              <text x="665" y="418" fill="#ffffff" font-size="13" font-weight="600">Kafka Event Broker</text>
+              <text x="665" y="436" fill="#94a3b8" font-size="11">KRaft Mode :9092 (Audits)</text>
+            </g>
+
+            <!-- Temenos T24 CBS with 2 Endpoints -->
+            <g class="node node-clickable" onclick="navigateTo(3)">
+              <rect x="920" y="235" width="190" height="115" rx="8" fill="#451a03" stroke="#f59e0b" stroke-width="2"/>
+              <text x="935" y="260" fill="#f59e0b" font-size="10" font-family="monospace">TEMENOS T24 CBS (:9100)</text>
+              <text x="935" y="282" fill="#ffffff" font-size="15" font-weight="700">Temenos Core</text>
+              <text x="935" y="304" fill="#34d399" font-size="11" font-weight="600">① /funds-transfer</text>
+              <text x="935" y="322" fill="#f43f5e" font-size="11" font-weight="600">② /reversal</text>
+              <text x="935" y="338" fill="#34d399" font-size="9" font-weight="600">🔍 Click to inspect C3</text>
+            </g>
+
+            <!-- CBS Master Database (Azure SQL) -->
+            <g class="node" onclick="inspectNode('cbs_master_db')">
+              <rect x="920" y="130" width="190" height="75" rx="8" fill="#1e293b" stroke="#3b82f6" stroke-width="2"/>
+              <text x="935" y="155" fill="#60a5fa" font-size="11" font-family="monospace">CBS MASTER STORAGE</text>
+              <text x="935" y="175" fill="#ffffff" font-size="14" font-weight="700">Azure SQL DB :1433</text>
+              <text x="935" y="193" fill="#94a3b8" font-size="10">Double-Entry Ledger & Locks</text>
+            </g>
+
+            <!-- Inter-container routes -->
+            <!-- BFF to its dedicated DB -->
+            <path d="M 485 250 L 485 205" stroke="#10b981" stroke-width="2" marker-end="url(#arrow)"/>
+            <text x="495" y="230" fill="#34d399" font-size="10" font-family="monospace">private sql</text>
+
+            <!-- T24 to its master DB -->
+            <path d="M 1015 235 L 1015 205" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrow)"/>
+            <text x="1025" y="220" fill="#60a5fa" font-size="10" font-family="monospace">pessimistic lock</text>
+
+            <!-- Gateway to BFF -->
+            <path d="M 340 240 L 390 270" stroke="#818cf8" stroke-width="1.5" marker-end="url(#arrow)"/>
+            <!-- BFF to Orchestrator -->
+            <path d="M 580 290 L 650 290" stroke="#818cf8" stroke-width="2" marker-end="url(#arrow)"/>
+            <text x="590" y="280" fill="#818cf8" font-size="10" font-family="monospace">submit</text>
+
+            <!-- Orchestrator to T24 EP1 -->
+            <path d="M 850 270 L 920 270" stroke="#34d399" stroke-width="2" marker-end="url(#arrow)"/>
+            <text x="855" y="260" fill="#34d399" font-size="10" font-weight="600" font-family="monospace">EP1</text>
+
+            <!-- Orchestrator to T24 EP2 -->
+            <path d="M 850 310 L 920 310" stroke="#f43f5e" stroke-width="2" marker-end="url(#arrow-sec)"/>
+            <text x="855" y="328" fill="#f43f5e" font-size="10" font-weight="600" font-family="monospace">EP2 (Rev)</text>
+
+            <!-- Orchestrator to Kafka -->
+            <path d="M 750 350 L 750 390" stroke="#a855f7" stroke-width="1.5" marker-end="url(#arrow)"/>
+          </svg>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- LEVEL 3: C3 COMPONENT DIAGRAM -->
+        <!-- ========================================== -->
+        <div class="level-layer" id="layer-c3">
+          <svg class="c-diagram" viewBox="0 0 1200 700">
+            <defs>
+              <pattern id="grid3" width="30" height="30" patternUnits="userSpaceOnUse">
+                <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid3)"/>
+
+            <text x="40" y="42" fill="#f9fafb" font-size="18" font-weight="700">C3: Component Internals</text>
+            <text x="40" y="64" fill="#9ca3af" font-size="12">Internal code components: BFF Draft Repo, Saga Compensation Coordinator, and T24 Ingress Controllers</text>
+
+            <!-- Subsystem Container: BFF -->
+            <rect x="50" y="80" width="280" height="420" rx="10" fill="#111827" stroke="#10b981" stroke-width="1.5"/>
+            <text x="70" y="105" fill="#10b981" font-size="12" font-weight="700" font-family="monospace">BFF SERVICE CONTAINER (:8085)</text>
+
+            <g class="node" onclick="inspectNode('bff_db')">
+              <rect x="70" y="125" width="240" height="65" rx="6" fill="#064e3b" stroke="#34d399"/>
+              <text x="85" y="150" fill="#34d399" font-size="10" font-family="monospace">DATABASE COMPONENT</text>
+              <text x="85" y="170" fill="#ffffff" font-size="13" font-weight="600">BFF Database (PostgreSQL :5433)</text>
+              <text x="85" y="184" fill="#a7f3d0" font-size="10">Draft transfers & user preferences</text>
+            </g>
+
+            <g class="node" onclick="inspectNode('bff_repo')">
+              <rect x="70" y="210" width="240" height="55" rx="6" fill="#1e293b" stroke="#6366f1"/>
+              <text x="85" y="235" fill="#ffffff" font-size="13" font-weight="600">BFF State Repository</text>
+              <text x="85" y="252" fill="#94a3b8" font-size="10">Spring Data JPA / isolated queries</text>
+            </g>
+
+            <g class="node" onclick="inspectNode('bff_ctrl')">
+              <rect x="70" y="285" width="240" height="55" rx="6" fill="#1e293b" stroke="#6366f1"/>
+              <text x="85" y="310" fill="#ffffff" font-size="13" font-weight="600">Transfer Draft Controller</text>
+              <text x="85" y="327" fill="#94a3b8" font-size="10">Pre-mutation form validation</text>
+            </g>
+
+            <g class="node" onclick="inspectNode('bff_agg')">
+              <rect x="70" y="360" width="240" height="55" rx="6" fill="#1e293b" stroke="#6366f1"/>
+              <text x="85" y="385" fill="#ffffff" font-size="13" font-weight="600">UI Aggregator Service</text>
+              <text x="85" y="402" fill="#94a3b8" font-size="10">Combines accounts + live draft status</text>
+            </g>
+
+            <!-- Subsystem Container: Orchestrator -->
+            <rect x="370" y="80" width="370" height="420" rx="10" fill="#111827" stroke="#6366f1" stroke-width="1.5"/>
+            <text x="390" y="105" fill="#818cf8" font-size="12" font-weight="700" font-family="monospace">TRANSFER ORCHESTRATOR (:8082)</text>
+
+            <g class="node" onclick="inspectNode('orch_ingress')">
+              <rect x="390" y="130" width="330" height="60" rx="6" fill="#1e293b" stroke="#6366f1"/>
+              <text x="405" y="155" fill="#ffffff" font-size="13" font-weight="600">Transfer Ingress Controller</text>
+              <text x="405" y="173" fill="#94a3b8" font-size="10">Idempotency checks & payload sanitation</text>
+            </g>
+
+            <g class="node node-clickable" onclick="navigateTo(4)">
+              <rect x="390" y="210" width="330" height="90" rx="8" fill="#1e1b4b" stroke="#a855f7" stroke-width="2"/>
+              <text x="405" y="235" fill="#a855f7" font-size="10" font-family="monospace">SAGA ENGINE</text>
+              <text x="405" y="255" fill="#ffffff" font-size="14" font-weight="700">Saga Compensation Coordinator</text>
+              <text x="405" y="274" fill="#c7d2fe" font-size="11">Tracks transfer lifecycle; triggers reversal on timeout</text>
+              <text x="405" y="290" fill="#34d399" font-size="9" font-weight="600">🔍 Click to view C4 Sequence Flow</text>
+            </g>
+
+            <g class="node" onclick="inspectNode('t24_client_transfer')">
+              <rect x="390" y="320" width="155" height="70" rx="6" fill="#1e293b" stroke="#34d399" stroke-width="1.5"/>
+              <text x="400" y="345" fill="#34d399" font-size="11" font-weight="600">T24 Transfer Client</text>
+              <text x="400" y="365" fill="#94a3b8" font-size="10">Invokes EP1</text>
+              <text x="400" y="380" fill="#ffffff" font-size="9">OFS Funds Transfer</text>
+            </g>
+
+            <g class="node" onclick="inspectNode('t24_client_reversal')">
+              <rect x="565" y="320" width="155" height="70" rx="6" fill="#1e293b" stroke="#f43f5e" stroke-width="1.5"/>
+              <text x="575" y="345" fill="#f43f5e" font-size="11" font-weight="600">T24 Reversal Client</text>
+              <text x="575" y="365" fill="#94a3b8" font-size="10">Invokes EP2</text>
+              <text x="575" y="380" fill="#ffffff" font-size="9">OFS Reversal</text>
+            </g>
+
+            <!-- Subsystem Container: Temenos T24 CBS -->
+            <rect x="780" y="80" width="370" height="420" rx="10" fill="#111827" stroke="#f59e0b" stroke-width="1.5"/>
+            <text x="800" y="105" fill="#f59e0b" font-size="12" font-weight="700" font-family="monospace">TEMENOS T24 CBS ENGINE (:9100)</text>
+
+            <g class="node" onclick="inspectNode('ep1_endpoint')">
+              <rect x="800" y="130" width="330" height="70" rx="8" fill="#064e3b" stroke="#34d399" stroke-width="2"/>
+              <text x="815" y="155" fill="#34d399" font-size="11" font-family="monospace">INGRESS ENDPOINT 1</text>
+              <text x="815" y="174" fill="#ffffff" font-size="14" font-weight="700">POST /api/v1/t24/funds-transfer</text>
+              <text x="815" y="190" fill="#a7f3d0" font-size="10">Debit/Credit postings, EOD balances, tariffs</text>
+            </g>
+
+            <g class="node" onclick="inspectNode('ep2_endpoint')">
+              <rect x="800" y="220" width="330" height="70" rx="8" fill="#4c0519" stroke="#f43f5e" stroke-width="2"/>
+              <text x="815" y="245" fill="#f43f5e" font-size="11" font-family="monospace">INGRESS ENDPOINT 2</text>
+              <text x="815" y="264" fill="#ffffff" font-size="14" font-weight="700">POST /api/v1/t24/reversal</text>
+              <text x="815" y="280" fill="#fecdd3" font-size="10">Compensating rollback & ledger correction</text>
+            </g>
+
+            <g class="node" onclick="inspectNode('t24_kernel')">
+              <rect x="800" y="310" width="330" height="60" rx="6" fill="#1e293b" stroke="#f59e0b"/>
+              <text x="815" y="335" fill="#ffffff" font-size="13" font-weight="600">T24 Balance Mutation Kernel</text>
+              <text x="815" y="352" fill="#94a3b8" font-size="10">Double-entry ACID postings in CBS DB</text>
+            </g>
+
+            <!-- CBS Master DB in C3 -->
+            <g class="node" onclick="inspectNode('cbs_master_db')">
+              <rect x="800" y="390" width="330" height="55" rx="6" fill="#1e293b" stroke="#3b82f6"/>
+              <text x="815" y="415" fill="#60a5fa" font-size="11" font-family="monospace">CBS DATABASE</text>
+              <text x="815" y="433" fill="#ffffff" font-size="13" font-weight="600">Azure SQL Database (:1433)</text>
+            </g>
+
+            <!-- Links -->
+            <path d="M 190 285 L 190 265" stroke="#10b981" stroke-width="1.5" marker-end="url(#arrow)"/>
+            <path d="M 190 210 L 190 190" stroke="#10b981" stroke-width="1.5" marker-end="url(#arrow)"/>
+            <path d="M 310 310 L 390 160" stroke="#818cf8" stroke-width="2" marker-end="url(#arrow)"/>
+            <path d="M 555 190 L 555 210" stroke="#818cf8" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+            <path d="M 467 320 L 467 300" stroke="#818cf8" stroke-width="1.5" marker-end="url(#arrow)"/>
+            <path d="M 642 320 L 642 300" stroke="#f43f5e" stroke-width="1.5" marker-end="url(#arrow-sec)"/>
+
+            <!-- Transfer Client to EP1 -->
+            <path d="M 545 355 L 800 165" stroke="#34d399" stroke-width="2" marker-end="url(#arrow)"/>
+            <!-- Reversal Client to EP2 -->
+            <path d="M 720 355 L 800 255" stroke="#f43f5e" stroke-width="2" marker-end="url(#arrow-sec)"/>
+
+            <path d="M 965 200 L 965 310" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow)"/>
+            <path d="M 965 290 L 965 310" stroke="#f43f5e" stroke-width="1.5" marker-end="url(#arrow-sec)"/>
+            <path d="M 965 370 L 965 390" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrow)"/>
+          </svg>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- LEVEL 4: C4 SEQUENCE EXECUTION FLOW -->
+        <!-- ========================================== -->
+        <div class="level-layer" id="layer-c4">
+          <svg class="c-diagram" viewBox="0 0 1160 700">
+            <rect width="100%" height="100%" fill="url(#grid1)"/>
+            <text x="40" y="42" fill="#f9fafb" font-size="18" font-weight="700">C4: Execution & Reversal Flow</text>
+            <text x="40" y="64" fill="#9ca3af" font-size="12">End-to-end execution flow: BFF Draft Persistence, T24 Funds Transfer (EP1), Downstream Timeout & Reversal (EP2)</text>
+
+            <!-- Lifelines -->
+            <!-- Columns: Client(120), BFF(260), BFF_DB(400), Orchestrator(540), T24_CBS(730), CBS_DB(900), Kafka(1040) -->
+            <g font-size="12" font-weight="600" text-anchor="middle">
+              <!-- Boxes -->
+              <rect x="70" y="100" width="100" height="40" rx="6" fill="#1e293b" stroke="#38bdf8"/>
+              <text x="120" y="125" fill="#ffffff">Client SPA</text>
+              <line x1="120" y1="140" x2="120" y2="650" stroke="#374151" stroke-dasharray="4 4"/>
+
+              <rect x="210" y="100" width="100" height="40" rx="6" fill="#312e81" stroke="#818cf8"/>
+              <text x="260" y="125" fill="#ffffff">BFF Service</text>
+              <line x1="260" y1="140" x2="260" y2="650" stroke="#374151" stroke-dasharray="4 4"/>
+
+              <rect x="350" y="100" width="100" height="40" rx="6" fill="#064e3b" stroke="#10b981"/>
+              <text x="400" y="125" fill="#34d399">BFF DB (:5433)</text>
+              <line x1="400" y1="140" x2="400" y2="650" stroke="#374151" stroke-dasharray="4 4"/>
+
+              <rect x="480" y="100" width="120" height="40" rx="6" fill="#1e1b4b" stroke="#6366f1"/>
+              <text x="540" y="125" fill="#ffffff">Orchestrator</text>
+              <line x1="540" y1="140" x2="540" y2="650" stroke="#374151" stroke-dasharray="4 4"/>
+
+              <rect x="660" y="100" width="140" height="40" rx="6" fill="#451a03" stroke="#f59e0b"/>
+              <text x="730" y="125" fill="#ffffff">T24 CBS (:9100)</text>
+              <line x1="730" y1="140" x2="730" y2="650" stroke="#374151" stroke-dasharray="4 4"/>
+
+              <rect x="840" y="100" width="120" height="40" rx="6" fill="#1e293b" stroke="#3b82f6"/>
+              <text x="900" y="125" fill="#60a5fa">CBS DB (:1433)</text>
+              <line x1="900" y1="140" x2="900" y2="650" stroke="#374151" stroke-dasharray="4 4"/>
+
+              <rect x="990" y="100" width="100" height="40" rx="6" fill="#1e293b" stroke="#a855f7"/>
+              <text x="1040" y="125" fill="#c084fc">Kafka Bus</text>
+              <line x1="1040" y1="140" x2="1040" y2="650" stroke="#374151" stroke-dasharray="4 4"/>
+            </g>
+
+            <!-- Phase Blocks -->
+            <!-- Phase 1 -->
+            <rect x="60" y="155" width="1040" height="190" rx="6" fill="rgba(16, 185, 129, 0.05)" stroke="rgba(16, 185, 129, 0.2)"/>
+            <text x="75" y="175" fill="#34d399" font-size="11" font-weight="700">PHASE 1: BFF DRAFT PERSISTENCE & T24 FUNDS TRANSFER (EP1)</text>
+
+            <path d="M 120 195 L 260 195" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrow)"/>
+            <text x="190" y="190" fill="#f9fafb" font-size="11" text-anchor="middle">1. POST /transfers (draft)</text>
+
+            <path d="M 260 215 L 400 215" stroke="#10b981" stroke-width="2" marker-end="url(#arrow)"/>
+            <text x="330" y="210" fill="#34d399" font-size="10" text-anchor="middle">2. INSERT draft (PENDING)</text>
+
+            <path d="M 260 245 L 540 245" stroke="#818cf8" stroke-width="2" marker-end="url(#arrow)"/>
+            <text x="400" y="240" fill="#818cf8" font-size="11" text-anchor="middle">3. executeTransfer(tx_id)</text>
+
+            <path d="M 540 275 L 730 275" stroke="#34d399" stroke-width="2.5" marker-end="url(#arrow)"/>
+            <text x="635" y="270" fill="#34d399" font-size="11" font-weight="700" text-anchor="middle">4. POST /funds-transfer (EP1 OFS)</text>
+
+            <path d="M 730 300 L 900 300" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrow)"/>
+            <text x="815" y="295" fill="#60a5fa" font-size="10" text-anchor="middle">5. UPDATE balance (UPDLOCK)</text>
+
+            <path d="M 730 330 L 540 330" stroke="#34d399" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arrow)"/>
+            <text x="635" y="325" fill="#34d399" font-size="11" text-anchor="middle">6. 200 OK (TXN-9021)</text>
+
+            <!-- Phase 2 -->
+            <rect x="60" y="360" width="1040" height="175" rx="6" fill="rgba(244, 63, 94, 0.05)" stroke="rgba(244, 63, 94, 0.2)"/>
+            <text x="75" y="380" fill="#fb7185" font-size="11" font-weight="700">PHASE 2: DOWNSTREAM TIMEOUT & T24 COMPENSATING REVERSAL (EP2)</text>
+
+            <path d="M 1040 400 L 540 400" stroke="#f43f5e" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arrow-sec)"/>
+            <text x="790" y="395" fill="#fb7185" font-size="10" text-anchor="middle">7. downstream timeout / circuit trigger (2000ms)</text>
+
+            <path d="M 540 435 L 730 435" stroke="#f43f5e" stroke-width="2.5" marker-end="url(#arrow-sec)"/>
+            <text x="635" y="430" fill="#f43f5e" font-size="11" font-weight="700" text-anchor="middle">8. POST /reversal (EP2 ref: TXN-9021)</text>
+
+            <path d="M 730 465 L 900 465" stroke="#f43f5e" stroke-width="2" marker-end="url(#arrow-sec)"/>
+            <text x="815" y="460" fill="#fecdd3" font-size="10" text-anchor="middle">9. INSERT reversing journal (restores funds)</text>
+
+            <path d="M 730 495 L 540 495" stroke="#f43f5e" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arrow-sec)"/>
+            <text x="635" y="490" fill="#f43f5e" font-size="11" text-anchor="middle">10. 200 OK (REV-9021)</text>
+
+            <!-- Phase 3 -->
+            <rect x="60" y="550" width="1040" height="90" rx="6" fill="rgba(147, 51, 234, 0.05)" stroke="rgba(147, 51, 234, 0.2)"/>
+            <text x="75" y="570" fill="#c084fc" font-size="11" font-weight="700">PHASE 3: STATE REVERSAL IN BFF DB & CLIENT NOTIFICATION</text>
+
+            <path d="M 540 590 L 260 590" stroke="#818cf8" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arrow)"/>
+            <text x="400" y="585" fill="#818cf8" font-size="10" text-anchor="middle">11. saga compensated</text>
+
+            <path d="M 260 610 L 400 610" stroke="#10b981" stroke-width="2" marker-end="url(#arrow)"/>
+            <text x="330" y="605" fill="#34d399" font-size="10" text-anchor="middle">12. UPDATE draft (REVERSED)</text>
+
+            <path d="M 260 625 L 120 625" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arrow)"/>
+            <text x="190" y="620" fill="#f9fafb" font-size="10" text-anchor="middle">13. HTTP 200 Reversal Notice</text>
+          </svg>
+        </div>
+
+      </div>
+
+      <!-- HUD Hint -->
+      <div class="hud-hint">
+        <span>Press <span class="hud-kbd">1</span>–<span class="hud-kbd">4</span> to jump levels, <span class="hud-kbd">Esc</span> to zoom out, click highlighted nodes to drill down.</span>
+      </div>
+    </div>
+
+    <!-- Inspector Drawer -->
+    <aside class="inspector" id="inspector">
+      <div class="inspector-header">
+        <div class="inspector-title" id="inspector-name">Architecture Overview</div>
+        <button class="btn" style="padding: 2px 8px; font-size: 11px;" onclick="resetInspector()">Reset</button>
+      </div>
+      <div class="inspector-content" id="inspector-body">
+        <div class="inspector-card">
+          <div class="card-label">Current Level</div>
+          <div class="card-value" id="disp-level">C1: System Context</div>
+        </div>
+
+        <div class="inspector-card">
+          <div class="card-label">Key Highlight: Dual-Endpoint T24 CBS</div>
+          <div class="card-value" style="color: #fbbf24; margin-bottom: 6px;">Temenos T24 Core Banking System</div>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
+            Temenos T24 exposes two deterministic ingress APIs on port <strong>:9100</strong>:
+          </p>
+          <div style="font-size: 11px; font-family: monospace; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; margin-bottom: 6px;">
+            <span style="color: #34d399;">POST /api/v1/t24/funds-transfer</span><br>
+            OFS: FUNDS.TRANSFER,AUTH/I/PROCESS<br>
+            • Real-time balance mutation<br>
+            • Double-entry general ledger
+          </div>
+          <div style="font-size: 11px; font-family: monospace; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px;">
+            <span style="color: #fb7185;">POST /api/v1/t24/reversal</span><br>
+            OFS: FUNDS.TRANSFER,REVERSE/I/PROCESS<br>
+            • Triggered by Saga Coordinator<br>
+            • Reverses debit/credit upon downstream failure
+          </div>
+        </div>
+
+        <div class="inspector-card">
+          <div class="card-label">Database Segregation Rationale</div>
+          <div class="card-value" style="color: #34d399; margin-bottom: 6px;">BFF DB vs CBS Master DB</div>
+          <p style="font-size: 12px; color: var(--text-muted);">
+            <strong>BFF Database (PostgreSQL :5433)</strong>: Owns UI session state, mobile form drafts, user preferences, and aggregation caches.<br><br>
+            <strong>CBS Master DB (Azure SQL :1433)</strong>: Strictly owned by Temenos T24. Stores account balances and GL journals.<br><br>
+            <em>Benefit</em>: High-throughput client polling and draft editing never cause lock contention or degrade core banking ledger throughput.
+          </p>
+        </div>
+
+        <div class="inspector-card">
+          <div class="card-label">Direct Archify Links</div>
+          <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 6px;">
+            <a class="btn" href="c1_system_context.html" target="_blank">📄 View C1 Archify Standalone</a>
+            <a class="btn" href="c2_container.html" target="_blank">📄 View C2 Container Archify</a>
+            <a class="btn" href="c3_component.html" target="_blank">📄 View C3 Component Archify</a>
+            <a class="btn" href="c4_sequence.html" target="_blank">📄 View C4 Sequence Archify</a>
+            <a class="btn" href="architecture.html" target="_blank">📄 View System Architecture</a>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    let currentLevel = 1;
+    let zoomScale = 1;
+    let panX = 0, panY = 0;
+    let isDragging = false;
+    let startX = 0, startY = 0;
+
+    const layers = {
+      1: document.getElementById('layer-c1'),
+      2: document.getElementById('layer-c2'),
+      3: document.getElementById('layer-c3'),
+      4: document.getElementById('layer-c4')
+    };
+
+    const breadcrumbButtons = {
+      1: document.getElementById('btn-c1'),
+      2: document.getElementById('btn-c2'),
+      3: document.getElementById('btn-c3'),
+      4: document.getElementById('btn-c4')
+    };
+
+    const standaloneLinks = {
+      1: 'c1_system_context.html',
+      2: 'c2_container.html',
+      3: 'c3_component.html',
+      4: 'c4_sequence.html'
+    };
+
+    const levelDescriptions = {
+      1: 'C1: System Context — High-Level Enterprise Landscape',
+      2: 'C2: Container Architecture — Services, Isolated BFF DB & CBS DB',
+      3: 'C3: Component Internals — BFF Draft Repo, Saga Coordinator & T24 Ingress',
+      4: 'C4: Sequence Execution Flow — Funds Transfer (EP1) & Reversal (EP2)'
+    };
+
+    function navigateTo(level) {
+      if (level < 1 || level > 4) return;
+      currentLevel = level;
+
+      // Update layers
+      Object.keys(layers).forEach(lvl => {
+        if (parseInt(lvl) === level) {
+          layers[lvl].classList.add('active');
+        } else {
+          layers[lvl].classList.remove('active');
+        }
+      });
+
+      // Update buttons
+      Object.keys(breadcrumbButtons).forEach(lvl => {
+        if (parseInt(lvl) === level) {
+          breadcrumbButtons[lvl].classList.add('active');
+        } else {
+          breadcrumbButtons[lvl].classList.remove('active');
+        }
+      });
+
+      // Update link button
+      document.getElementById('open-archify-btn').href = standaloneLinks[level];
+      document.getElementById('disp-level').textContent = levelDescriptions[level];
+
+      // Smooth zoom reset for new level
+      resetZoom();
+    }
+
+    // Pan & Zoom
+    const viewport = document.getElementById('viewport');
+    const canvas = document.getElementById('canvas');
+
+    function updateTransform() {
+      viewport.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomScale})`;
+    }
+
+    function resetZoom() {
+      zoomScale = 1;
+      panX = 0;
+      panY = 0;
+      updateTransform();
+    }
+
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+      zoomScale = Math.min(Math.max(0.6, zoomScale * zoomFactor), 2.5);
+      updateTransform();
+    });
+
+    canvas.addEventListener('mousedown', (e) => {
+      if (e.target.closest('.node')) return;
+      isDragging = true;
+      startX = e.clientX - panX;
+      startY = e.clientY - panY;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      panX = e.clientX - startX;
+      panY = e.clientY - startY;
+      updateTransform();
+    });
+
+    window.addEventListener('mouseup', () => { isDragging = false; });
+
+    // Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+      if (e.key === '1') navigateTo(1);
+      if (e.key === '2') navigateTo(2);
+      if (e.key === '3') navigateTo(3);
+      if (e.key === '4') navigateTo(4);
+      if (e.key === 'Escape' || e.key === 'Backspace') {
+        if (currentLevel > 1) navigateTo(currentLevel - 1);
+      }
+    });
+
+    // Theme Toggle
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme');
+      document.documentElement.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
+    }
+
+    // Node Inspector
+    function inspectNode(nodeKey) {
+      const nameElem = document.getElementById('inspector-name');
+      const bodyElem = document.getElementById('inspector-body');
+
+      const nodeData = {
+        bff_db: {
+          title: "Dedicated BFF Database (:5433)",
+          type: "PostgreSQL 16 Micro-Database",
+          desc: "Dedicated operational datastore specifically for the Backend for Frontend layer. Completely isolated from CBS Master DB.",
+          responsibilities: [
+            "Customer mobile/web UI draft transfer persistence",
+            "Client preferences (favorite beneficiaries, notification flags)",
+            "Device binding tokens & biometric public keys",
+            "UI aggregation caches & client idempotency locks"
+          ],
+          isolationBenefit: "Eliminates contention: high-frequency customer draft edits and polling never touch Azure SQL CBS Master Ledger DB."
+        },
+        t24_cbs: {
+          title: "Temenos T24 Core Banking System (:9100)",
+          type: "Enterprise Core Banking Runtime",
+          desc: "Master system of record for accounts, double-entry financial mutations, EOD batches, and interest.",
+          endpoints: [
+            "Endpoint 1: POST /api/v1/t24/funds-transfer (OFS debit/credit balance mutation)",
+            "Endpoint 2: POST /api/v1/t24/reversal (Compensating reversal saga rollback)"
+          ],
+          isolationBenefit: "Exclusively owns the CBS Master DB (Azure SQL :1433). Zero foreign callers access its tables directly."
+        },
+        cbs_master_db: {
+          title: "CBS Master Ledger DB (Azure SQL :1433)",
+          type: "Relational ACID Balance Storage",
+          desc: "Dedicated exclusively to Temenos T24 CBS. Holds customer master accounts, ledger journals, and balance locks.",
+          responsibilities: [
+            "Row-level pessimistic locking (UPDLOCK, ROWLOCK)",
+            "Double-entry bookkeeping validation constraints",
+            "EOD batch journal rollups and audits"
+          ]
+        },
+        ep1_endpoint: {
+          title: "T24 Endpoint 1: /funds-transfer",
+          type: "Ingress Financial Mutation API",
+          desc: "Handles real-time fund transfer requests by constructing OFS FUNDS.TRANSFER commands for T24 accounting kernel.",
+          payload: "DEBIT.ACCT, CREDIT.ACCT, AMOUNT, CURRENCY, TXN.REF",
+          behavior: "Returns 200 OK with TXN-XXXX reference upon successful row lock and balance mutation."
+        },
+        ep2_endpoint: {
+          title: "T24 Endpoint 2: /reversal",
+          type: "Compensating Saga Rollback Ingress",
+          desc: "Executes financial reversals if downstream notifications, network timeouts, or OTP challenges fail.",
+          payload: "ORIGINAL.TXN.REF, REASON.CODE, OPERATOR.ID",
+          behavior: "Restores debited balance, cancels credit, posts reversing journal entries, and issues REV-XXXX receipt."
+        }
+      };
+
+      const data = nodeData[nodeKey];
+      if (!data) return;
+
+      nameElem.textContent = data.title;
+      let html = `
+        <div class="inspector-card">
+          <div class="card-label">Component Type</div>
+          <div class="card-value">${data.type}</div>
+        </div>
+        <div class="inspector-card">
+          <div class="card-label">Architectural Role</div>
+          <p style="font-size: 12px; color: var(--text-muted);">${data.desc}</p>
+        </div>
+      `;
+
+      if (data.responsibilities) {
+        html += `
+          <div class="inspector-card">
+            <div class="card-label">Primary Responsibilities</div>
+            <ul style="padding-left: 16px; font-size: 12px; color: var(--text-muted);">
+              ${data.responsibilities.map(r => `<li>${r}</li>`).join('')}
+            </ul>
+          </div>
+        `;
+      }
+
+      if (data.endpoints) {
+        html += `
+          <div class="inspector-card">
+            <div class="card-label">Exposed Endpoints</div>
+            ${data.endpoints.map(ep => `<div style="font-size: 11px; font-family: monospace; background: rgba(0,0,0,0.3); padding: 6px; border-radius: 4px; margin-bottom: 4px; color: #fbbf24;">${ep}</div>`).join('')}
+          </div>
+        `;
+      }
+
+      if (data.isolationBenefit) {
+        html += `
+          <div class="inspector-card">
+            <div class="card-label">Database Isolation Benefit</div>
+            <p style="font-size: 12px; color: #34d399;">${data.isolationBenefit}</p>
+          </div>
+        `;
+      }
+
+      bodyElem.innerHTML = html;
+    }
+
+    function resetInspector() {
+      document.getElementById('inspector-name').textContent = "Architecture Overview";
+      document.getElementById('inspector-body').innerHTML = `
+        <div class="inspector-card">
+          <div class="card-label">Current Level</div>
+          <div class="card-value" id="disp-level">${levelDescriptions[currentLevel]}</div>
+        </div>
+        <div class="inspector-card">
+          <div class="card-label">Dual-Endpoint T24 Architecture</div>
+          <p style="font-size: 12px; color: var(--text-muted);">
+            • <strong>Endpoint 1</strong>: /funds-transfer (OFS posting)<br>
+            • <strong>Endpoint 2</strong>: /reversal (Saga compensation)
+          </p>
+        </div>
+        <div class="inspector-card">
+          <div class="card-label">BFF Database Separation</div>
+          <p style="font-size: 12px; color: #34d399;">
+            Dedicated <strong>bff_db (:5433)</strong> stores draft transfers & UI preferences, eliminating lock contention on <strong>CBS Master DB (:1433)</strong>.
+          </p>
+        </div>
+      `;
+    }
+  </script>
+</body>
+</html>

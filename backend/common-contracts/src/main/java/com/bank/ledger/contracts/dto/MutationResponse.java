@@ -44,4 +44,22 @@ public class MutationResponse {
 
     @JsonProperty("message")
     private String message;
+
+    @JsonProperty("t24_reference")
+    private String t24Reference;
+
+    @JsonProperty("ofs_response")
+    private String ofsResponse;
+
+    @JsonProperty("risk_decision")
+    private String riskDecision;
+
+    @JsonProperty("risk_score")
+    private Integer riskScore;
+
+    @JsonProperty("warning_title")
+    private String warningTitle;
+
+    @JsonProperty("warning_message")
+    private String warningMessage;
 }

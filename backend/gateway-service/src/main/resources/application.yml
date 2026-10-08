@@ -12,6 +12,19 @@ spring:
 
   cloud:
     gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Access-Control-Allow-Methods Access-Control-Allow-Headers, RETAIN_FIRST
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns: "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
       routes:
         - id: account-service
           uri: ${ACCOUNT_SERVICE_URI:http://localhost:8081}
@@ -51,6 +64,17 @@ spring:
           uri: ${NOTIFICATION_SERVICE_URI:http://localhost:8083}
           predicates:
             - Path=/api/notifications/**, /api/v1/notifications/**, /ws/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 20
+                redis-rate-limiter.burstCapacity: 40
+                key-resolver: "#{@userKeyResolver}"
+
+        - id: risk-service
+          uri: ${RISK_SERVICE_URI:http://localhost:8084}
+          predicates:
+            - Path=/api/v1/risk/**, /risk/**, /api/v1/analyst/**
           filters:
             - name: RequestRateLimiter
               args:

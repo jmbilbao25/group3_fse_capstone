@@ -1,43 +1,43 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ledger-mutation-engine
+  name: account-service
   namespace: banking
   labels:
-    app: ledger-mutation-engine
+    app: account-service
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: ledger-mutation-engine
+      app: account-service
   template:
     metadata:
       labels:
-        app: ledger-mutation-engine
+        app: account-service
     spec:
       containers:
-        - name: ledger-mutation-engine
-          image: __ACR_NAME__.azurecr.io/ledger-mutation-engine:latest
+        - name: account-service
+          image: __ACR_NAME__.azurecr.io/account-service:latest
           imagePullPolicy: Always
           ports:
-            - containerPort: 8082
+            - containerPort: 8081
           resources:
             requests:
               cpu: "100m"
               memory: "256Mi"
             limits:
-              cpu: "1000m"
+              cpu: "500m"
               memory: "512Mi"
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
-              port: 8082
+              port: 8081
             initialDelaySeconds: 30
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness
-              port: 8082
+              port: 8081
             initialDelaySeconds: 45
             periodSeconds: 15
           env:
@@ -60,41 +60,24 @@ spec:
                 secretKeyRef:
                   name: banking-secrets
                   key: azure-sql-password
-            - name: AZURE_POSTGRES_URL
-              valueFrom:
-                secretKeyRef:
-                  name: banking-secrets
-                  key: azure-postgres-url
-            - name: AZURE_POSTGRES_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: banking-secrets
-                  key: azure-postgres-username
-            - name: AZURE_POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: banking-secrets
-                  key: azure-postgres-password
-            - name: SPRING_DATA_REDIS_HOST
+            - name: AZURE_REDIS_HOST
               value: "redis.banking.svc.cluster.local"
-            - name: SPRING_DATA_REDIS_PORT
+            - name: AZURE_REDIS_PORT
               value: "6379"
-            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
-              value: "kafka.banking.svc.cluster.local:9092"
-            - name: RISK_SERVICE_URL
-              value: "http://risk-service.banking.svc.cluster.local:8084"
+            - name: AZURE_REDIS_SSL
+              value: "false"
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: ledger-mutation-engine
+  name: account-service
   namespace: banking
   labels:
-    app: ledger-mutation-engine
+    app: account-service
 spec:
   type: ClusterIP
   ports:
-    - port: 8082
-      targetPort: 8082
+    - port: 8081
+      targetPort: 8081
   selector:
-    app: ledger-mutation-engine
+    app: account-service

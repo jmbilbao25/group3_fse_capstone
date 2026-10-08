@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: banking-frontend
+  namespace: banking
+  labels:
+    app: banking-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: banking-frontend
+  template:
+    metadata:
+      labels:
+        app: banking-frontend
+    spec:
+      containers:
+        - name: banking-frontend
+          image: __ACR_NAME__.azurecr.io/banking-frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: banking-frontend
+  namespace: banking
+  labels:
+    app: banking-frontend
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3000
+      targetPort: 3000
+  selector:
+    app: banking-frontend

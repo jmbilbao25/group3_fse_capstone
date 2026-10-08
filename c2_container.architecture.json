@@ -2,8 +2,8 @@
   "schema_version": 1,
   "diagram_type": "architecture",
   "meta": {
-    "title": "FSE Capstone: Omnichannel Banking Platform with Dedicated BFF DB & Dual-Endpoint T24 CBS",
-    "output": "architecture.html",
+    "title": "C2 Container: Omnichannel Banking Platform with Dedicated BFF DB & Dual-Endpoint T24 CBS",
+    "output": "c2_container.html",
     "quality_profile": "showcase"
   },
   "components": [

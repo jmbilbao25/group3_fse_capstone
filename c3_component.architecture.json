@@ -1,0 +1,296 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "C3 Component: BFF, Saga Orchestrator & Dual-Endpoint T24 CBS Internals",
+    "output": "c3_component.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "bff_db",
+      "type": "database",
+      "label": "Dedicated BFF DB",
+      "sublabel": "PostgreSQL :5433",
+      "brand": "postgresql",
+      "pos": [80, 60],
+      "size": [170, 60],
+      "tag": "Drafts & Preferences"
+    },
+    {
+      "id": "bff_repo",
+      "type": "backend",
+      "label": "BFF State Repository",
+      "sublabel": "Spring Data JPA",
+      "brand": "spring",
+      "pos": [80, 160],
+      "size": [170, 60],
+      "tag": "Isolated DB Access"
+    },
+    {
+      "id": "bff_controller",
+      "type": "backend",
+      "label": "Transfer Draft Controller",
+      "sublabel": "REST Ingress :8085",
+      "brand": "spring",
+      "pos": [80, 260],
+      "size": [170, 64],
+      "tag": "Draft Ingestion"
+    },
+    {
+      "id": "bff_aggregator",
+      "type": "backend",
+      "label": "UI Aggregator Svc",
+      "sublabel": "Reactive WebClient",
+      "brand": "spring",
+      "pos": [80, 360],
+      "size": [170, 60],
+      "tag": "Composite Models"
+    },
+    {
+      "id": "idempotency_guard",
+      "type": "security",
+      "label": "Idempotency Guard",
+      "sublabel": "Redis Key Filter",
+      "brand": "redis",
+      "pos": [360, 160],
+      "size": [180, 60],
+      "tag": "Duplicate Rejection"
+    },
+    {
+      "id": "orch_ingress",
+      "type": "backend",
+      "label": "Transfer Ingress Controller",
+      "sublabel": "Spring Boot :8082",
+      "brand": "spring",
+      "pos": [360, 260],
+      "size": [180, 64],
+      "tag": "Validation & Routing"
+    },
+    {
+      "id": "saga_coordinator",
+      "type": "backend",
+      "label": "Saga Coordinator",
+      "sublabel": "Compensating Workflow",
+      "brand": "spring",
+      "pos": [360, 360],
+      "size": [180, 64],
+      "tag": "Failure Recovery"
+    },
+    {
+      "id": "t24_client_transfer",
+      "type": "backend",
+      "label": "T24 Transfer Client",
+      "sublabel": "TCP / HTTP Client",
+      "brand": "spring",
+      "pos": [660, 160],
+      "size": [190, 64],
+      "tag": "Dispatches EP1"
+    },
+    {
+      "id": "t24_client_reversal",
+      "type": "backend",
+      "label": "T24 Reversal Client",
+      "sublabel": "Compensating Client",
+      "brand": "spring",
+      "pos": [660, 320],
+      "size": [190, 64],
+      "tag": "Dispatches EP2"
+    },
+    {
+      "id": "t24_ep_transfer",
+      "type": "backend",
+      "label": "Endpoint 1: Transfer",
+      "sublabel": "POST /t24/funds-transfer",
+      "pos": [980, 160],
+      "size": [210, 64],
+      "tag": "Debit & Credit Post"
+    },
+    {
+      "id": "t24_ep_reversal",
+      "type": "backend",
+      "label": "Endpoint 2: Reversal",
+      "sublabel": "POST /t24/reversal",
+      "pos": [980, 320],
+      "size": [210, 64],
+      "tag": "Compensating Reversal"
+    },
+    {
+      "id": "cbs_master_db",
+      "type": "database",
+      "label": "CBS Master Ledger DB",
+      "sublabel": "Azure SQL :1433",
+      "pos": [1290, 80],
+      "size": [190, 64],
+      "tag": "Pessimistic Locks"
+    },
+    {
+      "id": "t24_kernel",
+      "type": "backend",
+      "label": "T24 Accounting Kernel",
+      "sublabel": "Double-Entry Ledger",
+      "pos": [1290, 240],
+      "size": [190, 68],
+      "tag": "ACID Ledger Engine"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "BFF Container & Store (:8085)",
+      "wraps": [
+        "bff_db",
+        "bff_repo",
+        "bff_controller",
+        "bff_aggregator"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Transfer Orchestrator Container (:8082)",
+      "wraps": [
+        "idempotency_guard",
+        "orch_ingress",
+        "saga_coordinator",
+        "t24_client_transfer",
+        "t24_client_reversal"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Temenos T24 Core Banking Subsystem (:9100)",
+      "wraps": [
+        "t24_ep_transfer",
+        "t24_ep_reversal",
+        "t24_kernel",
+        "cbs_master_db"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "bff-repo-to-db",
+      "from": "bff_repo",
+      "to": "bff_db",
+      "label": "isolated SQL",
+      "variant": "emphasis",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "bff-ctrl-to-repo",
+      "from": "bff_controller",
+      "to": "bff_repo",
+      "label": "save draft",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "bff-ctrl-to-orch",
+      "from": "bff_controller",
+      "to": "orch_ingress",
+      "label": "submit transfer",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "orch-to-guard",
+      "from": "orch_ingress",
+      "to": "idempotency_guard",
+      "label": "verify key",
+      "variant": "security",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "orch-to-transfer-client",
+      "from": "orch_ingress",
+      "to": "t24_client_transfer",
+      "label": "execute transfer",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "orch-to-saga",
+      "from": "orch_ingress",
+      "to": "saga_coordinator",
+      "label": "register saga",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "saga-to-reversal-client",
+      "from": "saga_coordinator",
+      "to": "t24_client_reversal",
+      "label": "on failure trigger",
+      "variant": "security",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "client-to-t24-ep1",
+      "from": "t24_client_transfer",
+      "to": "t24_ep_transfer",
+      "label": "HTTP POST /funds-transfer",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "client-to-t24-ep2",
+      "from": "t24_client_reversal",
+      "to": "t24_ep_reversal",
+      "label": "HTTP POST /reversal",
+      "variant": "security",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "ep1-to-kernel",
+      "from": "t24_ep_transfer",
+      "to": "t24_kernel",
+      "label": "dispatch OFS mutation",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "ep2-to-kernel",
+      "from": "t24_ep_reversal",
+      "to": "t24_kernel",
+      "label": "dispatch OFS reverse",
+      "variant": "security",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "kernel-to-cbs-db",
+      "from": "t24_kernel",
+      "to": "cbs_master_db",
+      "label": "ACID balance write",
+      "variant": "emphasis",
+      "fromSide": "top",
+      "toSide": "bottom"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "BFF Database & State Isolation",
+      "items": [
+        "BFF State Repository: Manages draft transfers, user preferences, and client aggregation models exclusively in bff_db (:5433).",
+        "Zero CBS Overhead: Customer-facing drafts and frontend state caching never interact with or lock the CBS Master Ledger."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Temenos T24 Dual Ingress Endpoints & Saga",
+      "items": [
+        "Endpoint 1 (/funds-transfer): Processes standard debit/credit mutations and updates balance_master in Azure SQL.",
+        "Endpoint 2 (/reversal): Ingested by Saga Coordinator during failures to restore debited amounts and post reversing ledger journals."
+      ]
+    }
+  ]
+}

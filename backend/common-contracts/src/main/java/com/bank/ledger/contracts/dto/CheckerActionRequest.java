@@ -10,6 +10,9 @@ import lombok.*;
 @AllArgsConstructor
 public class CheckerActionRequest {
 
+    @JsonAlias({"transaction_id", "transactionId", "txId", "transferId"})
+    private String transactionId;
+
     @NotBlank(message = "Checker User ID is mandatory")
     @JsonAlias({"checker_user_id", "checkerId", "approved_by_user_id", "checker"})
     private String checkerUserId;

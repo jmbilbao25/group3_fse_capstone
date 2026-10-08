@@ -322,7 +322,7 @@ class TransactionReceiptScreen extends StatelessWidget {
                             child: Text(
                               'Back to home',
                               style: TextStyle(
-                                color: isSuccess ? Colors.white : textDark,
+                                color: isSuccess ? Colors.white : brandViolet,
                                 fontWeight: FontWeight.w800,
                                 fontSize: 16,
                                 letterSpacing: 0.2,

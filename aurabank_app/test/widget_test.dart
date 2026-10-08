@@ -665,16 +665,15 @@ void main() {
     expect(find.text('Available Balance: PHP 50,000.00'), findsOneWidget);
     expect(find.text('Transfer Limit: PHP 50,000.00'), findsOneWidget);
 
-    // Tap From card to open Source Account selector sheet
+    // Tap From card to open inline Source Account dropdown
     await tester.tap(find.text('Select source account'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Select Source Account'), findsOneWidget);
     expect(find.text('Savings Account'), findsOneWidget);
     expect(find.text('Current Account'), findsOneWidget);
     expect(find.text('Credit Account'), findsOneWidget);
 
-    // Select Current Account
+    // Select Current Account inline
     await tester.tap(find.text('Current Account'));
     await tester.pumpAndSettle();
 

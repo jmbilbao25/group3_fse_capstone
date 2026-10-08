@@ -67,6 +67,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   ];
 
   int? _selectedSourceIndex;
+  bool _isSourceDropdownOpen = false;
 
   static const Color brandViolet = AuraColors.primary;
   static const Color textDark = Color(0xFF0F172A);
@@ -358,96 +359,212 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
 
           const SizedBox(height: 18),
 
-          // 1. Source Account Card ("From:" - Scan-image 5)
-          InkWell(
-            borderRadius: BorderRadius.circular(22),
-            onTap: _showSourceAccountSelector,
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: cardBorder, width: 1.2),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF0F172A).withValues(alpha: 0.05),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+          // 1. Source Account Card ("From:" - Inline Dropdown)
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                color: _isSourceDropdownOpen ? brandViolet : cardBorder,
+                width: _isSourceDropdownOpen ? 1.5 : 1.2,
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'From:',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          color: textDark,
-                          letterSpacing: -0.2,
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF0F172A).withValues(alpha: 0.05),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                InkWell(
+                  borderRadius: BorderRadius.circular(22),
+                  onTap: () {
+                    setState(() => _isSourceDropdownOpen = !_isSourceDropdownOpen);
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'From:',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                color: textDark,
+                                letterSpacing: -0.2,
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                            if (_selectedSourceIndex == null)
+                              const Text(
+                                'Select source account',
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w500,
+                                  color: textMuted,
+                                ),
+                              )
+                            else ...[
+                              Text(
+                                _sourceAccounts[_selectedSourceIndex!]['title'] as String,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                  color: textDark,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${_sourceAccounts[_selectedSourceIndex!]['bankLabel']}: ${_sourceAccounts[_selectedSourceIndex!]['accountNo']}',
+                                style: const TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: textMuted,
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
-                      ),
-                      const SizedBox(height: 5),
-                      if (_selectedSourceIndex == null)
-                        const Text(
-                          'Select source account',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w500,
-                            color: textMuted,
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.06),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
                           ),
-                        )
-                      else ...[
-                        Text(
-                          _sourceAccounts[_selectedSourceIndex!]['title'] as String,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                            color: textDark,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${_sourceAccounts[_selectedSourceIndex!]['bankLabel']}: ${_sourceAccounts[_selectedSourceIndex!]['accountNo']}',
-                          style: const TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w600,
-                            color: textMuted,
+                          child: Center(
+                            child: Icon(
+                              _isSourceDropdownOpen
+                                  ? Icons.keyboard_arrow_up_rounded
+                                  : Icons.keyboard_arrow_down_rounded,
+                              color: brandViolet,
+                              size: 28,
+                            ),
                           ),
                         ),
                       ],
-                    ],
-                  ),
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.06),
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
                     ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        color: brandViolet,
-                        size: 28,
-                      ),
+                  ),
+                ),
+                if (_isSourceDropdownOpen) ...[
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Divider(color: cardBorder, height: 1, thickness: 1),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                    child: Column(
+                      children: List.generate(_sourceAccounts.length, (index) {
+                        final acc = _sourceAccounts[index];
+                        final isSelected = _selectedSourceIndex == index;
+                        return Container(
+                          margin: EdgeInsets.only(bottom: index == _sourceAccounts.length - 1 ? 0 : 8),
+                          decoration: BoxDecoration(
+                            color: isSelected ? brandViolet.withValues(alpha: 0.06) : const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isSelected ? brandViolet : const Color(0xFFE2E8F0),
+                              width: isSelected ? 1.5 : 1.0,
+                            ),
+                          ),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(16),
+                            onTap: () {
+                              setState(() {
+                                _selectedSourceIndex = index;
+                                _isSourceDropdownOpen = false;
+                              });
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 38,
+                                    height: 38,
+                                    decoration: BoxDecoration(
+                                      color: isSelected ? brandViolet : brandViolet.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(
+                                      acc['icon'] as IconData,
+                                      color: isSelected ? Colors.white : brandViolet,
+                                      size: 19,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          acc['title'] as String,
+                                          style: TextStyle(
+                                            fontSize: 13.5,
+                                            fontWeight: FontWeight.w800,
+                                            color: isSelected ? brandViolet : textDark,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          '${acc['bankLabel']} • ${acc['accountNo']}',
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            color: textMuted,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        'PHP ${_formatAmount(acc['balance'] as double)}',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w800,
+                                          color: textDark,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      const Text(
+                                        'Available',
+                                        style: TextStyle(
+                                          fontSize: 9.5,
+                                          color: textMuted,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
                     ),
                   ),
                 ],
-              ),
+              ],
             ),
           ),
 
@@ -739,162 +856,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     );
   }
 
-  void _showSourceAccountSelector() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) {
-        return Align(
-          alignment: Alignment.bottomCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: Container(
-              margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-              padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x380F172A),
-                    blurRadius: 36,
-                    offset: Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Select Source Account',
-                                style: TextStyle(
-                                  fontSize: 16.5,
-                                  fontWeight: FontWeight.w800,
-                                  color: textDark,
-                                  letterSpacing: -0.2,
-                                ),
-                              ),
-                              SizedBox(height: 3),
-                              Text(
-                                'Choose account to debit funds from',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: textMuted,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close_rounded, size: 20, color: textMuted),
-                          onPressed: () => Navigator.of(context).pop(),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    ...List.generate(_sourceAccounts.length, (index) {
-                      final acc = _sourceAccounts[index];
-                      final isSelected = _selectedSourceIndex == index;
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        decoration: BoxDecoration(
-                          color: isSelected ? brandViolet.withValues(alpha: 0.06) : const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: isSelected ? brandViolet : const Color(0xFFE2E8F0),
-                            width: isSelected ? 1.5 : 1.0,
-                          ),
-                        ),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(16),
-                          onTap: () {
-                            setState(() {
-                              _selectedSourceIndex = index;
-                            });
-                            Navigator.of(context).pop();
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: isSelected ? brandViolet : brandViolet.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Icon(
-                                    acc['icon'] as IconData,
-                                    color: isSelected ? Colors.white : brandViolet,
-                                    size: 20,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        acc['title'] as String,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w800,
-                                          color: isSelected ? brandViolet : textDark,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        '${acc['bankLabel']} • ${acc['accountNo']}',
-                                        style: const TextStyle(fontSize: 11, color: textMuted, fontWeight: FontWeight.w500),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      'PHP ${_formatAmount(acc['balance'] as double)}',
-                                      style: const TextStyle(
-                                        fontSize: 12.5,
-                                        fontWeight: FontWeight.w800,
-                                        color: textDark,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    const Text(
-                                      'Available',
-                                      style: TextStyle(fontSize: 10, color: textMuted, fontWeight: FontWeight.w600),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                  ],
-              ),
-            ),
-            ),
-          ),
-        );
-      },
-    );
-  }
+
 
   String _formatAmount(double amount) {
     final parts = amount.toStringAsFixed(2).split('.');

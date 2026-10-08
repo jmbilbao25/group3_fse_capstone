@@ -5052,9 +5052,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     <!-- Main Diagram -->
     <div class="diagram-container" data-detail-level="read"
          data-preset-badge-editorial-plate="PLATE 04">
-      <svg viewBox="0 0 970 576" role="img" lang="en" aria-labelledby="diagram-diagram-title diagram-diagram-description" data-preset="classic" data-quality-profile="showcase" data-reader-fit="intrinsic-height" data-reader-min-text="7.5" data-reader-primary-text="14">
-        <title id="diagram-diagram-title">C1 System Context: Retail Banking Platform &amp; Dual-Endpoint T24 CBS</title>
-        <desc id="diagram-diagram-description">An architecture diagram.</desc>
+      <svg viewBox="0 0 970 576" role="img" aria-label="C1 System Context: Retail Banking Platform &amp; Dual-Endpoint T24 CBS" lang="en" data-preset="classic" data-quality-profile="showcase" data-reader-fit="intrinsic-height" data-reader-min-text="7.5" data-reader-primary-text="14">
+        <desc id="diagram-description">An architecture diagram.</desc>
         <!-- Definitions -->
         <defs>
           <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
@@ -5107,7 +5106,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         </g>
 
         <!-- Components -->
-        <g id="node-customer" data-node-id="customer" data-node-label="Retail Banking Customer" tabindex="0" role="button" aria-label="Focus Retail Banking Customer, Web Browser &amp; Mobile App, Architecture component" aria-pressed="false" data-node-kind="external" data-node-sublabel="Web Browser &amp; Mobile App" data-node-tag="Transfers &amp; 2FA OTP" data-node-context="Architecture component">
+        <g id="node-customer" data-node-id="customer" data-node-label="Retail Banking Customer" tabindex="0" role="button" aria-label="Focus Retail Banking Customer, Flutter Mobile &amp; Web Banking, Architecture component" aria-pressed="false" data-node-kind="external" data-node-sublabel="Flutter Mobile &amp; Web Banking" data-node-tag="Transfers &amp; 2FA OTP" data-node-context="Architecture component">
           
           <rect x="60" y="140" width="180" height="70" rx="6" class="c-mask"/>
           <rect x="60" y="140" width="180" height="70" rx="6" class="c-external" stroke-width="1.5"/>
@@ -5116,11 +5115,11 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
           </g>
           <text data-node-label="" data-detail-anchor="" x="150" y="173" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Retail Banking Customer</text>
-        <text data-detail="context" x="150" y="189" class="t-muted" font-size="9" text-anchor="middle">Web Browser &amp; Mobile App</text>
+        <text data-detail="context" x="150" y="189" class="t-muted" font-size="9" text-anchor="middle">Flutter Mobile &amp; Web Banking</text>
         <text data-detail="fine" x="150" y="202" class="t-external" font-size="7" text-anchor="middle">Transfers &amp; 2FA OTP</text>
         </g>
 
-        <g id="node-admin" data-node-id="admin" data-node-label="Bank Ops &amp; Compliance" tabindex="0" role="button" aria-label="Focus Bank Ops &amp; Compliance, Back-Office Portal, Architecture component" aria-pressed="false" data-node-kind="external" data-node-sublabel="Back-Office Portal" data-node-tag="Auditing &amp; KYC" data-node-context="Architecture component">
+        <g id="node-admin" data-node-id="admin" data-node-label="Bank Ops &amp; Compliance" tabindex="0" role="button" aria-label="Focus Bank Ops &amp; Compliance, React Web Admin Portal, Architecture component" aria-pressed="false" data-node-kind="external" data-node-sublabel="React Web Admin Portal" data-node-tag="Auditing &amp; KYC" data-node-context="Architecture component">
           
           <rect x="60" y="320" width="180" height="70" rx="6" class="c-mask"/>
           <rect x="60" y="320" width="180" height="70" rx="6" class="c-external" stroke-width="1.5"/>
@@ -5129,7 +5128,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
           </g>
           <text data-node-label="" data-detail-anchor="" x="150" y="353" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Bank Ops &amp; Compliance</text>
-        <text data-detail="context" x="150" y="369" class="t-muted" font-size="9" text-anchor="middle">Back-Office Portal</text>
+        <text data-detail="context" x="150" y="369" class="t-muted" font-size="9" text-anchor="middle">React Web Admin Portal</text>
         <text data-detail="fine" x="150" y="382" class="t-external" font-size="7" text-anchor="middle">Auditing &amp; KYC</text>
         </g>
 
@@ -5428,7 +5427,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           <h3>C1 System Context Overview</h3>
         </div>
         <ul>
-          <li>Customer &amp; Admin Channels: Web SPA and Flutter Mobile interact with the Retail Banking Platform over secure HTTPS/TLS with JWT authentication.</li>
+          <li>Omnichannel Presentation: Mobile Online Banking (Flutter iOS/Android), Web Online Banking (Flutter Web), and Web Admin Portal (React) interact with the Retail Banking Platform over secure HTTPS/TLS with JWT authentication.</li>
           <li>Temenos T24 CBS Dual Ingress: Platform communicates with Temenos T24 via 2 explicit endpoints (Endpoint 1: Real-time Funds Transfer settlement; Endpoint 2: Compensating Reversal).</li>
           <li>Separation of Concerns: The Retail Banking Platform manages customer authentication, transfer orchestration, and saga compensation, offloading master double-entry bookkeeping to T24.</li>
         </ul>

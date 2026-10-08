@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/bank_service.dart';
 import '../../widgets/aura_logo.dart';
+import '../../widgets/require_device_approval.dart';
 import 'review_transfer_screen.dart';
 
 class SendMoneyScreen extends StatefulWidget {
@@ -157,6 +158,10 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
 
 
   void _onSendMoney() {
+    if (!RequireDeviceApproval.canTransact(context)) {
+      return;
+    }
+
     final text = _amountController.text.replaceAll(',', '').trim();
     final enteredAmount = double.tryParse(text) ?? 0.0;
 
@@ -859,15 +864,17 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
   }
 
   Widget _buildSendMoneyButton() {
-    return Container(
-      width: double.infinity,
-      height: 50,
-      decoration: BoxDecoration(
-        color: const Color(0xFF38008A),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF38008A).withValues(alpha: 0.35),
+    return RequireDeviceApproval(
+      actionLabel: 'Money transfers',
+      child: Container(
+        width: double.infinity,
+        height: 50,
+        decoration: BoxDecoration(
+          color: const Color(0xFF38008A),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF38008A).withValues(alpha: 0.35),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -891,6 +898,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../main.dart' show rootNavigatorKey;
+import '../screens/auth/login_screen.dart';
 import '../widgets/security_dialog.dart';
 import 'auth_api_service.dart' show AuthApiService, defaultBackendHost;
 
@@ -320,6 +321,8 @@ class NotificationStreamService {
         }
       } else if (type == 'DEVICE_REVOKED') {
         AuthApiService().currentIsApproved = false;
+        AuthApiService().logout();
+        disconnect();
         if (context != null) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -327,6 +330,10 @@ class NotificationStreamService {
               backgroundColor: Colors.redAccent,
               duration: Duration(seconds: 5),
             ),
+          );
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+            (route) => false,
           );
         }
       }

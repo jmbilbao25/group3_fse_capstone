@@ -1,3 +1,4 @@
+// ignore_for_file: unused_element, unused_field
 import '../../widgets/aura_logo.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -2144,7 +2145,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Row(
+                    Wrap(
+                      spacing: 4,
                       children: [
                         Text(
                           transfersText,

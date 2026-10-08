@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../services/bank_service.dart';
+import '../../services/security_service.dart';
 import '../../theme/aura_theme.dart';
+import '../../widgets/require_device_approval.dart';
+import '../../widgets/screen_sharing_warning_sheet.dart';
 import 'receipt_screen.dart';
 
 class ReviewTransferScreen extends StatefulWidget {
@@ -551,30 +554,33 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
               const SizedBox(height: 24),
 
               // Confirm & Send Button
-              Container(
-                width: double.infinity,
-                height: 52,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(26),
-                  boxShadow: AuraColors.buttonShadow,
-                ),
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: brandViolet,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
-                    elevation: 0,
+              RequireDeviceApproval(
+                actionLabel: 'Transfer confirmations',
+                child: Container(
+                  width: double.infinity,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(26),
+                    boxShadow: AuraColors.buttonShadow,
                   ),
-                  onPressed: _showConfirmationModal,
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.shield_outlined, color: Colors.white, size: 20),
-                      SizedBox(width: 10),
-                      Text(
-                        'Confirm & Transfer',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white),
-                      ),
-                    ],
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: brandViolet,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
+                      elevation: 0,
+                    ),
+                    onPressed: _showConfirmationModal,
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.shield_outlined, color: Colors.white, size: 20),
+                        SizedBox(width: 10),
+                        Text(
+                          'Confirm & Transfer',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -622,6 +628,10 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
   }
 
   void _showConfirmationModal() {
+    if (!RequireDeviceApproval.canTransact(context)) {
+      return;
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -743,7 +753,26 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
     final bool isThreatScenario = _riskScenario == 'SCAM' || _riskScenario == 'REMOTE' || _riskScenario == 'CALL';
     final bool isBlockScenario = _riskScenario == 'BLOCK';
 
+    if (_riskScenario == 'REMOTE' || SecurityService.simulateScreenSharing) {
+      final userAction = await ScreenSharingWarningSheet.show(context);
+      if (userAction == ScreenSharingUserAction.cancelTransaction) {
+        _showTransferCancelledModal();
+        return;
+      } else if (userAction == ScreenSharingUserAction.pauseFor10Minutes) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Transfer paused for 10 minutes to protect your account.'),
+            backgroundColor: Color(0xFFD97706),
+            duration: Duration(seconds: 4),
+          ),
+        );
+        return;
+      }
+    }
+
     // Show the animated scanner dialog
+    if (!mounted) return;
     final scanResult = await showDialog<Map<String, dynamic>>(
       context: context,
       barrierDismissible: false,
@@ -878,6 +907,10 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
   }
 
   Future<void> _executeTransferAndNavigate() async {
+    if (!RequireDeviceApproval.canTransact(context)) {
+      return;
+    }
+
     // Show a quick settling HUD
     showDialog(
       context: context,

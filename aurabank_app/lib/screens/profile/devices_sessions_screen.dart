@@ -807,12 +807,13 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                                 if (dev['isApproved'] == false) ...[
                                   InkWell(
                                     onTap: () async {
+                                      final messenger = ScaffoldMessenger.of(context);
                                       final deviceId = dev['id'] as String?;
                                       if (deviceId != null && deviceId.isNotEmpty) {
                                         final ok = await AuthApiService().approveDevice(deviceId: deviceId);
                                         if (ok) {
                                           if (!mounted) return;
-                                          ScaffoldMessenger.of(context).showSnackBar(
+                                          messenger.showSnackBar(
                                             SnackBar(
                                               content: Text('Device ${dev['name']} approved successfully!'),
                                               backgroundColor: const Color(0xFF107C41),

@@ -757,7 +757,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildSwitchTile(
                     title: 'Biometric Login (Face ID)',
                     subtitle: 'Unlock app instantly with Face ID',
-                    icon: Icons.face_unlock_rounded,
+                    icon: Icons.face_retouching_natural_rounded,
                     value: _faceIdEnabled,
                     onChanged: (val) {
                       setState(() => _faceIdEnabled = val);
@@ -801,14 +801,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildNavigationTile(
                     title: 'Change Email',
                     subtitle: 'Update registered email address',
-                    icon: Icons.mark_email_read_rounded,
+                    icon: Icons.mail_lock_rounded,
                     onTap: _showChangeEmailDialog,
                   ),
                   const Divider(color: Color(0xFFF3F4F6), height: 1),
                   _buildNavigationTile(
                     title: 'Change Password',
                     subtitle: 'Update account security password',
-                    icon: Icons.password_rounded,
+                    icon: Icons.key_rounded,
                     onTap: _showChangePasswordDialog,
                   ),
                 ],
@@ -851,7 +851,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildNavigationTile(
                     title: 'Help & Contact Support',
                     subtitle: '24/7 Priority Aura Concierge',
-                    icon: Icons.support_agent_rounded,
+                    icon: Icons.headset_mic_rounded,
                     onTap: () {
                       showDialog(
                         context: context,
@@ -872,7 +872,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildNavigationTile(
                     title: 'Terms & Privacy Policy',
                     subtitle: 'Privacy notice & security terms',
-                    icon: Icons.verified_user_rounded,
+                    icon: Icons.privacy_tip_rounded,
                     onTap: () {
                       showDialog(
                         context: context,
@@ -986,15 +986,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           if (icon != null) ...[
             Container(
-              width: 38,
-              height: 38,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
-                color: const Color(0xFFF3E8FF),
+                color: const Color(0xFFF5EEFF),
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFEDE9FE), width: 1.0),
               ),
-              child: Icon(icon, size: 20, color: brandViolet),
+              child: Icon(icon, size: 21, color: brandViolet),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 14),
           ],
           Expanded(
             child: Column(
@@ -1039,15 +1040,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             if (icon != null) ...[
               Container(
-                width: 38,
-                height: 38,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF3E8FF),
+                  color: const Color(0xFFF5EEFF),
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFEDE9FE), width: 1.0),
                 ),
-                child: Icon(icon, size: 20, color: brandViolet),
+                child: Icon(icon, size: 21, color: brandViolet),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
             ],
             Expanded(
               child: Column(

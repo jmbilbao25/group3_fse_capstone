@@ -326,102 +326,584 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showChangeEmailDialog() {
-    final emailCtrl = TextEditingController(text: _bankService.user.email);
+    final emailCtrl = TextEditingController();
+    final currentEmail = _bankService.user.email;
+
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Change Email', style: TextStyle(fontWeight: FontWeight.w800)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Enter your new registered email. A confirmation link will be sent.',
-              style: TextStyle(fontSize: 12.5, color: textGray),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(22, 24, 22, 22),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header with Badge Icon
+                Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF5EEFF),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFEDE9FE), width: 1.0),
+                      ),
+                      child: const Icon(Icons.alternate_email_rounded, color: brandViolet, size: 22),
+                    ),
+                    const SizedBox(width: 14),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Change Email',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                              color: textDark,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Update primary account email',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: textGray,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 18),
+
+                // Current Registered Email Inset Box
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.lock_outline_rounded, size: 15, color: textGray),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'CURRENT EMAIL',
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w700,
+                                color: textGray,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              currentEmail,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: textDark,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 14),
+
+                // New Email Input Field
+                TextField(
+                  controller: emailCtrl,
+                  keyboardType: TextInputType.emailAddress,
+                  style: const TextStyle(fontSize: 13.5, color: textDark, fontWeight: FontWeight.w700),
+                  decoration: InputDecoration(
+                    labelText: 'New Email Address',
+                    labelStyle: const TextStyle(fontSize: 12.5, color: textGray, fontWeight: FontWeight.w500),
+                    hintText: 'e.g. name@example.com',
+                    hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFF9CA3AF)),
+                    prefixIcon: const Icon(Icons.mail_outline_rounded, size: 20, color: brandViolet),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1.0),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: brandViolet, width: 1.5),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 14),
+
+                // Security Advisory Notice
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5EEFF),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFEDE9FE), width: 1.0),
+                  ),
+                  child: const Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.shield_outlined, size: 17, color: brandViolet),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'A verification link will be sent to your new address to confirm ownership before updating.',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: Color(0xFF475569),
+                            height: 1.35,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 22),
+
+                // Action Buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 46,
+                        child: TextButton(
+                          style: TextButton.styleFrom(
+                            backgroundColor: const Color(0xFFF1F5F9),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          child: const Text(
+                            'Cancel',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: textDark,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: SizedBox(
+                        height: 46,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: brandViolet,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                          onPressed: () {
+                            final newEmail = emailCtrl.text.trim();
+                            if (newEmail.isEmpty || !newEmail.contains('@')) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Please enter a valid email address.'),
+                                  backgroundColor: brandViolet,
+                                ),
+                              );
+                              return;
+                            }
+                            _bankService.updateUserProfile(email: newEmail);
+                            Navigator.of(ctx).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Registered email updated successfully.'),
+                                backgroundColor: brandViolet,
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            'Update Email',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: emailCtrl,
-              decoration: InputDecoration(
-                labelText: 'New Email Address',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel', style: TextStyle(color: textGray)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: brandViolet,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            ),
-            onPressed: () {
-              _bankService.updateUserProfile(email: emailCtrl.text.trim());
-              Navigator.of(ctx).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Registered email updated.'), backgroundColor: brandViolet),
-              );
-            },
-            child: const Text('Update Email', style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
     );
   }
 
   void _showChangePasswordDialog() {
+    final currentCtrl = TextEditingController();
+    final newCtrl = TextEditingController();
+    final confirmCtrl = TextEditingController();
+
+    bool obscureCurrent = true;
+    bool obscureNew = true;
+    bool obscureConfirm = true;
+
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Change Password', style: TextStyle(fontWeight: FontWeight.w800)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Update your account security password. Password must be at least 8 characters with numbers and symbols.',
-              style: TextStyle(fontSize: 12.5, color: textGray),
-            ),
-            const SizedBox(height: 14),
-            TextField(
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'Current Password',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) {
+          final newPass = newCtrl.text;
+          final confirmPass = confirmCtrl.text;
+
+          // Password Criteria Checks
+          final hasMinLen = newPass.length >= 8;
+          final hasNumber = RegExp(r'[0-9]').hasMatch(newPass);
+          final hasSpecialOrCap = RegExp(r'[A-Z!@#\$%^&*(),.?":{}|<>]').hasMatch(newPass);
+
+          int strengthScore = 0;
+          if (newPass.isNotEmpty) {
+            if (hasMinLen) strengthScore++;
+            if (hasNumber) strengthScore++;
+            if (hasSpecialOrCap) strengthScore++;
+          }
+
+          Color strengthColor = const Color(0xFFEF4444);
+          String strengthLabel = 'Weak';
+          if (strengthScore == 2) {
+            strengthColor = const Color(0xFFF59E0B);
+            strengthLabel = 'Moderate';
+          } else if (strengthScore == 3) {
+            strengthColor = const Color(0xFF10B981);
+            strengthLabel = 'Strong';
+          }
+
+          final bool isMismatch = confirmPass.isNotEmpty && confirmPass != newPass;
+
+          return Dialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(22, 24, 22, 22),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header
+                    Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF5EEFF),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFFEDE9FE), width: 1.0),
+                          ),
+                          child: const Icon(Icons.lock_reset_rounded, color: brandViolet, size: 24),
+                        ),
+                        const SizedBox(width: 14),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Change Password',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                  color: textDark,
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                'Enhance your banking security',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: textGray,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // 1. Current Password Field
+                    _buildModalPasswordField(
+                      controller: currentCtrl,
+                      label: 'Current Password',
+                      obscureText: obscureCurrent,
+                      onToggleObscure: () => setModalState(() => obscureCurrent = !obscureCurrent),
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    // 2. New Password Field
+                    _buildModalPasswordField(
+                      controller: newCtrl,
+                      label: 'New Password',
+                      obscureText: obscureNew,
+                      onChanged: (_) => setModalState(() {}),
+                      onToggleObscure: () => setModalState(() => obscureNew = !obscureNew),
+                    ),
+
+                    // Password Strength Indicator (Dynamic)
+                    if (newPass.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: strengthScore / 3,
+                                minHeight: 4,
+                                backgroundColor: const Color(0xFFE2E8F0),
+                                valueColor: AlwaysStoppedAnimation<Color>(strengthColor),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            strengthLabel,
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w800,
+                              color: strengthColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+
+                    const SizedBox(height: 10),
+
+                    // Password Requirements Checklist Pills
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        _buildRequirementChip('8+ Characters', hasMinLen),
+                        _buildRequirementChip('1 Number', hasNumber),
+                        _buildRequirementChip('Special / Caps', hasSpecialOrCap),
+                      ],
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    // 3. Confirm Password Field
+                    _buildModalPasswordField(
+                      controller: confirmCtrl,
+                      label: 'Confirm New Password',
+                      obscureText: obscureConfirm,
+                      isError: isMismatch,
+                      onChanged: (_) => setModalState(() {}),
+                      onToggleObscure: () => setModalState(() => obscureConfirm = !obscureConfirm),
+                    ),
+
+                    if (isMismatch) ...[
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Passwords do not match',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFFEF4444),
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: 22),
+
+                    // Actions
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 46,
+                            child: TextButton(
+                              style: TextButton.styleFrom(
+                                backgroundColor: const Color(0xFFF1F5F9),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              ),
+                              onPressed: () => Navigator.of(ctx).pop(),
+                              child: const Text(
+                                'Cancel',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: textDark,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: SizedBox(
+                            height: 46,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: brandViolet,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              ),
+                              onPressed: () {
+                                if (currentCtrl.text.trim().isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Please enter current password.')),
+                                  );
+                                  return;
+                                }
+                                if (!hasMinLen || isMismatch) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Please satisfy all password requirements.')),
+                                  );
+                                  return;
+                                }
+                                Navigator.of(ctx).pop();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Security password changed successfully.'),
+                                    backgroundColor: brandViolet,
+                                  ),
+                                );
+                              },
+                              child: const Text(
+                                'Save Password',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 10),
-            TextField(
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'New Password',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildModalPasswordField({
+    required TextEditingController controller,
+    required String label,
+    required bool obscureText,
+    required VoidCallback onToggleObscure,
+    ValueChanged<String>? onChanged,
+    bool isError = false,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: obscureText,
+      onChanged: onChanged,
+      style: const TextStyle(fontSize: 13.5, color: textDark, fontWeight: FontWeight.w700),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(
+          fontSize: 12.5,
+          color: isError ? const Color(0xFFEF4444) : textGray,
+          fontWeight: FontWeight.w500,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel', style: TextStyle(color: textGray)),
+        prefixIcon: Icon(
+          Icons.lock_outline_rounded,
+          size: 19,
+          color: isError ? const Color(0xFFEF4444) : brandViolet,
+        ),
+        suffixIcon: IconButton(
+          icon: Icon(
+            obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+            size: 19,
+            color: textGray,
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: brandViolet,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          onPressed: onToggleObscure,
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: isError ? const Color(0xFFEF4444) : const Color(0xFFE2E8F0)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: isError ? const Color(0xFFEF4444) : const Color(0xFFE2E8F0)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: isError ? const Color(0xFFEF4444) : brandViolet, width: 1.5),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRequirementChip(String label, bool isMet) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: isMet ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isMet ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+            size: 12,
+            color: isMet ? const Color(0xFF16A34A) : textGray,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w700,
+              color: isMet ? const Color(0xFF15803D) : textGray,
             ),
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Security password changed.'), backgroundColor: brandViolet),
-              );
-            },
-            child: const Text('Save Password', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

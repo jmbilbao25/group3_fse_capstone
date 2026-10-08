@@ -322,6 +322,61 @@
       font-size: 11px;
       color: var(--text-main);
     }
+
+    /* Presentation / Fullscreen Mode */
+    .present-stage-badge {
+      display: none;
+      position: fixed;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border-focus);
+      border-radius: 9999px;
+      padding: 6px 16px;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-main);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+    .present-stage-badge .present-badge-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--emerald);
+      box-shadow: 0 0 8px var(--emerald);
+    }
+    .present-stage-badge button {
+      background: rgba(99, 102, 241, 0.2);
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      color: var(--text-main);
+      border-radius: 9999px;
+      padding: 3px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .present-stage-badge button:hover {
+      background: var(--primary);
+      color: #fff;
+    }
+    html[data-present="true"] header {
+      height: 48px;
+      background: rgba(17, 24, 39, 0.95);
+      border-bottom-color: rgba(99, 102, 241, 0.3);
+    }
+    html[data-present="true"] .workspace {
+      height: calc(100vh - 48px);
+    }
+    html[data-present="true"] .present-stage-badge {
+      display: inline-flex;
+    }
   </style>
 </head>
 <body>
@@ -356,12 +411,22 @@
     <div class="actions">
       <button class="btn" onclick="toggleTheme()" title="Toggle Dark/Light Mode">Theme</button>
       <button class="btn" onclick="resetZoom()" title="Reset Zoom">Fit View</button>
+      <button class="btn" id="btn-fullscreen-toggle" onclick="toggleFullscreen()" title="Fullscreen Presentation Mode (F)">
+        <span id="fs-icon">⛶</span> <span id="fs-label">Fullscreen</span>
+      </button>
       <div style="height: 18px; width: 1px; background: var(--border); margin: 0 4px;"></div>
       <a class="btn btn-primary" id="open-archify-btn" href="c1_system_context.html" target="_blank" title="Open full Archify interactive HTML in new tab">
         Open Archify Standalone ↗
       </a>
     </div>
   </header>
+
+  <!-- Presentation Mode Floating Badge -->
+  <div class="present-stage-badge" id="cmodel-present-badge">
+    <span class="present-badge-dot" aria-hidden="true"></span>
+    <span>C-Model Presentation Mode</span>
+    <button type="button" onclick="toggleFullscreen()" title="Exit Presentation (Esc or F)">Exit Fullscreen (Esc)</button>
+  </div>
 
   <!-- Workspace -->
   <div class="workspace">
@@ -800,7 +865,7 @@
 
       <!-- HUD Hint -->
       <div class="hud-hint">
-        <span>Press <span class="hud-kbd">1</span>–<span class="hud-kbd">4</span> to jump levels, <span class="hud-kbd">Esc</span> to zoom out, click highlighted nodes to drill down.</span>
+        <span>Press <span class="hud-kbd">1</span>–<span class="hud-kbd">4</span> to jump levels, <span class="hud-kbd">F</span> for Fullscreen, <span class="hud-kbd">Esc</span> to zoom out, click highlighted nodes to drill down.</span>
       </div>
     </div>
 
@@ -963,13 +1028,101 @@
 
     window.addEventListener('mouseup', () => { isDragging = false; });
 
+    // Fullscreen / Presentation Mode Functions
+    function isBrowserFullscreen() {
+      return Boolean(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+    }
+
+    function requestFullscreenSafe() {
+      const el = document.documentElement;
+      const rfs = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+      if (rfs && !isBrowserFullscreen()) {
+        try {
+          const promise = rfs.call(el);
+          if (promise && typeof promise.catch === 'function') promise.catch(() => {});
+        } catch (_) {}
+      }
+    }
+
+    function exitFullscreenSafe() {
+      const efs = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+      if (efs && isBrowserFullscreen()) {
+        try {
+          const promise = efs.call(document);
+          if (promise && typeof promise.catch === 'function') promise.catch(() => {});
+        } catch (_) {}
+      }
+    }
+
+    function toggleFullscreen() {
+      const html = document.documentElement;
+      const active = html.getAttribute('data-present') === 'true';
+      const fsIcon = document.getElementById('fs-icon');
+      const fsLabel = document.getElementById('fs-label');
+      const badge = document.getElementById('cmodel-present-badge');
+
+      if (!active) {
+        requestFullscreenSafe();
+        html.setAttribute('data-present', 'true');
+        if (fsIcon) fsIcon.textContent = '🗗';
+        if (fsLabel) fsLabel.textContent = 'Exit';
+        if (badge) badge.style.display = 'inline-flex';
+      } else {
+        exitFullscreenSafe();
+        html.removeAttribute('data-present');
+        if (fsIcon) fsIcon.textContent = '⛶';
+        if (fsLabel) fsLabel.textContent = 'Fullscreen';
+        if (badge) badge.style.display = 'none';
+      }
+      setTimeout(resetZoom, 150);
+    }
+
+    document.addEventListener('fullscreenchange', () => {
+      const isFs = isBrowserFullscreen();
+      const html = document.documentElement;
+      const active = html.getAttribute('data-present') === 'true';
+      const fsIcon = document.getElementById('fs-icon');
+      const fsLabel = document.getElementById('fs-label');
+      const badge = document.getElementById('cmodel-present-badge');
+
+      if (!isFs && active) {
+        html.removeAttribute('data-present');
+        if (fsIcon) fsIcon.textContent = '⛶';
+        if (fsLabel) fsLabel.textContent = 'Fullscreen';
+        if (badge) badge.style.display = 'none';
+        setTimeout(resetZoom, 150);
+      } else if (isFs && !active) {
+        html.setAttribute('data-present', 'true');
+        if (fsIcon) fsIcon.textContent = '🗗';
+        if (fsLabel) fsLabel.textContent = 'Exit';
+        if (badge) badge.style.display = 'inline-flex';
+        setTimeout(resetZoom, 150);
+      }
+    });
+
     // Keyboard Shortcuts
     window.addEventListener('keydown', (e) => {
-      if (e.key === '1') navigateTo(1);
-      if (e.key === '2') navigateTo(2);
-      if (e.key === '3') navigateTo(3);
-      if (e.key === '4') navigateTo(4);
-      if (e.key === 'Escape' || e.key === 'Backspace') {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+      if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        toggleFullscreen();
+      } else if (e.key === '1') {
+        navigateTo(1);
+      } else if (e.key === '2') {
+        navigateTo(2);
+      } else if (e.key === '3') {
+        navigateTo(3);
+      } else if (e.key === '4') {
+        navigateTo(4);
+      } else if (e.key === 'Escape') {
+        if (document.documentElement.getAttribute('data-present') === 'true') {
+          e.preventDefault();
+          toggleFullscreen();
+        } else if (currentLevel > 1) {
+          navigateTo(currentLevel - 1);
+        }
+      } else if (e.key === 'Backspace') {
         if (currentLevel > 1) navigateTo(currentLevel - 1);
       }
     });

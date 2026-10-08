@@ -598,6 +598,50 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       border-color: var(--frontend-stroke);
       color: var(--frontend-stroke);
     }
+    .present-stage-badge {
+      display: none;
+      position: fixed;
+      top: 0.625rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      background: color-mix(in srgb, var(--panel) 92%, transparent);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid color-mix(in srgb, var(--frontend-stroke) 40%, var(--toolbar-border));
+      border-radius: 9999px;
+      padding: 0.25rem 0.75rem;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      color: var(--text);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    }
+    html[data-present="true"]:not([data-embed="true"]) .present-stage-badge {
+      display: inline-flex;
+    }
+    .present-stage-badge .present-badge-dot {
+      width: 0.5rem;
+      height: 0.5rem;
+      border-radius: 50%;
+      background: var(--frontend-stroke, #6366f1);
+      box-shadow: 0 0 6px var(--frontend-stroke, #6366f1);
+    }
+    .present-stage-badge button {
+      background: color-mix(in srgb, var(--frontend-stroke) 15%, transparent);
+      border: 1px solid color-mix(in srgb, var(--frontend-stroke) 35%, transparent);
+      color: var(--text);
+      border-radius: 9999px;
+      padding: 0.15rem 0.55rem;
+      font-size: 0.7rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .present-stage-badge button:hover {
+      background: var(--frontend-stroke);
+      color: #fff;
+    }
 
     /* The reader owns only the outer scale. Wide diagrams and measured tall workflows keep one authored
        SVG/viewBox while the runtime chooses a desktop width from the actual
@@ -1020,6 +1064,14 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M10 5v10M5 10h10' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E");
       mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M10 5v10M5 10h10' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E");
     }
+    .diagram-nav-icon.fullscreen {
+      -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M7.2 3.2h-4v4M12.8 3.2h4v4M7.2 16.8h-4v-4M12.8 16.8h4v-4' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M7.2 3.2h-4v4M12.8 3.2h4v4M7.2 16.8h-4v-4M12.8 16.8h4v-4' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    }
+    html[data-present="true"] .diagram-nav-icon.fullscreen {
+      -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M7.2 7.2h-4v-4M12.8 7.2h4v-4M7.2 12.8h-4v4M12.8 12.8h4v4' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M7.2 7.2h-4v-4M12.8 7.2h4v-4M7.2 12.8h-4v4M12.8 12.8h4v4' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    }
     .diagram-nav [data-view="reset"] {
       display: inline-flex;
       align-items: center;
@@ -1081,6 +1133,19 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     .diagram-nav [data-view="reset"],
     .diagram-nav [data-view="in"] { margin-left: -0.0625rem; }
     .diagram-nav [data-view="in"] { border-radius: 0 0.5rem 0.5rem 0; }
+    .diagram-nav #btn-nav-present {
+      margin-left: 0.375rem;
+      border-radius: 0.5rem;
+      background: color-mix(in srgb, var(--text) 4.5%, transparent);
+    }
+    .diagram-nav #btn-nav-present:hover {
+      background: color-mix(in srgb, var(--text) 9%, transparent);
+    }
+    html[data-present="true"] .diagram-nav #btn-nav-present {
+      color: var(--frontend-stroke);
+      background: color-mix(in srgb, var(--frontend-stroke) 12%, transparent);
+      border-color: color-mix(in srgb, var(--frontend-stroke) 40%, transparent);
+    }
     .diagram-nav [data-view="out"]:hover,
     .diagram-nav [data-view="reset"]:hover,
     .diagram-nav [data-view="in"]:hover { background: color-mix(in srgb, var(--text) 9%, transparent); }
@@ -5519,7 +5584,13 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <button data-view="out" type="button" aria-label="Zoom out" title="Zoom out (-)"><span class="diagram-nav-icon minus" aria-hidden="true"></span></button>
         <button data-view="reset" type="button" aria-label="Reset diagram view" title="Reset view (0)"><span class="diagram-nav-detail" data-view-detail hidden>READ</span><span class="diagram-nav-percent" data-view-percent>100%</span></button>
         <button data-view="in" type="button" aria-label="Zoom in" title="Zoom in (+)"><span class="diagram-nav-icon plus" aria-hidden="true"></span></button>
+        <button id="btn-nav-present" type="button" aria-label="Enter presentation stage" title="Fullscreen Presentation Mode (F)"><span class="diagram-nav-icon fullscreen" aria-hidden="true"></span></button>
       </div>
+    </div>
+    <div class="present-stage-badge" id="present-stage-badge" role="status" aria-live="polite">
+      <span class="present-badge-dot" aria-hidden="true"></span>
+      <span>Presentation Mode</span>
+      <button type="button" id="btn-present-exit-badge" title="Exit Presentation (Esc or F)">Exit Fullscreen</button>
     </div>
 
     <aside class="reader-rail" id="reader-rail">
@@ -11474,8 +11545,39 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     Archify.presentation = (function () {
       var html = document.documentElement;
       var btn = document.getElementById('btn-present');
+      var navBtn = document.getElementById('btn-nav-present');
+      var badgeExitBtn = document.getElementById('btn-present-exit-badge');
       var label = document.getElementById('present-label');
       var previousScrollY = 0;
+
+      function isBrowserFullscreen() {
+        return Boolean(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+      }
+
+      function requestFullscreenSafe() {
+        var el = document.documentElement;
+        var rfs = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+        if (rfs && !isBrowserFullscreen()) {
+          try {
+            var promise = rfs.call(el);
+            if (promise && typeof promise.catch === 'function') {
+              promise.catch(function () {});
+            }
+          } catch (_) {}
+        }
+      }
+
+      function exitFullscreenSafe() {
+        var efs = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+        if (efs && isBrowserFullscreen()) {
+          try {
+            var promise = efs.call(document);
+            if (promise && typeof promise.catch === 'function') {
+              promise.catch(function () {});
+            }
+          } catch (_) {}
+        }
+      }
 
       function active() { return html.getAttribute('data-present') === 'true'; }
 
@@ -11489,15 +11591,31 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       }
 
       function render(next) {
-        btn.setAttribute('aria-pressed', next ? 'true' : 'false');
-        btn.setAttribute('aria-label', viewerText(next ? 'viewer.present.exit' : 'viewer.present.enter'));
-        btn.title = viewerText(next ? 'viewer.present.exit.title' : 'viewer.present.enter.title');
-        label.textContent = viewerText(next ? 'viewer.present.exit.label' : 'viewer.present.present');
+        if (btn) {
+          btn.setAttribute('aria-pressed', next ? 'true' : 'false');
+          btn.setAttribute('aria-label', viewerText(next ? 'viewer.present.exit' : 'viewer.present.enter'));
+          btn.title = viewerText(next ? 'viewer.present.exit.title' : 'viewer.present.enter.title');
+        }
+        if (navBtn) {
+          navBtn.setAttribute('aria-pressed', next ? 'true' : 'false');
+          navBtn.setAttribute('aria-label', viewerText(next ? 'viewer.present.exit' : 'viewer.present.enter'));
+          navBtn.title = (next ? 'Exit presentation stage' : 'Enter presentation stage') + ' (F)';
+        }
+        if (label) {
+          label.textContent = viewerText(next ? 'viewer.present.exit.label' : 'viewer.present.present');
+        }
       }
 
       function setActive(next, options) {
         options = options || {};
         next = Boolean(next);
+        if (options.syncFullscreen !== false) {
+          if (next) {
+            requestFullscreenSafe();
+          } else {
+            exitFullscreenSafe();
+          }
+        }
         if (next === active()) {
           render(next);
           return next;
@@ -11529,7 +11647,22 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       function toggle() { return setActive(!active()); }
 
       render(active());
-      btn.addEventListener('click', toggle);
+      if (btn) btn.addEventListener('click', toggle);
+      if (navBtn) navBtn.addEventListener('click', toggle);
+      if (badgeExitBtn) badgeExitBtn.addEventListener('click', function () { setActive(false); });
+
+      function onFullscreenChange() {
+        var isFs = isBrowserFullscreen();
+        if (!isFs && active()) {
+          setActive(false, { syncFullscreen: false });
+        } else if (isFs && !active()) {
+          setActive(true, { syncFullscreen: false });
+        }
+      }
+      document.addEventListener('fullscreenchange', onFullscreenChange);
+      document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+      document.addEventListener('mozfullscreenchange', onFullscreenChange);
+      document.addEventListener('MSFullscreenChange', onFullscreenChange);
 
       return {
         enter: function () { return setActive(true); },

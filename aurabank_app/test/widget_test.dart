@@ -636,4 +636,56 @@ void main() {
 
     expect(backCalled, isTrue);
   });
+
+  testWidgets('Scan flow: manual amount input -> Send Money -> Passed/Failed Receipt with X mark', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ScanScreen(enableAnimation: false),
+      ),
+    );
+
+    // Upload from gallery to enter form
+    await tester.tap(find.text('Upload\nfrom Gallery'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Marco Vance'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Marco Vance'), findsOneWidget);
+    expect(find.text('Send Money'), findsOneWidget);
+
+    // Initial amount is empty (hint 0) -> tapping Send Money triggers validation SnackBar
+    await tester.tap(find.text('Send Money'));
+    await tester.pumpAndSettle();
+    expect(find.text('Please enter a valid amount'), findsOneWidget);
+
+    // Enter amount manually
+    await tester.enterText(find.byType(TextField).first, '25000');
+    await tester.pumpAndSettle();
+
+    // Tap Send Money -> directly routes to TransactionReceiptScreen
+    await tester.tap(find.text('Send Money'));
+    await tester.pumpAndSettle();
+
+    // Verify Receipt Screen rendered (Backend error -> renders Failed state with X mark)
+    expect(find.text('Receipt'), findsOneWidget);
+    expect(find.text('PHP 25,000.00'), findsWidgets);
+    expect(find.text('Back to home'), findsOneWidget);
+
+    // Verify Failed state shows X MARK, fail text, and Try Again button
+    expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+    expect(find.text('Your money has not been deducted'), findsOneWidget);
+    expect(find.text('Try Again'), findsOneWidget);
+
+    // Tap status circle to toggle to Passed state (interactive demo)
+    await tester.tap(find.byIcon(Icons.close_rounded));
+    await tester.pumpAndSettle();
+
+    // Verify Passed state shows green check mark
+    expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+  });
 }

@@ -31,7 +31,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   late final AnimationController _animController;
   Timer? _autoScanTimer;
 
-  final TextEditingController _amountController = TextEditingController(text: '50,000.00');
+  final TextEditingController _amountController = TextEditingController();
   final TextEditingController _remarksController = TextEditingController();
   String _selectedPurpose = 'Fund Transfer';
 
@@ -486,6 +486,13 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                           decoration: const InputDecoration(
                             border: InputBorder.none,
                             isDense: true,
+                            hintText: '0',
+                            hintStyle: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFF94A3B8),
+                              letterSpacing: -0.3,
+                            ),
                             contentPadding: EdgeInsets.zero,
                           ),
                         ),
@@ -735,9 +742,10 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
 
   void _onProceedToSend() async {
     final cleaned = _amountController.text.replaceAll(',', '').trim();
-    final amount = double.tryParse(cleaned) ?? 50000.0;
+    final amount = double.tryParse(cleaned) ?? 0.0;
 
     if (amount <= 0) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Please enter a valid amount'),

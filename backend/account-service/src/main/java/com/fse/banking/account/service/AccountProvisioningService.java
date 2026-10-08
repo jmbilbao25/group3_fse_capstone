@@ -94,6 +94,7 @@ public class AccountProvisioningService {
         log.info("Updating account {} status to {}", accountId, status);
 
         AccountEntity account = accountRepository.findById(accountId)
+                .or(() -> accountRepository.findByAccountNumber(accountId))
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found: " + accountId));
 
         account.setStatus(status);

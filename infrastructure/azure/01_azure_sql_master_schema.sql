@@ -50,7 +50,7 @@ CREATE TABLE dbo.accounts (
     created_at     DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET() NOT NULL,
     updated_at     DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET() NOT NULL,
     CONSTRAINT fk_acc_user FOREIGN KEY (user_id) REFERENCES dbo.users(user_id),
-    CONSTRAINT chk_acc_type CHECK (account_type IN ('SAVINGS', 'CHECKING')),
+    CONSTRAINT chk_acc_type CHECK (account_type IN ('SAVINGS')),
     CONSTRAINT chk_acc_status CHECK (status IN ('ACTIVE', 'LOCKED', 'PENDING_APPROVAL')),
     CONSTRAINT chk_acc_credit_limit CHECK (credit_limit >= 0)
 );

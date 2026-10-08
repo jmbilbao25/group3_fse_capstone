@@ -12,21 +12,21 @@ const ADMIN_PERSONAS = [
     role: 'ROLE_ADMIN',
     email: 'alex.rivera@bank.com',
     name: 'Alex Rivera',
-    title: 'Fraud Ops Analyst (Simulation)',
+    title: 'Fraud Ops Analyst',
     id: 'usr-1007-sec-003',
   },
   {
     role: 'ROLE_ADMIN',
     email: 'carlos.mendoza@bank.com',
     name: 'Carlos Mendoza',
-    title: 'Branch Operations (Account Lock/Unlock)',
+    title: 'Branch Operations Officer',
     id: 'usr-1006-mgr-002',
   },
   {
     role: 'ROLE_ADMIN',
     email: 'diana.admin@bank.com',
     name: 'Diana Vance',
-    title: 'Compliance Lead (Reversals Approver)',
+    title: 'Compliance Lead (Checker)',
     id: 'usr-1004-adm-001',
   },
 ];
@@ -95,10 +95,10 @@ export default function Navbar() {
               </span>
               <span className="hidden min-w-0 leading-tight md:block">
                 <span className="block truncate text-xs font-semibold text-fg">
-                  {user?.name || 'Carlos Mendoza'}
+                  {user?.name || 'Alex Rivera'}
                 </span>
                 <span className="block text-[10px] text-fg-subtle">
-                  {user?.title?.split('(')[0] || 'Operations Lead'}
+                  {user?.title || 'Fraud Ops Analyst'}
                 </span>
               </span>
               <ChevronDown className="h-3.5 w-3.5 shrink-0 text-fg-subtle" aria-hidden="true" />

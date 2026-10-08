@@ -65,7 +65,7 @@ export const THRESHOLDS = {
   AMLA_CTR_MIN: 500000.0000,    // >= ₱500k: AMLA Covered Transaction Report + Dual Control
 };
 
-const STORAGE_KEY = 'fse_core_ledger_state_v4';
+const STORAGE_KEY = 'fse_core_ledger_state_v6';
 
 // Initial realistic core retail ledger state
 const initialMockState = {
@@ -156,13 +156,14 @@ const initialMockState = {
     {
       user_id: 'U0001',
       first_name: 'Diana',
-      middle_name: 'Marie',
+      middle_name: '',
       last_name: 'Vance',
       email: 'diana.admin@bank.com',
       phone_number: '09190001122',
       dob: '1985-03-12',
       government_id: 'GOV-1122-3344',
       role: 'ADMIN',
+      title: 'Compliance Lead (Checker)',
       password_hash: '$2a$12$e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1',
       pin_hash: null,
       max_concurrent_sessions: 3,
@@ -174,13 +175,33 @@ const initialMockState = {
     {
       user_id: 'U0002',
       first_name: 'Alex',
-      middle_name: 'Jordan',
+      middle_name: '',
       last_name: 'Rivera',
       email: 'alex.rivera@bank.com',
       phone_number: '09178889900',
       dob: '1988-04-18',
       government_id: 'GOV-7788-9900',
       role: 'ADMIN',
+      title: 'Fraud Ops Analyst',
+      password_hash: '$2a$12$e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1',
+      pin_hash: null,
+      max_concurrent_sessions: 3,
+      failed_login_attempts: 0,
+      status: 'ACTIVE',
+      created_at: '2023-09-01T08:30:00Z',
+      updated_at: '2023-09-01T08:30:00Z',
+    },
+    {
+      user_id: 'U0003',
+      first_name: 'Carlos',
+      middle_name: '',
+      last_name: 'Mendoza',
+      email: 'carlos.mendoza@bank.com',
+      phone_number: '09191234567',
+      dob: '1982-08-20',
+      government_id: 'GOV-5566-7788',
+      role: 'ADMIN',
+      title: 'Branch Operations Officer',
       password_hash: '$2a$12$e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1e8rQ9vXz7Y1',
       pin_hash: null,
       max_concurrent_sessions: 3,
@@ -260,19 +281,22 @@ const initialMockState = {
     credit_limit: 300000.0000,
     status: 'ACTIVE',
   },
-  // Oracle XE 21c Master ACCOUNTS table records
+  // Oracle XE 21c Master ACCOUNTS table records (Savings Only)
   registeredAccounts: [
-    { account_id: 'A2001', account_number: '1000-2000-3001', user_id: 'U1001', account_name: 'Juan Dela Cruz', account_type: 'SAVINGS', credit_limit: 0.0000, status: 'ACTIVE' },
-    { account_id: 'A2002', account_number: '1000-2000-3002', user_id: 'U1002', account_name: 'Maria Clara Santos', account_type: 'SAVINGS', credit_limit: 0.0000, status: 'ACTIVE' },
-    { account_id: 'A2003', account_number: '1000-2000-3003', user_id: 'U1001', account_name: 'Juan Dela Cruz (Checking Account)', account_type: 'CHECKING', credit_limit: 0.0000, status: 'ACTIVE' },
-    { account_id: 'A2004', account_number: '1000-2000-3004', user_id: 'U1003', account_name: 'Jose Rizal', account_type: 'SAVINGS', credit_limit: 0.0000, status: 'ACTIVE' },
-    { account_id: 'A2005', account_number: '1000-2000-3005', user_id: 'U1004', account_name: 'Andres Bonifacio', account_type: 'SAVINGS', credit_limit: 0.0000, status: 'ACTIVE' },
+    { account_id: '1000-2000-3001', account_number: '1000-2000-3001', user_id: 'usr-1001-cst-001', account_name: 'Juan Dela Cruz', account_type: 'SAVINGS', credit_limit: 0.0000, status: 'LOCKED' },
+    { account_id: '1000-2000-3002', account_number: '1000-2000-3002', user_id: 'usr-1002-cst-002', account_name: 'Maria Clara Santos', account_type: 'SAVINGS', credit_limit: 0.0000, status: 'ACTIVE' },
+    { account_id: '1000-2000-3004', account_number: '1000-2000-3004', user_id: 'usr-2003-cst-003', account_name: 'Jose Rizal', account_type: 'SAVINGS', credit_limit: 0.0000, status: 'ACTIVE' },
+    { account_id: '1000-2000-3005', account_number: '1000-2000-3005', user_id: 'usr-2004-cst-004', account_name: 'Andres Bonifacio', account_type: 'SAVINGS', credit_limit: 0.0000, status: 'ACTIVE' },
+    { account_id: '1000-2000-3006', account_number: '1000-2000-3006', user_id: 'usr-2005-cst-005', account_name: 'Gabriela Silang', account_type: 'SAVINGS', credit_limit: 0.0000, status: 'ACTIVE' },
+    { account_id: '1000-2000-3007', account_number: '1000-2000-3007', user_id: 'usr-2006-cst-006', account_name: 'Emilio Jacinto', account_type: 'SAVINGS', credit_limit: 0.0000, status: 'ACTIVE' },
+    { account_id: '1000-2000-3008', account_number: '1000-2000-3008', user_id: 'usr-2007-cst-007', account_name: 'Melchora Aquino', account_type: 'SAVINGS', credit_limit: 0.0000, status: 'ACTIVE' },
+    { account_id: '1000-2000-3009', account_number: '1000-2000-3009', user_id: 'usr-2008-cst-008', account_name: 'Apolinario Mabini', account_type: 'SAVINGS', credit_limit: 0.0000, status: 'ACTIVE' },
   ],
   transfers: [
     {
       id: 'TX-5003-AMLA',
       from_account_id: '1000-2000-3001',
-      to_account_id: '1000-2000-3003',
+      to_account_id: '1000-2000-3004',
       recipient_name: 'Apex Commercial Supplies Ltd.',
       amount: 600000.0000,
       currency: 'PHP',
@@ -438,17 +462,17 @@ const loadMockState = () => {
         if (!parsed.registeredAccounts || !Array.isArray(parsed.registeredAccounts) || parsed.registeredAccounts.length === 0) {
           parsed.registeredAccounts = JSON.parse(JSON.stringify(initialMockState.registeredAccounts));
         } else {
-          parsed.registeredAccounts.forEach((acc) => {
-            if (!acc.account_type) {
-              acc.account_type = acc.account_id === 'A2003' || acc.account_number === '1000-2000-3003' ? 'CREDIT' : 'SAVINGS';
-            }
-            if (acc.credit_limit === undefined) {
-              acc.credit_limit = acc.account_type === 'CREDIT' ? 300000.0000 : 0.0000;
-            }
-          });
+          // Strictly filter out Checking accounts as bank standardizes solely on Savings
+          parsed.registeredAccounts = parsed.registeredAccounts
+            .filter((acc) => acc.account_type !== 'CHECKING' && acc.account_number !== '1000-2000-3003' && acc.account_id !== 'A2003')
+            .map((acc) => ({
+              ...acc,
+              account_type: 'SAVINGS',
+              credit_limit: 0.0000
+            }));
         }
         // Filter out any bogus transfers that may have been created with non-existent accounts during testing
-        const validAccountNums = ['100020003001', '100020003002', '100020003003', 'A2001', 'A2002', 'A2003'];
+        const validAccountNums = ['100020003001', '100020003002', '100020003004', '100020003005', 'A2001', 'A2002', 'A2004', 'A2005'];
         parsed.transfers = parsed.transfers.filter((tx) => {
           const cleanTo = (tx.to_account_id || '').replace(/[\s-]/g, '').toUpperCase();
           return validAccountNums.includes(cleanTo);
@@ -552,12 +576,24 @@ function handleMockFallback(config) {
           }
         }
 
-        user_id = userRecord.user_id;
-        user_name = `${userRecord.first_name} ${userRecord.middle_name ? userRecord.middle_name + ' ' : ''}${userRecord.last_name}`;
-        if (userRecord.role === 'ADMIN') {
+        if (email.includes('alex')) {
+          user_id = 'usr-1007-sec-003';
+          user_name = 'Alex Rivera';
+          user_title = 'Fraud Ops Analyst';
           role = 'ROLE_ADMIN';
-          user_title = 'System Administrator & Auditor';
+        } else if (email.includes('carlos')) {
+          user_id = 'usr-1006-mgr-002';
+          user_name = 'Carlos Mendoza';
+          user_title = 'Branch Operations Officer';
+          role = 'ROLE_ADMIN';
+        } else if (email.includes('diana') || email.includes('admin') || userRecord.role === 'ADMIN') {
+          user_id = 'usr-1004-adm-001';
+          user_name = 'Diana Vance';
+          user_title = 'Compliance Lead (Checker)';
+          role = 'ROLE_ADMIN';
         } else {
+          user_id = userRecord.user_id;
+          user_name = `${userRecord.first_name} ${userRecord.middle_name ? userRecord.middle_name + ' ' : ''}${userRecord.last_name}`.trim();
           role = 'ROLE_CUSTOMER';
           user_title = 'Retail Account Holder';
         }
@@ -614,10 +650,6 @@ function handleMockFallback(config) {
             currentBalance = mockState.account?.current_balance ?? 15000000.00;
             availableBalance = mockState.account?.available_balance ?? 15000000.00;
             heldBalance = mockState.account?.held_balance ?? 0.00;
-          } else if (acc.account_number === '1000-2000-3003' || acc.account_id === 'A2003' || acc.account_number === '100020003003') {
-            currentBalance = mockState.creditAccount?.current_balance ?? 2000.00;
-            availableBalance = mockState.creditAccount?.available_balance ?? 298000.00;
-            heldBalance = mockState.creditAccount?.held_balance ?? 0.00;
           }
 
           return {
@@ -740,12 +772,35 @@ function handleMockFallback(config) {
         });
       }
 
-      // 3c. Update / Override Customer Geo-Location (Admin Geo Simulator)
-      if ((url.includes('/users') || url.includes('/customers')) && url.endsWith('/location') && (method === 'patch' || method === 'put' || method === 'post')) {
+      // 3c. Get or Update Customer Geo-Location (Admin Geo Simulator)
+      if ((url.includes('/users') || url.includes('/customers')) && url.endsWith('/location')) {
         const parts = url.split('/');
         const userSegmentIdx = parts.indexOf('users') > -1 ? parts.indexOf('users') : parts.indexOf('customers');
-        const userId = parts[userSegmentIdx + 1];
-        const user = (mockState.users || []).find((u) => u.user_id === userId || u.id === userId) || mockState.users[0];
+        const rawUserId = parts[userSegmentIdx + 1];
+
+        // Find user by raw id, or normalized U1001 / usr-1001 matching
+        const user = (mockState.users || []).find((u) => {
+          if (u.user_id === rawUserId || u.id === rawUserId) return true;
+          const uNum = u.user_id?.replace(/\D/g, '');
+          const rawNum = rawUserId?.replace(/\D/g, '');
+          return uNum && rawNum && (uNum.includes(rawNum.slice(-4)) || rawNum.includes(uNum.slice(-4)));
+        }) || mockState.users[0];
+
+        if (method === 'get') {
+          return resolve({
+            status: 200,
+            data: {
+              success: true,
+              user_id: user?.user_id,
+              last_known_location_name: user?.last_known_location_name || 'Manila, Philippines',
+              last_known_latitude: user?.last_known_latitude ?? 14.5995,
+              last_known_longitude: user?.last_known_longitude ?? 120.9842,
+              last_known_ip: user?.last_known_ip || '112.198.45.10',
+              force_impossible_travel_flag: user?.force_impossible_travel_flag || false,
+            }
+          });
+        }
+
         if (user) {
           user.last_known_latitude = payload.latitude ?? payload.lat ?? user.last_known_latitude;
           user.last_known_longitude = payload.longitude ?? payload.lon ?? user.last_known_longitude;

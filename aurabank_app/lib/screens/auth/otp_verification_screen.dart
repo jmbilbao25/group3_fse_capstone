@@ -10,6 +10,7 @@ import 'pending_approval_screen.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String email;
+  final String? rawEmail;
   final String? userId;
   final UserPersona? persona;
   final VoidCallback? onVerified;
@@ -17,6 +18,7 @@ class OtpVerificationScreen extends StatefulWidget {
   const OtpVerificationScreen({
     super.key,
     this.email = 'm••••@gmail.com',
+    this.rawEmail,
     this.userId,
     this.persona,
     this.onVerified,
@@ -46,7 +48,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   Future<void> _fetchMailHogEmail() async {
     final email = await OtpService().fetchLatestEmail(
-      recipientEmail: widget.email,
+      recipientEmail: widget.rawEmail ?? widget.email,
     );
     if (!mounted || email == null || email.otpCode == null) return;
     ScaffoldMessenger.of(context).showSnackBar(

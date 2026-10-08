@@ -41,9 +41,27 @@ class OtpService {
   /// Fetches the latest email caught by MailHog for the given recipient email.
   Future<MailHogEmail?> fetchLatestEmail({String? recipientEmail}) async {
     final endpoints = [
-      'http://$defaultMailHogHost:8080/api/v2/messages',
       'http://$defaultMailHogHost:8025/api/v2/messages',
+      'http://$defaultMailHogHost:8080/api/v2/messages',
     ];
+
+    bool isMatch(String address, String query) {
+      if (query.trim().isEmpty) return true;
+      final addr = address.trim().toLowerCase();
+      final q = query.trim().toLowerCase();
+      if (addr == q) return true;
+      if (q.contains('*')) {
+        final qParts = q.split('@');
+        final aParts = addr.split('@');
+        if (qParts.length == 2 && aParts.length == 2) {
+          if (qParts[1] != aParts[1]) return false;
+          final prefix = qParts[0].split('*').first;
+          final suffix = qParts[0].split('*').last;
+          return aParts[0].startsWith(prefix) && aParts[0].endsWith(suffix);
+        }
+      }
+      return false;
+    }
 
     for (final endpoint in endpoints) {
       try {
@@ -61,7 +79,7 @@ class OtpService {
                 final mailbox = to['Mailbox'] as String? ?? '';
                 final domain = to['Domain'] as String? ?? '';
                 final address = '$mailbox@$domain'.toLowerCase();
-                return address == recipientEmail.trim().toLowerCase();
+                return isMatch(address, recipientEmail);
               });
 
           if (matchesRecipient) {

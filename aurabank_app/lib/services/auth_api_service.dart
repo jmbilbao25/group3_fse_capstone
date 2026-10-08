@@ -11,9 +11,12 @@ class BackendConfig {
   BackendConfig._internal();
 
   /// Laptop's local Wi-Fi IP address for cross-device connectivity through the laptop
-  static const String defaultLanIp = '192.168.254.159';
+  static const String defaultLanIp = '192.168.18.110';
 
   static String _resolveInitialHost() {
+    if (kIsWeb) {
+      return 'localhost';
+    }
     return defaultLanIp;
   }
 

@@ -94,6 +94,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         MaterialPageRoute(
           builder: (ctx) => OtpVerificationScreen(
             email: authResult.maskedEmail ?? email,
+            rawEmail: email,
             userId: authResult.userId ?? 'USR-0001',
             persona: authResult.persona,
             onVerified: () {

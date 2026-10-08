@@ -724,6 +724,25 @@ void main() {
     expect(find.text('Current Account'), findsOneWidget);
     expect(find.text('Available Balance: PHP 125,000.00'), findsOneWidget);
 
+    // Purpose inline dropdown test: initial state shows 'Select transfer purpose'
+    expect(find.text('Select transfer purpose'), findsOneWidget);
+    await tester.tap(find.text('Select transfer purpose'));
+    await tester.pumpAndSettle();
+
+    // Verify all 4 required options are rendered inline
+    expect(find.text('Remittance'), findsOneWidget);
+    expect(find.text('Funds Transfer'), findsOneWidget);
+    expect(find.text('Bills Payment'), findsOneWidget);
+    expect(find.text('Savings'), findsOneWidget);
+
+    // Select 'Funds Transfer' inline
+    await tester.tap(find.text('Funds Transfer'));
+    await tester.pumpAndSettle();
+
+    // Verify selected purpose is displayed and inline menu is closed
+    expect(find.text('Funds Transfer'), findsOneWidget);
+    expect(find.text('Remittance'), findsNothing);
+
     // Initial amount is empty (hint 0) -> tapping Send Money triggers validation SnackBar
     await tester.tap(find.text('Send Money'));
     await tester.pumpAndSettle();

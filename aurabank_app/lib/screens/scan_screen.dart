@@ -68,6 +68,14 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
 
   int? _selectedSourceIndex;
   bool _isSourceDropdownOpen = false;
+  bool _isPurposeDropdownOpen = false;
+
+  static const List<String> _purposeOptions = [
+    'Remittance',
+    'Funds Transfer',
+    'Bills Payment',
+    'Savings',
+  ];
 
   static const Color brandViolet = AuraColors.primary;
   static const Color textDark = Color(0xFF0F172A);
@@ -746,10 +754,14 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                 ),
                 const SizedBox(height: 8),
 
-                // Purpose Dropdown Pill
+                // Purpose Inline Dropdown Pill
                 InkWell(
                   borderRadius: BorderRadius.circular(14),
-                  onTap: _showPurposeSelector,
+                  onTap: () {
+                    setState(() {
+                      _isPurposeDropdownOpen = !_isPurposeDropdownOpen;
+                    });
+                  },
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
                     decoration: BoxDecoration(
@@ -768,8 +780,10 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                             ),
                           ),
                         ),
-                        const Icon(
-                          Icons.keyboard_arrow_down_rounded,
+                        Icon(
+                          _isPurposeDropdownOpen
+                              ? Icons.keyboard_arrow_up_rounded
+                              : Icons.keyboard_arrow_down_rounded,
                           color: brandViolet,
                           size: 24,
                         ),
@@ -777,6 +791,63 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                     ),
                   ),
                 ),
+
+                // Inline Dropdown Options Menu
+                if (_isPurposeDropdownOpen) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFCBD5E1), width: 1.0),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Column(
+                        children: _purposeOptions.map((purpose) {
+                          final isSelected = _selectedPurpose == purpose;
+                          return InkWell(
+                            onTap: () {
+                              setState(() {
+                                _selectedPurpose = purpose;
+                                _isPurposeDropdownOpen = false;
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: isSelected ? brandViolet.withValues(alpha: 0.08) : Colors.transparent,
+                                border: purpose != _purposeOptions.last
+                                    ? const Border(bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1.0))
+                                    : null,
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                                    color: isSelected ? brandViolet : const Color(0xFF94A3B8),
+                                    size: 19,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      purpose,
+                                      style: TextStyle(
+                                        fontSize: 13.5,
+                                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                        color: isSelected ? brandViolet : textDark,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ),
+                ],
 
                 const SizedBox(height: 16),
 
@@ -865,80 +936,6 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       (Match m) => '${m[1]},',
     );
     return '$intPart.${parts[1]}';
-  }
-
-  void _showPurposeSelector() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) {
-        return Align(
-          alignment: Alignment.bottomCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: Container(
-              margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-              padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x380F172A),
-                    blurRadius: 36,
-                    offset: Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Select Transfer Purpose',
-                    style: TextStyle(
-                      fontSize: 16.5,
-                      fontWeight: FontWeight.w800,
-                      color: textDark,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  ...[
-                    'Fund Transfer',
-                    'Bill Payment',
-                    'Personal Transfer',
-                    'Payment for Goods & Services',
-                  ].map((purpose) {
-                    final isSelected = _selectedPurpose == purpose;
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        purpose,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                          color: textDark,
-                        ),
-                      ),
-                      leading: Icon(
-                        Icons.check_circle_rounded,
-                        color: isSelected ? brandViolet : const Color(0xFFCBD5E1),
-                        size: 20,
-                      ),
-                      onTap: () {
-                        setState(() => _selectedPurpose = purpose);
-                        Navigator.of(context).pop();
-                      },
-                    );
-                  }),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
   }
 
   void _onProceedToSend() {

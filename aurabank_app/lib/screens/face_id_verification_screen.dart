@@ -338,16 +338,113 @@ class _FaceIdVerificationScreenState extends State<FaceIdVerificationScreen>
                 ),
               ),
 
-              // 3D Avatar Silhouette
-              if (!_isSuccess) _buildAvatarSilhouette(),
+              // 3D Biometric Facial Mesh Painter (No static image)
+              Positioned.fill(
+                child: AnimatedBuilder(
+                  animation: _laserController,
+                  builder: (context, child) {
+                    return CustomPaint(
+                      painter: _BiometricFaceMeshPainter(
+                        scanProgress: _laserController.value,
+                        isVerifying: _isVerifying,
+                        isSuccess: _isSuccess,
+                        primaryColor: brandViolet,
+                        accentColor: neonViolet,
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              // Top HUD Telemetry Pill
+              Positioned(
+                top: 14,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F0826).withValues(alpha: 0.85),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: _isSuccess
+                          ? greenSuccess.withValues(alpha: 0.6)
+                          : (_isVerifying
+                              ? neonLight.withValues(alpha: 0.7)
+                              : const Color(0xFF3B2276)),
+                      width: 1.0,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: _isSuccess
+                              ? greenSuccess
+                              : (_isVerifying ? const Color(0xFF00E676) : neonLight),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _isSuccess
+                            ? 'MATCH CONFIRMED'
+                            : (_isVerifying ? 'BIOMETRIC SCANNING' : 'FACIAL GEOMETRY LOCK'),
+                        style: TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w800,
+                          color: _isSuccess
+                              ? greenSuccess
+                              : (_isVerifying ? Colors.white : const Color(0xFF94A3B8)),
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Bottom HUD Coordinates
+              Positioned(
+                bottom: 14,
+                child: Text(
+                  _isSuccess
+                      ? 'ID: AUR-BIO-PASS'
+                      : (_isVerifying ? 'NODES: 38/38 LOCKED' : 'TARGET: CENTER FACE'),
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w700,
+                    color: _isSuccess
+                        ? greenSuccess.withValues(alpha: 0.9)
+                        : const Color(0xFF94A3B8).withValues(alpha: 0.8),
+                    letterSpacing: 0.6,
+                  ),
+                ),
+              ),
 
               // Success Overlay Checkmark
               if (_isSuccess)
-                const Center(
-                  child: Icon(
-                    Icons.check_circle_rounded,
-                    color: greenSuccess,
-                    size: 84,
+                Container(
+                  width: 76,
+                  height: 76,
+                  decoration: BoxDecoration(
+                    color: greenSuccess.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: greenSuccess, width: 2.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: greenSuccess.withValues(alpha: 0.5),
+                        blurRadius: 24,
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.check_rounded,
+                      color: greenSuccess,
+                      size: 48,
+                    ),
                   ),
                 ),
 
@@ -358,7 +455,7 @@ class _FaceIdVerificationScreenState extends State<FaceIdVerificationScreen>
                   builder: (context, child) {
                     final factor = _laserController.value;
                     return Positioned(
-                      top: 40 + (170 * factor),
+                      top: 36 + (170 * factor),
                       left: 18,
                       right: 18,
                       child: Container(
@@ -391,50 +488,6 @@ class _FaceIdVerificationScreenState extends State<FaceIdVerificationScreen>
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildAvatarSilhouette() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Head
-        Container(
-          width: 54,
-          height: 62,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(27),
-            gradient: const LinearGradient(
-              colors: [Color(0xFF9333EA), Color(0xFF581C87)],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF7E22CE).withValues(alpha: 0.35),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 6),
-        // Shoulders / Bust
-        ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-          child: Container(
-            width: 110,
-            height: 48,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF7E22CE), Color(0xFF3B0764)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 
@@ -688,4 +741,201 @@ class _NeonCornerBracketsPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _BiometricFaceMeshPainter extends CustomPainter {
+  final double scanProgress;
+  final bool isVerifying;
+  final bool isSuccess;
+  final Color primaryColor;
+  final Color accentColor;
+
+  _BiometricFaceMeshPainter({
+    required this.scanProgress,
+    required this.isVerifying,
+    required this.isSuccess,
+    required this.primaryColor,
+    required this.accentColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+
+    final baseColor = isSuccess
+        ? const Color(0xFF10B981)
+        : (isVerifying ? const Color(0xFFC084FC) : const Color(0xFFA855F7));
+
+    // 1. Concentric Depth Radar Waves (pulsing from center)
+    final radarPaint = Paint()
+      ..color = baseColor.withValues(alpha: isVerifying ? 0.22 : 0.08)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    canvas.drawCircle(Offset(cx, cy), 38 + (scanProgress * 32), radarPaint);
+    canvas.drawCircle(Offset(cx, cy), 74, radarPaint..color = baseColor.withValues(alpha: 0.06));
+
+    // 2. Subtle Background Depth Grid Lines
+    final gridPaint = Paint()
+      ..color = baseColor.withValues(alpha: 0.07)
+      ..strokeWidth = 0.8;
+    for (double x = cx - 70; x <= cx + 70; x += 18) {
+      canvas.drawLine(Offset(x, cy - 80), Offset(x, cy + 80), gridPaint);
+    }
+    for (double y = cy - 70; y <= cy + 70; y += 18) {
+      canvas.drawLine(Offset(cx - 70, y), Offset(cx + 70, y), gridPaint);
+    }
+
+    // 3. Facial Landmark Nodes (Mathematical Biometric Coordinates relative to center)
+    final nodes = <Offset>[
+      // Forehead arc
+      Offset(cx - 44, cy - 58),
+      Offset(cx - 22, cy - 68),
+      Offset(cx, cy - 72),
+      Offset(cx + 22, cy - 68),
+      Offset(cx + 44, cy - 58),
+      // Temples & Cheeks
+      Offset(cx - 52, cy - 30),
+      Offset(cx - 48, cy + 4),
+      Offset(cx - 36, cy + 38),
+      Offset(cx + 52, cy - 30),
+      Offset(cx + 48, cy + 4),
+      Offset(cx + 38, cy + 38),
+      // Chin
+      Offset(cx - 18, cy + 62),
+      Offset(cx, cy + 68),
+      Offset(cx + 18, cy + 62),
+      // Eyebrows
+      Offset(cx - 32, cy - 32),
+      Offset(cx - 18, cy - 35),
+      Offset(cx - 6, cy - 32),
+      Offset(cx + 6, cy - 32),
+      Offset(cx + 18, cy - 35),
+      Offset(cx + 32, cy - 32),
+      // Left Eye Box
+      Offset(cx - 24, cy - 18),
+      Offset(cx - 12, cy - 18),
+      Offset(cx - 18, cy - 22),
+      Offset(cx - 18, cy - 14),
+      // Right Eye Box
+      Offset(cx + 12, cy - 18),
+      Offset(cx + 24, cy - 18),
+      Offset(cx + 18, cy - 22),
+      Offset(cx + 18, cy - 14),
+      // Nose Bridge & Tip
+      Offset(cx, cy - 22),
+      Offset(cx, cy - 6),
+      Offset(cx, cy + 8),
+      Offset(cx - 10, cy + 12),
+      Offset(cx + 10, cy + 12),
+      // Lips / Mouth
+      Offset(cx - 20, cy + 30),
+      Offset(cx, cy + 26),
+      Offset(cx + 20, cy + 30),
+      Offset(cx, cy + 36),
+      Offset(cx - 12, cy + 36),
+      Offset(cx + 12, cy + 36),
+    ];
+
+    // 4. Connect Landmark Nodes into 3D Polygonal Wireframe Mesh
+    final meshLines = <List<int>>[
+      // Forehead contour
+      [0, 1], [1, 2], [2, 3], [3, 4],
+      // Jawline contour
+      [0, 5], [5, 6], [6, 7], [7, 11], [11, 12], [12, 13], [13, 10], [10, 9], [9, 8], [8, 4],
+      // Forehead to Eyebrows
+      [1, 15], [2, 28], [3, 18], [0, 14], [4, 19],
+      // Eyebrows to Eyes
+      [14, 20], [15, 22], [16, 21], [17, 24], [18, 26], [19, 25],
+      // Eye boxes
+      [20, 22], [22, 21], [21, 23], [23, 20],
+      [24, 26], [26, 25], [25, 27], [27, 24],
+      // Nose bridge and cheeks
+      [28, 29], [29, 30], [30, 31], [30, 32], [21, 29], [24, 29],
+      [20, 5], [25, 8], [31, 6], [32, 9],
+      // Nose to mouth
+      [31, 33], [30, 34], [32, 35],
+      // Mouth contour
+      [33, 34], [34, 35], [35, 38], [38, 36], [36, 37], [37, 33],
+      // Mouth to chin
+      [37, 11], [36, 12], [38, 13],
+    ];
+
+    final wirePaint = Paint()
+      ..color = baseColor.withValues(alpha: isVerifying ? 0.42 : 0.22)
+      ..strokeWidth = 1.1
+      ..style = PaintingStyle.stroke;
+
+    for (final pair in meshLines) {
+      if (pair[0] < nodes.length && pair[1] < nodes.length) {
+        canvas.drawLine(nodes[pair[0]], nodes[pair[1]], wirePaint);
+      }
+    }
+
+    // 5. Draw Glowing Landmark Nodes
+    final nodePaint = Paint()
+      ..color = baseColor.withValues(alpha: 0.9)
+      ..style = PaintingStyle.fill;
+
+    final activeNodePaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+
+    // Laser current Y position to illuminate nearby nodes
+    final laserY = (cy - 85) + (170 * scanProgress);
+
+    for (int i = 0; i < nodes.length; i++) {
+      final node = nodes[i];
+      final distToLaser = (node.dy - laserY).abs();
+      final isNearLaser = distToLaser < 22;
+
+      if (isNearLaser && isVerifying) {
+        // Highlighting active nodes scanned by laser
+        canvas.drawCircle(node, 3.6, activeNodePaint);
+        canvas.drawCircle(
+          node,
+          7.0,
+          Paint()
+            ..color = baseColor.withValues(alpha: 0.6)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.2,
+        );
+      } else {
+        canvas.drawCircle(node, 2.0, nodePaint);
+      }
+    }
+
+    // 6. Eye Crosshair Reticles [ + ]
+    final reticlePaint = Paint()
+      ..color = (isVerifying ? Colors.white : baseColor).withValues(alpha: 0.85)
+      ..strokeWidth = 1.3;
+
+    void drawCrosshair(double x, double y) {
+      canvas.drawLine(Offset(x - 5, y), Offset(x + 5, y), reticlePaint);
+      canvas.drawLine(Offset(x, y - 5), Offset(x, y + 5), reticlePaint);
+      canvas.drawCircle(
+        Offset(x, y),
+        8,
+        Paint()
+          ..color = baseColor.withValues(alpha: 0.5)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.0,
+      );
+    }
+
+    drawCrosshair(cx - 18, cy - 18); // Left pupil reticle
+    drawCrosshair(cx + 18, cy - 18); // Right pupil reticle
+
+    // 7. Center Nose Targeting Cross
+    canvas.drawLine(Offset(cx - 4, cy), Offset(cx + 4, cy), reticlePaint);
+    canvas.drawLine(Offset(cx, cy - 4), Offset(cx, cy + 4), reticlePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _BiometricFaceMeshPainter oldDelegate) {
+    return oldDelegate.scanProgress != scanProgress ||
+        oldDelegate.isVerifying != isVerifying ||
+        oldDelegate.isSuccess != isSuccess;
+  }
 }

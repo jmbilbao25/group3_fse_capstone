@@ -1,0 +1,282 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "C2 Container: Retail Banking Platform with Dual-Endpoint T24 CBS",
+    "output": "c2_container.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "client_web",
+      "type": "frontend",
+      "label": "Retail Web SPA",
+      "sublabel": "React 18 + Vite :3000",
+      "brand": "react",
+      "pos": [40, 160],
+      "size": [150, 60],
+      "tag": "Customer Portal"
+    },
+    {
+      "id": "client_mobile",
+      "type": "frontend",
+      "label": "Mobile Banking App",
+      "sublabel": "Flutter / iOS & Android",
+      "pos": [40, 290],
+      "size": [150, 60],
+      "tag": "Biometrics & Push"
+    },
+    {
+      "id": "gateway",
+      "type": "security",
+      "label": "API Gateway",
+      "sublabel": "Spring Cloud :8080",
+      "brand": "spring",
+      "pos": [260, 210],
+      "size": [160, 64],
+      "tag": "JWT & Rate Limiter"
+    },
+    {
+      "id": "redis_cache",
+      "type": "database",
+      "label": "Redis Cache",
+      "sublabel": "Redis 7 Alpine :6379",
+      "brand": "redis",
+      "pos": [260, 370],
+      "size": [160, 60],
+      "tag": "Token Blacklist & OTP"
+    },
+    {
+      "id": "acc_svc",
+      "type": "backend",
+      "label": "Account & Auth Svc",
+      "sublabel": "Spring Boot :8081",
+      "brand": "spring",
+      "pos": [520, 150],
+      "size": [170, 64],
+      "tag": "KYC & User Profiles"
+    },
+    {
+      "id": "tx_orchestrator",
+      "type": "backend",
+      "label": "Transfer Orchestrator",
+      "sublabel": "Spring Boot :8082",
+      "brand": "spring",
+      "pos": [520, 280],
+      "size": [170, 68],
+      "tag": "Saga & T24 Dispatcher"
+    },
+    {
+      "id": "kafka_bus",
+      "type": "messagebus",
+      "label": "Kafka Event Bus",
+      "sublabel": "KRaft Broker :9092",
+      "brand": "apache-kafka",
+      "pos": [780, 200],
+      "size": [170, 64],
+      "tag": "Command & Event Topics"
+    },
+    {
+      "id": "notif_svc",
+      "type": "backend",
+      "label": "Notification Svc",
+      "sublabel": "Spring Boot :8083",
+      "brand": "spring",
+      "pos": [780, 360],
+      "size": [170, 64],
+      "tag": "Email 2FA & Alerts"
+    },
+    {
+      "id": "cbs_master_db",
+      "type": "database",
+      "label": "CBS Master Ledger DB",
+      "sublabel": "Azure SQL :1433",
+      "pos": [1050, 140],
+      "size": [180, 60],
+      "tag": "Double-Entry Master"
+    },
+    {
+      "id": "t24_cbs",
+      "type": "backend",
+      "label": "Temenos T24 CBS",
+      "sublabel": "Core Engine :9100",
+      "pos": [1050, 260],
+      "size": [180, 68],
+      "tag": "EP1: Transfer | EP2: Reverse"
+    },
+    {
+      "id": "audit_db",
+      "type": "database",
+      "label": "Immutable Audit Vault",
+      "sublabel": "PostgreSQL 16 :5432",
+      "brand": "postgresql",
+      "pos": [1050, 390],
+      "size": [180, 64],
+      "tag": "Append-Only Trail"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Client Presentation Tier",
+      "wraps": [
+        "client_web",
+        "client_mobile"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Core Banking Microservice & Persistence Tier (banking-net)",
+      "wraps": [
+        "gateway",
+        "redis_cache",
+        "acc_svc",
+        "tx_orchestrator",
+        "kafka_bus",
+        "notif_svc",
+        "t24_cbs",
+        "cbs_master_db",
+        "audit_db"
+      ]
+    },
+    {
+      "kind": "security-group",
+      "label": "Temenos Core Banking Subsystem",
+      "wraps": [
+        "t24_cbs",
+        "cbs_master_db"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "web-to-gateway",
+      "from": "client_web",
+      "to": "gateway",
+      "label": "HTTPS :443",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "mobile-to-gateway",
+      "from": "client_mobile",
+      "to": "gateway",
+      "label": "HTTPS :443",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "gateway-to-redis",
+      "from": "gateway",
+      "to": "redis_cache",
+      "label": "rate limits",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "gateway-to-acc",
+      "from": "gateway",
+      "to": "acc_svc",
+      "label": "route /auth/*",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "gateway-to-tx",
+      "from": "gateway",
+      "to": "tx_orchestrator",
+      "label": "route /tx/*",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "acc-to-redis",
+      "from": "acc_svc",
+      "to": "redis_cache",
+      "label": "token family",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "right"
+    },
+    {
+      "id": "tx-to-redis",
+      "from": "tx_orchestrator",
+      "to": "redis_cache",
+      "label": "idempotency",
+      "fromSide": "bottom",
+      "toSide": "right"
+    },
+    {
+      "id": "tx-to-t24-transfer",
+      "from": "tx_orchestrator",
+      "to": "t24_cbs",
+      "label": "EP1: /funds-transfer",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "tx-to-t24-reversal",
+      "from": "tx_orchestrator",
+      "to": "t24_cbs",
+      "label": "EP2: /reversal",
+      "variant": "security",
+      "fromSide": "top",
+      "toSide": "top"
+    },
+    {
+      "id": "t24-to-cbs-db",
+      "from": "t24_cbs",
+      "to": "cbs_master_db",
+      "label": "ledger row lock",
+      "variant": "emphasis",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "tx-to-kafka",
+      "from": "tx_orchestrator",
+      "to": "kafka_bus",
+      "label": "outbox events",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "kafka-to-audit",
+      "from": "kafka_bus",
+      "to": "audit_db",
+      "label": "audit stream",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "kafka-to-notif",
+      "from": "kafka_bus",
+      "to": "notif_svc",
+      "label": "customer.otp",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Dual-Storage Ledger & Audit Vault Architecture",
+      "items": [
+        "Master Operational DB (Azure SQL :1433): Dedicated to Temenos T24 CBS for double-entry financial journals and row-level pessimistic balance locks (UPDLOCK, ROWLOCK).",
+        "Immutable Regulatory Vault (PostgreSQL 16 :5432): Asynchronously streams events from Kafka, enforcing an append-only audit trail with DB triggers blocking UPDATE and DELETE."
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Temenos T24 CBS Dual-Endpoint Architecture",
+      "items": [
+        "Endpoint 1 (/api/v1/t24/funds-transfer): Ingests validated transfer commands and executes atomic debit/credit balance mutations in Azure SQL Master DB (:1433).",
+        "Endpoint 2 (/api/v1/t24/reversal): Executes compensating financial reversals if downstream notifications, network timeouts, or OTP verifications abort the transaction saga."
+      ]
+    }
+  ]
+}

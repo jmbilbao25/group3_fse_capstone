@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: risk-service
+  namespace: banking
+  labels:
+    app: risk-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: risk-service
+  template:
+    metadata:
+      labels:
+        app: risk-service
+    spec:
+      containers:
+        - name: risk-service
+          image: __ACR_NAME__.azurecr.io/risk-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8084
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "192Mi"
+            limits:
+              cpu: "500m"
+              memory: "384Mi"
+          readinessProbe:
+            httpGet:
+              path: /api/v1/risk/health
+              port: 8084
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/v1/risk/health
+              port: 8084
+            initialDelaySeconds: 25
+            periodSeconds: 15
+          env:
+            - name: PORT
+              value: "8084"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: risk-service
+  namespace: banking
+  labels:
+    app: risk-service
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8084
+      targetPort: 8084
+  selector:
+    app: risk-service

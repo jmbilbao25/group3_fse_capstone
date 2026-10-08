@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "C1 System Context: Retail Banking Platform & Dual-Endpoint T24 CBS",
+    "output": "c1_system_context.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "customer",
+      "type": "external",
+      "label": "Retail Banking Customer",
+      "sublabel": "Web Browser & Mobile App",
+      "pos": [60, 140],
+      "size": [180, 70],
+      "tag": "Transfers & 2FA OTP"
+    },
+    {
+      "id": "admin",
+      "type": "external",
+      "label": "Bank Ops & Compliance",
+      "sublabel": "Back-Office Portal",
+      "pos": [60, 320],
+      "size": [180, 70],
+      "tag": "Auditing & KYC"
+    },
+    {
+      "id": "banking_platform",
+      "type": "backend",
+      "label": "Retail Banking Platform",
+      "sublabel": "API Gateway & Microservices",
+      "brand": "spring",
+      "pos": [360, 210],
+      "size": [220, 96],
+      "tag": "Saga & Orchestration"
+    },
+    {
+      "id": "t24_cbs",
+      "type": "external",
+      "label": "Temenos T24 CBS",
+      "sublabel": "Core Banking System :9100",
+      "pos": [700, 130],
+      "size": [230, 84],
+      "tag": "1: Transfer | 2: Reversal"
+    },
+    {
+      "id": "notif_gateway",
+      "type": "cloud",
+      "label": "Notification Gateway",
+      "sublabel": "SMTP / MailHog :1025",
+      "pos": [700, 310],
+      "size": [230, 80],
+      "tag": "Email Receipts & OTP"
+    },
+    {
+      "id": "telemetry_cloud",
+      "type": "cloud",
+      "label": "Datadog Monitoring",
+      "sublabel": "APM & Trace Ingest :8126",
+      "brand": "datadog",
+      "pos": [360, 420],
+      "size": [220, 68],
+      "tag": "W3C Distributed Tracing"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Enterprise Perimeter & External Boundary",
+      "wraps": [
+        "banking_platform",
+        "telemetry_cloud"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "cust-to-platform",
+      "from": "customer",
+      "to": "banking_platform",
+      "label": "HTTPS :443 / REST",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "admin-to-platform",
+      "from": "admin",
+      "to": "banking_platform",
+      "label": "mTLS Audit & KYC",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "platform-to-t24-transfer",
+      "from": "banking_platform",
+      "to": "t24_cbs",
+      "label": "EP1: Funds Transfer",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "platform-to-t24-reversal",
+      "from": "banking_platform",
+      "to": "t24_cbs",
+      "label": "EP2: Reversal",
+      "variant": "security",
+      "fromSide": "top",
+      "toSide": "top"
+    },
+    {
+      "id": "platform-to-notif",
+      "from": "banking_platform",
+      "to": "notif_gateway",
+      "label": "dispatch OTP & receipts",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "platform-to-telemetry",
+      "from": "banking_platform",
+      "to": "telemetry_cloud",
+      "label": "W3C APM metrics",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "C1 System Context Overview",
+      "items": [
+        "Customer & Admin Channels: Web SPA and Flutter Mobile interact with the Retail Banking Platform over secure HTTPS/TLS with JWT authentication.",
+        "Temenos T24 CBS Dual Ingress: Platform communicates with Temenos T24 via 2 explicit endpoints (Endpoint 1: Real-time Funds Transfer settlement; Endpoint 2: Compensating Reversal).",
+        "Separation of Concerns: The Retail Banking Platform manages customer authentication, transfer orchestration, and saga compensation, offloading master double-entry bookkeeping to T24."
+      ]
+    }
+  ]
+}

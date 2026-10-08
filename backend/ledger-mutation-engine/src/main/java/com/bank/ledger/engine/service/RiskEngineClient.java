@@ -35,11 +35,15 @@ public class RiskEngineClient {
     @Data
     @Builder
     public static class RiskEvaluationResult {
-        private String decision;       // ALLOW, REQUIRE_2FA, BLOCK
+        private String decision;       // ALLOW, ADVISORY_WARNING, REQUIRE_2FA, BLOCK
         private int fraudScore;        // 0 to 100
         private boolean anomaly;
         private String primaryFlag;
         private double evaluationTimeMs;
+        private String advisoryTier;
+        private String warningTitle;
+        private String warningMessage;
+        private String authMethod;
     }
 
     /**
@@ -79,9 +83,19 @@ public class RiskEngineClient {
                 boolean isAnomaly = root.path("is_anomaly").asBoolean(false);
                 String primaryFlag = root.path("primary_flag").asText("NORMAL_TRANSACTION");
                 double timeMs = root.path("evaluation_time_ms").asDouble(0.0);
+                String advisoryTier = root.path("advisory_tier").asText("NONE");
+                String authMethod = root.path("auth_method").asText("BIOMETRIC_PRIMARY");
 
-                log.info("[NANOJEV RISK] TxId: {}, Decision: {}, Score: {}, Flag: {}, Latency: {}ms",
-                        request.getTransactionId(), decision, score, primaryFlag, timeMs);
+                String warningTitle = null;
+                String warningMessage = null;
+                JsonNode warningNode = root.path("warning_dialog");
+                if (warningNode != null && !warningNode.isMissingNode() && !warningNode.isNull()) {
+                    warningTitle = warningNode.path("title").asText(null);
+                    warningMessage = warningNode.path("body_message").asText(null);
+                }
+
+                log.info("[NANOJEV RISK] TxId: {}, Decision: {}, Score: {}, Flag: {}, AdvisoryTier: {}, Latency: {}ms",
+                        request.getTransactionId(), decision, score, primaryFlag, advisoryTier, timeMs);
 
                 return RiskEvaluationResult.builder()
                         .decision(decision)
@@ -89,6 +103,10 @@ public class RiskEngineClient {
                         .anomaly(isAnomaly)
                         .primaryFlag(primaryFlag)
                         .evaluationTimeMs(timeMs)
+                        .advisoryTier(advisoryTier)
+                        .warningTitle(warningTitle)
+                        .warningMessage(warningMessage)
+                        .authMethod(authMethod)
                         .build();
             } else {
                 log.warn("[RISK ENGINE HTTP {}] Falling back to default threshold", response.statusCode());

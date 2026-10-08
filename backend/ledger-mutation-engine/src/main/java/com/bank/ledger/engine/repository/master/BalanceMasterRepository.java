@@ -20,4 +20,6 @@ public interface BalanceMasterRepository extends JpaRepository<BalanceMaster, St
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT b FROM BalanceMaster b WHERE b.accountId = :accountId")
     Optional<BalanceMaster> findByAccountIdWithLock(@Param("accountId") String accountId);
+
+    Optional<BalanceMaster> findByAccountId(String accountId);
 }

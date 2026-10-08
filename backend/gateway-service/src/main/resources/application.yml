@@ -12,10 +12,12 @@ spring:
 
   cloud:
     gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Access-Control-Allow-Methods Access-Control-Allow-Headers, RETAIN_FIRST
       globalcors:
         cors-configurations:
           '[/**]':
-            allowedOrigins: "*"
+            allowedOriginPatterns: "*"
             allowedMethods:
               - GET
               - POST
@@ -23,8 +25,6 @@ spring:
               - DELETE
               - OPTIONS
             allowedHeaders: "*"
-      default-filters:
-        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Vary, RETAIN_FIRST
       routes:
         - id: account-service
           uri: ${ACCOUNT_SERVICE_URI:http://localhost:8081}
@@ -40,7 +40,7 @@ spring:
         - id: ledger-mutation-engine
           uri: ${LEDGER_ENGINE_URI:http://localhost:8082}
           predicates:
-            - Path=/api/transactions/**, /api/v1/transactions/**, /api/v1/ledger/**
+            - Path=/api/transactions/**, /api/v1/transactions/**, /api/v1/ledger/**, /api/v1/t24/**, /api/t24/**
           filters:
             - name: RequestRateLimiter
               args:
@@ -75,6 +75,17 @@ spring:
           uri: ${MAILHOG_API_URI:http://mailhog:8025}
           predicates:
             - Path=/api/v2/messages, /api/v2/messages/**
+
+        - id: risk-service
+          uri: ${RISK_SERVICE_URI:http://localhost:8084}
+          predicates:
+            - Path=/api/v1/risk/**, /risk/**, /api/v1/analyst/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 20
+                redis-rate-limiter.burstCapacity: 40
+                key-resolver: "#{@userKeyResolver}"
 
 jwt:
   secret: ${JWT_SECRET:c3VwZXItc2VjcmV0LWtleS1mb3ItZnNlLWNhcHN0b25lLWJhbmtpbmctcGxhdGZvcm0tMjAyNi0xMjM0NTY3ODkwMTI=}

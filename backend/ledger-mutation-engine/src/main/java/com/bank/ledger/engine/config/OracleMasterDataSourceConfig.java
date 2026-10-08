@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Configuration
+@org.springframework.context.annotation.Profile("!azure")
 @EnableTransactionManagement
 @EnableJpaRepositories(
     basePackages = "com.bank.ledger.engine.repository.master",

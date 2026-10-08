@@ -35,6 +35,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <oracle.jdbc.version>23.5.0.24.07</oracle.jdbc.version>
         <postgresql.version>42.7.4</postgresql.version>
+        <mssql.jdbc.version>12.6.1.jre11</mssql.jdbc.version>
     </properties>
 
     <dependencyManagement>
@@ -46,6 +47,13 @@
                 <version>${project.version}</version>
             </dependency>
 
+            <!-- Microsoft SQL Server JDBC Driver (Azure SQL) -->
+            <dependency>
+                <groupId>com.microsoft.sqlserver</groupId>
+                <artifactId>mssql-jdbc</artifactId>
+                <version>${mssql.jdbc.version}</version>
+            </dependency>
+
             <!-- Oracle JDBC Driver -->
             <dependency>
                 <groupId>com.oracle.database.jdbc</groupId>
@@ -53,7 +61,7 @@
                 <version>${oracle.jdbc.version}</version>
             </dependency>
 
-            <!-- PostgreSQL JDBC Driver -->
+            <!-- PostgreSQL JDBC Driver (Azure Database for PostgreSQL) -->
             <dependency>
                 <groupId>org.postgresql</groupId>
                 <artifactId>postgresql</artifactId>

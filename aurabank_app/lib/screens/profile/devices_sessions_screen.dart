@@ -57,7 +57,6 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
       }
     });
   }
-
   // Device list state
   final List<Map<String, dynamic>> _trustedDevices = [
     {

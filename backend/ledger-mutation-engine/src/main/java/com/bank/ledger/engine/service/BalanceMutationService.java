@@ -113,9 +113,11 @@ public class BalanceMutationService {
         // =========================================================================
         String checkUserId = request.getInitiatorUserId() != null ? request.getInitiatorUserId() : "U1001";
         String effectiveUserId = "U1001".equalsIgnoreCase(checkUserId) ? "usr-1001-cst-001" : checkUserId;
-        UserMaster userGeo = userMasterRepository.findById(effectiveUserId)
-                .or(() -> userMasterRepository.findById(checkUserId))
-                .orElse(null);
+        UserMaster userGeo = userMasterRepository != null
+                ? userMasterRepository.findById(effectiveUserId)
+                        .or(() -> userMasterRepository.findById(checkUserId))
+                        .orElse(null)
+                : null;
 
         String activeLoc = userGeo != null && userGeo.getLastKnownLocationName() != null 
                 ? userGeo.getLastKnownLocationName() 
@@ -137,9 +139,11 @@ public class BalanceMutationService {
                 : RiskEngineClient.RiskEvaluationResult.builder().decision("ALLOW").build();
 
         if ("BLOCK".equalsIgnoreCase(riskResult.getDecision())) {
-            log.error("[MUTATION BLOCKED] NanoJev flagged high risk for TxId: {} (Score: {}, Flag: {})",
-                    request.getTransactionId(), riskResult.getFraudScore(), riskResult.getPrimaryFlag());
-            throw new SecurityException("Transaction blocked by security risk engine: " + riskResult.getPrimaryFlag());
+            log.error("[MUTATION BLOCKED] NanoJev flagged high risk for TxId: {} (Score: {}, Flag: {}, ThreatCat: {}, Cause: {}, SAR: {})",
+                    request.getTransactionId(), riskResult.getFraudScore(), riskResult.getPrimaryFlag(),
+                    riskResult.getThreatCategory(), riskResult.getCauseOfSuspicion(), riskResult.getSarReportId());
+            throw new SecurityException("Transaction blocked by security risk engine: " + riskResult.getPrimaryFlag()
+                    + (riskResult.getCauseOfSuspicion() != null ? " (" + riskResult.getCauseOfSuspicion() + ")" : ""));
         }
 
         boolean isHighValue = amount.compareTo(makerCheckerThreshold) > 0;
@@ -249,6 +253,10 @@ public class BalanceMutationService {
                     .riskScore(riskResult.getFraudScore())
                     .warningTitle(riskResult.getWarningTitle())
                     .warningMessage(riskResult.getWarningMessage())
+                    .threatCategory(riskResult.getThreatCategory())
+                    .causeOfSuspicion(riskResult.getCauseOfSuspicion())
+                    .sarDraftCreated(riskResult.isSarDraftCreated())
+                    .sarReportId(riskResult.getSarReportId())
                     .message("Transfer soft held pending customer 2FA OTP verification.")
                     .build();
         }
@@ -429,6 +437,10 @@ public class BalanceMutationService {
                 .riskScore(riskResult.getFraudScore())
                 .warningTitle(riskResult.getWarningTitle())
                 .warningMessage(riskResult.getWarningMessage())
+                .threatCategory(riskResult.getThreatCategory())
+                .causeOfSuspicion(riskResult.getCauseOfSuspicion())
+                .sarDraftCreated(riskResult.isSarDraftCreated())
+                .sarReportId(riskResult.getSarReportId())
                 .message("Funds transfer committed successfully via Temenos T24 CBS: " + t24RefB)
                 .build();
     }
@@ -1164,9 +1176,11 @@ public class BalanceMutationService {
         if ("U1002".equalsIgnoreCase(userId)) effectiveId = "usr-1002-cst-002";
 
         final String searchId = effectiveId;
-        UserMaster user = userMasterRepository.findById(searchId)
-                .or(() -> userMasterRepository.findById(userId))
-                .orElse(null);
+        UserMaster user = userMasterRepository != null
+                ? userMasterRepository.findById(searchId)
+                        .or(() -> userMasterRepository.findById(userId))
+                        .orElse(null)
+                : null;
 
         if (user != null) {
             if (locationPayload.containsKey("latitude")) {
@@ -1209,9 +1223,11 @@ public class BalanceMutationService {
         if ("U1002".equalsIgnoreCase(userId)) effectiveId = "usr-1002-cst-002";
 
         final String searchId = effectiveId;
-        UserMaster user = userMasterRepository.findById(searchId)
-                .or(() -> userMasterRepository.findById(userId))
-                .orElse(null);
+        UserMaster user = userMasterRepository != null
+                ? userMasterRepository.findById(searchId)
+                        .or(() -> userMasterRepository.findById(userId))
+                        .orElse(null)
+                : null;
 
         if (user == null) {
             return Map.of("user_id", userId, "status", "NOT_FOUND");

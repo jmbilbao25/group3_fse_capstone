@@ -30,8 +30,9 @@ if _SERVICE_ROOT not in sys.path:
 from app.seed_data import get_customer_profile
 from app.geo_math import analyze_location_signals
 from app.models import RiskAnalysisRequest
-from app.threat_builder import has_threat_context, build_threat_narrative
+from app.threat_builder import has_threat_context, build_threat_narrative, detect_threat_category
 from app.warning_catalog import get_warning_dialog
+from hybrid_bench.sar_generator import trigger_sar_async
 from app.reviewer import (
     NanoJevSecondLookEngine,
     AsyncReviewWorkerPool,
@@ -457,41 +458,110 @@ class RiskRequestHandler(BaseHTTPRequestHandler):
                 if "is_primary_device" in req["device_context"]:
                     is_primary_device = req["device_context"]["is_primary_device"]
 
-            if decision != "BLOCK":
+            threat_cat = "NONE"
+            try:
+                req_model = RiskAnalysisRequest(**req)
+                if has_threat_context(req_model):
+                    threat_narrative, threat_cat = build_threat_narrative(req_model)
+                    if decision == "ALLOW":
+                        decision = "ADVISORY_WARNING"
+                        status = "ADVISORY_PENDING"
+                        advisory_tier = "ADVISORY_WARNING"
+                        wd = get_warning_dialog(threat_cat)
+                        warning_dialog = wd.model_dump() if hasattr(wd, "model_dump") else wd.dict()
+                        primary_flag = f"DEVICE_THREAT_{threat_cat}"
+                        all_flags.append(primary_flag)
+                    elif decision == "REQUIRE_2FA":
+                        advisory_tier = "ADVISORY_WARNING"
+                        wd = get_warning_dialog(threat_cat)
+                        warning_dialog = wd.model_dump() if hasattr(wd, "model_dump") else wd.dict()
+                        all_flags.append(f"DEVICE_THREAT_{threat_cat}")
+                elif memo_analysis and (memo_analysis.get("is_anomaly") or memo_analysis.get("typology", "none") != "none"):
+                    typology = memo_analysis.get("typology", "other")
+                    threat_cat = "MEMO_SCAM_PATTERN"
+                    if decision == "ALLOW":
+                        decision = "ADVISORY_WARNING"
+                        status = "ADVISORY_PENDING"
+                        advisory_tier = "ADVISORY_WARNING"
+                        wd = get_warning_dialog("MEMO_SCAM_PATTERN")
+                        warning_dialog = wd.model_dump() if hasattr(wd, "model_dump") else wd.dict()
+                        primary_flag = f"SCAM_TYPOLOGY_{typology.upper()}"
+                        all_flags.append(primary_flag)
+                    elif decision == "REQUIRE_2FA":
+                        advisory_tier = "ADVISORY_WARNING"
+                        wd = get_warning_dialog("MEMO_SCAM_PATTERN")
+                        warning_dialog = wd.model_dump() if hasattr(wd, "model_dump") else wd.dict()
+                        all_flags.append(f"SCAM_TYPOLOGY_{typology.upper()}")
+            except Exception as e:
+                print(f"[THREAT EVAL ERROR] {e}", flush=True)
+
+            if threat_cat == "NONE":
+                if decision == "BLOCK":
+                    threat_cat = gate0_reason if gate0_reason else "CRITICAL_FRAUD"
+                elif decision == "REQUIRE_2FA":
+                    threat_cat = "ELEVATED_RISK"
+
+            # 5. Laya Cause of Suspicion Synthesis
+            if laya_engine_instance is not None:
+                cause_of_suspicion = laya_engine_instance.determine_cause_of_suspicion(
+                    threat_category=threat_cat,
+                    threat_narrative=threat_narrative,
+                    memo=memo,
+                    geo_signals=geo_signals,
+                    spike_ratio=spike_ratio if 'spike_ratio' in locals() else 1.0,
+                    flags=all_flags
+                )
+            else:
+                cause_of_suspicion = f"Evaluated fraud risk score of {fraud_score}/100 with flag {primary_flag}."
+
+            # 6. Automated AMLC SAR/STR Draft Trigger
+            sar_draft_created = False
+            sar_report_id = None
+            is_sar_candidate = (
+                decision == "BLOCK"
+                or threat_cat in ["MEMORY_HOOKING_TAMPER", "PACKET_INSPECTION_MITM", "REMOTE_ACCESS_MALWARE"]
+                or fraud_score >= 80
+            )
+            if is_sar_candidate:
+                sar_report_id = f"SAR-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{tx_id}"
+                dev_ctx = req.get("device_context", {}) if isinstance(req.get("device_context"), dict) else {}
+                sar_tx_row = {
+                    "transaction_id": tx_id,
+                    "user_id": user_id,
+                    "amount_php": amount,
+                    "spike_ratio": spike_ratio if 'spike_ratio' in locals() else 1.0,
+                    "balance_drain_ratio": drain_ratio if 'drain_ratio' in locals() else 0.0,
+                    "memo": memo,
+                    "velocity_kmh": geo_signals["velocity_kmh"],
+                    "is_vpn": geo_signals["is_vpn_detected"],
+                    "rooted": req.get("rooted", False) or dev_ctx.get("rooted", False),
+                    "hooking": req.get("hooking", False) or dev_ctx.get("hooking", False) or (threat_cat == "MEMORY_HOOKING_TAMPER"),
+                    "emulator": req.get("emulator", False) or dev_ctx.get("emulator", False),
+                    "tampered": req.get("tampered", False),
+                    "attestation_verdict": req.get("attestation_verdict", "PASS"),
+                    "remote_app_active": req.get("remote_app_active", False) or dev_ctx.get("remote_app_active", False) or (threat_cat == "REMOTE_ACCESS_MALWARE"),
+                    "screen_sharing": dev_ctx.get("media_projection", {}).get("is_screen_sharing", False) if isinstance(dev_ctx.get("media_projection"), dict) else False,
+                    "active_call": req.get("active_call", False) or (dev_ctx.get("telephony", {}).get("call_state", "IDLE") != "IDLE" if isinstance(dev_ctx.get("telephony"), dict) else False),
+                    "call_state": dev_ctx.get("telephony", {}).get("call_state", "IDLE") if isinstance(dev_ctx.get("telephony"), dict) else "IDLE",
+                    "running_packages": dev_ctx.get("running_packages", []),
+                    "active_accessibility_services": dev_ctx.get("active_accessibility_services", []),
+                    "detected_threats": dev_ctx.get("detected_threats", []),
+                    "threat_category": threat_cat,
+                    "cause_of_suspicion": cause_of_suspicion,
+                }
+                sar_verdict = {
+                    "action": decision,
+                    "primary_reason": primary_flag,
+                    "gate_used": "TWO_STAGE_RISK_ENGINE" if not gate0_action else "GATE_0_HARD_RULES",
+                    "fraud_score": float(fraud_score),
+                    "threat_category": threat_cat,
+                    "cause_of_suspicion": cause_of_suspicion,
+                }
                 try:
-                    req_model = RiskAnalysisRequest(**req)
-                    if has_threat_context(req_model):
-                        threat_narrative, threat_cat = build_threat_narrative(req_model)
-                        if decision == "ALLOW":
-                            decision = "ADVISORY_WARNING"
-                            status = "ADVISORY_PENDING"
-                            advisory_tier = "ADVISORY_WARNING"
-                            wd = get_warning_dialog(threat_cat)
-                            warning_dialog = wd.model_dump() if hasattr(wd, "model_dump") else wd.dict()
-                            primary_flag = f"DEVICE_THREAT_{threat_cat}"
-                            all_flags.append(primary_flag)
-                        elif decision == "REQUIRE_2FA":
-                            advisory_tier = "ADVISORY_WARNING"
-                            wd = get_warning_dialog(threat_cat)
-                            warning_dialog = wd.model_dump() if hasattr(wd, "model_dump") else wd.dict()
-                            all_flags.append(f"DEVICE_THREAT_{threat_cat}")
-                    elif memo_analysis and (memo_analysis.get("is_anomaly") or memo_analysis.get("typology", "none") != "none"):
-                        typology = memo_analysis.get("typology", "other")
-                        if decision == "ALLOW":
-                            decision = "ADVISORY_WARNING"
-                            status = "ADVISORY_PENDING"
-                            advisory_tier = "ADVISORY_WARNING"
-                            wd = get_warning_dialog("MEMO_SCAM_PATTERN")
-                            warning_dialog = wd.model_dump() if hasattr(wd, "model_dump") else wd.dict()
-                            primary_flag = f"SCAM_TYPOLOGY_{typology.upper()}"
-                            all_flags.append(primary_flag)
-                        elif decision == "REQUIRE_2FA":
-                            advisory_tier = "ADVISORY_WARNING"
-                            wd = get_warning_dialog("MEMO_SCAM_PATTERN")
-                            warning_dialog = wd.model_dump() if hasattr(wd, "model_dump") else wd.dict()
-                            all_flags.append(f"SCAM_TYPOLOGY_{typology.upper()}")
-                except Exception as e:
-                    print(f"[THREAT EVAL ERROR] {e}", flush=True)
+                    trigger_sar_async(sar_tx_row, sar_verdict)
+                    sar_draft_created = True
+                except Exception as sar_err:
+                    print(f"[SAR TRIGGER ERROR] {sar_err}", flush=True)
 
             # Enqueue Async Reviewer for enriched threat context or elevated S2 risk (ignoring memo)
             review_enqueued = False
@@ -517,7 +587,7 @@ class RiskRequestHandler(BaseHTTPRequestHandler):
                     tabular_data=row_dict if 'row_dict' in locals() else {}
                 )
 
-            # 4. Out-of-band & Biometric Authorization Mapping (Zero SMS OTP for Transactions)
+            # 7. Out-of-band & Biometric Authorization Mapping (Zero SMS OTP for Transactions)
             if decision == "BLOCK":
                 auth_method = "NONE_BLOCKED"
             elif decision == "REQUIRE_2FA":
@@ -548,7 +618,7 @@ class RiskRequestHandler(BaseHTTPRequestHandler):
                 "env": DD_ENV,
                 "version": DD_VERSION,
                 "logger": "risk_service.transaction_output",
-                "message": f"TRANSACTION_VERDICT [{decision}] [{status}] TxId={tx_id} Amount=PHP{amount:,.2f} Score={fraud_score}/100 ReviewEnqueued={review_enqueued}",
+                "message": f"TRANSACTION_VERDICT [{decision}] [{status}] TxId={tx_id} Amount=PHP{amount:,.2f} Score={fraud_score}/100 SAR={sar_report_id}",
                 "dd": {"trace_id": trace_id, "span_id": span_id},
                 "transaction": {
                     "id": tx_id,
@@ -580,6 +650,10 @@ class RiskRequestHandler(BaseHTTPRequestHandler):
                 "advisory_tier": advisory_tier,
                 "warning_dialog": warning_dialog,
                 "threat_narrative": threat_narrative,
+                "threat_category": threat_cat,
+                "cause_of_suspicion": cause_of_suspicion,
+                "sar_draft_created": sar_draft_created,
+                "sar_report_id": sar_report_id,
                 "auth_method": auth_method,
                 "metrics": {
                     "distance_from_home_km": geo_signals["distance_from_home_km"],

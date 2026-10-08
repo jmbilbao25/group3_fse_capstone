@@ -44,6 +44,11 @@ public class RiskEngineClient {
         private String warningTitle;
         private String warningMessage;
         private String authMethod;
+        private String threatCategory;
+        private String causeOfSuspicion;
+        private String threatNarrative;
+        private boolean sarDraftCreated;
+        private String sarReportId;
     }
 
     /**
@@ -64,6 +69,54 @@ public class RiskEngineClient {
             payload.put("latitude", request.getLatitude());
             payload.put("longitude", request.getLongitude());
             payload.put("ip_address", request.getIpAddress());
+
+            // Telemetry and device flags
+            if (request.getDeviceId() != null) payload.put("device_id", request.getDeviceId());
+            if (request.getIsPrimaryDevice() != null) payload.put("is_primary_device", request.getIsPrimaryDevice());
+            if (request.getRemoteAppActive() != null) payload.put("remote_app_active", request.getRemoteAppActive());
+            if (request.getActiveCall() != null) payload.put("active_call", request.getActiveCall());
+            if (request.getRooted() != null) payload.put("rooted", request.getRooted());
+            if (request.getHooking() != null) payload.put("hooking", request.getHooking());
+            if (request.getEmulator() != null) payload.put("emulator", request.getEmulator());
+            if (request.getMockLocation() != null) payload.put("mock_location", request.getMockLocation());
+            if (request.getIsVpn() != null) payload.put("is_vpn", request.getIsVpn());
+
+            // Enriched device context (running packages, detected threats, media projection, telephony)
+            Map<String, Object> deviceContext = request.getDeviceContext() != null
+                    ? new HashMap<>(request.getDeviceContext())
+                    : new HashMap<>();
+
+            if (request.getRunningPackages() != null && !request.getRunningPackages().isEmpty()) {
+                deviceContext.put("running_packages", request.getRunningPackages());
+            }
+            if (request.getDetectedThreats() != null && !request.getDetectedThreats().isEmpty()) {
+                deviceContext.put("detected_threats", request.getDetectedThreats());
+            }
+            if (request.getRemoteAppActive() != null) {
+                deviceContext.put("remote_app_active", request.getRemoteAppActive());
+                Map<String, Object> mediaProjection = new HashMap<>();
+                mediaProjection.put("is_screen_sharing", request.getRemoteAppActive());
+                deviceContext.put("media_projection", mediaProjection);
+            }
+            if (request.getActiveCall() != null) {
+                deviceContext.put("active_call", request.getActiveCall());
+                Map<String, Object> telephony = new HashMap<>();
+                telephony.put("call_state", Boolean.TRUE.equals(request.getActiveCall()) ? "CALL_STATE_OFFHOOK" : "IDLE");
+                deviceContext.put("telephony", telephony);
+            }
+            if (request.getHooking() != null) {
+                deviceContext.put("hooking", request.getHooking());
+            }
+            if (request.getRooted() != null) {
+                deviceContext.put("rooted", request.getRooted());
+            }
+            if (request.getEmulator() != null) {
+                deviceContext.put("emulator", request.getEmulator());
+            }
+
+            if (!deviceContext.isEmpty()) {
+                payload.put("device_context", deviceContext);
+            }
 
             String jsonBody = objectMapper.writeValueAsString(payload);
 
@@ -86,6 +139,12 @@ public class RiskEngineClient {
                 String advisoryTier = root.path("advisory_tier").asText("NONE");
                 String authMethod = root.path("auth_method").asText("BIOMETRIC_PRIMARY");
 
+                String threatCategory = root.hasNonNull("threat_category") ? root.path("threat_category").asText() : null;
+                String causeOfSuspicion = root.hasNonNull("cause_of_suspicion") ? root.path("cause_of_suspicion").asText() : null;
+                String threatNarrative = root.hasNonNull("threat_narrative") ? root.path("threat_narrative").asText() : null;
+                boolean sarDraftCreated = root.path("sar_draft_created").asBoolean(false);
+                String sarReportId = root.hasNonNull("sar_report_id") ? root.path("sar_report_id").asText() : null;
+
                 String warningTitle = null;
                 String warningMessage = null;
                 JsonNode warningNode = root.path("warning_dialog");
@@ -94,8 +153,8 @@ public class RiskEngineClient {
                     warningMessage = warningNode.path("body_message").asText(null);
                 }
 
-                log.info("[NANOJEV RISK] TxId: {}, Decision: {}, Score: {}, Flag: {}, AdvisoryTier: {}, Latency: {}ms",
-                        request.getTransactionId(), decision, score, primaryFlag, advisoryTier, timeMs);
+                log.info("[NANOJEV RISK] TxId: {}, Decision: {}, Score: {}, Flag: {}, ThreatCat: {}, Cause: {}, SAR: {}, Latency: {}ms",
+                        request.getTransactionId(), decision, score, primaryFlag, threatCategory, causeOfSuspicion, sarReportId, timeMs);
 
                 return RiskEvaluationResult.builder()
                         .decision(decision)
@@ -107,6 +166,11 @@ public class RiskEngineClient {
                         .warningTitle(warningTitle)
                         .warningMessage(warningMessage)
                         .authMethod(authMethod)
+                        .threatCategory(threatCategory)
+                        .causeOfSuspicion(causeOfSuspicion)
+                        .threatNarrative(threatNarrative)
+                        .sarDraftCreated(sarDraftCreated)
+                        .sarReportId(sarReportId)
                         .build();
             } else {
                 log.warn("[RISK ENGINE HTTP {}] Falling back to default threshold", response.statusCode());

@@ -78,4 +78,52 @@ public class MutationRequest {
     @JsonProperty("ip_address")
     @JsonAlias({"ip_address", "ipAddress", "ip", "client_ip"})
     private String ipAddress;
+
+    @JsonProperty("device_id")
+    @JsonAlias({"device_id", "deviceId"})
+    private String deviceId;
+
+    @JsonProperty("is_primary_device")
+    @JsonAlias({"is_primary_device", "isPrimaryDevice"})
+    private Boolean isPrimaryDevice;
+
+    @JsonProperty("remote_app_active")
+    @JsonAlias({"remote_app_active", "remoteAppActive", "isScreenSharing", "is_screen_sharing"})
+    private Boolean remoteAppActive;
+
+    @JsonProperty("active_call")
+    @JsonAlias({"active_call", "activeCall", "callState", "call_state"})
+    private Boolean activeCall;
+
+    @JsonProperty("rooted")
+    @JsonAlias({"rooted", "isRooted", "is_rooted"})
+    private Boolean rooted;
+
+    @JsonProperty("hooking")
+    @JsonAlias({"hooking", "isHooked", "is_hooked"})
+    private Boolean hooking;
+
+    @JsonProperty("emulator")
+    @JsonAlias({"emulator", "isEmulator", "is_emulator"})
+    private Boolean emulator;
+
+    @JsonProperty("mock_location")
+    @JsonAlias({"mock_location", "mockLocation", "isMockLocation"})
+    private Boolean mockLocation;
+
+    @JsonProperty("is_vpn")
+    @JsonAlias({"is_vpn", "isVpn", "vpnActive"})
+    private Boolean isVpn;
+
+    @JsonProperty("running_packages")
+    @JsonAlias({"running_packages", "runningPackages"})
+    private java.util.List<String> runningPackages;
+
+    @JsonProperty("detected_threats")
+    @JsonAlias({"detected_threats", "detectedThreats"})
+    private java.util.List<String> detectedThreats;
+
+    @JsonProperty("device_context")
+    @JsonAlias({"device_context", "deviceContext"})
+    private java.util.Map<String, Object> deviceContext;
 }

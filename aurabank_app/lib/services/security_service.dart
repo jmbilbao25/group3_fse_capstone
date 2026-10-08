@@ -461,7 +461,7 @@ class _SecurityWarningDialogState extends State<SecurityWarningDialog> {
                       const Icon(Icons.warning_amber_rounded, size: 14, color: Colors.redAccent),
                       const SizedBox(width: 6),
                       Text(
-                        'DETECTED THREAT',
+                        'SECURITY ALERT',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
@@ -473,7 +473,7 @@ class _SecurityWarningDialogState extends State<SecurityWarningDialog> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    widget.reason.isNotEmpty ? widget.reason : 'Device integrity compromised',
+                    'Suspicious activity or unsupported environment detected on device',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,

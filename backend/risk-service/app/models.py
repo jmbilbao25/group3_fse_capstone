@@ -38,6 +38,8 @@ class RiskAnalysisRequest(BaseModel):
     is_vpn: Optional[bool] = Field(default=False)
     payee_age_days: Optional[float] = Field(default=90.0)
     new_payee: Optional[bool] = Field(default=False)
+    remote_app_active: Optional[bool] = Field(default=False, description="True if remote screen/control app (AnyDesk, TeamViewer) is active")
+    active_call: Optional[bool] = Field(default=False, description="True if voice call is active during transfer")
 
     # Device binding & channel metadata
     is_primary_device: Optional[bool] = Field(default=True, description="True if initiated on user's cryptographically bound primary device")
@@ -73,6 +75,13 @@ class DeviceThreatContext(BaseModel):
     security_patch_date: Optional[str] = None
     installer_source: Optional[str] = None  # com.android.vending, com.android.chrome/download/apk, etc.
     active_accessibility_services: List[str] = Field(default_factory=list)
+    running_packages: List[str] = Field(default_factory=list, description="Installed or running packages (e.g. com.anydesk, com.guoshi.httpcanary)")
+    detected_threats: List[str] = Field(default_factory=list, description="Threat signatures detected on device")
+    hooking: Optional[bool] = None
+    rooted: Optional[bool] = None
+    emulator: Optional[bool] = None
+    remote_app_active: Optional[bool] = None
+    active_call: Optional[bool] = None
     media_projection: Optional[MediaProjectionState] = None
     telephony: Optional[TelephonyState] = None
     interaction: Optional[InteractionContext] = None
@@ -133,6 +142,12 @@ class RiskAnalysisResponse(BaseModel):
     review_enqueued: Optional[bool] = Field(default=False, description="True if transfer was enqueued for async second-look review")
     settlement_window_seconds: Optional[float] = Field(default=60.0, description="Simulated settlement holding window")
     memo_analysis: Optional[Dict[str, Any]] = Field(default=None, description="Real-time synchronous memo analysis (typology, probability, consistency)")
+
+    # Laya threat categorization and AMLC compliance reporting fields
+    threat_category: Optional[str] = Field(default=None, description="Primary threat category identified by Laya")
+    cause_of_suspicion: Optional[str] = Field(default=None, description="Primary cause of suspicion evaluated by Laya AI")
+    sar_draft_created: Optional[bool] = Field(default=False, description="True if an automated AMLC SAR/STR draft was generated")
+    sar_report_id: Optional[str] = Field(default=None, description="Reference ID for generated AMLC SAR report")
 
 
 class AnalystDecisionRequest(BaseModel):

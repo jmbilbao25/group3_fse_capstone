@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import '../models/user_persona.dart';
@@ -11,23 +10,11 @@ class BackendConfig {
   factory BackendConfig() => _instance;
   BackendConfig._internal();
 
-  /// Laptop's local Wi-Fi IP address for cross-device testing
+  /// Laptop's local Wi-Fi IP address for cross-device connectivity through the laptop
   static const String defaultLanIp = '192.168.254.159';
 
   static String _resolveInitialHost() {
-    if (kIsWeb) {
-      final baseHost = Uri.base.host;
-      if (baseHost.isNotEmpty && baseHost != 'localhost' && baseHost != '127.0.0.1') {
-        return baseHost;
-      }
-      return 'localhost';
-    }
-    try {
-      if (Platform.isAndroid) {
-        return '10.0.2.2';
-      }
-    } catch (_) {}
-    return 'localhost';
+    return defaultLanIp;
   }
 
   String _host = _resolveInitialHost();
@@ -54,7 +41,7 @@ class BackendConfig {
 String get defaultBackendHost => BackendConfig().host;
 
 
-enum AuthStatus { authenticated, mfaRequired, failed }
+enum AuthStatus { authenticated, pendingApproval, mfaRequired, failed }
 
 class AuthLoginResult {
   final AuthStatus status;
@@ -213,7 +200,12 @@ class AuthApiService {
           final data = jsonDecode(response.body) as Map<String, dynamic>;
           final statusStr = data['status'] as String? ?? 'AUTHENTICATED';
           currentIsPrimaryDevice = data['is_primary_device'] as bool?;
-          currentIsApproved = data['is_approved'] as bool? ?? (currentIsPrimaryDevice == true);
+          final isPendingStatus = statusStr == 'PENDING_CONFIRMATION' ||
+              statusStr == 'PENDING_APPROVAL' ||
+              data['is_approved'] == false;
+          currentIsApproved = isPendingStatus
+              ? false
+              : (data['is_approved'] as bool? ?? (currentIsPrimaryDevice ?? true));
           currentPrimaryDeviceId = data['primary_device_id'] as String?;
           currentAccessToken = data['access_token'] as String?;
           currentUserId = data['user_id'] as String?;
@@ -232,6 +224,26 @@ class AuthApiService {
               deviceType: resolvedType,
               isPrimaryDevice: currentIsPrimaryDevice,
               isApproved: currentIsApproved,
+              primaryDeviceId: currentPrimaryDeviceId,
+            );
+          } else if (isPendingStatus) {
+            if (currentAccessToken != null) {
+              DeviceStorage.saveAccessToken(currentAccessToken!);
+            }
+            if (currentUserId != null) {
+              DeviceStorage.saveUserId(currentUserId!);
+            }
+            return AuthLoginResult(
+              status: AuthStatus.pendingApproval,
+              accessToken: currentAccessToken,
+              role: data['role'] as String?,
+              userId: currentUserId,
+              persona: currentPersona,
+              deviceId: currentDeviceId,
+              deviceName: currentDeviceName,
+              deviceType: resolvedType,
+              isPrimaryDevice: currentIsPrimaryDevice,
+              isApproved: false,
               primaryDeviceId: currentPrimaryDeviceId,
             );
           } else {
@@ -318,8 +330,14 @@ class AuthApiService {
 
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body) as Map<String, dynamic>;
+          final statusStr = data['status'] as String? ?? 'AUTHENTICATED';
           currentIsPrimaryDevice = data['is_primary_device'] as bool?;
-          currentIsApproved = data['is_approved'] as bool? ?? (currentIsPrimaryDevice == true);
+          final isPendingStatus = statusStr == 'PENDING_CONFIRMATION' ||
+              statusStr == 'PENDING_APPROVAL' ||
+              data['is_approved'] == false;
+          currentIsApproved = isPendingStatus
+              ? false
+              : (data['is_approved'] as bool? ?? (currentIsPrimaryDevice ?? true));
           currentPrimaryDeviceId = data['primary_device_id'] as String?;
           currentAccessToken = data['access_token'] as String?;
           final resolvedType = data['device_type'] as String? ?? currentDeviceType;

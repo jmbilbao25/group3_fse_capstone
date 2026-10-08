@@ -253,6 +253,19 @@ class NotificationStreamService {
                   notificationId: id,
                 );
                 _onSecurityAlertReceived(alert);
+              } else if ((type == 'DEVICE_REVOKED' || type == 'DEVICE_APPROVED') &&
+                  id.isNotEmpty &&
+                  isAfterSession &&
+                  _seenNotificationIds.add(id)) {
+                final message = item['message'] as String? ?? '';
+                final parts = message.split(': ');
+                final targetDevId = parts.length > 1 ? parts[1].trim() : '';
+                _onDeviceApprovalEventReceived({
+                  'type': type,
+                  'user_id': userId,
+                  'device_id': targetDevId,
+                  'timestamp': sentAtStr ?? DateTime.now().toIso8601String(),
+                });
               }
             }
           }
@@ -281,10 +294,15 @@ class NotificationStreamService {
     _deviceApprovalController.add(data);
     debugPrint('[NotificationStream] Dispatched ${data['type']} for device: ${data['device_id']}');
 
-    final targetDevId = data['device_id'] as String? ?? '';
-    final currentDevId = AuthApiService().currentDeviceId;
-    final currentDevName = AuthApiService().currentDeviceName;
-    final isForThisDevice = targetDevId == currentDevId || targetDevId == currentDevName;
+    final targetDevId = (data['device_id'] as String? ?? '').toLowerCase();
+    final currentDevId = AuthApiService().currentDeviceId.toLowerCase();
+    final currentDevName = AuthApiService().currentDeviceName.toLowerCase();
+    final isForThisDevice = targetDevId.isEmpty ||
+        targetDevId == currentDevId ||
+        targetDevId == currentDevName ||
+        (currentDevId.isNotEmpty && targetDevId.contains(currentDevId)) ||
+        (currentDevName.isNotEmpty && targetDevId.contains(currentDevName)) ||
+        (currentDevId.isNotEmpty && currentDevId.contains(targetDevId));
 
     if (isForThisDevice) {
       final type = data['type'] as String? ?? '';
@@ -305,7 +323,7 @@ class NotificationStreamService {
         if (context != null) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('⚠️ Device Deregistered: Access revoked because another device was authorized (2 devices maximum).'),
+              content: Text('Access revoked. You have been logged out of this session.'),
               backgroundColor: Colors.redAccent,
               duration: Duration(seconds: 5),
             ),
@@ -318,6 +336,11 @@ class NotificationStreamService {
   /// Manually inject alert (useful for test cases or instant demonstration)
   void injectAlert(SecurityAlertEvent alert) {
     _onSecurityAlertReceived(alert);
+  }
+
+  /// Manually inject device approval event (useful for test cases or instant demonstration)
+  void injectDeviceApprovalEvent(Map<String, dynamic> data) {
+    _onDeviceApprovalEventReceived(data);
   }
 
   void disconnect() {

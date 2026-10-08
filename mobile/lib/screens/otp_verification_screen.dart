@@ -382,9 +382,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          const SelectableText(
-                            'http://localhost:8025',
-                            style: TextStyle(
+                          SelectableText(
+                            'http://$defaultMailHogHost:8025',
+                            style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Color(0xFF3A4CD6),
                             ),

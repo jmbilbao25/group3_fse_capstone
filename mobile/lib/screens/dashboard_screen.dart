@@ -6,6 +6,7 @@ import '../services/notification_stream_service.dart';
 import '../services/security_service.dart';
 import '../widgets/brand_logo.dart';
 import '../widgets/screen_sharing_warning_sheet.dart';
+import '../widgets/security_dialog.dart';
 
 class DashboardScreen extends StatefulWidget {
   final UserPersona user;
@@ -43,33 +44,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Listen for approval state changes to update dashboard UI reactively
     _approvalSubscription = NotificationStreamService().deviceApprovalStream.listen((event) {
       if (!mounted) return;
-      final targetDevId = event['device_id'] as String? ?? '';
-      final isForThisDevice = targetDevId == _currentDeviceId || targetDevId == _currentDeviceName;
+      final targetDevId = (event['device_id'] as String? ?? '').toLowerCase();
+      final curId = _currentDeviceId.toLowerCase();
+      final curName = _currentDeviceName.toLowerCase();
+      final isForThisDevice = targetDevId == curId ||
+          targetDevId == curName ||
+          targetDevId.isEmpty ||
+          (curId.isNotEmpty && targetDevId.contains(curId)) ||
+          (curName.isNotEmpty && targetDevId.contains(curName)) ||
+          (curId.isNotEmpty && curId.contains(targetDevId));
 
       if (isForThisDevice) {
         if (event['type'] == 'DEVICE_APPROVED') {
           setState(() {
             _isApproved = true;
           });
-          _approvalPollTimer?.cancel();
           _loadDevices();
         } else if (event['type'] == 'DEVICE_REVOKED') {
           _approvalPollTimer?.cancel();
-          _handleLogout();
+          _handleLogout(
+            reason: 'Access revoked. You have been logged out of this session.',
+            showWarningDialog: true,
+            revokeReason: 'revoked',
+          );
         }
       }
     });
 
     _loadDevices();
 
-    // If secondary and not yet approved, poll every 3 seconds to catch approval
-    if (!_isPrimary && !_isApproved) {
+    // For any secondary device, poll every 3 seconds to verify device is still registered and active
+    if (!_isPrimary) {
       _approvalPollTimer = Timer.periodic(const Duration(seconds: 3), (_) {
-        if (!_isApproved) {
-          _loadDevices();
-        } else {
-          _approvalPollTimer?.cancel();
-        }
+        _loadDevices();
       });
     }
   }
@@ -84,51 +91,99 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _loadDevices() async {
     setState(() => _isLoadingDevices = true);
     final devices = await AuthApiService().getRegisteredDevices();
-    if (mounted) {
-      setState(() {
-        _registeredDevices = devices;
-        _isLoadingDevices = false;
-        if (devices.isNotEmpty) {
-          final current = devices.firstWhere(
-            (d) => d['device_id'] == _currentDeviceId,
-            orElse: () => <String, dynamic>{},
-          );
-          if (current.isNotEmpty) {
-            if (current.containsKey('is_primary')) {
-              _isPrimary = current['is_primary'] == true;
-            }
-            if (current.containsKey('is_approved')) {
-              final backendApproved = current['is_approved'] == true;
-              if (backendApproved && !_isApproved) {
-                _isApproved = true;
-                _approvalPollTimer?.cancel();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('✓ Device Approved! Banking transactions are now enabled.'),
-                    backgroundColor: Color(0xFF107C41),
-                    duration: Duration(seconds: 4),
-                  ),
-                );
-              } else if (_isPrimary) {
-                _isApproved = true;
-              }
-            }
+    if (!mounted) return;
+
+    setState(() {
+      _registeredDevices = devices;
+      _isLoadingDevices = false;
+    });
+
+    if (devices.isNotEmpty) {
+      final current = devices.firstWhere(
+        (d) {
+          final id = (d['device_id'] as String? ?? '').toLowerCase();
+          final name = (d['device_name'] as String? ?? '').toLowerCase();
+          final curId = _currentDeviceId.toLowerCase();
+          final curName = _currentDeviceName.toLowerCase();
+          return id == curId ||
+              name == curName ||
+              (curId.isNotEmpty && id.contains(curId)) ||
+              (curName.isNotEmpty && name.contains(curName)) ||
+              (curId.isNotEmpty && curId.contains(id));
+        },
+        orElse: () => <String, dynamic>{},
+      );
+
+      // If secondary and device is no longer registered or marked REVOKED:
+      if (!_isPrimary && (current.isEmpty || current['status'] == 'REVOKED')) {
+        _approvalPollTimer?.cancel();
+        _handleLogout(
+          reason: 'Session revoked: Another device logged in and this secondary device was automatically logged out.',
+          showWarningDialog: true,
+        );
+        return;
+      }
+
+      if (current.isNotEmpty) {
+        if (current.containsKey('is_primary')) {
+          _isPrimary = current['is_primary'] == true;
+        }
+        if (current.containsKey('is_approved')) {
+          final backendApproved = current['is_approved'] == true;
+          if (backendApproved && !_isApproved) {
+            _isApproved = true;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('✓ Device Approved! Banking transactions are now enabled.'),
+                backgroundColor: Color(0xFF107C41),
+                duration: Duration(seconds: 4),
+              ),
+            );
+          } else if (_isPrimary) {
+            _isApproved = true;
           }
         }
-      });
+      }
+    } else if (!_isPrimary) {
+      _approvalPollTimer?.cancel();
+      _handleLogout(
+        reason: 'Session revoked: Another device logged in and this secondary device was automatically logged out.',
+        showWarningDialog: true,
+      );
     }
   }
 
-  void _handleLogout() {
+  void _handleLogout({String? reason, bool showWarningDialog = false, String revokeReason = 'auto'}) {
     _approvalPollTimer?.cancel();
+    _approvalSubscription?.cancel();
     NotificationStreamService().disconnect();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Logged out successfully'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-    widget.onLogout();
+    AuthApiService().logout();
+
+    if (mounted) {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
+
+    if (showWarningDialog && mounted) {
+      DeviceRevokedWarningDialog.show(
+        context,
+        deviceName: _currentDeviceName,
+        reason: revokeReason,
+        onDismissed: () {
+          widget.onLogout();
+        },
+      );
+    } else {
+      if (mounted && reason != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(reason),
+            duration: const Duration(seconds: 3),
+            backgroundColor: const Color(0xFFC53030),
+          ),
+        );
+      }
+      widget.onLogout();
+    }
   }
 
   void _executeProtectedAction(VoidCallback action, {String actionName = 'This action'}) {
@@ -333,26 +388,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         final confirmed = await showDialog<bool>(
                                           context: context,
                                           builder: (c) => AlertDialog(
-                                            title: Text(isWeb ? 'Terminate Desktop Session?' : 'Deregister Device?'),
-                                            content: Text('Are you sure you want to deregister ${d['device_name'] ?? "this device"}? It will lose access.'),
+                                            title: Text(isWeb ? 'Terminate Desktop Session?' : 'Revoke Device Access?'),
+                                            content: Text('Are you sure you want to ${isWeb ? 'log out' : 'revoke access for'} ${d['device_name'] ?? "this device"}? Their session will be terminated immediately.'),
                                             actions: [
                                               TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
                                               FilledButton(
                                                 style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
                                                 onPressed: () => Navigator.pop(c, true),
-                                                child: Text(isWeb ? 'Log out' : 'Deregister'),
+                                                child: Text(isWeb ? 'Log Out' : 'Revoke Access'),
                                               ),
                                             ],
                                           ),
                                         );
                                         if (confirmed == true) {
                                           await AuthApiService().revokeDevice(deviceId: devId);
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text('Access revoked. ${d['device_name'] ?? 'Device'} has been logged out.'),
+                                                backgroundColor: Colors.redAccent,
+                                                duration: const Duration(seconds: 3),
+                                              ),
+                                            );
+                                          }
                                           await _loadDevices();
                                           setSheetState(() {});
                                           setState(() {});
                                         }
                                       },
-                                      child: Text(isWeb ? 'Log out' : 'Deregister', style: const TextStyle(fontSize: 11)),
+                                      child: Text(isWeb ? 'Log Out' : 'Revoke Access', style: const TextStyle(fontSize: 11)),
                                     ),
                                 ],
                               ),

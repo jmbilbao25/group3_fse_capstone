@@ -253,22 +253,28 @@ public class AuthService {
             if (isPrimary) {
                 isApproved = true;
             } else {
+                List<DeviceInfoDto> allDevices = redisSessionStore.getUserDevices(user.getUserId());
+                List<DeviceInfoDto> existingMobileSecondaries = allDevices.stream()
+                        .filter(d -> !"WEB".equalsIgnoreCase(d.getDeviceType()))
+                        .filter(d -> !d.getDeviceId().equals(effectivePrimaryDeviceId) && !d.getDeviceId().equals(resolvedDeviceId))
+                        .toList();
+
+                if (!existingMobileSecondaries.isEmpty()) {
+                    isThirdDevice = true;
+                    replacedDeviceId = existingMobileSecondaries.get(0).getDeviceId();
+                    replacedDeviceName = existingMobileSecondaries.get(0).getDeviceName();
+                    log.info("User {} attempting login from 3rd mobile device {}. Existing secondary mobile is {} ({}) — will be replaced only upon approval",
+                            user.getUserId(), resolvedDeviceId, replacedDeviceId, replacedDeviceName);
+                    // NOTE: The 2nd device is NOT revoked here.
+                    // It will only be removed when the primary device APPROVES this 3rd device.
+                    // See approveDevice() which removes other secondaries at approval time.
+                }
+
                 Optional<DeviceInfoDto> existing = redisSessionStore.getDevice(user.getUserId(), resolvedDeviceId);
-                if (existing.isPresent() && existing.get().isApproved()) {
+                if (existing.isPresent() && existing.get().isApproved() && !isThirdDevice) {
                     isApproved = true;
                 } else {
-                    List<DeviceInfoDto> allDevices = redisSessionStore.getUserDevices(user.getUserId());
-                    List<DeviceInfoDto> existingMobileSecondaries = allDevices.stream()
-                            .filter(d -> !"WEB".equalsIgnoreCase(d.getDeviceType()))
-                            .filter(d -> !d.getDeviceId().equals(effectivePrimaryDeviceId) && !d.getDeviceId().equals(resolvedDeviceId))
-                            .toList();
-                    if (!existingMobileSecondaries.isEmpty()) {
-                        isThirdDevice = true;
-                        replacedDeviceId = existingMobileSecondaries.get(0).getDeviceId();
-                        replacedDeviceName = existingMobileSecondaries.get(0).getDeviceName();
-                        log.info("User {} attempting login from 3rd mobile device {}. Existing secondary mobile is {} ({})",
-                                user.getUserId(), resolvedDeviceId, replacedDeviceId, replacedDeviceName);
-                    }
+                    isApproved = false;
                 }
             }
 
@@ -337,7 +343,7 @@ public class AuthService {
         redisSessionStore.addToTokenFamily(sessionId, refreshTokenId);
 
         LoginResponse loginResponse = LoginResponse.builder()
-                .status("AUTHENTICATED")
+                .status(isApproved ? "AUTHENTICATED" : (isThirdDevice ? "PENDING_CONFIRMATION" : "PENDING_APPROVAL"))
                 .accessToken(accessToken)
                 .tokenType("Bearer")
                 .expiresInSeconds(jwtProvider.getAccessTokenExpirationSeconds())
@@ -561,7 +567,7 @@ public class AuthService {
                     ? "Security Alert: 3rd Mobile Device Login Attempt"
                     : "Security Alert: New Mobile Device Login";
             String message = isThirdDevice
-                    ? "A 3rd mobile device (" + newDeviceName + ") is requesting access. Since AuraBank only allows 2 mobile devices (1 Primary, 1 Secondary), confirming this login will deregister and log out " + (replacedDeviceName != null ? replacedDeviceName : "the other secondary mobile") + "."
+                    ? "A 3rd mobile device (" + newDeviceName + ") has logged in. Since AuraBank only allows 2 mobile devices (1 Primary, 1 Secondary), " + (replacedDeviceName != null ? replacedDeviceName : "the other secondary mobile") + " was automatically logged out. Confirm if you wish to grant this device access to your account."
                     : "A new mobile device (" + newDeviceName + ") just logged into your account from IP " + clientIp + ".";
 
             java.util.Map<String, Object> payload = new java.util.HashMap<>();

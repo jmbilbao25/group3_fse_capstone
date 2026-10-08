@@ -4,6 +4,7 @@ import '../services/auth_api_service.dart';
 import '../services/security_service.dart';
 import '../widgets/brand_logo.dart';
 import 'otp_verification_screen.dart';
+import 'pending_approval_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final ValueChanged<UserPersona> onLoginSuccess;
@@ -47,226 +48,6 @@ class _LoginScreenState extends State<LoginScreen> {
     _emailFocusNode.dispose();
     _passwordFocusNode.dispose();
     super.dispose();
-  }
-
-  void _showServerConfigDialog() {
-    final hostController = TextEditingController(text: BackendConfig().host);
-    bool? testPassed;
-    bool isTesting = false;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        return StatefulBuilder(
-          builder: (modalCtx, setSheetState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 20,
-                right: 20,
-                top: 20,
-                bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.wifi_tethering_rounded, color: Color(0xFF3A4CD6)),
-                      const SizedBox(width: 8),
-                      const Expanded(
-                        child: Text(
-                          'Backend Server Network Host',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close_rounded),
-                        onPressed: () => Navigator.of(ctx).pop(),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'When testing from a physical phone on your local Wi-Fi, enter your laptop\'s IP address so the phone can reach the backend services.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isDark ? Colors.grey[400] : Colors.grey[600],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: hostController,
-                    decoration: const InputDecoration(
-                      labelText: 'Host / IP Address',
-                      hintText: 'e.g. 192.168.254.159 or localhost',
-                      prefixIcon: Icon(Icons.lan_outlined),
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    children: [
-                      ActionChip(
-                        avatar: const Icon(Icons.phone_android_rounded, size: 14),
-                        label: const Text('Emulator (10.0.2.2)', style: TextStyle(fontSize: 11)),
-                        onPressed: () {
-                          setSheetState(() {
-                            hostController.text = '10.0.2.2';
-                            testPassed = null;
-                          });
-                        },
-                      ),
-                      ActionChip(
-                        avatar: const Icon(Icons.laptop_mac_rounded, size: 14),
-                        label: const Text('Laptop IP (192.168.254.159)', style: TextStyle(fontSize: 11)),
-                        onPressed: () {
-                          setSheetState(() {
-                            hostController.text = BackendConfig.defaultLanIp;
-                            testPassed = null;
-                          });
-                        },
-                      ),
-                      ActionChip(
-                        avatar: const Icon(Icons.computer_rounded, size: 14),
-                        label: const Text('Localhost (127.0.0.1)', style: TextStyle(fontSize: 11)),
-                        onPressed: () {
-                          setSheetState(() {
-                            hostController.text = 'localhost';
-                            testPassed = null;
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  if (testPassed != null)
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: testPassed!
-                            ? Colors.green.withAlpha(24)
-                            : Colors.red.withAlpha(24),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            testPassed! ? Icons.check_circle_outline : Icons.error_outline,
-                            size: 16,
-                            color: testPassed! ? Colors.green : Colors.red,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              testPassed!
-                                  ? 'Connected successfully to Account Service (:8081)!'
-                                  : 'Could not connect. Ensure backend is running and phone is on the same Wi-Fi.',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: testPassed! ? Colors.green : Colors.red,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  const Divider(height: 24),
-                  Row(
-                    children: [
-                      const Icon(Icons.devices_rounded, size: 16, color: Color(0xFF3A4CD6)),
-                      const SizedBox(width: 8),
-                      const Expanded(
-                        child: Text(
-                          'Device Profile (Simulation / Override)',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'In real life, your device is auto-detected. In simulation tests on a single machine, you can override identity here:',
-                    style: TextStyle(fontSize: 11, color: isDark ? Colors.grey[400] : Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 6,
-                    children: DevicePreset.presets.map((preset) {
-                      final isSelected = DeviceIdentity().id == preset.id;
-                      return ChoiceChip(
-                        selected: isSelected,
-                        label: Text(preset.label, style: const TextStyle(fontSize: 11)),
-                        onSelected: (selected) {
-                          if (selected) {
-                            setSheetState(() {
-                              AuthApiService().switchDevice(preset);
-                            });
-                            setState(() {});
-                          }
-                        },
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: isTesting
-                              ? null
-                              : () async {
-                                  setSheetState(() => isTesting = true);
-                                  BackendConfig().host = hostController.text.trim();
-                                  final ok = await BackendConfig().testConnection();
-                                  setSheetState(() {
-                                    isTesting = false;
-                                    testPassed = ok;
-                                  });
-                                },
-                          child: isTesting
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              : const Text('Test Connection'),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: FilledButton(
-                          onPressed: () {
-                            BackendConfig().host = hostController.text.trim();
-                            Navigator.of(ctx).pop();
-                            setState(() {});
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Backend host configured: ${BackendConfig().host}'),
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
-                          },
-                          child: const Text('Apply'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
   }
 
   void _fillPersona(UserPersona persona) {
@@ -339,7 +120,46 @@ class _LoginScreenState extends State<LoginScreen> {
             maskedEmail: authResult.maskedEmail ?? email,
             onVerified: (user) {
               Navigator.of(ctx).pop();
-              widget.onLoginSuccess(user);
+              if (AuthApiService().isDeviceApproved == false) {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (pCtx) => PendingApprovalScreen(
+                      user: user,
+                      onApproved: () {
+                        Navigator.of(pCtx).pop();
+                        widget.onLoginSuccess(user);
+                      },
+                      onCancel: () {
+                        Navigator.of(pCtx).pop();
+                        AuthApiService().logout();
+                      },
+                      onToggleTheme: widget.onToggleTheme,
+                      isDarkMode: widget.isDarkMode,
+                    ),
+                  ),
+                );
+              } else {
+                widget.onLoginSuccess(user);
+              }
+            },
+            onToggleTheme: widget.onToggleTheme,
+            isDarkMode: widget.isDarkMode,
+          ),
+        ),
+      );
+    } else if (authResult.status == AuthStatus.pendingApproval ||
+        (authResult.status == AuthStatus.authenticated && authResult.isApproved == false)) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (pCtx) => PendingApprovalScreen(
+            user: authResult.persona ?? matchedPersona,
+            onApproved: () {
+              Navigator.of(pCtx).pop();
+              widget.onLoginSuccess(authResult.persona ?? matchedPersona);
+            },
+            onCancel: () {
+              Navigator.of(pCtx).pop();
+              AuthApiService().logout();
             },
             onToggleTheme: widget.onToggleTheme,
             isDarkMode: widget.isDarkMode,
@@ -495,11 +315,6 @@ class _LoginScreenState extends State<LoginScreen> {
         elevation: 0,
         actions: [
           IconButton(
-            tooltip: 'Server Connection Settings',
-            icon: const Icon(Icons.wifi_tethering_rounded),
-            onPressed: _showServerConfigDialog,
-          ),
-          IconButton(
             tooltip: widget.isDarkMode ? 'Switch to Light mode' : 'Switch to Dark mode',
             icon: Icon(
               widget.isDarkMode ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
@@ -518,111 +333,27 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Brand Lockup Header
-                  const BrandLockup(markSize: 52),
-                  const SizedBox(height: 28),
-
-                  // Quick fill persona shortcuts
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF1E2229) : const Color(0xFFF1F3F6),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: isDark ? const Color(0xFF2C323D) : const Color(0xFFE4E6EA),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.flash_on_rounded, size: 16, color: Color(0xFF3A4CD6)),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Demo Quick-Fill',
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: isDark ? Colors.grey[300] : const Color(0xFF1A1D21),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: UserPersona.demoPersonas.map((persona) {
-                            return ActionChip(
-                              avatar: CircleAvatar(
-                                backgroundColor: const Color(0xFF3A4CD6),
-                                radius: 10,
-                                child: Text(
-                                  persona.name[0],
-                                  style: const TextStyle(color: Colors.white, fontSize: 10),
-                                ),
-                              ),
-                              label: Text('${persona.name} (${persona.role})'),
-                              labelStyle: const TextStyle(fontSize: 12),
-                              onPressed: () => _fillPersona(persona),
-                            );
-                          }).toList(),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Automatic Hardware Device Identity Banner (Realistic Real-World)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF1E2229) : const Color(0xFFF1F3F6),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isDark ? const Color(0xFF2C323D) : const Color(0xFFE4E6EA),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          DeviceIdentity().id.contains('laptop') || DeviceIdentity().id.contains('desktop')
-                              ? Icons.laptop_mac_rounded
-                              : Icons.smartphone_rounded,
-                          size: 20,
-                          color: const Color(0xFF3A4CD6),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'This Device: ${DeviceIdentity().name}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: isDark ? Colors.grey[200] : const Color(0xFF1A1D21),
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'Configuration: 1 Web session + 2 Mobiles allowed. 1st mobile login is permanently Primary. Desktop logins dispatch push alerts to your primary phone.',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: isDark ? Colors.grey[400] : Colors.grey[600],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.tune_rounded, size: 16),
-                          tooltip: 'Device & Network Settings',
-                          color: Colors.grey[500],
-                          onPressed: _showServerConfigDialog,
-                        ),
-                      ],
-                    ),
-                  ),
+                  const BrandLockup(markSize: 48),
                   const SizedBox(height: 20),
+
+                  // Header title matching web portal on main
+                  Text(
+                    'Sign in',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.4,
+                      color: isDark ? Colors.white : const Color(0xFF111827),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Access your accounts, transfers, and statements.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDark ? Colors.grey[400] : const Color(0xFF6B7280),
+                    ),
+                  ),
 
                   // Optional Error Banner
                   if (_errorMessage != null) ...[
@@ -859,7 +590,103 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                   ),
-
+                  // Demo Accounts (Clean, structured, modeled after main portal)
+                  const SizedBox(height: 24),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF16191E) : Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: isDark ? const Color(0xFF262A32) : const Color(0xFFE5E7EB),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Demo accounts',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark ? Colors.grey[200] : const Color(0xFF111827),
+                                ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: isDark ? const Color(0xFF20252D) : const Color(0xFFF3F4F6),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'Password password123',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontFamily: 'monospace',
+                                  color: isDark ? Colors.grey[400] : const Color(0xFF6B7280),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        const Divider(height: 1),
+                        const SizedBox(height: 6),
+                        ...UserPersona.demoPersonas.map((persona) {
+                          return InkWell(
+                            onTap: () => _fillPersona(persona),
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    backgroundColor: const Color(0xFF3A4CD6).withAlpha(25),
+                                    foregroundColor: const Color(0xFF3A4CD6),
+                                    radius: 14,
+                                    child: Text(
+                                      persona.name[0],
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      '${persona.name} (${persona.role})',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: isDark ? Colors.white : const Color(0xFF1F2937),
+                                      ),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => _fillPersona(persona),
+                                    style: TextButton.styleFrom(
+                                      visualDensity: VisualDensity.compact,
+                                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                                    ),
+                                    child: const Text(
+                                      'Use',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF3A4CD6),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 20),
 
                   // Security Footer

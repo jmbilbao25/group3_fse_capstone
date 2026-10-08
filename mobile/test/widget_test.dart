@@ -7,6 +7,7 @@ import 'package:http/testing.dart';
 import 'package:bank_mobile_security_test/main.dart';
 import 'package:bank_mobile_security_test/services/auth_api_service.dart';
 import 'package:bank_mobile_security_test/services/notification_stream_service.dart';
+import 'package:bank_mobile_security_test/models/user_persona.dart';
 import 'package:bank_mobile_security_test/services/otp_service.dart';
 
 void main() {
@@ -457,6 +458,126 @@ void main() {
 
     // Modal dismissed
     expect(find.text('Desktop Session Alert'), findsNothing);
+  });
+
+  testWidgets('Pending Account Access: 3rd device login displays PendingApprovalScreen and unlocks on approval',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+      AuthApiService().switchDevice(DevicePreset.presets.first);
+    });
+
+    // Switch device to 3rd device preset
+    AuthApiService().switchDevice(DevicePreset.presets[3]); // dev-galaxy-third
+
+    // Mock HTTP backend response returning unapproved / PENDING_CONFIRMATION
+    final mockClient = MockClient((request) async {
+      if (request.url.path.contains('/api/v1/auth/login')) {
+        return http.Response(
+          jsonEncode({
+            'status': 'PENDING_CONFIRMATION',
+            'access_token': 'mock.pending.jwt',
+            'user_id': 'USR-880099',
+            'role': 'Teller',
+            'device_id': 'dev-galaxy-third',
+            'device_name': 'Samsung Galaxy Tab S9',
+            'device_type': 'MOBILE',
+            'is_primary_device': false,
+            'is_approved': false,
+            'primary_device_id': 'dev-iphone-primary',
+          }),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      }
+      return http.Response('{}', 200, headers: {'content-type': 'application/json'});
+    });
+    AuthApiService().httpClient = mockClient;
+
+    await tester.pumpWidget(const AuraBankApp());
+    await tester.pumpAndSettle();
+
+    final dianaChip = find.text('Diana Vance (Admin / Teller)');
+    await tester.tap(dianaChip);
+    await tester.pumpAndSettle();
+
+    final signInButton = find.widgetWithText(FilledButton, 'Sign In');
+    await tester.tap(signInButton);
+    await tester.pumpAndSettle();
+
+    // Verify PendingApprovalScreen is displayed instead of Dashboard!
+    expect(find.text('Account Access Pending'), findsOneWidget);
+    expect(find.text('PENDING'), findsOneWidget);
+    expect(find.textContaining('any previous 2nd device account was automatically logged out'), findsOneWidget);
+    expect(find.byKey(const Key('btn_check_pending_status')), findsOneWidget);
+
+    // Simulate real-time approval event from primary device
+    NotificationStreamService().injectDeviceApprovalEvent({
+      'type': 'DEVICE_APPROVED',
+      'device_id': 'dev-galaxy-third',
+      'status': 'APPROVED',
+    });
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1000));
+    await tester.pumpAndSettle();
+
+    // Now verified to be on dashboard
+    expect(find.text('Diana Vance'), findsOneWidget);
+
+    AuthApiService().httpClient = null;
+  });
+
+  testWidgets('Automatic 2nd device logout: active 2nd device logs out on DEVICE_REVOKED',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+      AuthApiService().switchDevice(DevicePreset.presets.first);
+    });
+
+    AuthApiService().switchDevice(DevicePreset.presets[2]); // dev-ipad-secondary
+
+    await tester.pumpWidget(const AuraBankApp());
+    await tester.pumpAndSettle();
+
+    final dianaChip = find.text('Diana Vance (Admin / Teller)');
+    await tester.tap(dianaChip);
+    await tester.pumpAndSettle();
+
+    // Set approved initially so it reaches dashboard
+    AuthApiService().currentIsApproved = true;
+    final signInButton = find.widgetWithText(FilledButton, 'Sign In');
+    await tester.tap(signInButton);
+    await tester.pumpAndSettle();
+
+    // Now on dashboard
+    expect(find.text('Diana Vance'), findsOneWidget);
+
+    // Simulate 3rd device logging in, causing backend to dispatch DEVICE_REVOKED for 2nd device
+    NotificationStreamService().injectDeviceApprovalEvent({
+      'type': 'DEVICE_REVOKED',
+      'device_id': 'dev-ipad-secondary',
+      'status': 'REVOKED',
+    });
+    await tester.pumpAndSettle();
+
+    // Verify the security warning dialog explaining the 2 mobile device maximum policy is displayed
+    expect(find.text('Session Terminated'), findsOneWidget);
+    expect(find.textContaining('Multi-Device Security Policy'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Return to Sign In'), findsOneWidget);
+
+    // Dismiss the warning dialog by tapping 'Return to Sign In'
+    await tester.tap(find.widgetWithText(FilledButton, 'Return to Sign In'));
+    await tester.pumpAndSettle();
+
+    // Device 2 is logged out and returned to login screen
+    expect(find.widgetWithText(FilledButton, 'Sign In'), findsOneWidget);
+    expect(find.text('Diana Vance'), findsNothing);
   });
 }
 

@@ -142,11 +142,11 @@ class SecurityApprovalDialog extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.info_outline_rounded, color: Colors.orange, size: 20),
+                  const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Mobile limit reached (Max 2 mobiles). Approving this device will automatically deregister your other secondary mobile device.',
+                      'If you Approve, the current secondary device will be logged out and replaced. If you Deny, the new device will be removed.',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -159,7 +159,7 @@ class SecurityApprovalDialog extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'A 3rd mobile device is requesting to log in. Since only 1 Primary and 1 Secondary mobile are allowed, confirm if you wish to replace your active secondary mobile.',
+              'A 3rd mobile device is requesting access. Only 1 secondary slot is available — approving this device will log out the current secondary.',
               style: TextStyle(
                 fontSize: 13,
                 color: isDark ? Colors.grey[300] : Colors.grey[800],
@@ -232,59 +232,239 @@ class SecurityApprovalDialog extends StatelessWidget {
       ),
       actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       actions: [
-        OutlinedButton(
-          style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.redAccent,
-            side: const BorderSide(color: Colors.redAccent),
+        if (!isThird) ...[
+          OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.redAccent,
+              side: const BorderSide(color: Colors.redAccent),
+            ),
+            onPressed: () async {
+              Navigator.of(context).pop();
+              final devId = alert.deviceId.isNotEmpty ? alert.deviceId : alert.deviceName;
+              await AuthApiService().revokeDevice(deviceId: devId);
+              onHandled?.call();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(isDesktop
+                        ? 'Desktop session terminated. Access revoked.'
+                        : 'Access revoked. Device has been logged out.'),
+                    backgroundColor: Colors.redAccent,
+                  ),
+                );
+              }
+            },
+            child: Text(isDesktop ? 'Revoke Desktop' : 'Revoke Access'),
           ),
-          onPressed: () async {
-            Navigator.of(context).pop();
-            final devId = alert.deviceId.isNotEmpty ? alert.deviceId : alert.deviceName;
-            await AuthApiService().revokeDevice(deviceId: devId);
-            onHandled?.call();
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(isDesktop
-                      ? 'Desktop session terminated. Access revoked.'
-                      : (isThird
-                          ? '3rd mobile device request denied. Existing secondary device retained.'
-                          : 'Remote session revoked. Access blocked.')),
-                  backgroundColor: Colors.redAccent,
-                ),
-              );
-            }
-          },
-          child: Text(isDesktop ? 'Revoke Desktop' : (isThird ? 'Deny Access' : 'Revoke Access')),
-        ),
-        FilledButton.icon(
-          icon: Icon(isDesktop ? Icons.thumb_up_rounded : Icons.check_circle_rounded, size: 16),
-          style: FilledButton.styleFrom(
-            backgroundColor: isDesktop ? const Color(0xFF3A4CD6) : const Color(0xFF107C41),
+          FilledButton.icon(
+            icon: Icon(isDesktop ? Icons.thumb_up_rounded : Icons.check_circle_rounded, size: 16),
+            style: FilledButton.styleFrom(
+              backgroundColor: isDesktop ? const Color(0xFF3A4CD6) : const Color(0xFF107C41),
+            ),
+            onPressed: () async {
+              Navigator.of(context).pop();
+              final devId = alert.deviceId.isNotEmpty ? alert.deviceId : alert.deviceName;
+              if (!isDesktop) {
+                await AuthApiService().approveDevice(deviceId: devId);
+              }
+              onHandled?.call();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(isDesktop
+                        ? 'Desktop session acknowledged.'
+                        : 'Approved! ${alert.deviceName} authorized for transactions.'),
+                    backgroundColor: isDesktop ? const Color(0xFF3A4CD6) : const Color(0xFF107C41),
+                  ),
+                );
+              }
+            },
+            label: Text(isDesktop ? 'Acknowledge' : 'Approve Access'),
           ),
-          onPressed: () async {
-            Navigator.of(context).pop();
-            final devId = alert.deviceId.isNotEmpty ? alert.deviceId : alert.deviceName;
-            if (!isDesktop) {
+        ] else ...[
+          // 3rd-device: primary approves → 2nd device is revoked; deny → 3rd device is removed.
+          OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.redAccent,
+              side: const BorderSide(color: Colors.redAccent),
+            ),
+            onPressed: () async {
+              Navigator.of(context).pop();
+              final devId = alert.deviceId.isNotEmpty ? alert.deviceId : alert.deviceName;
+              await AuthApiService().revokeDevice(deviceId: devId);
+              onHandled?.call();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Denied. The new device has been removed. Your existing secondary device remains.'),
+                    backgroundColor: Colors.redAccent,
+                  ),
+                );
+              }
+            },
+            child: const Text('Deny'),
+          ),
+          FilledButton.icon(
+            icon: const Icon(Icons.swap_horizontal_circle_rounded, size: 16),
+            style: FilledButton.styleFrom(backgroundColor: Colors.orange),
+            onPressed: () async {
+              Navigator.of(context).pop();
+              final devId = alert.deviceId.isNotEmpty ? alert.deviceId : alert.deviceName;
               await AuthApiService().approveDevice(deviceId: devId);
-            }
-            onHandled?.call();
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(isDesktop
-                      ? 'Desktop session acknowledged.'
-                      : (isThird
-                          ? 'Confirmed! ${alert.deviceName} approved; other secondary device was deregistered.'
-                          : 'Approved! ${alert.deviceName} authorized for transactions.')),
-                  backgroundColor: isDesktop ? const Color(0xFF3A4CD6) : const Color(0xFF107C41),
+              onHandled?.call();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Approved! ${alert.deviceName} is now active. Previous secondary device was logged out.'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+              }
+            },
+            label: const Text('Approve & Replace'),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Dialog displayed on a device when its session is terminated —
+/// either because a 3rd mobile signed in (auto-logout) or the primary
+/// user manually revoked access.
+class DeviceRevokedWarningDialog extends StatelessWidget {
+  final String? deviceName;
+  final VoidCallback onDismissed;
+  /// 'auto' = 3rd device caused auto-logout; 'revoked' = primary manually revoked
+  final String reason;
+
+  const DeviceRevokedWarningDialog({
+    super.key,
+    this.deviceName,
+    required this.onDismissed,
+    this.reason = 'auto',
+  });
+
+  static Future<void> show(
+    BuildContext context, {
+    String? deviceName,
+    required VoidCallback onDismissed,
+    String reason = 'auto',
+  }) {
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => DeviceRevokedWarningDialog(
+        deviceName: deviceName,
+        onDismissed: onDismissed,
+        reason: reason,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isRevoked = reason == 'revoked';
+
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      backgroundColor: isDark ? const Color(0xFF1E222B) : Colors.white,
+      title: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.redAccent.withAlpha(30),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              isRevoked ? Icons.block_rounded : Icons.phonelink_erase_rounded,
+              color: isRevoked ? Colors.redAccent : const Color(0xFFD97706),
+              size: 28,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              isRevoked ? 'Access Revoked' : 'Session Terminated',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            isRevoked
+                ? 'Your access to this AuraBank account has been revoked by the primary device holder. You have been logged out.'
+                : 'This device has been automatically logged out because another mobile device signed in to your AuraBank account.',
+            style: TextStyle(
+              fontSize: 13.5,
+              height: 1.4,
+              color: isDark ? Colors.grey[300] : const Color(0xFF374151),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? const Color(0xFF262C38)
+                  : (isRevoked ? const Color(0xFFFFF1F1) : const Color(0xFFFEF3C7)),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: (isRevoked ? Colors.redAccent : const Color(0xFFF59E0B)).withAlpha(100),
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.info_outline_rounded,
+                  color: isRevoked ? Colors.redAccent : const Color(0xFFD97706),
+                  size: 20,
                 ),
-              );
-            }
-          },
-          label: Text(isDesktop ? 'Acknowledge' : (isThird ? 'Confirm & Replace Device' : 'Approve Access')),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    isRevoked
+                        ? 'If you believe this was a mistake, contact your primary account holder or sign in again to request re-authorization.'
+                        : 'AuraBank allows a maximum of 2 mobile devices (1 Primary + 1 Secondary). When a 3rd device signs in, the existing secondary session is automatically terminated.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1.35,
+                      color: isDark
+                          ? (isRevoked ? const Color(0xFFFFCDD2) : const Color(0xFFFDE68A))
+                          : (isRevoked ? const Color(0xFF991B1B) : const Color(0xFF92400E)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        SizedBox(
+          width: double.infinity,
+          height: 46,
+          child: FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF3A4CD6),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () {
+              Navigator.of(context).pop();
+              onDismissed();
+            },
+            child: const Text('Return to Sign In', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
         ),
       ],
     );
   }
 }
+

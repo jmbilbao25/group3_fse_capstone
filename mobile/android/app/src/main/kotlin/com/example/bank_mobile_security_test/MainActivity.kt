@@ -53,25 +53,13 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun isDevOptionsEnabled(): Boolean {
-        return try {
-            Settings.Global.getInt(
-                contentResolver,
-                Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0
-            ) != 0
-        } catch (e: Exception) {
-            false
-        }
+        // Temporarily disabled for development/testing
+        return false
     }
 
     private fun isAdbEnabled(): Boolean {
-        return try {
-            Settings.Global.getInt(
-                contentResolver,
-                Settings.Global.ADB_ENABLED, 0
-            ) != 0
-        } catch (e: Exception) {
-            false
-        }
+        // Temporarily disabled for development/testing so ADB-connected emulators can run
+        return false
     }
 
     private fun isBootloaderUnlocked(): Boolean {
@@ -92,26 +80,8 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun isEmulator(): Boolean {
-        return try {
-            val isGeneric = Build.FINGERPRINT.startsWith("generic")
-                    || Build.FINGERPRINT.startsWith("unknown")
-                    || Build.MODEL.contains("google_sdk")
-                    || Build.MODEL.contains("Emulator")
-                    || Build.MODEL.contains("Android SDK built for x86")
-                    || Build.MANUFACTURER.contains("Genymotion")
-                    || Build.HARDWARE.contains("goldfish")
-                    || Build.HARDWARE.contains("ranchu")
-                    || Build.PRODUCT.contains("sdk_google")
-                    || Build.PRODUCT.contains("google_sdk")
-                    || Build.PRODUCT.contains("vbox86p")
-
-            val sensorManager = getSystemService(Context.SENSOR_SERVICE) as? SensorManager
-            val hasAccelerometer = sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null
-
-            isGeneric || !hasAccelerometer
-        } catch (e: Exception) {
-            false
-        }
+        // Temporarily disabled to allow testing inside Android emulators
+        return false
     }
 
     private fun isDebuggerAttached(): Boolean {

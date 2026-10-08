@@ -383,6 +383,53 @@ class AuthServiceTest {
     }
 
     @Test
+    @DisplayName("Should automatically log out 2nd device and set status to PENDING_CONFIRMATION when 3rd device logs in")
+    void testThirdDeviceLoginAutomaticallyLogsOutSecondDeviceAndLeavesAccessPending() {
+        activeUser.setLastLoginAt(Instant.now());
+        LoginRequest loginRequest = LoginRequest.builder()
+                .email("juan.delacruz@example.ph")
+                .password("Password123!")
+                .deviceId("dev-third-galaxy")
+                .deviceName("Samsung Galaxy Tab")
+                .deviceType("MOBILE")
+                .build();
+
+        when(userRepository.findByEmail("juan.delacruz@example.ph")).thenReturn(Optional.of(activeUser));
+        when(passwordEncoder.matches("Password123!", activeUser.getPasswordHash())).thenReturn(true);
+        when(redisSessionStore.getPrimaryDeviceId("USR-100001")).thenReturn("dev-primary-iphone");
+
+        DeviceInfoDto primaryMobile = DeviceInfoDto.builder()
+                .deviceId("dev-primary-iphone")
+                .deviceName("iPhone 15")
+                .deviceType("MOBILE")
+                .isPrimary(true)
+                .isApproved(true)
+                .build();
+        DeviceInfoDto oldSecondary = DeviceInfoDto.builder()
+                .deviceId("dev-second-ipad")
+                .deviceName("iPad Air")
+                .deviceType("MOBILE")
+                .isPrimary(false)
+                .isApproved(true)
+                .build();
+
+        when(redisSessionStore.getUserDevices("USR-100001")).thenReturn(List.of(primaryMobile, oldSecondary));
+        when(jwtProvider.generateAccessToken(any(), any(), any(), any())).thenReturn("mock.jwt.token");
+        when(jwtProvider.getAccessTokenExpirationSeconds()).thenReturn(900L);
+
+        AuthService.LoginResult result = authService.login(loginRequest, "192.168.1.120", "Samsung Tablet");
+
+        assertThat(result.getResponse().getDeviceId()).isEqualTo("dev-third-galaxy");
+        assertThat(result.getResponse().getStatus()).isEqualTo("PENDING_CONFIRMATION");
+        assertThat(result.getResponse().getIsPrimaryDevice()).isFalse();
+        assertThat(result.getResponse().getIsApproved()).isFalse();
+
+        // Verify the 2nd device was automatically logged out (deregistered and sessions deleted)
+        verify(redisSessionStore).deleteUserDevice("USR-100001", "dev-second-ipad");
+        verify(redisSessionStore).deleteSessionsForDevice("USR-100001", "dev-second-ipad");
+    }
+
+    @Test
     @DisplayName("Should throw exception when attempting to revoke primary device")
     void testRevokePrimaryDeviceThrowsException() {
         when(redisSessionStore.getPrimaryDeviceId("USR-100001")).thenReturn("dev-primary");

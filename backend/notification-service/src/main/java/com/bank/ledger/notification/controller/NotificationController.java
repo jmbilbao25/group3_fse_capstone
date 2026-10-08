@@ -128,9 +128,35 @@ public class NotificationController {
     @PostMapping("/device-approved")
     public ResponseEntity<Map<String, Object>> handleDeviceApproved(
             @RequestBody(required = false) Map<String, Object> request) {
-        String userId = request != null && request.get("user_id") != null ? request.get("user_id").toString() : "";
-        String deviceId = request != null && request.get("device_id") != null ? request.get("device_id").toString() : "";
+        String userId = "";
+        if (request != null) {
+            if (request.get("user_id") != null) userId = request.get("user_id").toString();
+            else if (request.get("userId") != null) userId = request.get("userId").toString();
+        }
+        String deviceId = "";
+        if (request != null) {
+            if (request.get("device_id") != null) deviceId = request.get("device_id").toString();
+            else if (request.get("deviceId") != null) deviceId = request.get("deviceId").toString();
+        }
+        String notificationId = "NOTIF-APPRV-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+
+        if (notificationRepository != null && !userId.isBlank()) {
+            try {
+                NotificationEntity entity = NotificationEntity.builder()
+                        .notificationId(notificationId)
+                        .userId(userId)
+                        .type("DEVICE_APPROVED")
+                        .message("Device approved: " + deviceId)
+                        .sentAt(Instant.now())
+                        .build();
+                notificationRepository.save(entity);
+            } catch (Exception e) {
+                log.warn("Could not persist device approval notification: {}", e.getMessage());
+            }
+        }
+
         Map<String, Object> payload = Map.of(
+                "notification_id", notificationId,
                 "type", "DEVICE_APPROVED",
                 "user_id", userId,
                 "device_id", deviceId,
@@ -146,9 +172,35 @@ public class NotificationController {
     @PostMapping("/device-revoked")
     public ResponseEntity<Map<String, Object>> handleDeviceRevoked(
             @RequestBody(required = false) Map<String, Object> request) {
-        String userId = request != null && request.get("user_id") != null ? request.get("user_id").toString() : "";
-        String deviceId = request != null && request.get("device_id") != null ? request.get("device_id").toString() : "";
+        String userId = "";
+        if (request != null) {
+            if (request.get("user_id") != null) userId = request.get("user_id").toString();
+            else if (request.get("userId") != null) userId = request.get("userId").toString();
+        }
+        String deviceId = "";
+        if (request != null) {
+            if (request.get("device_id") != null) deviceId = request.get("device_id").toString();
+            else if (request.get("deviceId") != null) deviceId = request.get("deviceId").toString();
+        }
+        String notificationId = "NOTIF-REVOKE-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+
+        if (notificationRepository != null && !userId.isBlank()) {
+            try {
+                NotificationEntity entity = NotificationEntity.builder()
+                        .notificationId(notificationId)
+                        .userId(userId)
+                        .type("DEVICE_REVOKED")
+                        .message("Secondary device (" + deviceId + ") was automatically logged out because another mobile device logged in.")
+                        .sentAt(Instant.now())
+                        .build();
+                notificationRepository.save(entity);
+            } catch (Exception e) {
+                log.warn("Could not persist device revocation notification: {}", e.getMessage());
+            }
+        }
+
         Map<String, Object> payload = Map.of(
+                "notification_id", notificationId,
                 "type", "DEVICE_REVOKED",
                 "user_id", userId,
                 "device_id", deviceId,

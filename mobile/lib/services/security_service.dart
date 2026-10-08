@@ -70,6 +70,15 @@ class SecurityService {
   /// Set to true in development/test if you want to simulate active screen sharing in code
   static bool simulateScreenSharing = false;
 
+  /// Toggle to enable or disable emulator detection.
+  /// Set to false to allow testing on Android/iOS emulators and virtual environments.
+  static bool enableEmulatorDetection = false;
+
+  /// Toggle to enable or disable ADB and Developer Mode detection.
+  /// Set to false during local development/testing so emulators and tethered devices can run.
+  static bool enableAdbDetection = false;
+  static bool enableDevOptionsDetection = false;
+
   /// Performs full device security assessment.
   static Future<SecurityAssessment> assessDevice() async {
     // 1. Check environment variable override (--dart-define) or in-memory flag
@@ -142,16 +151,16 @@ class SecurityService {
               await _channel.invokeMethod('getAndroidSecurityReport');
 
           if (nativeReport != null) {
-            if (nativeReport['isDevOptionsEnabled'] == true) {
+            if (enableDevOptionsDetection && nativeReport['isDevOptionsEnabled'] == true) {
               threats.add('Developer Options Enabled');
             }
-            if (nativeReport['isAdbEnabled'] == true) {
+            if (enableAdbDetection && nativeReport['isAdbEnabled'] == true) {
               threats.add('USB Debugging (ADB) Active');
             }
             if (nativeReport['isBootloaderUnlocked'] == true) {
               threats.add('Unlocked Bootloader (AVB Compromised)');
             }
-            if (nativeReport['isEmulator'] == true) {
+            if (enableEmulatorDetection && nativeReport['isEmulator'] == true) {
               threats.add('Android Emulator / Virtual Environment Detected');
             }
             if (nativeReport['isDebuggerAttached'] == true) {

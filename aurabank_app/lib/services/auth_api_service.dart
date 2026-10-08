@@ -480,11 +480,51 @@ class AuthApiService {
   }
 
   Future<void> logout() async {
+    final token = currentAccessToken;
+    if (token != null) {
+      final endpoints = kIsWeb ? [accountServiceUrl, gatewayUrl] : [gatewayUrl, accountServiceUrl];
+      for (final baseUrl in endpoints) {
+        try {
+          final url = Uri.parse('$baseUrl/api/v1/auth/logout');
+          await _client.post(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+          ).timeout(const Duration(seconds: 3));
+          break;
+        } catch (_) {}
+      }
+    }
     currentAccessToken = null;
     currentUserId = null;
     currentEmail = null;
     currentPersona = null;
     await DeviceStorage.clearSession();
+  }
+
+  Future<bool> logoutAll() async {
+    final token = currentAccessToken;
+    if (token != null) {
+      final endpoints = kIsWeb ? [accountServiceUrl, gatewayUrl] : [gatewayUrl, accountServiceUrl];
+      for (final baseUrl in endpoints) {
+        try {
+          final url = Uri.parse('$baseUrl/api/v1/auth/logout-all');
+          final response = await _client.post(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+          ).timeout(const Duration(seconds: 3));
+          if (response.statusCode == 200) {
+            return true;
+          }
+        } catch (_) {}
+      }
+    }
+    return false;
   }
 
   Map<String, dynamic> _tryDecodeJson(String body) {

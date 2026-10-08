@@ -647,4 +647,23 @@ public class AuthService {
             });
         }
     }
+
+    public void logoutAll(String authHeader) {
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            if (jwtProvider.validateToken(token)) {
+                String userId = jwtProvider.getUserId(token);
+                String primaryDeviceId = redisSessionStore.getPrimaryDeviceId(userId);
+                List<DeviceInfoDto> allDevices = redisSessionStore.getUserDevices(userId);
+                for (DeviceInfoDto d : allDevices) {
+                    if (primaryDeviceId == null || !d.getDeviceId().equals(primaryDeviceId)) {
+                        redisSessionStore.deleteUserDevice(userId, d.getDeviceId());
+                        redisSessionStore.deleteSessionsForDevice(userId, d.getDeviceId());
+                        dispatchDeviceApprovalEvent(userId, d.getDeviceId(), "device-revoked");
+                    }
+                }
+                log.info("Logged out all non-primary sessions and devices for user {}", userId);
+            }
+        }
+    }
 }

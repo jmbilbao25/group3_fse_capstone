@@ -126,6 +126,16 @@ public class AuthController {
                 .body(response);
     }
 
+    @PostMapping("/logout-all")
+    public ResponseEntity<Map<String, Object>> logoutAll(
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
+        authService.logoutAll(authHeader);
+        return ResponseEntity.ok(Map.of(
+                "status", "SUCCESS",
+                "message", "All secondary and web sessions have been terminated."
+        ));
+    }
+
     @GetMapping("/devices")
     public ResponseEntity<List<DeviceInfoDto>> getDevices(
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_api_service.dart';
+import '../../services/notification_stream_service.dart';
 import '../../theme/aura_theme.dart';
 import '../auth/login_screen.dart';
 
@@ -196,11 +197,16 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
     );
   }
 
-  void _endWebSession(int index) {
+  void _endWebSession(int index) async {
     final session = _webSessions[index];
+    final deviceId = session['id'] as String?;
+    if (deviceId != null && deviceId.isNotEmpty) {
+      await AuthApiService().revokeDevice(deviceId: deviceId);
+    }
     setState(() {
       _webSessions.removeAt(index);
     });
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Terminated session for ${session['browser']}'),
@@ -208,6 +214,7 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
         duration: const Duration(seconds: 2),
       ),
     );
+    _loadBackendDevices();
   }
 
   void _showLogoutAllSessionsModal() {
@@ -272,17 +279,25 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                   elevation: 0,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                 ),
-                onPressed: () {
+                onPressed: () async {
                   Navigator.of(ctx).pop();
+                  for (final s in List<Map<String, dynamic>>.from(_webSessions)) {
+                    final devId = s['id'] as String?;
+                    if (devId != null && devId.isNotEmpty) {
+                      await AuthApiService().revokeDevice(deviceId: devId);
+                    }
+                  }
                   setState(() {
                     _webSessions.clear();
                   });
+                  if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('All web sessions have been logged out.'),
                       backgroundColor: brandViolet,
                     ),
                   );
+                  _loadBackendDevices();
                 },
                 child: const Text(
                   'Log Out All Sessions',
@@ -440,8 +455,12 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                   elevation: 0,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                 ),
-                onPressed: () {
+                onPressed: () async {
                   Navigator.of(ctx).pop();
+                  await AuthApiService().logoutAll();
+                  await AuthApiService().logout();
+                  NotificationStreamService().disconnect();
+                  if (!mounted) return;
                   Navigator.of(context).pushAndRemoveUntil(
                     MaterialPageRoute(builder: (_) => const LoginScreen()),
                     (route) => false,
@@ -783,32 +802,80 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                                 ),
                               ],
                             ),
-                            InkWell(
-                              onTap: () => _revokeDevice(index),
-                              borderRadius: BorderRadius.circular(8),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: bgLavender,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: borderLavender, width: 1.0),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: const [
-                                    Icon(Icons.link_off_rounded, size: 13, color: brandViolet),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      'Revoke',
-                                      style: TextStyle(
-                                        fontSize: 11.5,
-                                        fontWeight: FontWeight.w700,
-                                        color: brandViolet,
+                            Row(
+                              children: [
+                                if (dev['isApproved'] == false) ...[
+                                  InkWell(
+                                    onTap: () async {
+                                      final deviceId = dev['id'] as String?;
+                                      if (deviceId != null && deviceId.isNotEmpty) {
+                                        final ok = await AuthApiService().approveDevice(deviceId: deviceId);
+                                        if (ok) {
+                                          if (!mounted) return;
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text('Device ${dev['name']} approved successfully!'),
+                                              backgroundColor: const Color(0xFF107C41),
+                                            ),
+                                          );
+                                          _loadBackendDevices();
+                                        }
+                                      }
+                                    },
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                                      margin: const EdgeInsets.only(right: 8),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF107C41),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.check_circle_outline_rounded, size: 13, color: Colors.white),
+                                          SizedBox(width: 4),
+                                          Text(
+                                            'Approve',
+                                            style: TextStyle(
+                                              fontSize: 11.5,
+                                              fontWeight: FontWeight.w700,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                  ],
+                                  ),
+                                ],
+                                InkWell(
+                                  onTap: () => _revokeDevice(index),
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: bgLavender,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: borderLavender, width: 1.0),
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.link_off_rounded, size: 13, color: brandViolet),
+                                        SizedBox(width: 4),
+                                        Text(
+                                          'Revoke',
+                                          style: TextStyle(
+                                            fontSize: 11.5,
+                                            fontWeight: FontWeight.w700,
+                                            color: brandViolet,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
-                              ),
+                              ],
                             ),
                           ],
                         ),

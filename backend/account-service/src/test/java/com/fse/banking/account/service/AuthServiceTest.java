@@ -424,9 +424,9 @@ class AuthServiceTest {
         assertThat(result.getResponse().getIsPrimaryDevice()).isFalse();
         assertThat(result.getResponse().getIsApproved()).isFalse();
 
-        // Verify the 2nd device was automatically logged out (deregistered and sessions deleted)
-        verify(redisSessionStore).deleteUserDevice("USR-100001", "dev-second-ipad");
-        verify(redisSessionStore).deleteSessionsForDevice("USR-100001", "dev-second-ipad");
+        // Verify 3rd device is registered with pending confirmation status without deleting existing secondary until approval
+        verify(redisSessionStore).saveUserDevice(eq("USR-100001"), argThat(d ->
+                "dev-third-galaxy".equals(d.getDeviceId()) && !d.isApproved() && "PENDING_CONFIRMATION".equals(d.getStatus())));
     }
 
     @Test
@@ -503,5 +503,26 @@ class AuthServiceTest {
         org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> {
             authService.setPrimaryDevice("USR-100001", "dev-laptop-web");
         });
+    }
+
+    @Test
+    @DisplayName("Should log out all secondary and web sessions on logoutAll while keeping primary intact")
+    void testLogoutAll() {
+        when(jwtProvider.validateToken("valid.jwt.token")).thenReturn(true);
+        when(jwtProvider.getUserId("valid.jwt.token")).thenReturn("USR-100001");
+        when(redisSessionStore.getPrimaryDeviceId("USR-100001")).thenReturn("dev-primary-mobile");
+
+        DeviceInfoDto primaryDev = DeviceInfoDto.builder().deviceId("dev-primary-mobile").deviceName("iPhone").isPrimary(true).build();
+        DeviceInfoDto secondaryDev = DeviceInfoDto.builder().deviceId("dev-secondary-ipad").deviceName("iPad").isPrimary(false).build();
+        DeviceInfoDto webDev = DeviceInfoDto.builder().deviceId("dev-web-chrome").deviceName("Chrome").deviceType("WEB").isPrimary(false).build();
+
+        when(redisSessionStore.getUserDevices("USR-100001")).thenReturn(List.of(primaryDev, secondaryDev, webDev));
+
+        authService.logoutAll("Bearer valid.jwt.token");
+
+        verify(redisSessionStore).deleteUserDevice("USR-100001", "dev-secondary-ipad");
+        verify(redisSessionStore).deleteSessionsForDevice("USR-100001", "dev-secondary-ipad");
+        verify(redisSessionStore).deleteUserDevice("USR-100001", "dev-web-chrome");
+        verify(redisSessionStore).deleteSessionsForDevice("USR-100001", "dev-web-chrome");
     }
 }

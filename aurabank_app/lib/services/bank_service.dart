@@ -693,6 +693,15 @@ class BankService extends ChangeNotifier {
     } catch (_) {}
   }
 
+  Future<void> setPushAlertsEnabled(bool enabled) async {
+    user.pushAlertsEnabled = enabled;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('push_alerts_enabled', enabled);
+    } catch (_) {}
+  }
+
   void updateUserProfile({
     String? name,
     String? phoneNumber,

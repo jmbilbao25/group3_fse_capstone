@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../services/bank_service.dart';
 import '../../theme/aura_theme.dart';
 import '../../widgets/aura_logo.dart';
-import 'devices_sessions_screen.dart';
 import '../auth/login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -30,6 +29,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
+    _faceIdEnabled = _bankService.user.faceIdEnabled;
+    _fingerprintEnabled = _bankService.user.fingerprintEnabled;
+    _pushAlertsEnabled = _bankService.user.pushAlertsEnabled;
     _bankService.addListener(_onServiceUpdate);
   }
 
@@ -40,7 +42,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _onServiceUpdate() {
-    if (mounted) setState(() {});
+    if (mounted) {
+      setState(() {
+        _faceIdEnabled = _bankService.user.faceIdEnabled;
+        _fingerprintEnabled = _bankService.user.fingerprintEnabled;
+        _pushAlertsEnabled = _bankService.user.pushAlertsEnabled;
+      });
+    }
   }
 
   // Interactive Edit Profile Bottom Sheet
@@ -1070,328 +1078,186 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final user = _bankService.user;
-    final initials = user.name.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join();
 
     return Scaffold(
-      backgroundColor: AuraColors.canvas,
+      backgroundColor: const Color(0xFFF9FAFB),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 12.0),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. Header: Logo + App Name + Notification Bell (Matches executive neobanking design)
+              // 1. Top Header: Aura Logo + Aura Bank (Underlined)
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      if (widget.onBack != null) ...[
-                        IconButton(
-                          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
-                          onPressed: widget.onBack,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                        ),
-                        const SizedBox(width: 4),
-                      ],
-                      const AuraLogo(size: 38, style: AuraLogoStyle.violet, borderRadius: 10),
-                      const SizedBox(width: 10),
-                      const Text(
-                        'Aura Bank',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: brandViolet,
-                          letterSpacing: -0.4,
-                        ),
-                      ),
-                    ],
-                  ),
-                  // Bell Icon with indicator dot (Consistent 40x40 circle)
-                  Stack(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.04),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: IconButton(
-                          icon: const Icon(Icons.notifications_none_rounded, color: textDark, size: 20),
-                          padding: EdgeInsets.zero,
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('No unread security alerts.'),
-                                duration: Duration(seconds: 2),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      Positioned(
-                        right: 3,
-                        top: 3,
-                        child: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFEF4444),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                    ],
+                  if (widget.onBack != null) ...[
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: textDark),
+                      onPressed: widget.onBack,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    ),
+                    const SizedBox(width: 4),
+                  ],
+                  const AuraLogo(size: 38, style: AuraLogoStyle.violet, borderRadius: 10),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Aura Bank',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.black,
+                      decoration: TextDecoration.underline,
+                      decorationThickness: 2.0,
+                      letterSpacing: -0.4,
+                    ),
                   ),
                 ],
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 18),
 
-              // 2. User Identity Card (Monogram + Name + Phone + Edit + Registered Email)
+              // 2. Card 1: User Profile Details Card (Matches Mockup)
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: const Color(0xFFEDE9FE), width: 1.2),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE5E7EB), width: 1.0),
                   boxShadow: [
                     BoxShadow(
-                      color: brandViolet.withValues(alpha: 0.06),
-                      blurRadius: 18,
-                      offset: const Offset(0, 6),
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Top Row: Avatar + Name & Phone + Edit Button Pill
                     Row(
                       children: [
-                        // Monogram Avatar with Luxury Violet Gradient
                         Container(
-                          width: 62,
-                          height: 62,
-                          decoration: BoxDecoration(
+                          width: 52,
+                          height: 52,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFC084FC),
                             shape: BoxShape.circle,
-                            gradient: AuraColors.balanceHeroGradient,
-                            boxShadow: [
-                              BoxShadow(
-                                color: brandViolet.withValues(alpha: 0.3),
-                                blurRadius: 14,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
                           ),
                           alignment: Alignment.center,
-                          child: Text(
-                            initials.isNotEmpty ? initials : 'EM',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.5,
-                            ),
+                          child: const Icon(
+                            Icons.person_outline_rounded,
+                            color: Colors.white,
+                            size: 28,
                           ),
                         ),
-
                         const SizedBox(width: 14),
-
-                        // Name & Phone
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 user.name,
-                                overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w900,
-                                  color: textDark,
-                                  letterSpacing: -0.3,
+                                  fontSize: 16.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.black,
+                                  letterSpacing: -0.2,
                                 ),
                               ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  const Icon(Icons.phone_iphone_rounded, size: 13, color: textGray),
-                                  const SizedBox(width: 4),
-                                  Expanded(
-                                    child: Text(
-                                      user.phoneNumber,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontSize: 12.5,
-                                        color: textGray,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                              const SizedBox(height: 2),
+                              Text(
+                                user.phoneNumber,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xFF6B7280),
+                                ),
                               ),
                             ],
                           ),
                         ),
-
-                        // Edit Button (Fintech-grade pill)
-                        OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(
-                            backgroundColor: brandViolet.withValues(alpha: 0.08),
-                            side: BorderSide(color: brandViolet.withValues(alpha: 0.2), width: 1.0),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                            minimumSize: Size.zero,
-                          ),
-                          icon: const Icon(Icons.edit_rounded, size: 13, color: brandViolet),
-                          label: const Text(
-                            'Edit',
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w800,
-                              color: brandViolet,
+                        InkWell(
+                          onTap: _showEditProfileDialog,
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEEEEEE),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.edit_outlined, size: 14, color: Color(0xFF374151)),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Edit',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF374151),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          onPressed: _showEditProfileDialog,
                         ),
                       ],
                     ),
 
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 22),
 
-                    // Registered Email Pill (Interactive Instant Change Tile)
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: _showChangeEmailDialog,
-                        borderRadius: BorderRadius.circular(16),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
-                          ),
-                          child: Row(
+                    // Two-Column Details Grid
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 6,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  color: brandViolet.withValues(alpha: 0.08),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Icon(Icons.alternate_email_rounded, size: 18, color: brandViolet),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      'REGISTERED EMAIL',
-                                      style: TextStyle(
-                                        fontSize: 9.5,
-                                        fontWeight: FontWeight.w700,
-                                        color: Color(0xFF64748B),
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      user.email,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w800,
-                                        color: textDark,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              // Fast Action Change Pill
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: brandViolet.withValues(alpha: 0.08),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: brandViolet.withValues(alpha: 0.15), width: 1.0),
-                                ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      'Change',
-                                      style: TextStyle(
-                                        fontSize: 11.5,
-                                        fontWeight: FontWeight.w800,
-                                        color: brandViolet,
-                                      ),
-                                    ),
-                                    SizedBox(width: 2),
-                                    Icon(Icons.chevron_right_rounded, size: 14, color: brandViolet),
-                                  ],
-                                ),
-                              ),
+                              _buildSimpleInfoField('Date of Birth', user.dob),
+                              const SizedBox(height: 14),
+                              _buildSimpleInfoField('Email', user.email),
+                              const SizedBox(height: 14),
+                              _buildSimpleInfoField('Address', user.address),
                             ],
                           ),
                         ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-                    const Divider(color: Color(0xFFF3F4F6), height: 1),
-                    const SizedBox(height: 16),
-
-                    // Two-Column Personal Details Grid
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: _buildInfoColumn('Date of Birth', user.dob)),
                         const SizedBox(width: 12),
-                        Expanded(child: _buildInfoColumn('Gender', user.gender)),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: _buildInfoColumn('Civil Status', user.civilStatus)),
-                        const SizedBox(width: 12),
-                        Expanded(child: _buildInfoColumn('Address', user.address)),
+                        Expanded(
+                          flex: 4,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildSimpleInfoField('Gender', user.gender),
+                              const SizedBox(height: 14),
+                              _buildSimpleInfoField('Civil Status', user.civilStatus),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 22),
+              const SizedBox(height: 14),
 
-              // 3. SECURITY & AUTHENTICATION Section Header & List
-              _buildSectionHeader('SECURITY & AUTHENTICATION'),
-              const SizedBox(height: 10),
-
-              _buildSectionCard(
+              // 3. Card 2: Security & Authentication
+              _buildSectionCardContainer(
+                title: 'Security & Authentication',
                 children: [
-                  _buildSwitchTile(
+                  _buildActionSwitchRow(
                     title: 'Biometric Login (Face ID)',
                     subtitle: 'Unlock app instantly with Face ID',
-                    icon: Icons.face_retouching_natural_rounded,
                     value: _faceIdEnabled,
                     onChanged: (val) {
                       setState(() => _faceIdEnabled = val);
+                      _bankService.setFaceIdEnabled(val);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(val ? 'Face ID enabled.' : 'Face ID disabled.'),
@@ -1400,14 +1266,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       );
                     },
                   ),
-                  const Divider(color: Color(0xFFF3F4F6), height: 1),
-                  _buildSwitchTile(
+                  const SizedBox(height: 14),
+                  _buildActionSwitchRow(
                     title: 'Biometric Login (Fingerprint)',
-                    subtitle: 'Authenticate with Touch ID / Fingerprint',
-                    icon: Icons.fingerprint_rounded,
+                    subtitle: 'Authenticate with Touch ID/Fingerprint',
                     value: _fingerprintEnabled,
                     onChanged: (val) {
                       setState(() => _fingerprintEnabled = val);
+                      _bankService.setFingerprintEnabled(val);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(val ? 'Touch ID enabled.' : 'Touch ID disabled.'),
@@ -1416,53 +1282,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       );
                     },
                   ),
-                  const Divider(color: Color(0xFFF3F4F6), height: 1),
-                  _buildNavigationTile(
-                    title: 'Trusted Devices & Sessions',
-                    subtitle: 'Manage active logins and trusted hardware',
-                    icon: Icons.phonelink_lock_rounded,
-                    badgeText: '2 Active',
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const DevicesSessionsScreen()),
-                      );
-                    },
-                  ),
-                  const Divider(color: Color(0xFFF3F4F6), height: 1),
-                  _buildNavigationTile(
+                  const SizedBox(height: 14),
+                  _buildActionNavRow(
                     title: 'Change Email',
-                    subtitle: 'Update registered email address instantly',
-                    icon: Icons.alternate_email_rounded,
+                    subtitle: 'Update registered email address',
                     onTap: _showChangeEmailDialog,
                   ),
-                  const Divider(color: Color(0xFFF3F4F6), height: 1),
-                  _buildNavigationTile(
+                  const SizedBox(height: 14),
+                  _buildActionNavRow(
                     title: 'Change Password',
                     subtitle: 'Update account security password',
-                    icon: Icons.key_rounded,
                     onTap: _showChangePasswordDialog,
                   ),
                 ],
               ),
 
-              const SizedBox(height: 22),
+              const SizedBox(height: 14),
 
-              // 4. PREFERENCES & ALERTS Section Header & List
-              _buildSectionHeader('PREFERENCES & ALERTS'),
-              const SizedBox(height: 10),
-
-              _buildSectionCard(
+              // 4. Card 3: Preference & Alerts
+              _buildSectionCardContainer(
+                title: 'Preference & Alerts',
                 children: [
-                  _buildSwitchTile(
+                  _buildActionSwitchRow(
                     title: 'Instant Push Alerts',
                     subtitle: 'Real-time alerts for all transfers',
-                    icon: Icons.notifications_active_rounded,
                     value: _pushAlertsEnabled,
                     onChanged: (val) {
                       setState(() => _pushAlertsEnabled = val);
+                      _bankService.setPushAlertsEnabled(val);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(val ? 'Push notifications activated.' : 'Push notifications silenced.'),
+                          content: Text(val ? 'Push alerts enabled.' : 'Push alerts disabled.'),
                           duration: const Duration(seconds: 1),
                         ),
                       );
@@ -1471,24 +1321,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
 
-              const SizedBox(height: 22),
+              const SizedBox(height: 14),
 
-              // 5. HELP & LEGAL Section Header & List
-              _buildSectionHeader('HELP & LEGAL'),
-              const SizedBox(height: 10),
-
-              _buildSectionCard(
+              // 5. Card 4: Help and Legal
+              _buildSectionCardContainer(
+                title: 'Help and Legal',
                 children: [
-                  _buildNavigationTile(
+                  _buildActionNavRow(
                     title: 'Help & Contact Support',
-                    subtitle: '24/7 Priority Aura Concierge',
-                    icon: Icons.headset_mic_rounded,
+                    subtitle: null,
                     onTap: () {
                       showDialog(
                         context: context,
                         builder: (ctx) => AlertDialog(
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                          title: const Text('Aura Concierge Support', style: TextStyle(fontWeight: FontWeight.w800)),
+                          title: const Text('Help & Contact Support', style: TextStyle(fontWeight: FontWeight.w800)),
                           content: const Text(
                             'Hotline: +63 (2) 8888-AURA\nEmail: support@aurabank.ph\nSecurity Desk: desk@aurabank.ph\nAvailable 24/7/365.',
                           ),
@@ -1499,11 +1346,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       );
                     },
                   ),
-                  const Divider(color: Color(0xFFF3F4F6), height: 1),
-                  _buildNavigationTile(
+                  const SizedBox(height: 14),
+                  _buildActionNavRow(
                     title: 'Terms & Privacy Policy',
-                    subtitle: 'Privacy notice & security terms',
-                    icon: Icons.privacy_tip_rounded,
+                    subtitle: null,
                     onTap: () {
                       showDialog(
                         context: context,
@@ -1523,25 +1369,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 18),
 
-              // 6. LOGOUT ACTION
-              // Log Out of This Device only (Multi-device logout is on Trusted Devices & Sessions page)
+              // 6. Action: Log Out (Preserved as requested)
               Container(
                 width: double.infinity,
                 height: 52,
                 decoration: BoxDecoration(
                   color: const Color(0xFFFEF2F2),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: const Color(0xFFFEE2E2), width: 1.2),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFFEE2E2), width: 1.0),
                 ),
                 child: TextButton.icon(
                   style: TextButton.styleFrom(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
-                  icon: const Icon(Icons.logout_rounded, size: 19, color: Color(0xFFDC2626)),
+                  icon: const Icon(Icons.logout_rounded, size: 20, color: Color(0xFFDC2626)),
                   label: const Text(
-                    'Log Out of This Device',
+                    'Log Out',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
@@ -1561,198 +1406,158 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Row(
+  Widget _buildSimpleInfoField(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 3.5,
-          height: 13,
-          decoration: BoxDecoration(
-            color: brandViolet,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 8),
         Text(
-          title,
+          label,
           style: const TextStyle(
             fontSize: 11.5,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF9CA3AF),
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 13.5,
             fontWeight: FontWeight.w800,
-            color: Color(0xFF475569),
-            letterSpacing: 0.8,
+            color: Colors.black,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildSectionCard({required List<Widget> children}) {
+  Widget _buildSectionCardContainer({
+    required String title,
+    required List<Widget> children,
+  }) {
     return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE5E7EB), width: 1.0),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.025),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: Column(
-        children: children,
-      ),
-    );
-  }
-
-  Widget _buildSwitchTile({
-    required String title,
-    required String subtitle,
-    IconData? icon,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (icon != null) ...[
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5EEFF),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFEDE9FE), width: 1.0),
-              ),
-              child: Icon(icon, size: 21, color: brandViolet),
-            ),
-            const SizedBox(width: 14),
-          ],
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: textDark),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: const TextStyle(fontSize: 11, color: textGray),
-                ),
-              ],
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF9CA3AF),
             ),
           ),
-          Switch.adaptive(
-            value: value,
-            activeTrackColor: brandViolet,
-            activeThumbColor: Colors.white,
-            onChanged: onChanged,
-          ),
+          const SizedBox(height: 14),
+          ...children,
         ],
       ),
     );
   }
 
-  Widget _buildNavigationTile({
+  Widget _buildActionSwitchRow({
     required String title,
     required String subtitle,
-    IconData? icon,
-    String? badgeText,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  fontSize: 11.5,
+                  color: Color(0xFF6B7280),
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Switch(
+          value: value,
+          activeTrackColor: const Color(0xFF3B0764),
+          activeThumbColor: Colors.white,
+          inactiveTrackColor: const Color(0xFFE5E7EB),
+          inactiveThumbColor: Colors.white,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionNavRow({
+    required String title,
+    String? subtitle,
     required VoidCallback onTap,
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(8),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(vertical: 2),
         child: Row(
           children: [
-            if (icon != null) ...[
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5EEFF),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFEDE9FE), width: 1.0),
-                ),
-                child: Icon(icon, size: 21, color: brandViolet),
-              ),
-              const SizedBox(width: 14),
-            ],
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: textDark),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black,
+                    ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(fontSize: 11, color: textGray),
-                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        color: Color(0xFF6B7280),
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
-            Row(
-              children: [
-                if (badgeText != null) ...[
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE9D5FF),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      badgeText,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: brandViolet,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Color(0xFF9CA3AF)),
-              ],
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: Color(0xFF5E17EB),
+              size: 24,
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildInfoColumn(String label, String value) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            value,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: textDark),
-          ),
-        ],
       ),
     );
   }

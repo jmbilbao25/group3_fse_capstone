@@ -14,7 +14,7 @@ if [ "$USE_MANAGED_POSTGRES" = "true" ]; then
   echo " Architecture: Single B2s AKS + Basic SQL + Managed PostgreSQL B1ms"
   echo " Estimated Daily Run Cost: ~\$1.73/day (~5.7 days on \$10.00 budget)"
 else
-  echo " Architecture: Single B2s AKS + Basic SQL + In-Cluster PostgreSQL ($0.00)"
+  echo " Architecture: Single B2s AKS + Basic SQL + In-Cluster PostgreSQL (\$0.00)"
   echo " Estimated Daily Run Cost: ~\$1.33/day (~7.5 days on \$10.00 budget)"
   echo " Paused Cost (az aks stop): ~\$0.21/day (~47 days on \$10.00 budget)"
 fi
@@ -22,12 +22,47 @@ echo "===================================================================="
 
 # 1. Configuration & Random Identifier
 LOCATION="${AZURE_LOCATION:-southeastasia}"
-RANDOM_SUFFIX=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 5 | head -n 1)
 
-RESOURCE_GROUP="${RESOURCE_GROUP:-rg-banking-budget-$LOCATION}"
-ACR_NAME="${ACR_NAME:-acrbanking$RANDOM_SUFFIX}"
+# Generate safe 5-character numeric suffix without broken pipe risks
+TS=$(date +%s)
+RANDOM_SUFFIX="${TS: -5}"
+
+# Check if running inside a pre-allocated lab sandbox with an existing resource group
+RESOURCE_GROUP="${RESOURCE_GROUP:-}"
+if [ -z "$RESOURCE_GROUP" ]; then
+  DETECTED_RG=$(az group list --query "[?name!='NetworkWatcherRG' && !starts_with(name, 'cloud-shell-storage')].name | [0]" -o tsv 2>/dev/null || true)
+  if [ -n "$DETECTED_RG" ] && [ "$DETECTED_RG" != "None" ]; then
+    RESOURCE_GROUP="$DETECTED_RG"
+    echo "Detected assigned Sandbox Resource Group: $RESOURCE_GROUP"
+    DETECTED_LOC=$(az group show --name "$RESOURCE_GROUP" --query location -o tsv 2>/dev/null || true)
+    if [ -n "$DETECTED_LOC" ] && [ "$DETECTED_LOC" != "None" ]; then
+      LOCATION="$DETECTED_LOC"
+    fi
+  else
+    RESOURCE_GROUP="rg-banking-budget-$LOCATION"
+  fi
+fi
+
+# Detect existing ACR in the resource group if already created
+EXISTING_ACR=$(az acr list --resource-group "$RESOURCE_GROUP" --query "[0].name" -o tsv 2>/dev/null || true)
+if [ -n "$EXISTING_ACR" ] && [ "$EXISTING_ACR" != "None" ]; then
+  ACR_NAME="$EXISTING_ACR"
+  echo "Detected existing ACR: $ACR_NAME"
+else
+  ACR_NAME="${ACR_NAME:-acrbanking$RANDOM_SUFFIX}"
+fi
+
 AKS_CLUSTER_NAME="${AKS_CLUSTER_NAME:-aks-banking-budget}"
-SQL_SERVER_NAME="${SQL_SERVER_NAME:-sql-banking-$RANDOM_SUFFIX}"
+
+# Detect existing Azure SQL Server in the resource group if already created
+EXISTING_SQL=$(az sql server list --resource-group "$RESOURCE_GROUP" --query "[0].name" -o tsv 2>/dev/null || true)
+if [ -n "$EXISTING_SQL" ] && [ "$EXISTING_SQL" != "None" ]; then
+  SQL_SERVER_NAME="$EXISTING_SQL"
+  echo "Detected existing Azure SQL Server: $SQL_SERVER_NAME"
+else
+  SQL_SERVER_NAME="${SQL_SERVER_NAME:-sql-banking-$RANDOM_SUFFIX}"
+fi
+
 SQL_DB_NAME="sqldb-master"
 SQL_ADMIN_USER="sqladminuser"
 SQL_ADMIN_PASS="Capst0ne!Secure${RANDOM_SUFFIX}#"
@@ -40,36 +75,46 @@ PG_ADMIN_PASS="Audit!Vault${RANDOM_SUFFIX}#"
 JWT_SECRET="c3VwZXItc2VjcmV0LWtleS1mb3ItZnNlLWNhcHN0b25lLWJhbmtpbmctcGxhdGZvcm0tMjAyNi0xMjM0NTY3ODkwMTI="
 
 echo ""
-echo "[1/7] Creating Resource Group: $RESOURCE_GROUP ($LOCATION)..."
-az group create --name "$RESOURCE_GROUP" --location "$LOCATION" -o table
+if az group show --name "$RESOURCE_GROUP" &>/dev/null; then
+  echo "[1/7] Using existing Resource Group: $RESOURCE_GROUP ($LOCATION)..."
+else
+  echo "[1/7] Creating Resource Group: $RESOURCE_GROUP ($LOCATION)..."
+  az group create --name "$RESOURCE_GROUP" --location "$LOCATION" -o table
+fi
 
 echo ""
-echo "[2/7] Provisioning Azure SQL Logical Server & Basic 5 DTU Database (~$0.16/day)..."
-az sql server create \
-  --name "$SQL_SERVER_NAME" \
-  --resource-group "$RESOURCE_GROUP" \
-  --location "$LOCATION" \
-  --admin-user "$SQL_ADMIN_USER" \
-  --admin-password "$SQL_ADMIN_PASS" \
-  -o table
+if az sql server show --name "$SQL_SERVER_NAME" --resource-group "$RESOURCE_GROUP" &>/dev/null; then
+  echo "[2/7] Using existing Azure SQL Server: $SQL_SERVER_NAME..."
+  # Synchronize admin password with the current deployment secrets
+  az sql server update --name "$SQL_SERVER_NAME" --resource-group "$RESOURCE_GROUP" --admin-password "$SQL_ADMIN_PASS" -o none 2>/dev/null || true
+else
+  echo "[2/7] Provisioning Azure SQL Logical Server & Basic 5 DTU Database (~$0.16/day)..."
+  az sql server create \
+    --name "$SQL_SERVER_NAME" \
+    --resource-group "$RESOURCE_GROUP" \
+    --location "$LOCATION" \
+    --admin-user "$SQL_ADMIN_USER" \
+    --admin-password "$SQL_ADMIN_PASS" \
+    -o table
 
-# Open firewall to all Azure services (0.0.0.0 to 0.0.0.0)
-az sql server firewall-rule create \
-  --server "$SQL_SERVER_NAME" \
-  --resource-group "$RESOURCE_GROUP" \
-  --name "AllowAzureInternal" \
-  --start-ip-address 0.0.0.0 \
-  --end-ip-address 0.0.0.0 \
-  -o table
+  # Open firewall to all Azure services (0.0.0.0 to 0.0.0.0)
+  az sql server firewall-rule create \
+    --server "$SQL_SERVER_NAME" \
+    --resource-group "$RESOURCE_GROUP" \
+    --name "AllowAzureInternal" \
+    --start-ip-address 0.0.0.0 \
+    --end-ip-address 0.0.0.0 \
+    -o table
 
-az sql db create \
-  --server "$SQL_SERVER_NAME" \
-  --resource-group "$RESOURCE_GROUP" \
-  --name "$SQL_DB_NAME" \
-  --edition Basic \
-  --service-objective Basic \
-  --capacity 5 \
-  -o table
+  az sql db create \
+    --server "$SQL_SERVER_NAME" \
+    --resource-group "$RESOURCE_GROUP" \
+    --name "$SQL_DB_NAME" \
+    --edition Basic \
+    --service-objective Basic \
+    --capacity 5 \
+    -o table
+fi
 
 echo ""
 if [ "$USE_MANAGED_POSTGRES" = "true" ]; then
@@ -104,38 +149,70 @@ if [ "$USE_MANAGED_POSTGRES" = "true" ]; then
   PG_FQDN="${PG_SERVER_NAME}.postgres.database.azure.com"
   PG_JDBC_URL="jdbc:postgresql://${PG_FQDN}:5432/${PG_DB_NAME}?sslmode=require"
 else
-  echo "[3/7] PostgreSQL Mode: IN-CLUSTER POD ($0.00 extra cost / saves ~$12/month)..."
+  echo "[3/7] PostgreSQL Mode: IN-CLUSTER POD (\$0.00 extra cost / saves ~\$12/month)..."
   echo "      PostgreSQL 16 Alpine will deploy automatically inside AKS alongside Redis & Kafka."
   PG_FQDN="postgres.banking.svc.cluster.local"
   PG_JDBC_URL="jdbc:postgresql://${PG_FQDN}:5432/${PG_DB_NAME}?sslmode=disable"
 fi
 
 echo ""
-echo "[4/7] Provisioning Azure Container Registry (Basic SKU, ~$0.17/day)..."
-az acr create \
-  --name "$ACR_NAME" \
-  --resource-group "$RESOURCE_GROUP" \
-  --sku Basic \
-  --admin-enabled true \
-  -o table
+if az acr show --name "$ACR_NAME" --resource-group "$RESOURCE_GROUP" &>/dev/null; then
+  echo "[4/7] Using existing Azure Container Registry: $ACR_NAME..."
+else
+  echo "[4/7] Provisioning Azure Container Registry (Basic SKU, ~\$0.17/day)..."
+  az acr create \
+    --name "$ACR_NAME" \
+    --resource-group "$RESOURCE_GROUP" \
+    --sku Basic \
+    --admin-enabled true \
+    -o table
+fi
 
 echo ""
-echo "[5/7] Provisioning Single-Node AKS Cluster (Standard_B2s, Free Control Plane, ~$1.00/day)..."
-az aks create \
-  --name "$AKS_CLUSTER_NAME" \
-  --resource-group "$RESOURCE_GROUP" \
-  --node-count 1 \
-  --node-vm-size Standard_B2s \
-  --tier free \
-  --attach-acr "$ACR_NAME" \
-  --generate-ssh-keys \
-  -o table
+AKS_VM_SIZE="${AKS_VM_SIZE:-standard_b2s_v2}"
+echo "[5/7] Provisioning Single-Node AKS Cluster ($AKS_VM_SIZE, Free Control Plane, ~\$1.00/day)..."
+if az aks show --name "$AKS_CLUSTER_NAME" --resource-group "$RESOURCE_GROUP" &>/dev/null; then
+  echo "Using existing AKS Cluster: $AKS_CLUSTER_NAME..."
+else
+  if ! az aks create \
+    --name "$AKS_CLUSTER_NAME" \
+    --resource-group "$RESOURCE_GROUP" \
+    --node-count 1 \
+    --node-vm-size "$AKS_VM_SIZE" \
+    --tier free \
+    --generate-ssh-keys \
+    -o table; then
+    echo "Retrying AKS creation with alternative budget VM size standard_b2as_v2..."
+    az aks create \
+      --name "$AKS_CLUSTER_NAME" \
+      --resource-group "$RESOURCE_GROUP" \
+      --node-count 1 \
+      --node-vm-size "standard_b2as_v2" \
+      --tier free \
+      --generate-ssh-keys \
+      -o table
+  fi
+fi
+
+az aks update -n "$AKS_CLUSTER_NAME" -g "$RESOURCE_GROUP" --attach-acr "$ACR_NAME" 2>/dev/null || true
 
 echo ""
 echo "[6/7] Configuring Kubernetes Cluster Credentials & Secrets..."
 az aks get-credentials --resource-group "$RESOURCE_GROUP" --name "$AKS_CLUSTER_NAME" --overwrite-existing
 
 kubectl create namespace banking --dry-run=client -o yaml | kubectl apply -f -
+
+# Configure cluster image pull secret using ACR admin credentials (bypasses Azure AD role constraints)
+ACR_PASS=$(az acr credential show --name "$ACR_NAME" --query "passwords[0].value" -o tsv 2>/dev/null || true)
+if [ -n "$ACR_PASS" ]; then
+  kubectl create secret docker-registry acr-secret \
+    --namespace banking \
+    --docker-server="${ACR_NAME}.azurecr.io" \
+    --docker-username="$ACR_NAME" \
+    --docker-password="$ACR_PASS" \
+    --dry-run=client -o yaml | kubectl apply -f -
+  kubectl patch serviceaccount default -n banking -p '{"imagePullSecrets": [{"name": "acr-secret"}]}' 2>/dev/null || true
+fi
 
 SQL_FQDN="${SQL_SERVER_NAME}.database.windows.net"
 SQL_JDBC_URL="jdbc:sqlserver://${SQL_FQDN}:1433;databaseName=${SQL_DB_NAME};encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;"
@@ -177,7 +254,7 @@ echo " Azure SQL Host:       $SQL_FQDN"
 echo " Azure SQL DB:         $SQL_DB_NAME (User: $SQL_ADMIN_USER, Pass: $SQL_ADMIN_PASS)"
 echo " PostgreSQL Host:      $PG_FQDN"
 echo " PostgreSQL DB:        $PG_DB_NAME (User: $PG_ADMIN_USER, Pass: $PG_ADMIN_PASS)"
-echo " PostgreSQL Type:      $(if [ "$USE_MANAGED_POSTGRES" = "true" ]; then echo "Azure Managed Flexible Server (~$0.40/day)"; else echo "In-Cluster Pod ($0.00 / Free)"; fi)"
+echo " PostgreSQL Type:      $(if [ "$USE_MANAGED_POSTGRES" = "true" ]; then echo "Azure Managed Flexible Server (~$0.40/day)"; else echo "In-Cluster Pod (\$0.00 / Free)"; fi)"
 echo "===================================================================="
 echo ""
 echo "To check the public IP of your Gateway service (run in a few moments):"

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/bank_service.dart';
 import '../theme/aura_theme.dart';
+import 'login_page_face_id.dart' show FaceIdIcon;
 import 'receipt_screen.dart';
 
 class ReviewTransferScreen extends StatefulWidget {
@@ -472,7 +473,7 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
                 shadowColor: Colors.transparent,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
               ),
-              onPressed: _showConfirmationModal,
+              onPressed: _showBiometricAuthModal,
               child: const Text(
                 'Confirm & Send',
                 style: TextStyle(
@@ -524,110 +525,291 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
     );
   }
 
-  void _showConfirmationModal() {
+  void _showBiometricAuthModal() {
+    final user = _bankService.user;
+    final bool hasFaceId = user.faceIdEnabled;
+    final bool hasFingerprint = user.fingerprintEnabled;
+
+    // Determine initial biometric type based on what is turned on in user settings:
+    // If only Face ID is on -> Face ID
+    // If only Fingerprint is on -> Fingerprint
+    // If both are on -> Default to Face ID (with toggle between Face ID & Fingerprint)
+    // If neither is on -> fallback to Fingerprint
+    bool useFaceId = hasFaceId || (!hasFingerprint);
+    if (!hasFaceId && hasFingerprint) {
+      useFaceId = false;
+    }
+
+    bool isVerifying = false;
+    bool isSuccess = false;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Align(
-          alignment: Alignment.bottomCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.15),
-                    blurRadius: 32,
-                    offset: const Offset(0, -6),
+      builder: (modalContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            Future<void> executeBiometricAuth() async {
+              if (isVerifying || isSuccess) return;
+              setModalState(() {
+                isVerifying = true;
+              });
+
+              // Realistic biometric verification handshake
+              await Future.delayed(const Duration(milliseconds: 650));
+
+              if (!context.mounted) return;
+              setModalState(() {
+                isVerifying = false;
+                isSuccess = true;
+              });
+
+              await Future.delayed(const Duration(milliseconds: 350));
+              if (!context.mounted) return;
+
+              final navigator = Navigator.of(context);
+              navigator.pop();
+
+              final result = await _bankService.executeTransfer(
+                targetAccount: widget.recipientAccount,
+                recipientName: widget.recipientName,
+                amount: widget.amount,
+                destinationBank: widget.recipientBank,
+                remarks: widget.remarks,
+              );
+
+              if (!mounted) return;
+              Navigator.of(this.context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (context) => TransactionReceiptScreen(
+                    isSuccess: result['success'] == true,
+                    senderName: widget.senderName,
+                    senderAccount: widget.senderAccount,
+                    recipientName: widget.recipientName,
+                    recipientAccount: widget.recipientAccount,
+                    recipientBank: widget.recipientBank,
+                    amount: widget.amount,
+                    fee: widget.fee,
+                    referenceNumber: result['reference'] ?? 'AUR-990123',
                   ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Warning Glyph Squircle Badge (Image 2 style)
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFD1D1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Icon(
-                      Icons.warning_amber_rounded,
-                      color: Color(0xFFEF4444),
-                      size: 36,
-                    ),
-                  ),
+                ),
+              );
+            }
 
-                  const SizedBox(height: 18),
+            final String authTitle = isSuccess
+                ? 'Biometrics Verified!'
+                : (useFaceId ? 'Authorize with Face ID' : 'Authorize with Fingerprint');
 
-                  // Title (Obsidian Ink)
-                  const Text(
-                    'Do you want to continue?',
-                    style: TextStyle(
-                      fontSize: 21,
-                      fontWeight: FontWeight.w900,
-                      color: textDark,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
+            final String authSubtitle = isSuccess
+                ? 'Transfer approved. Finalizing ledger...'
+                : (useFaceId
+                    ? 'Look at screen or tap to authorize transfer'
+                    : 'Touch sensor or tap to authorize transfer');
 
-                  const SizedBox(height: 10),
+            final String ctaLabel = isVerifying
+                ? 'Verifying...'
+                : (useFaceId ? 'Authorize Face ID' : 'Authorize Fingerprint');
 
-                  // Subtitle with Highlighted Amount
-                  RichText(
-                    textAlign: TextAlign.center,
-                    text: TextSpan(
-                      style: const TextStyle(
-                        fontSize: 13.5,
-                        color: Color(0xFF475569),
-                        height: 1.45,
+            return Align(
+              alignment: Alignment.bottomCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.18),
+                        blurRadius: 36,
+                        offset: const Offset(0, -8),
                       ),
-                      children: [
-                        const TextSpan(text: 'You are sending '),
-                        TextSpan(
-                          text: 'PHP ${_formatAmount(widget.amount)}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w900,
-                            color: textDark,
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Top Drag Indicator Bar
+                      Center(
+                        child: Container(
+                          width: 44,
+                          height: 4.5,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFCBD5E1),
+                            borderRadius: BorderRadius.circular(3),
                           ),
                         ),
-                        const TextSpan(
-                          text: '. Please make sure the recipient details are correct, as completed transfers cannot be reversed.',
+                      ),
+                      const SizedBox(height: 16),
+
+                      // If both Face ID & Fingerprint are enabled in settings, show toggle
+                      if (hasFaceId && hasFingerprint && !isVerifying && !isSuccess) ...[
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              InkWell(
+                                borderRadius: BorderRadius.circular(20),
+                                onTap: () => setModalState(() => useFaceId = true),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                                  decoration: BoxDecoration(
+                                    color: useFaceId ? brandViolet : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.face_retouching_natural_rounded,
+                                        size: 16,
+                                        color: useFaceId ? Colors.white : textMuted,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'Face ID',
+                                        style: TextStyle(
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: useFaceId ? Colors.white : textDark,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              InkWell(
+                                borderRadius: BorderRadius.circular(20),
+                                onTap: () => setModalState(() => useFaceId = false),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                                  decoration: BoxDecoration(
+                                    color: !useFaceId ? brandViolet : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.fingerprint_rounded,
+                                        size: 16,
+                                        color: !useFaceId ? Colors.white : textMuted,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'Fingerprint',
+                                        style: TextStyle(
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: !useFaceId ? Colors.white : textDark,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
+                        const SizedBox(height: 18),
+                      ] else ...[
+                        const SizedBox(height: 8),
                       ],
-                    ),
-                  ),
 
-                  const SizedBox(height: 20),
+                      // Glowing Biometric Centerpiece Sensor
+                      GestureDetector(
+                        onTap: isVerifying ? null : executeBiometricAuth,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 250),
+                          width: 88,
+                          height: 88,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isSuccess
+                                ? const Color(0xFF10B981).withValues(alpha: 0.12)
+                                : brandViolet.withValues(alpha: 0.08),
+                            border: Border.all(
+                              color: isSuccess ? const Color(0xFF10B981) : brandViolet.withValues(alpha: 0.3),
+                              width: 2.2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: (isSuccess ? const Color(0xFF10B981) : brandViolet).withValues(alpha: 0.16),
+                                blurRadius: 20,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: isSuccess
+                                ? const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 52)
+                                : isVerifying
+                                    ? const SizedBox(
+                                        width: 36,
+                                        height: 36,
+                                        child: CircularProgressIndicator(strokeWidth: 3.5, color: brandViolet),
+                                      )
+                                    : useFaceId
+                                        ? const FaceIdIcon(size: 56, backgroundColor: Colors.transparent, color: brandViolet)
+                                        : const Icon(Icons.fingerprint_rounded, color: brandViolet, size: 52),
+                          ),
+                        ),
+                      ),
 
-                  // Transfer Recap Card (Porcelain Slate with Hairline Divider)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      children: [
-                        // Amount Row
-                        Row(
+                      const SizedBox(height: 18),
+
+                      // Title
+                      Text(
+                        authTitle,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          color: textDark,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+
+                      const SizedBox(height: 6),
+
+                      // Subtitle
+                      Text(
+                        authSubtitle,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+
+                      const SizedBox(height: 18),
+
+                      // Recap Transfer Capsule
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              'Amount',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: textMuted,
+                            const Expanded(
+                              child: Text(
+                                'Transfer Amount',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: textMuted,
+                                ),
                               ),
                             ),
+                            const SizedBox(width: 8),
                             FittedBox(
                               fit: BoxFit.scaleDown,
                               alignment: Alignment.centerRight,
@@ -642,149 +824,81 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
                             ),
                           ],
                         ),
+                      ),
 
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 8),
-                          child: Divider(
-                            color: Color(0xFFCBD5E1),
-                            height: 1,
-                            thickness: 0.8,
-                          ),
-                        ),
+                      const SizedBox(height: 22),
 
-                        // To Recipient Row
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'To',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: textMuted,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                widget.recipientName.isNotEmpty ? widget.recipientName : 'Jessie Mae Dela Paz',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.right,
-                                style: const TextStyle(
-                                  fontSize: 14.5,
-                                  fontWeight: FontWeight.w900,
-                                  color: brandViolet,
-                                ),
-                              ),
+                      // Primary Biometric CTA
+                      Container(
+                        width: double.infinity,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: brandViolet,
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: [
+                            BoxShadow(
+                              color: brandViolet.withValues(alpha: 0.35),
+                              blurRadius: 18,
+                              offset: const Offset(0, 6),
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Primary CTA: "Yes, Continue" (Image 2 style)
-                  Container(
-                    width: double.infinity,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: brandViolet,
-                      borderRadius: BorderRadius.circular(18),
-                      boxShadow: [
-                        BoxShadow(
-                          color: brandViolet.withValues(alpha: 0.35),
-                          blurRadius: 18,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        shadowColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                      ),
-                      onPressed: () async {
-                        final navigator = Navigator.of(context);
-                        navigator.pop();
-                        final result = await _bankService.executeTransfer(
-                          targetAccount: widget.recipientAccount,
-                          recipientName: widget.recipientName,
-                          amount: widget.amount,
-                          destinationBank: widget.recipientBank,
-                          remarks: widget.remarks,
-                        );
-
-                        if (!mounted) return;
-                        navigator.pushReplacement(
-                          MaterialPageRoute(
-                            builder: (context) => TransactionReceiptScreen(
-                              isSuccess: result['success'] == true,
-                              senderName: widget.senderName,
-                              senderAccount: widget.senderAccount,
-                              recipientName: widget.recipientName,
-                              recipientAccount: widget.recipientAccount,
-                              recipientBank: widget.recipientBank,
-                              amount: widget.amount,
-                              fee: widget.fee,
-                              referenceNumber: result['reference'] ?? 'AUR-990123',
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                          ),
+                          onPressed: isVerifying ? null : executeBiometricAuth,
+                          icon: Icon(
+                            useFaceId ? Icons.face_retouching_natural_rounded : Icons.fingerprint_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                          label: Text(
+                            ctaLabel,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15.5,
+                              color: Colors.white,
+                              letterSpacing: 0.2,
                             ),
                           ),
-                        );
-                      },
-                      child: const Text(
-                        'Yes, Continue',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 16,
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // Secondary Cancel CTA
+                      Container(
+                        width: double.infinity,
+                        height: 50,
+                        decoration: BoxDecoration(
                           color: Colors.white,
-                          letterSpacing: 0.2,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+                        ),
+                        child: TextButton(
+                          style: TextButton.styleFrom(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                          ),
+                          onPressed: isVerifying ? null : () => Navigator.of(context).pop(),
+                          child: const Text(
+                            'Cancel',
+                            style: TextStyle(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w700,
+                              color: textMuted,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
-
-                  const SizedBox(height: 12),
-
-                  // Secondary CTA: "Cancel Transaction" (Image 2 Elevated White Pill Button)
-                  Container(
-                    width: double.infinity,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 14,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: TextButton(
-                      style: TextButton.styleFrom(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                      ),
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text(
-                        'Cancel Transaction',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          color: brandViolet,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );

@@ -792,12 +792,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
               // Card 3: Purpose & Remarks
               _buildPurposeAndRemarksCard(),
 
-              const SizedBox(height: 20),
-
-              // Security Trust Badge
-              _buildSecurityBadge(),
-
-              const SizedBox(height: 14),
+              const SizedBox(height: 24),
 
               // Primary CTA Button: "Send Money"
               _buildSendMoneyButton(),
@@ -1736,27 +1731,6 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                   ),
                 ),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSecurityBadge() {
-    return const Center(
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.lock_outline_rounded, size: 13, color: textMuted),
-          SizedBox(width: 6),
-          Text(
-            '256-Bit Encrypted • Real-time InstaPay Settlement',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: textGray,
-              letterSpacing: 0.1,
             ),
           ),
         ],

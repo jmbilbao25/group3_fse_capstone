@@ -16,8 +16,6 @@ Every containerized service in the Docker Compose bridge network (`banking-net`)
 | :--- | :--- | :---: | :---: | :--- | :--- | :--- |
 | `client` | `banking-frontend` | `3000` | `80` / `3000` | HTTP | Public Browser | React 18 SPA: Customer (email 2FA) & Admin telemetry portals |
 | `gateway` | `gateway-service` | `8080` | `8080` | HTTP / REST | Public API Entry | Perimeter Security, JWT validation, rate limiting |
-| `bff_svc` | `bff-service` | `8085` | `8085` | HTTP / REST | Internal Network | Backend for Frontend: aggregation, draft form persistence, client preferences |
-| `bff_db`  | `bff-postgres-db` | `5433` | `5432` | PostgreSQL  | Internal Network | Dedicated BFF DB: isolated draft transfers, UI preferences, and session state |
 | `acc_svc` | `account-service` | `8081` | `8081` | HTTP / REST | Internal Network | Customer KYC, user onboarding, account provisioning |
 | `tx_engine`| `transfer-orchestrator`| `8082` | `8082` | HTTP / REST | Internal Network | Transfer lifecycle orchestrator: Risk Engine evaluation, Saga compensation, T24 dispatch |
 | `t24_cbs`  | `temenos-t24-cbs`       | `9100` | `9100` | HTTP / OFS  | Internal Network | Temenos T24 Core Banking System: Dual Ingress (1: Funds Transfer, 2: Reversal) |
@@ -52,12 +50,11 @@ Every containerized service in the Docker Compose bridge network (`banking-net`)
   2. `TokenBlacklistFilter`: Queries Redis (`blacklist:jti:<jti>`) in sub-5ms; instantly blocks revoked tokens from logged-out users or frozen accounts.
   3. `RedisRateLimiter`: Token-bucket algorithm enforcing 100 requests/sec per IP to prevent brute-force attacks.
   4. `RouteConfiguration`:
-     - `/api/v1/bff/**` routes to `bff-service:8085` (presentation aggregation & drafts)
      - `/api/v1/auth/**` routes to `account-service:8081`
      - `/api/v1/accounts/**` routes to `account-service:8081`
-     - `/api/v1/ledger/**` routes to `ledger-mutation-engine:8082`
-     - `/api/v1/transfers/**` routes to `ledger-mutation-engine:8082`
-     - `/api/v1/bills/**` routes to `ledger-mutation-engine:8082`
+     - `/api/v1/ledger/**` routes to `transfer-orchestrator:8082`
+     - `/api/v1/transfers/**` routes to `transfer-orchestrator:8082`
+     - `/api/v1/bills/**` routes to `transfer-orchestrator:8082`
 
 ---
 
@@ -79,18 +76,7 @@ Every containerized service in the Docker Compose bridge network (`banking-net`)
 
 ---
 
-### D. Backend for Frontend (BFF) Service (`bff-service` :8085) & Dedicated BFF DB (`bff-postgres-db` :5433)
-- **Runtime**: Spring Boot 3, Spring WebClient, Spring Data JPA.
-- **Datasource**: Exclusively connected to **Dedicated BFF DB** (`bff-postgres-db` on port 5433 / PostgreSQL). Completely isolated from the CBS Master Database.
-- **Core Functions**:
-  1. `DraftTransferManager`: Saves in-progress transfer forms, multi-step stepper states, and unsubmitted payment drafts with zero lock impact on the CBS.
-  2. `ClientPreferenceService`: Stores customer UI themes, favorite beneficiaries, quick-transfer presets, and push notification configurations.
-  3. `SessionAndDeviceStore`: Validates client device fingerprints, web push tokens, and biometric public keys.
-  4. `PresentationAggregator`: Combines account profile summaries, transaction history caches, and pending draft statuses into low-latency composite JSON payloads for the frontend apps.
-
----
-
-### E. Funds Transfer Orchestrator (`transfer-orchestrator` :8082)
+### D. Funds Transfer Orchestrator (`transfer-orchestrator` :8082)
 - **Runtime**: Spring Boot 3, Spring WebClient, Spring Kafka.
 - **Core Functions**:
   1. `PerimeterValidator`: Enforces `@Digits(integer=14, fraction=4)` and `@Positive` on mutation requests; intercepts malformed requests via `GlobalControllerAdvice` returning RFC-7807 Problem Details.
@@ -108,7 +94,7 @@ Every containerized service in the Docker Compose bridge network (`banking-net`)
 
 ---
 
-### F. Temenos T24 Core Banking System (`temenos-t24-cbs` :9100)
+### E. Temenos T24 Core Banking System (`temenos-t24-cbs` :9100)
 - **Runtime**: Temenos T24 Core Banking System runtime / Enterprise CBS.
 - **Datasource**: Direct and exclusive connection point to `azure-sql-db:1433`.
 - **Dual Ingress Endpoints**:
@@ -288,39 +274,39 @@ sequenceDiagram
 
 ---
 
-## 3. Database Segregation Architecture: BFF Database vs CBS Master Database
+## 3. Dual-Storage Persistence Architecture: CBS Master Database vs Immutable Audit Vault
 
-A core architectural principle of this system is the strict separation between the **BFF Presentation Database (`bff-postgres-db` :5433)** and the **CBS Master Ledger Database (`azure-sql-db` :1433)**:
+The platform enforces a dual-storage persistence architecture, partitioning live operational financial transactions from immutable regulatory audit trails:
 
-| Architectural Dimension | Dedicated BFF Database (`bff-postgres-db` :5433) | CBS Master Ledger Database (`azure-sql-db` :1433) |
+| Architectural Dimension | CBS Master Ledger Database (`azure-sql-db` :1433) | Immutable Audit Vault (`azure-postgres-vault` :5432) |
 | :--- | :--- | :--- |
-| **Primary Owner** | `bff-service` (:8085) | `temenos-t24-cbs` (:9100) exclusively |
-| **Storage Engine** | PostgreSQL 16 (Lightweight Micro-DB) | Azure SQL Database (Relational ACID Kernel) |
-| **Data Scope** | Presentation state, transfer drafts, UI preferences, device tokens, composite caches | Core accounts, customer master ledgers, GL double-entry journals, EOD balances |
-| **Concurrency Model** | Optimistic, ephemeral, fast read/write with low lock contention | Strict row-level pessimistic locking (`UPDLOCK, ROWLOCK`), ACID serialization |
-| **SLA & Scaling** | Horizontally scalable with frontend pods; independent restart & schema evolution | Mission-critical core financial SLA; failover-protected, regulated double-entry |
-| **Blast Radius Isolation** | High-frequency client polling or draft form saves never consume CBS connections | Protected from client traffic spikes, mobile retries, and UI query loads |
+| **Primary Owner** | `temenos-t24-cbs` (:9100) exclusively | Audit Consumer Worker (`notification-workers`) |
+| **Storage Engine** | Azure SQL Database (Relational ACID Kernel) | Azure Database for PostgreSQL 16 Alpine |
+| **Data Scope** | Core accounts, customer master ledgers, GL double-entry journals, EOD balances | Append-only financial audit records (`ledger_mutation_audit`), mutation receipts |
+| **Concurrency Model** | Strict row-level pessimistic locking (`UPDLOCK, ROWLOCK`), ACID serialization | High-throughput append-only streaming; database trigger strictly blocks UPDATE & DELETE |
+| **SLA & Scaling** | Mission-critical core financial SLA; failover-protected double-entry integrity | Independent read-heavy compliance reporting, sub-5ms indexed auditor lookups |
+| **External Architecture** | No extraneous presentation databases; direct service integration | Zero direct browser writes; pure asynchronous Kafka event projection |
 
-### Rationale & Benefits
-1. **Zero Contention on Master Balance Locks**: Client users frequently save draft transfers, browse beneficiary lists, and check UI settings. Executing these operations on the isolated BFF DB ensures that the Temenos T24 CBS balance mutation kernel never encounters lock contention from presentation-tier workloads.
-2. **Independent Lifecycle & Schema Evolution**: The presentation layer changes frequently as new mobile/web features are shipped. The BFF DB can evolve without requiring risk audits or regulatory schema migration reviews on the core banking system database.
-3. **Resilience & Offline Drafts**: If core CBS connectivity is degraded, customers can still prepare and stage transfer drafts in the BFF DB, which the orchestrator dispatches once connectivity resumes.
+### Architectural Principles
+1. **Pessimistic Balance Integrity**: Temenos T24 CBS serializes high-frequency balance mutations using database row locks on Azure SQL, preventing race conditions and double-spending.
+2. **Regulatory Non-Repudiation**: The PostgreSQL audit vault is isolated from operational mutations. A custom trigger (`trg_no_update_delete_mutation_audit`) rejects any tampering attempts, satisfying Bangko Sentral ng Pilipinas (BSP) compliance requirements.
+3. **Lean Persistence Footprint**: Business flows operate cleanly through standard microservices and core banking databases without introducing unnecessary intermediate storage layers.
 
 ---
 
 ## 4. C1–C4 Architectural Hierarchy & Interactive Presentation Explorer
 
-The system is formalized across the C4 model hierarchy to facilitate presentations ranging from executive high-level overviews to low-level engineering execution flows:
+The system is formalized across the C4 model hierarchy to facilitate presentations ranging from executive high-level overviews down to low-level engineering execution flows:
 
 * **Interactive Presentation Navigator**: [`c_model_explorer.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c_model_explorer.html)
   An interactive canvas that allows clicking any component node to smoothly zoom in from high-level C1 System Context down to C2 Containers, C3 Components, and C4 Sequence execution flows. Includes keyboard navigation (`1..4` to jump levels, `Esc` to zoom out), node inspection drawer, and instant theme switching.
 * **C1: System Context Diagram**: [`c1_system_context.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c1_system_context.html)
   Depicts Retail Customers, Back-Office Ops, the Core Platform Boundary, Notification Gateways, and the external Temenos T24 CBS with its dual ingress capabilities.
 * **C2: Container Diagram**: [`c2_container.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c2_container.html)
-  Depicts all containerized deployment units, including Frontends, Gateway, BFF Service, Dedicated BFF Database (:5433), Orchestrator, T24 CBS (:9100), and CBS Master DB (:1433).
+  Depicts all containerized deployment units: Frontends, Gateway (:8080), Account Service (:8081), Transfer Orchestrator (:8082), T24 CBS (:9100 with EP1 & EP2), and CBS Master DB (:1433).
 * **C3: Component Diagram**: [`c3_component.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c3_component.html)
-  Exposes the internal code-level modules: BFF Draft Controller, State Repository, Saga Compensation Coordinator, T24 Transfer Client (EP1), T24 Reversal Client (EP2), and T24 Core Accounting Kernel.
+  Exposes the internal code-level modules: Idempotency Guard, Risk Coordinator, Saga Compensation Coordinator, T24 Transfer Client (EP1), T24 Reversal Client (EP2), and T24 Core Accounting Kernel.
 * **C4: Sequence / Flow Diagram**: [`c4_sequence.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c4_sequence.html)
-  Details the execution sequence of a fund transfer via T24 Endpoint 1, followed by a simulated downstream timeout that triggers an automated compensating reversal via T24 Endpoint 2.
+  Details the execution sequence of a funds transfer via T24 Endpoint 1, followed by a simulated downstream timeout that triggers an automated compensating reversal via T24 Endpoint 2.
 * **Full Primary System Architecture**: [`architecture.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/architecture.html)
   The comprehensive showcase diagram compiled and verified under Archify v3.

@@ -29,11 +29,11 @@
       "id": "banking_platform",
       "type": "backend",
       "label": "Retail Banking Platform",
-      "sublabel": "BFF, Microservices & Outbox",
+      "sublabel": "API Gateway & Microservices",
       "brand": "spring",
       "pos": [360, 210],
       "size": [220, 96],
-      "tag": "Saga & BFF Store"
+      "tag": "Saga & Orchestration"
     },
     {
       "id": "t24_cbs",
@@ -136,7 +136,7 @@
       "items": [
         "Customer & Admin Channels: Web SPA and Flutter Mobile interact with the Retail Banking Platform over secure HTTPS/TLS with JWT authentication.",
         "Temenos T24 CBS Dual Ingress: Platform communicates with Temenos T24 via 2 explicit endpoints (Endpoint 1: Real-time Funds Transfer settlement; Endpoint 2: Compensating Reversal).",
-        "Separation of Concerns: The Retail Banking Platform manages client orchestration, BFF caching, and saga compensation, offloading master double-entry bookkeeping to T24."
+        "Separation of Concerns: The Retail Banking Platform manages customer authentication, transfer orchestration, and saga compensation, offloading master double-entry bookkeeping to T24."
       ]
     }
   ]

@@ -1,16 +1,24 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../models/user_persona.dart';
+import '../../services/auth_api_service.dart';
+import '../../services/otp_service.dart';
 import '../../theme/aura_theme.dart';
 import '../app_shell.dart';
+import 'pending_approval_screen.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String email;
+  final String? userId;
+  final UserPersona? persona;
   final VoidCallback? onVerified;
 
   const OtpVerificationScreen({
     super.key,
     this.email = 'm••••@gmail.com',
+    this.userId,
+    this.persona,
     this.onVerified,
   });
 
@@ -31,6 +39,36 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   void initState() {
     super.initState();
     _startCountdown();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchMailHogEmail();
+    });
+  }
+
+  Future<void> _fetchMailHogEmail() async {
+    final email = await OtpService().fetchLatestEmail(
+      recipientEmail: widget.email,
+    );
+    if (!mounted || email == null || email.otpCode == null) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 8),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AuraColors.primary,
+        content: Text('Live MailHog OTP: ${email.otpCode}'),
+        action: SnackBarAction(
+          label: 'Auto-fill',
+          textColor: Colors.white,
+          onPressed: () {
+            final code = email.otpCode!;
+            for (int i = 0; i < 6 && i < code.length; i++) {
+              _controllers[i].text = code[i];
+            }
+            setState(() {});
+            _verifyCode();
+          },
+        ),
+      ),
+    );
   }
 
   @override
@@ -144,33 +182,91 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     }
 
     setState(() => _isVerifying = true);
-    await Future.delayed(const Duration(milliseconds: 600));
 
-    if (!mounted) return;
-    setState(() => _isVerifying = false);
+    try {
+      final result = await AuthApiService().verifyLoginOtp(
+        userId: widget.userId ?? 'USR-0001',
+        otp: otp,
+      );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Identity verified securely with Aura Core Engine.'),
-        backgroundColor: AuraColors.creditGreen,
-      ),
-    );
+      if (!mounted) return;
+      setState(() => _isVerifying = false);
 
-    if (widget.onVerified != null) {
-      widget.onVerified!();
-    } else {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const AppShell(initialIndex: 0)),
+      if (result.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Identity verified securely with Aura Core Engine.'),
+            backgroundColor: AuraColors.creditGreen,
+          ),
+        );
+
+        if (widget.onVerified != null) {
+          widget.onVerified!();
+        } else {
+          final isApproved = AuthApiService().isDeviceApproved;
+          if (!isApproved) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (ctx) => PendingApprovalScreen(
+                  user: widget.persona ??
+                      UserPersona(
+                        name: 'Aura User',
+                        role: 'Customer',
+                        email: widget.email,
+                        password: '',
+                        accountId: '1000-4491-0023',
+                        balance: 250000.0,
+                      ),
+                  onApproved: () {
+                    Navigator.of(ctx).pushReplacement(
+                      MaterialPageRoute(
+                        builder: (_) => const AppShell(initialIndex: 0),
+                      ),
+                    );
+                  },
+                  onCancel: () {
+                    AuthApiService().logout();
+                    Navigator.of(ctx).pop();
+                  },
+                ),
+              ),
+            );
+          } else {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (context) => const AppShell(initialIndex: 0),
+              ),
+            );
+          }
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.errorMessage ?? 'Invalid verification code. Please try again.'),
+            backgroundColor: AuraColors.debitRed,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isVerifying = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Verification error: $e'),
+          backgroundColor: AuraColors.debitRed,
+        ),
       );
     }
   }
 
-  void _resendCode() {
+  void _resendCode() async {
     for (final c in _controllers) {
       c.clear();
     }
     _startCountdown();
     _focusNodes[0].requestFocus();
+    await _fetchMailHogEmail();
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('New 6-digit code dispatched to ${widget.email}'),

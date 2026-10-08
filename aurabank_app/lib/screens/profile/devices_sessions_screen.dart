@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/auth_api_service.dart';
 import '../../theme/aura_theme.dart';
 import '../auth/login_screen.dart';
 
@@ -16,6 +17,46 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
   static const Color bgLavender = Color(0xFFFAF7FF);
   static const Color borderLavender = Color(0xFFEDE9FE);
 
+  @override
+  void initState() {
+    super.initState();
+    _loadBackendDevices();
+  }
+
+  Future<void> _loadBackendDevices() async {
+    final devices = await AuthApiService().getRegisteredDevices();
+    if (!mounted || devices.isEmpty) return;
+    setState(() {
+      _trustedDevices.clear();
+      _webSessions.clear();
+      for (final d in devices) {
+        final type = (d['device_type'] as String? ?? 'MOBILE').toUpperCase();
+        final isWeb = type == 'WEB';
+        if (isWeb) {
+          _webSessions.add({
+            'id': d['device_id'] ?? '',
+            'browser': d['device_name'] ?? 'Web Session',
+            'details': d['client_ip'] != null ? 'IP: ${d['client_ip']}' : 'Active Web Session',
+            'icon': Icons.laptop_mac_rounded,
+          });
+        } else {
+          final isPrim = d['is_primary'] == true;
+          final isAppr = d['is_approved'] == true;
+          _trustedDevices.add({
+            'id': d['device_id'] ?? '',
+            'name': d['device_name'] ?? 'Mobile Device',
+            'os': isPrim ? 'Primary Trusted Enclave' : (isAppr ? 'Secondary Device (Approved)' : 'Secondary Device (Pending Approval)'),
+            'location': d['client_ip'] != null ? 'IP: ${d['client_ip']}' : 'Hardware Bound',
+            'isPrimary': isPrim,
+            'isApproved': isAppr,
+            'status': isPrim ? 'Active Now' : (isAppr ? 'Approved' : 'Pending Approval'),
+            'isActive': isAppr,
+            'icon': Icons.phone_iphone_rounded,
+          });
+        }
+      }
+    });
+  }
   // Device list state
   final List<Map<String, dynamic>> _trustedDevices = [
     {
@@ -115,8 +156,12 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    onPressed: () {
+                    onPressed: () async {
                       Navigator.of(ctx).pop();
+                      final deviceId = dev['id'] as String?;
+                      if (deviceId != null && deviceId.isNotEmpty) {
+                        await AuthApiService().revokeDevice(deviceId: deviceId);
+                      }
                       setState(() {
                         _trustedDevices.removeAt(index);
                         // If primary was revoked and another device remains, promote it to primary
@@ -126,6 +171,7 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                           _trustedDevices[0]['isActive'] = true;
                         }
                       });
+                      if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(isPrimary
@@ -134,6 +180,7 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                           backgroundColor: brandViolet,
                         ),
                       );
+                      _loadBackendDevices();
                     },
                     child: Text(
                       isPrimary ? 'Revoke Primary' : 'Revoke Device',

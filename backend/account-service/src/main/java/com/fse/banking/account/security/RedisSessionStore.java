@@ -1,6 +1,7 @@
 package com.fse.banking.account.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fse.banking.account.dto.DeviceInfoDto;
 import com.fse.banking.account.security.model.RefreshTokenMetadata;
 import com.fse.banking.account.security.model.SessionMetadata;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,9 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -29,6 +33,8 @@ public class RedisSessionStore {
     private static final String TOKEN_FAMILY_PREFIX = "token_family:";
     private static final String SESSION_PREFIX = "session:";
     private static final String BALANCE_CACHE_PREFIX = "account:balance:";
+    private static final String PRIMARY_DEVICE_PREFIX = "auth:primary-device:";
+    private static final String USER_DEVICES_PREFIX = "auth:user-devices:";
 
     // --- Blacklist Operations ---
     public void blacklistToken(String jti, long remainingTtlSeconds) {
@@ -149,5 +155,105 @@ public class RedisSessionStore {
 
     public void evictCachedBalance(String accountId) {
         stringRedisTemplate.delete(BALANCE_CACHE_PREFIX + accountId);
+    }
+
+    // --- Login MFA OTP Cache ---
+    private static final String LOGIN_OTP_PREFIX = "otp:login:";
+
+    public void storeLoginOtp(String userId, String otp, Duration ttl) {
+        stringRedisTemplate.opsForValue().set(LOGIN_OTP_PREFIX + userId, otp, ttl);
+    }
+
+    public String getLoginOtp(String userId) {
+        return stringRedisTemplate.opsForValue().get(LOGIN_OTP_PREFIX + userId);
+    }
+
+    public void clearLoginOtp(String userId) {
+        stringRedisTemplate.delete(LOGIN_OTP_PREFIX + userId);
+    }
+
+    // --- Device Registry Operations ---
+    public String getPrimaryDeviceId(String userId) {
+        if (userId == null) return null;
+        return stringRedisTemplate.opsForValue().get(PRIMARY_DEVICE_PREFIX + userId);
+    }
+
+    public void setPrimaryDeviceId(String userId, String deviceId) {
+        if (userId == null || deviceId == null) return;
+        stringRedisTemplate.opsForValue().set(PRIMARY_DEVICE_PREFIX + userId, deviceId);
+        getDevice(userId, deviceId).ifPresent(device -> {
+            device.setPrimary(true);
+            saveUserDevice(userId, device);
+        });
+    }
+
+    public void saveUserDevice(String userId, DeviceInfoDto device) {
+        if (userId == null || device == null || device.getDeviceId() == null) return;
+        try {
+            String json = objectMapper.writeValueAsString(device);
+            stringRedisTemplate.opsForHash().put(USER_DEVICES_PREFIX + userId, device.getDeviceId(), json);
+            stringRedisTemplate.expire(USER_DEVICES_PREFIX + userId, Duration.ofDays(90));
+        } catch (Exception e) {
+            log.error("Failed to save device info for user {}: {}", userId, e.getMessage());
+        }
+    }
+
+    public List<DeviceInfoDto> getUserDevices(String userId) {
+        if (userId == null) return List.of();
+        Map<Object, Object> entries = stringRedisTemplate.opsForHash().entries(USER_DEVICES_PREFIX + userId);
+        List<DeviceInfoDto> devices = new ArrayList<>();
+        String primaryDeviceId = getPrimaryDeviceId(userId);
+        for (Object value : entries.values()) {
+            if (value instanceof String json) {
+                try {
+                    DeviceInfoDto device = objectMapper.readValue(json, DeviceInfoDto.class);
+                    device.setPrimary(device.getDeviceId() != null && device.getDeviceId().equals(primaryDeviceId));
+                    devices.add(device);
+                } catch (Exception e) {
+                    log.warn("Failed to parse device json for user {}: {}", userId, e.getMessage());
+                }
+            }
+        }
+        return devices;
+    }
+
+    public Optional<DeviceInfoDto> getDevice(String userId, String deviceId) {
+        if (userId == null || deviceId == null) return Optional.empty();
+        Object val = stringRedisTemplate.opsForHash().get(USER_DEVICES_PREFIX + userId, deviceId);
+        if (val instanceof String json) {
+            try {
+                DeviceInfoDto device = objectMapper.readValue(json, DeviceInfoDto.class);
+                String primaryDeviceId = getPrimaryDeviceId(userId);
+                device.setPrimary(deviceId.equals(primaryDeviceId));
+                return Optional.of(device);
+            } catch (Exception e) {
+                log.warn("Failed to deserialize device {}: {}", deviceId, e.getMessage());
+            }
+        }
+        return Optional.empty();
+    }
+
+    public void deleteUserDevice(String userId, String deviceId) {
+        if (userId == null || deviceId == null) return;
+        stringRedisTemplate.opsForHash().delete(USER_DEVICES_PREFIX + userId, deviceId);
+    }
+
+    public void deleteSessionsForDevice(String userId, String deviceId) {
+        if (userId == null || deviceId == null) return;
+        try {
+            Set<String> sessionKeys = stringRedisTemplate.keys(SESSION_PREFIX + userId + ":*");
+            if (sessionKeys != null) {
+                for (String key : sessionKeys) {
+                    Object obj = redisTemplate.opsForValue().get(key);
+                    if (obj instanceof SessionMetadata metadata) {
+                        if (deviceId.equals(metadata.getDeviceId())) {
+                            purgeEntireTokenFamily(metadata.getSessionId(), userId);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to delete sessions for device {} of user {}: {}", deviceId, userId, e.getMessage());
+        }
     }
 }

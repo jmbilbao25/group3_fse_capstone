@@ -49,6 +49,7 @@ CREATE TABLE users (
     max_concurrent_sessions NUMBER(3) DEFAULT 3 NOT NULL,
     failed_login_attempts   NUMBER(3) DEFAULT 0 NOT NULL,
     status                  VARCHAR2(20) DEFAULT 'ACTIVE' NOT NULL,
+    last_login_at           TIMESTAMP WITH TIME ZONE,
     created_at              TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at              TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     CONSTRAINT chk_usr_role CHECK (role IN ('CUSTOMER', 'TELLER', 'MANAGER', 'ADMIN')),

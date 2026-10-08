@@ -664,17 +664,17 @@ void main() {
       ),
     );
 
-    // Initial state: scanning with 5s feedback
+    // Initial state: scanning
     expect(find.text('Stop Scan'), findsOneWidget);
-    expect(find.text('Scanning QR code... (5s)'), findsOneWidget);
+    expect(find.text('Scanning QR code... (5s)'), findsNothing);
     expect(find.text('Send Money'), findsNothing);
 
-    // After 2.5 seconds: still scanning
+    // After 2.5 seconds: still scanning in viewfinder
     await tester.pump(const Duration(milliseconds: 2500));
-    expect(find.text('Scanning QR code... (5s)'), findsOneWidget);
+    expect(find.text('Stop Scan'), findsOneWidget);
     expect(find.text('Send Money'), findsNothing);
 
-    // After another 2.6 seconds (total > 5s): transitions to form
+    // After another 2.6 seconds (total > 5s): 5-second timer transitions to form
     await tester.pump(const Duration(milliseconds: 2600));
     await tester.pump();
     expect(find.text('Send Money'), findsOneWidget);

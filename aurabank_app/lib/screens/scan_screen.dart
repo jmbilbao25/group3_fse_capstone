@@ -302,19 +302,6 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
           ),
         ),
 
-        if (isScanning) ...[
-          const SizedBox(height: 12),
-          const Text(
-            'Scanning QR code... (5s)',
-            style: TextStyle(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF00E676),
-              letterSpacing: 0.2,
-            ),
-          ),
-        ],
-
         const Spacer(),
 
         // Bottom Actions: Upload from Gallery & Generate QR

@@ -13,8 +13,13 @@ enum ScanStep {
 
 class ScanScreen extends StatefulWidget {
   final VoidCallback? onBack;
+  final bool enableAnimation;
 
-  const ScanScreen({super.key, this.onBack});
+  const ScanScreen({
+    super.key,
+    this.onBack,
+    this.enableAnimation = true,
+  });
 
   @override
   State<ScanScreen> createState() => _ScanScreenState();
@@ -30,6 +35,10 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   final TextEditingController _remarksController = TextEditingController();
   final String _selectedPurpose = 'Fund Transfer';
 
+  String _recipientName = 'Jessie Mae R. Dela Paz';
+  String _recipientAccount = '1154848785378';
+  String _recipientBank = 'MeyBank';
+
   static const Color brandViolet = AuraColors.primary;
   static const Color textDark = Color(0xFF0F172A);
   static const Color textMuted = Color(0xFF64748B);
@@ -42,13 +51,17 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     _animController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1800),
-    )..repeat(reverse: true);
+    );
 
-    _startScanTimer();
+    if (widget.enableAnimation) {
+      _animController.repeat(reverse: true);
+      _startScanTimer();
+    }
   }
 
   void _startScanTimer() {
     _autoScanTimer?.cancel();
+    if (!widget.enableAnimation) return;
     if (_step == ScanStep.scanning) {
       _autoScanTimer = Timer(const Duration(milliseconds: 2200), () {
         if (mounted && _step == ScanStep.scanning) {
@@ -73,8 +86,10 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     setState(() {
       _step = ScanStep.scanning;
     });
-    _animController.repeat(reverse: true);
-    _startScanTimer();
+    if (widget.enableAnimation) {
+      _animController.repeat(reverse: true);
+      _startScanTimer();
+    }
   }
 
   void _onStopScan() {
@@ -85,16 +100,35 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     });
   }
 
+  void _handleBack() {
+    if (_step == ScanStep.form) {
+      _autoScanTimer?.cancel();
+      _animController.stop();
+      setState(() => _step = ScanStep.viewfinder);
+    } else if (widget.onBack != null) {
+      widget.onBack!();
+    } else if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _step == ScanStep.form ? const Color(0xFFF8FAFC) : Colors.black,
-      body: SafeArea(
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: _step == ScanStep.form ? _buildScannedFormView() : _buildScannerView(),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _handleBack();
+      },
+      child: Scaffold(
+        backgroundColor: _step == ScanStep.form ? const Color(0xFFF8FAFC) : Colors.black,
+        body: SafeArea(
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: _step == ScanStep.form ? _buildScannedFormView() : _buildScannerView(),
+            ),
           ),
         ),
       ),
@@ -115,13 +149,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
           child: Row(
             children: [
               // Circular Back Button
-              _buildCircularBackButton(onTap: () {
-                if (widget.onBack != null) {
-                  widget.onBack!();
-                } else {
-                  Navigator.of(context).maybePop();
-                }
-              }),
+              _buildCircularBackButton(onTap: _handleBack),
               const SizedBox(width: 12),
               // Aura Bank Pill
               _buildAuraBankPill(),
@@ -255,10 +283,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                 child: _buildBottomGlassButton(
                   icon: Icons.image_outlined,
                   label: 'Upload\nfrom Gallery',
-                  onTap: () {
-                    // Simulate selecting QR image
-                    setState(() => _step = ScanStep.form);
-                  },
+                  onTap: _showGalleryUploadModal,
                 ),
               ),
               const SizedBox(width: 14),
@@ -291,10 +316,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                _buildCircularBackButton(onTap: () {
-                  setState(() => _step = ScanStep.scanning);
-                  _animController.repeat(reverse: true);
-                }),
+                _buildCircularBackButton(onTap: _handleBack),
                 const SizedBox(width: 12),
                 _buildAuraBankPill(),
               ],
@@ -404,23 +426,23 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                       child: const Icon(Icons.person_rounded, color: Colors.white, size: 24),
                     ),
                     const SizedBox(width: 14),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Jessie Mae Dela Paz',
-                            style: TextStyle(
+                            _recipientName,
+                            style: const TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w800,
                               color: textDark,
                               letterSpacing: -0.2,
                             ),
                           ),
-                          SizedBox(height: 3),
+                          const SizedBox(height: 3),
                           Text(
-                            'MeyBank • Account No. 1234568898951',
-                            style: TextStyle(
+                            '$_recipientBank • Account No. $_recipientAccount',
+                            style: const TextStyle(
                               fontSize: 11.5,
                               fontWeight: FontWeight.w600,
                               color: textMuted,
@@ -475,11 +497,12 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                 const SizedBox(height: 12),
 
                 // Balance & Limit Subtext
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                const Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  runSpacing: 4,
                   children: [
                     Text(
-                      'Available Balance: PHP 50,000.00',
+                      'Available: PHP 50,000.00',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -487,7 +510,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                       ),
                     ),
                     Text(
-                      'Transfer Limit: PHP 50,000.00',
+                      'Limit: PHP 50,000.00',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -641,9 +664,9 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
         builder: (context) => ReviewTransferScreen(
           senderName: _bankService.user.name,
           senderAccount: '1235484874877',
-          recipientName: 'Jessie Mae R. Dela Paz',
-          recipientAccount: '1154848785378',
-          recipientBank: 'MeyBank',
+          recipientName: _recipientName,
+          recipientAccount: _recipientAccount,
+          recipientBank: _recipientBank,
           amount: amount,
           fee: 0.0,
           remarks: _remarksController.text.trim().isNotEmpty ? _remarksController.text.trim() : null,
@@ -754,6 +777,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (context) {
         return Align(
           alignment: Alignment.bottomCenter,
@@ -773,45 +797,395 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                   ),
                 ],
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const AuraLogo(size: 42, style: AuraLogoStyle.violet, borderRadius: 10),
-                  const SizedBox(height: 12),
-                  Text(
-                    _bankService.user.name,
-                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: textDark),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Aura Account: ${_bankService.savingsAccountNumber}',
-                    style: const TextStyle(fontSize: 12, color: textMuted, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 20),
-                  Container(
-                    width: 190,
-                    height: 190,
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const AuraLogo(size: 42, style: AuraLogoStyle.violet, borderRadius: 10),
+                    const SizedBox(height: 12),
+                    Text(
+                      _bankService.user.name,
+                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: textDark),
                     ),
-                    child: CustomPaint(painter: _LargeQrPainter()),
-                  ),
-                  const SizedBox(height: 18),
-                  const Text(
-                    'Show this QR code to receive instant Aura-to-Aura transfers.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12, color: textMuted, fontWeight: FontWeight.w500),
-                  ),
-                  const SizedBox(height: 12),
-                ],
+                    const SizedBox(height: 2),
+                    Text(
+                      'Aura Account: ${_bankService.savingsAccountNumber}',
+                      style: const TextStyle(fontSize: 12, color: textMuted, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 20),
+                    Container(
+                      width: 190,
+                      height: 190,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: CustomPaint(painter: _LargeQrPainter()),
+                    ),
+                    const SizedBox(height: 18),
+                    const Text(
+                      'Receive Money via QR',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: textDark,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Scan to transfer funds instantly.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: textMuted,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                ),
               ),
             ),
           ),
         );
       },
+    );
+  }
+
+  void _showGalleryUploadModal() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Align(
+          alignment: Alignment.bottomCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Container(
+              margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+              padding: const EdgeInsets.all(22),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x380F172A),
+                    blurRadius: 36,
+                    offset: Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: brandViolet.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.photo_library_rounded, color: brandViolet, size: 20),
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Upload from Gallery',
+                              style: TextStyle(
+                                fontSize: 16.5,
+                                fontWeight: FontWeight.w800,
+                                color: textDark,
+                                letterSpacing: -0.2,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Select QR image from your photos',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: textMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 20, color: textMuted),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Primary "Choose Photo / Files" browse trigger
+                  InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      _decodeSelectedQr(
+                        name: 'Jessie Mae R. Dela Paz',
+                        account: '1154848785378',
+                        bank: 'MeyBank',
+                        source: 'Device photo album',
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: brandViolet.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(Icons.add_photo_alternate_rounded, color: brandViolet, size: 24),
+                          ),
+                          const SizedBox(width: 14),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Browse Photo Library',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: textDark,
+                                  ),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  'PNG, JPG, or screenshot with QR code',
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w500,
+                                    color: textMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right_rounded, color: textMuted, size: 22),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 18),
+                  const Text(
+                    'RECENT QR PHOTOS',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: textMuted,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Recent items list
+                  _buildGalleryQrItem(
+                    name: 'Jessie Mae R. Dela Paz',
+                    bank: 'MeyBank',
+                    account: '1154848785378',
+                    date: 'Saved today',
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      _decodeSelectedQr(
+                        name: 'Jessie Mae R. Dela Paz',
+                        account: '1154848785378',
+                        bank: 'MeyBank',
+                        source: 'MeyBank_QR_Jessie.png',
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  _buildGalleryQrItem(
+                    name: 'Marco Vance',
+                    bank: 'BDO Unibank',
+                    account: '0029481928471',
+                    date: 'Saved Oct 06',
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      _decodeSelectedQr(
+                        name: 'Marco Vance',
+                        account: '0029481928471',
+                        bank: 'BDO Unibank',
+                        source: 'QR_BDO_Marco.png',
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  _buildGalleryQrItem(
+                    name: 'Aura Merchant Pay',
+                    bank: 'Aura Bank',
+                    account: '0917234859102',
+                    date: 'Saved Oct 04',
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      _decodeSelectedQr(
+                        name: 'Aura Merchant Pay',
+                        account: '0917234859102',
+                        bank: 'Aura Bank',
+                        source: 'Merchant_Invoice_QR.png',
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
+  void _decodeSelectedQr({
+    required String name,
+    required String account,
+    required String bank,
+    required String source,
+  }) {
+    _autoScanTimer?.cancel();
+    _animController.stop();
+
+    setState(() {
+      _recipientName = name;
+      _recipientAccount = account;
+      _recipientBank = bank;
+      _step = ScanStep.form;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Decoded QR for $name ($bank)',
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: brandViolet,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  Widget _buildGalleryQrItem({
+    required String name,
+    required String bank,
+    required String account,
+    required String date,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: cardBorder, width: 1.2),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: CustomPaint(painter: _LargeQrPainter()),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w800,
+                      color: textDark,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '$bank • $account',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: textMuted,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: brandViolet.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'Select',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: brandViolet,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  date,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: textMuted,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

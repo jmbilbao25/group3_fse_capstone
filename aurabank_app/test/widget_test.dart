@@ -15,6 +15,7 @@ import 'package:aurabank_app/screens/app_shell.dart';
 import 'package:aurabank_app/screens/login_screen.dart';
 import 'package:aurabank_app/screens/annual_report_screen.dart';
 import 'package:aurabank_app/screens/review_transfer_screen.dart';
+import 'package:aurabank_app/screens/scan_screen.dart';
 import 'package:aurabank_app/services/bank_service.dart';
 
 void main() {
@@ -566,5 +567,73 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Do you want to continue?'), findsOneWidget);
     expect(find.text('Yes, Continue'), findsOneWidget);
+  });
+
+  testWidgets('ScanScreen supports Gallery QR upload, accurate QR modal text, and back button navigation', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    bool backCalled = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ScanScreen(
+          enableAnimation: false,
+          onBack: () => backCalled = true,
+        ),
+      ),
+    );
+
+    // Initial Viewfinder renders with buttons
+    expect(find.text('Aura Bank'), findsOneWidget);
+    expect(find.text('Stop Scan'), findsOneWidget);
+    expect(find.text('Upload\nfrom Gallery'), findsOneWidget);
+    expect(find.text('Generate\nQR'), findsOneWidget);
+
+    // 1. Test Generate QR modal and verify accurate copy
+    await tester.tap(find.text('Generate\nQR'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Receive Money via QR'), findsOneWidget);
+    expect(find.text('Scan to transfer funds instantly.'), findsOneWidget);
+
+    // Close modal
+    Navigator.of(tester.element(find.text('Receive Money via QR'))).pop();
+    await tester.pumpAndSettle();
+
+    // 2. Test Upload from Gallery modal
+    await tester.tap(find.text('Upload\nfrom Gallery'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Upload from Gallery'), findsOneWidget);
+    expect(find.text('Select QR image from your photos'), findsOneWidget);
+    expect(find.text('Browse Photo Library'), findsOneWidget);
+    expect(find.text('Marco Vance'), findsOneWidget);
+
+    // Tap a gallery item to decode QR
+    await tester.tap(find.text('Marco Vance'));
+    await tester.pumpAndSettle();
+
+    // Form view should be rendered with decoded recipient
+    expect(find.text('Marco Vance'), findsOneWidget);
+    expect(find.text('BDO Unibank • Account No. 0029481928471'), findsOneWidget);
+    expect(find.text('Send Money'), findsOneWidget);
+
+    // 3. Test Back button from form returns to viewfinder
+    final backButtons = find.byIcon(Icons.arrow_back_ios_new_rounded);
+    expect(backButtons, findsWidgets);
+    await tester.tap(backButtons.first);
+    await tester.pumpAndSettle();
+
+    // Back in viewfinder
+    expect(find.text('Upload\nfrom Gallery'), findsOneWidget);
+
+    // 4. Test Back button from viewfinder triggers onBack callback
+    await tester.tap(backButtons.first);
+    await tester.pumpAndSettle();
+
+    expect(backCalled, isTrue);
   });
 }

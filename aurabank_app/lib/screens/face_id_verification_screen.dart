@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/bank_service.dart';
 import '../services/biometric_service.dart';
 import '../theme/aura_theme.dart';
-import 'receipt_screen.dart';
+import 'transfer/receipt_screen.dart';
 
 /// Transfer Confirmation Screen using Native Operating System Biometric (Face ID) Prompt.
 /// Displays comprehensive transaction details and provides an 'Authorize with Face ID' action

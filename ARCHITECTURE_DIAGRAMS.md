@@ -1,6 +1,6 @@
 # Architecture Diagrams: Retail Ledger & Balance Mutation Engine
 
-This document provides visual architectural models for the retail banking platform. It formalizes the system across the C4 model hierarchy (Context, Container, Component, and Sequence) and documents the dual-endpoint Temenos T24 Core Banking System (CBS) integration and dedicated BFF database segregation.
+This document provides visual architectural models for the retail banking platform. It formalizes the system across the C4 model hierarchy (Context, Container, Component, and Sequence) and documents the dual-endpoint Temenos T24 Core Banking System (CBS) integration.
 
 Interactive standalone HTML diagrams:
 * Interactive C1–C4 Zoom-in Explorer: [`c_model_explorer.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c_model_explorer.html)
@@ -25,9 +25,7 @@ flowchart TD
     end
 
     subgraph BankingSystem["Retail Banking Platform Boundary"]
-        CorePlatform["FSE Retail Banking Platform<br/>(Gateway, BFF, Account Svc, Transfer Orchestrator)"]
-        BFFStore[("Dedicated BFF Database<br/>PostgreSQL :5433<br/>(Drafts, UI state, device tokens)")]
-        CorePlatform <-->|"Persists drafts & preferences"| BFFStore
+        CorePlatform["FSE Retail Banking Platform<br/>(Gateway, Account Svc, Transfer Orchestrator)"]
     end
 
     subgraph CoreBanking["Core Banking System (CBS)"]
@@ -46,7 +44,7 @@ flowchart TD
         NotificationProviders["Email / SMS Gateways<br/>(MailHog / SendGrid / Twilio)"]
     end
 
-    Customer -->|"Submits transfer drafts & executes payments (HTTPS)"| CorePlatform
+    Customer -->|"Submits transfers & executes payments (HTTPS)"| CorePlatform
     Teller -->|"Monitors real-time telemetry & traces (HTTPS)"| CorePlatform
     Admin -->|"Reviews compliance & KYC audits (HTTPS)"| CorePlatform
 
@@ -72,11 +70,6 @@ flowchart TD
     subgraph PerimeterTier["Perimeter Security & Routing Tier"]
         Gateway["gateway-service<br/>Spring Cloud Gateway, Spring Security 6<br/>Host: :8080 | Container: :8080"]
         Redis["redis-cache<br/>Redis 7 Alpine<br/>Host: :6379 | Container: :6379"]
-    end
-
-    subgraph BFFTier["Backend for Frontend Tier"]
-        BFFSvc["bff-service<br/>Spring Boot 3 WebFlux<br/>Host: :8085 | Container: :8085"]
-        BFFDB[("bff-postgres-db<br/>PostgreSQL 16 Alpine<br/>Host: :5433 | Container: :5432<br/>(Dedicated Draft & UI Store)")]
     end
 
     subgraph ServiceTier["Application Microservices Tier"]
@@ -106,12 +99,8 @@ flowchart TD
     ClientSPA -->|"HTTPS / REST Bearer JWT"| Gateway
 
     Gateway -->|"Blacklist checks & rate limiting"| Redis
-    Gateway -->|"Route /api/v1/bff/**"| BFFSvc
     Gateway -->|"Route /api/v1/auth/**, /accounts/**"| AccountSvc
     Gateway -->|"Route /api/v1/transfers/**"| Orchestrator
-
-    BFFSvc <-->|"Draft forms, UI preferences (Port 5433)"| BFFDB
-    BFFSvc -->|"Submits validated transfer payload"| Orchestrator
 
     AccountSvc -->|"Read-cache & RTR token families"| Redis
     AccountSvc -->|"Customer credentials & KYC"| AzurePostgres
@@ -128,12 +117,13 @@ flowchart TD
 
     NotifSvc -->|"Deliver 2FA OTP & HTML receipts"| MailHog
 ```
+```
 
 ---
 
 ## 3. Microservice Component Architecture (C4 Level 3)
 
-This diagram details the internal modules, service boundaries, and adapters inside each microservice, emphasizing the BFF service, Transfer Orchestrator, and Temenos T24 CBS dual endpoints.
+This diagram details the internal modules, service boundaries, and adapters inside each microservice, emphasizing the Transfer Orchestrator and Temenos T24 CBS dual endpoints.
 
 ```mermaid
 flowchart LR
@@ -144,19 +134,6 @@ flowchart LR
         RateLimiter["RedisRateLimiter<br/>(Token Bucket: 100 req/s)"]
         RouteConfig["Gateway Routing Engine<br/>(Path-based proxy)"]
         JWTFilter --> BlacklistFilter --> RateLimiter --> RouteConfig
-    end
-
-    subgraph BFFBoundary["bff-service (:8085)"]
-        direction TB
-        DraftCtrl["DraftTransferController<br/>/api/v1/bff/drafts"]
-        PrefCtrl["ClientPreferenceController<br/>/api/v1/bff/preferences"]
-        Aggregator["PresentationAggregator<br/>(Composite Balances & Status)"]
-        DraftRepo["DraftTransferRepository<br/>(Spring Data JPA)"]
-        DraftDBConn["BFF DB Adapter<br/>(PostgreSQL :5433)"]
-
-        DraftCtrl --> DraftRepo --> DraftDBConn
-        PrefCtrl --> DraftRepo
-        Aggregator --> DraftRepo
     end
 
     subgraph OrchestratorBoundary["transfer-orchestrator (:8082)"]
@@ -170,7 +147,7 @@ flowchart LR
         EventProducer["TransferEventProducer<br/>(Kafka banking.transfers.events)"]
 
         TxCtrl --> RiskCoord --> ChallengeCoord --> SagaCoord
-        SagaCoord -->|"1. Happy Path Settlement"| T24EP1Client
+        SagaCoord -->|"1. Primary Settlement"| T24EP1Client
         SagaCoord -->|"2. Compensating Rollback"| T24EP2Client
         SagaCoord --> EventProducer
     end
@@ -196,9 +173,7 @@ flowchart LR
         KafkaConsumer --> ReceiptFmt --> MailDispatcher
     end
 
-    RouteConfig -->|"Routes /api/v1/bff/**"| DraftCtrl
     RouteConfig -->|"Routes /api/v1/transfers/**"| TxCtrl
-    BFFBoundary -->|"Submits validated transfer"| TxCtrl
 ```
 
 ---
@@ -211,106 +186,81 @@ This diagram details the sequence flow of a transfer, including execution on Tem
 sequenceDiagram
     autonumber
     actor Customer as Retail Customer
-    participant BFF as bff-service (:8085)
-    participant BFFDB as bff_db (:5433)
+    participant Gateway as gateway-service (:8080)
     participant Orchestrator as transfer-orchestrator (:8082)
     participant T24 as temenos-t24-cbs (:9100)
     participant CBSDB as azure-sql-db (:1433)
     participant Kafka as kafka-broker (:9092)
     participant Notif as notification-service (:8083)
 
-    Note over Customer,BFFDB: Phase 1: Presentation Draft Staging
-    Customer->>BFF: POST /api/v1/bff/drafts { amount: 15000.0000, recipient: ACC-992 }
-    BFF->>BFFDB: INSERT INTO transfer_drafts (status: STAGED)
-    BFFDB-->>BFF: Draft Persisted (Zero CBS Load)
-    BFF-->>Customer: HTTP 201 Created (draft_id: DFT-881)
-
-    Note over Customer,T24: Phase 2: Ingestion & Primary Settlement (Endpoint 1)
-    Customer->>Orchestrator: POST /api/v1/transfers { draft_id: DFT-881 }
+    Note over Customer,Orchestrator: Phase 1: Ingestion & Primary Settlement (Endpoint 1)
+    Customer->>Gateway: POST /api/v1/transfers { amount: 15000.0000, recipient: ACC-992 }
+    Gateway->>Orchestrator: Forward validated transfer request
     Orchestrator->>T24: POST /api/v1/t24/funds-transfer (OFS: FUNDS.TRANSFER,AUTH/I/PROCESS)
     T24->>CBSDB: SELECT ... WITH (UPDLOCK, ROWLOCK) ON balance_master
     T24->>CBSDB: UPDATE balance_master (debit source, credit dest)
     CBSDB-->>T24: Row Locks Released & Transaction Committed
     T24-->>Orchestrator: HTTP 200 OK (txn_ref: T24-FT-9901, status: SETTLED)
 
-    Note over Orchestrator,Kafka: Phase 3: Downstream Delivery & Timeout
+    Note over Orchestrator,Kafka: Phase 2: Downstream Delivery & Timeout
     Orchestrator->>Kafka: Produce TransferExecuted event
     Kafka-->>Notif: Deliver event to notification-workers
     Note over Notif: Timeout / SMTP Connection Drop (> 3000ms SLA)
     Notif--x Orchestrator: Circuit Breaker Opens / Delivery Timeout Alert
 
-    Note over Orchestrator,CBSDB: Phase 4: Saga Compensating Reversal (Endpoint 2)
+    Note over Orchestrator,CBSDB: Phase 3: Saga Compensating Reversal (Endpoint 2)
     Orchestrator->>T24: POST /api/v1/t24/reversal (OFS: FUNDS.TRANSFER,REVERSE/I/PROCESS, original_ref: T24-FT-9901)
     T24->>CBSDB: Reverse debit/credit entries, restore source balance
     CBSDB-->>T24: Reversal Committed
     T24-->>Orchestrator: HTTP 200 OK (reversal_ref: T24-REV-0012, status: REVERSED)
 
-    Note over Orchestrator,Customer: Phase 5: Draft Finalization & Notification
-    Orchestrator->>BFF: PATCH /api/v1/bff/drafts/DFT-881 { status: REVERSED }
-    BFF->>BFFDB: UPDATE transfer_drafts SET status = 'REVERSED'
+    Note over Orchestrator,Customer: Phase 4: State Reversal & Client Notification
     Orchestrator->>Kafka: Produce TransferReversed event
-    Orchestrator-->>Customer: HTTP 500 / Problem Details (Transfer Reversed & Restored)
+    Orchestrator-->>Gateway: Problem Details (HTTP 500 / REVERSED)
+    Gateway-->>Customer: HTTP 500 (Status: REVERSED, Balance Restored)
 ```
 
 ---
 
-## 5. Database Segregation Architecture: BFF Database vs CBS Master Database
+## 5. Dual-Storage Persistence Topology: CBS Master Ledger vs PostgreSQL Audit Vault
 
-A core architectural tenet of this system is the strict segregation between the **BFF Presentation Database (`bff-postgres-db` :5433)** and the **CBS Master Ledger Database (`azure-sql-db` :1433)**.
+This diagram illustrates the architectural separation between the live operational transactional state in Azure SQL and the append-only regulatory audit vault in PostgreSQL.
 
 ```mermaid
 flowchart LR
-    subgraph ClientPresentation["Presentation & Client Boundary"]
-        WebClient["React 18 SPA"]
-        MobileClient["Mobile Banking App"]
-    end
-
-    subgraph BFFDataBoundary["Dedicated BFF Data Boundary (:5433)"]
+    subgraph OperationalStore["Master Operational State (Azure SQL :1433)"]
         direction TB
-        BFFSvc["bff-service (:8085)"]
-        BFFDB[("bff-postgres-db<br/>PostgreSQL 16 Alpine<br/>Port: :5433")]
-        DraftsTable[("transfer_drafts<br/>(draft_id, user_id, payload, step, status)")]
-        PrefsTable[("client_preferences<br/>(user_id, favorite_payees, quick_amounts)")]
-        TokensTable[("device_tokens<br/>(user_id, device_fingerprint, push_token)")]
+        AccountTable[("account_master<br/>12-digit account numbers,<br/>SAVINGS, CHECKING, CREDIT")]
+        BalanceTable[("balance_master<br/>balance_amount, hold_amount,<br/>available_balance (NUMBER 18, 4)<br/>Row-locked via UPDLOCK, ROWLOCK")]
+        GLJournal[("gl_journal_entries<br/>Double-entry financial journal lines,<br/>EOD rollups and reconciliations")]
 
-        BFFSvc <--> BFFDB
-        BFFDB --- DraftsTable
-        BFFDB --- PrefsTable
-        BFFDB --- TokensTable
+        AccountTable --- BalanceTable --- GLJournal
     end
 
-    subgraph CoreCBSBoundary["Temenos T24 CBS Ledger Boundary (:1433)"]
+    subgraph CoreCBS["Core Banking System (:9100)"]
+        T24Kernel["Temenos T24 CBS Kernel<br/>Handles debit, credit, fee tariffs,<br/>and pessimistic row locking"]
+    end
+
+    subgraph EventStream["Kafka Commit Log (:9092)"]
+        EventsTopic["Topic: banking.transfers.events<br/>Carries immutable state change events"]
+    end
+
+    subgraph AuditStore["Immutable Audit Vault (PostgreSQL 16 :5432)"]
         direction TB
-        T24App["temenos-t24-cbs (:9100)"]
-        CBSMasterDB[("azure-sql-db<br/>Azure SQL Database<br/>Port: :1433")]
-        AccountTable[("account_master<br/>(12-digit account, customer_id, currency)")]
-        BalanceTable[("balance_master<br/>(Pessimistic row locks UPDLOCK, ROWLOCK)")]
-        GLJournal[("gl_journal_entries<br/>(Double-entry ledger lines, EOD rollups)")]
-
-        T24App <--> CBSMasterDB
-        CBSMasterDB --- AccountTable
-        CBSMasterDB --- BalanceTable
-        CBSMasterDB --- GLJournal
+        AuditLog[("ledger_mutation_audit<br/>audit_id (BIGSERIAL PK)<br/>transaction_id, account_id<br/>mutation_type, amount, balance_after<br/>operator_id, terminal_ip, timestamp")]
+        TriggerBlock["PostgreSQL Database Trigger:<br/>trg_no_update_delete_mutation_audit<br/>(Strictly rejects UPDATE & DELETE)"]
+        AuditLog --- TriggerBlock
     end
 
-    WebClient -->|"Frequent polling, form saves, UI prefs"| BFFSvc
-    MobileClient -->|"Draft autosaves, biometrics"| BFFSvc
+    subgraph AuditorAccess["Auditor API & Portal"]
+        AuditorEndpoint["GET /api/v1/audit/account/{id}<br/>Fast B-Tree Index: (account_id, created_at)<br/>Sub-5ms query response time"]
+    end
 
-    BFFSvc -.->|"Zero Direct Database Access"| CBSMasterDB
-    BFFSvc -->|"Submits confirmed transactions via REST"| OrchestratorSvc["transfer-orchestrator (:8082)"]
-    OrchestratorSvc -->|"OFS EP1 (Transfer) & EP2 (Reversal)"| T24App
+    T24Kernel <-->|"ACID Transactions & Row Locks"| OperationalStore
+    T24Kernel -->|"Emits state events"| EventStream
+    EventStream -->|"Asynchronous consumer projection"| AuditLog
+    AuditorEndpoint -->|"Read-only compliance queries"| AuditLog
 ```
-
-### Database Separation Comparison
-
-| Dimension | Dedicated BFF Database (`bff-postgres-db` :5433) | CBS Master Ledger Database (`azure-sql-db` :1433) |
-| :--- | :--- | :--- |
-| **Owner** | `bff-service` (:8085) exclusively | `temenos-t24-cbs` (:9100) exclusively |
-| **Storage Engine** | PostgreSQL 16 (Lightweight Micro-DB) | Azure SQL Database (Relational ACID Kernel) |
-| **Data Scope** | Presentation state, transfer drafts, UI preferences, device tokens, composite caches | Core accounts, customer master ledgers, GL double-entry journals, EOD balances |
-| **Concurrency Model** | Optimistic, ephemeral, fast read/write with low lock contention | Strict row-level pessimistic locking (`UPDLOCK, ROWLOCK`), ACID serialization |
-| **Blast Radius** | High-frequency client polling or draft form saves never consume CBS connections | Protected from client traffic spikes, mobile retries, and UI query loads |
-| **Schema Evolution** | Rapid, agile updates with frontend releases | Regulated, audit-controlled schema changes |
 
 ---
 
@@ -320,9 +270,7 @@ Transactions exceeding PHP 50,000.00 require customer multi-factor verification 
 
 ```mermaid
 stateDiagram-v2
-    [*] --> DRAFT: Customer creates transfer draft in BFF DB
-
-    DRAFT --> INITIATED: Customer submits draft for processing
+    [*] --> INITIATED: Customer submits transfer request
 
     state INITIATED {
         [*] --> CheckValue
@@ -399,8 +347,6 @@ sequenceDiagram
 | :--- | :---: | :---: | :--- | :--- | :--- |
 | `banking-frontend` | `3000` | `80` | HTTP / Web | Public | React 18 Single Page Application |
 | `gateway-service` | `8080` | `8080` | HTTP / REST | Public | Perimeter security, rate limiting, and routing |
-| `bff-service` | `8085` | `8085` | HTTP / REST | Internal | Presentation aggregator and transfer draft manager |
-| `bff-postgres-db` | `5433` | `5432` | PostgreSQL | Internal | Dedicated BFF store: draft transfers and UI preferences |
 | `account-service` | `8081` | `8081` | HTTP / REST | Internal | Customer onboarding, KYC, account provisioning |
 | `transfer-orchestrator` | `8082` | `8082` | HTTP / REST | Internal | Transfer lifecycle, Risk Engine, Saga compensation |
 | `temenos-t24-cbs` | `9100` | `9100` | HTTP / OFS | Internal | Core Banking System: EP1 Funds Transfer & EP2 Reversal |
@@ -427,5 +373,6 @@ The architecture is rendered as standalone interactive HTML artifacts compiled w
 * **C3 Component Diagram**: [`c3_component.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c3_component.html)
 * **C4 Sequence Diagram**: [`c4_sequence.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c4_sequence.html)
 * **Full Primary System Architecture**: [`architecture.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/architecture.html)
+
 
 

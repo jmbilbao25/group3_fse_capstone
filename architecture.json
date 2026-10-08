@@ -2,7 +2,7 @@
   "schema_version": 1,
   "diagram_type": "architecture",
   "meta": {
-    "title": "FSE Capstone: Omnichannel Banking Platform with Dedicated BFF DB & Dual-Endpoint T24 CBS",
+    "title": "FSE Capstone: Retail Banking Platform with Dual-Endpoint T24 CBS",
     "output": "architecture.html",
     "quality_profile": "showcase"
   },
@@ -22,7 +22,7 @@
       "type": "frontend",
       "label": "Mobile Banking App",
       "sublabel": "Flutter / iOS & Android",
-      "pos": [40, 280],
+      "pos": [40, 290],
       "size": [150, 60],
       "tag": "Biometrics & Push"
     },
@@ -32,39 +32,9 @@
       "label": "API Gateway",
       "sublabel": "Spring Cloud :8080",
       "brand": "spring",
-      "pos": [250, 220],
-      "size": [150, 64],
-      "tag": "JWT & Rate Limiter"
-    },
-    {
-      "id": "bff_db",
-      "type": "database",
-      "label": "Dedicated BFF DB",
-      "sublabel": "PostgreSQL :5433",
-      "brand": "postgresql",
-      "pos": [460, 60],
-      "size": [160, 60],
-      "tag": "Drafts & Session Cache"
-    },
-    {
-      "id": "bff_service",
-      "type": "backend",
-      "label": "BFF Service",
-      "sublabel": "Spring Boot :8085",
-      "brand": "spring",
-      "pos": [460, 160],
-      "size": [160, 68],
-      "tag": "UI Aggregation & Drafts"
-    },
-    {
-      "id": "acc_svc",
-      "type": "backend",
-      "label": "Account & Auth Svc",
-      "sublabel": "Spring Boot :8081",
-      "brand": "spring",
-      "pos": [460, 280],
+      "pos": [260, 210],
       "size": [160, 64],
-      "tag": "KYC & User Profiles"
+      "tag": "JWT & Rate Limiter"
     },
     {
       "id": "redis_cache",
@@ -72,9 +42,19 @@
       "label": "Redis Cache",
       "sublabel": "Redis 7 Alpine :6379",
       "brand": "redis",
-      "pos": [460, 400],
+      "pos": [260, 370],
       "size": [160, 60],
       "tag": "Token Blacklist & OTP"
+    },
+    {
+      "id": "acc_svc",
+      "type": "backend",
+      "label": "Account & Auth Svc",
+      "sublabel": "Spring Boot :8081",
+      "brand": "spring",
+      "pos": [520, 150],
+      "size": [170, 64],
+      "tag": "KYC & User Profiles"
     },
     {
       "id": "tx_orchestrator",
@@ -82,7 +62,7 @@
       "label": "Transfer Orchestrator",
       "sublabel": "Spring Boot :8082",
       "brand": "spring",
-      "pos": [740, 160],
+      "pos": [520, 280],
       "size": [170, 68],
       "tag": "Saga & T24 Dispatcher"
     },
@@ -92,7 +72,7 @@
       "label": "Kafka Event Bus",
       "sublabel": "KRaft Broker :9092",
       "brand": "apache-kafka",
-      "pos": [740, 280],
+      "pos": [780, 200],
       "size": [170, 64],
       "tag": "Command & Event Topics"
     },
@@ -102,27 +82,27 @@
       "label": "Notification Svc",
       "sublabel": "Spring Boot :8083",
       "brand": "spring",
-      "pos": [740, 400],
+      "pos": [780, 360],
       "size": [170, 64],
       "tag": "Email 2FA & Alerts"
-    },
-    {
-      "id": "t24_cbs",
-      "type": "backend",
-      "label": "Temenos T24 CBS",
-      "sublabel": "Core Engine :9100",
-      "pos": [1060, 160],
-      "size": [180, 68],
-      "tag": "EP1: Transfer | EP2: Reverse"
     },
     {
       "id": "cbs_master_db",
       "type": "database",
       "label": "CBS Master Ledger DB",
       "sublabel": "Azure SQL :1433",
-      "pos": [1060, 60],
+      "pos": [1050, 140],
       "size": [180, 60],
       "tag": "Double-Entry Master"
+    },
+    {
+      "id": "t24_cbs",
+      "type": "backend",
+      "label": "Temenos T24 CBS",
+      "sublabel": "Core Engine :9100",
+      "pos": [1050, 260],
+      "size": [180, 68],
+      "tag": "EP1: Transfer | EP2: Reverse"
     },
     {
       "id": "audit_db",
@@ -130,7 +110,7 @@
       "label": "Immutable Audit Vault",
       "sublabel": "PostgreSQL 16 :5432",
       "brand": "postgresql",
-      "pos": [1060, 280],
+      "pos": [1050, 390],
       "size": [180, 64],
       "tag": "Append-Only Trail"
     }
@@ -149,24 +129,14 @@
       "label": "Core Banking Microservice & Persistence Tier (banking-net)",
       "wraps": [
         "gateway",
-        "bff_db",
-        "bff_service",
-        "acc_svc",
         "redis_cache",
+        "acc_svc",
         "tx_orchestrator",
         "kafka_bus",
         "notif_svc",
         "t24_cbs",
         "cbs_master_db",
         "audit_db"
-      ]
-    },
-    {
-      "kind": "security-group",
-      "label": "BFF Presentation & Draft Subsystem",
-      "wraps": [
-        "bff_service",
-        "bff_db"
       ]
     },
     {
@@ -196,48 +166,46 @@
       "toSide": "left"
     },
     {
-      "id": "gateway-to-bff",
+      "id": "gateway-to-redis",
       "from": "gateway",
-      "to": "bff_service",
-      "label": "route /api/v1/bff/*",
-      "variant": "emphasis",
-      "fromSide": "right",
-      "toSide": "left"
+      "to": "redis_cache",
+      "label": "rate limits",
+      "fromSide": "bottom",
+      "toSide": "top"
     },
     {
       "id": "gateway-to-acc",
       "from": "gateway",
       "to": "acc_svc",
-      "label": "route /api/v1/auth/*",
+      "label": "route /auth/*",
       "fromSide": "right",
       "toSide": "left"
     },
     {
-      "id": "bff-to-db",
-      "from": "bff_service",
-      "to": "bff_db",
-      "label": "drafts & sessions",
+      "id": "gateway-to-tx",
+      "from": "gateway",
+      "to": "tx_orchestrator",
+      "label": "route /tx/*",
       "variant": "emphasis",
-      "fromSide": "top",
-      "toSide": "bottom"
+      "fromSide": "right",
+      "toSide": "left"
     },
     {
       "id": "acc-to-redis",
       "from": "acc_svc",
       "to": "redis_cache",
-      "label": "token rotation",
+      "label": "token family",
       "variant": "security",
       "fromSide": "bottom",
-      "toSide": "top"
+      "toSide": "right"
     },
     {
-      "id": "bff-to-orchestrator",
-      "from": "bff_service",
-      "to": "tx_orchestrator",
-      "label": "dispatch transfer",
-      "variant": "emphasis",
-      "fromSide": "right",
-      "toSide": "left"
+      "id": "tx-to-redis",
+      "from": "tx_orchestrator",
+      "to": "redis_cache",
+      "label": "idempotency",
+      "fromSide": "bottom",
+      "toSide": "right"
     },
     {
       "id": "tx-to-t24-transfer",
@@ -271,14 +239,14 @@
       "from": "tx_orchestrator",
       "to": "kafka_bus",
       "label": "outbox events",
-      "fromSide": "bottom",
-      "toSide": "top"
+      "fromSide": "right",
+      "toSide": "left"
     },
     {
       "id": "kafka-to-audit",
       "from": "kafka_bus",
       "to": "audit_db",
-      "label": "audit trail",
+      "label": "audit stream",
       "variant": "dashed",
       "fromSide": "right",
       "toSide": "left"
@@ -296,10 +264,10 @@
   "cards": [
     {
       "dot": "emerald",
-      "title": "BFF Architecture & Dedicated Database Separation",
+      "title": "Dual-Storage Ledger & Audit Vault Architecture",
       "items": [
-        "Dedicated BFF Database (:5433): Completely decoupled from the CBS Master DB; stores user UI preferences, device registrations, draft transfer states, and client aggregation caches.",
-        "Zero CBS Master DB Contention: High-throughput client polling and draft saves hit the BFF Database, protecting the mission-critical Core Banking System from lock contention."
+        "Master Operational DB (Azure SQL :1433): Dedicated to Temenos T24 CBS for double-entry financial journals and row-level pessimistic balance locks (UPDLOCK, ROWLOCK).",
+        "Immutable Regulatory Vault (PostgreSQL 16 :5432): Asynchronously streams events from Kafka, enforcing an append-only audit trail with DB triggers blocking UPDATE and DELETE."
       ]
     },
     {

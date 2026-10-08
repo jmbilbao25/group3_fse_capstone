@@ -1,8 +1,6 @@
 FROM maven:3.9-eclipse-temurin-21-alpine AS builder
 WORKDIR /build
-COPY pom.xml ./
-COPY common-contracts ./common-contracts
-COPY ledger-mutation-engine ./ledger-mutation-engine
+COPY . .
 RUN mvn clean package -DskipTests -pl ledger-mutation-engine -am
 
 FROM eclipse-temurin:21-jre-alpine

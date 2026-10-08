@@ -25,13 +25,15 @@ public class JwtAuthenticationFilter implements GlobalFilter {
 
         String path = exchange.getRequest().getPath().toString();
 
-        // Allow public endpoints (actuator, authentication, SSE notification streams, simulation, websockets)
+        // Allow public endpoints (actuator, authentication, SSE notification streams, simulation, websockets, t24 core banking)
         if (path.startsWith("/actuator")
                 || path.startsWith("/api/v1/auth")
                 || path.startsWith("/api/auth")
                 || path.startsWith("/api/v1/notifications/stream")
                 || path.startsWith("/api/v1/notifications/simulate")
                 || path.startsWith("/api/v1/notifications/send-otp")
+                || path.startsWith("/api/v1/t24")
+                || path.startsWith("/api/t24")
                 || path.startsWith("/ws")) {
             return chain.filter(exchange);
         }

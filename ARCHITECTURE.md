@@ -60,7 +60,7 @@ Every containerized service in the Docker Compose bridge network (`banking-net`)
 
 ### C. Account & KYC Microservice (`account-service` :8081)
 - **Runtime**: Spring Boot 3, Spring Data JPA, HikariCP.
-- **Datasource**: Connected to `oracle-xe-master:1521`.
+- **Datasource**: Connected to `Azure Database for PostgreSQL` (port 5432) for users, authentication, KYC profiles, and accounts; uses `Azure Cache for Redis` for token families and blacklists.
 - **Core Functions**:
   1. `AuthController`:
      - `POST /api/v1/auth/register`: Ingests customer registration payloads with JSR-380 validation, hashes passwords via BCrypt, records identity documents (`users` table), sets status to `PENDING`.

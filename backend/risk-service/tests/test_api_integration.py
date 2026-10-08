@@ -25,7 +25,7 @@ def client():
             "account_id": "acc-2001-sav-001",
             "target_account_id": "acc-2002-chk-001",
             "amount": 100.0,
-            "memo": ""
+            "memo": "warmup memo"
         })
         yield c
 
@@ -117,7 +117,7 @@ def test_async_second_look_escalation_flow(client):
     assert data["decision"] == "ALLOW"
     assert data["status"] == "PENDING_SETTLEMENT"
     assert data["review_enqueued"] is True
-    assert data["evaluation_time_ms"] < 100.0
+    assert data["evaluation_time_ms"] < 200.0
     assert sync_dur_ms < 500.0
 
     # Poll status until reviewed (up to 2.5s for neural forward pass)

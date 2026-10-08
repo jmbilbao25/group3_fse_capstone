@@ -68,10 +68,12 @@ infrastructure/datadog/synthetics-location-config.json
 hybrid_bench/cache/
 
 ### Local Agent Skills ###
-.agents/
+.agents/*
+!.agents/skills/
 docs/skills/
 
 ### Scratch & Temp ###
 scratch/
 scratch_*.txt
 package-lock.json
+.github/

@@ -61,3 +61,5 @@ This directory contains the ground-truth transaction dataset used to benchmark t
 | **Average Latency** | 0.12ms | 112.50ms | 28.21ms |
 | **Throughput (1 Core)** | ~8,300 TPS | ~8.9 TPS | ~35.4 TPS |
 | **Gate 0 Triage Ratio** | 100% (All rules) | 0% (All neural) | 75.0% (1,500/2,000 in < 0.1ms) |
+
+For subsequent evaluation comparing generative neural models with the non-autoregressive encoder architecture (Laya), refer to [`hybrid_bench/reports/laya_benchmark_results.json`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/hybrid_bench/reports/laya_benchmark_results.json) where Laya achieves 0.10 ms P99 latency and real-time synchronous memo analysis.

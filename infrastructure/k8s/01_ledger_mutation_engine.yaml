@@ -1,0 +1,124 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ledger-mutation-engine
+  namespace: banking
+  labels:
+    app: ledger-mutation-engine
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ledger-mutation-engine
+  template:
+    metadata:
+      labels:
+        app: ledger-mutation-engine
+    spec:
+      containers:
+        - name: ledger-mutation-engine
+          image: acrbankingprod.azurecr.io/ledger-mutation-engine:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8082
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2000m"
+              memory: "2Gi"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8082
+            initialDelaySeconds: 25
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8082
+            initialDelaySeconds: 35
+            periodSeconds: 10
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "azure"
+            - name: AZURE_SQL_URL
+              value: "jdbc:sqlserver://sql-banking-master.database.windows.net:1433;databaseName=sqldb-master;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;"
+            - name: AZURE_SQL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: banking-secrets
+                  key: azure-sql-username
+            - name: AZURE_SQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: banking-secrets
+                  key: azure-sql-password
+            - name: AZURE_POSTGRES_URL
+              value: "jdbc:postgresql://psql-banking-audit.postgres.database.azure.com:5432/banking_audit?sslmode=require"
+            - name: AZURE_POSTGRES_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: banking-secrets
+                  key: azure-postgres-username
+            - name: AZURE_POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: banking-secrets
+                  key: azure-postgres-password
+            - name: AZURE_REDIS_HOST
+              value: "redis-banking-prod.redis.cache.windows.net"
+            - name: AZURE_REDIS_PORT
+              value: "6380"
+            - name: AZURE_REDIS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: banking-secrets
+                  key: azure-redis-key
+            - name: AZURE_EVENT_HUBS_BOOTSTRAP
+              value: "evh-banking-prod.servicebus.windows.net:9093"
+            - name: EVENT_HUBS_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: banking-secrets
+                  key: event-hubs-connection-string
+            - name: RISK_SERVICE_URL
+              value: "http://risk-service.banking.svc.cluster.local:8084"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ledger-mutation-engine
+  namespace: banking
+  labels:
+    app: ledger-mutation-engine
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8082
+      targetPort: 8082
+      protocol: TCP
+      name: http
+  selector:
+    app: ledger-mutation-engine
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ledger-mutation-engine-hpa
+  namespace: banking
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ledger-mutation-engine
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

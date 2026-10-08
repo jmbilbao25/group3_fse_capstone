@@ -391,18 +391,18 @@ h3{margin:0;font-size:20px;letter-spacing:-.02em}
         <li class="step" data-default="Fast tabular model decides baseline tier in under 200 ms">
           <span class="dot"></span><div><b>S2 · Risk model</b><span class="d"></span></div><span class="t"></span>
         </li>
-        <li class="step" data-default="Synthesizes remote tools, active calls, and payee context">
-          <span class="dot"></span><div><b>NanoJev · Threat synthesis</b><span class="d"></span></div><span class="t"></span>
+        <li class="step" data-default="Evaluates memo semantics, scam patterns, and device telemetry in 0.02 ms">
+          <span class="dot"></span><div><b>Laya · Threat & memo synthesis</b><span class="d"></span></div><span class="t"></span>
         </li>
         <li class="step" data-default="Can add advisory friction, never downgrades protection">
           <span class="dot"></span><div><b>Final decision</b><span class="d"></span></div><span class="t"></span>
         </li>
       </ol>
-      <p class="legend"><strong>Stage A</strong> (rules and tabular model) sets the baseline. <strong>Stage B</strong> (NanoJev) identifies remote-access malware and coercion to trigger advisory friction without hard blocks. <strong>Zero SMS OTP:</strong> Transfers authorize via hardware biometrics.</p>
+      <p class="legend"><strong>Stage A</strong> (rules and tabular model) sets the baseline. <strong>Stage B</strong> (Laya) identifies scam memos, remote-access malware, and coercion to trigger advisory friction without hard blocks. <strong>Zero SMS OTP:</strong> Transfers authorize via hardware biometrics.</p>
     </aside>
   </section>
 
-  <p class="note">Simulated demo for illustration. Transactions use hardware-backed biometrics on cryptographically bound primary devices (zero SMS OTP). Advisory warnings alert users to remote-access malware without hard blocks.</p>
+  <p class="note">Simulated demo for illustration. Transactions use hardware-backed biometrics on cryptographically bound primary devices (zero SMS OTP). Laya evaluates transfer memos and telemetry in 0.02 ms to trigger advisory warnings without hard blocks.</p>
 </div>
 
 <script>
@@ -469,14 +469,14 @@ h3{margin:0;font-size:20px;letter-spacing:-.02em}
       to: 'Maria Santos', amt: '4,500.00', memo: 'Rent for October',
       gate: { state: 'done', d: 'No hard-rule violations', t: '0.001 ms' },
       s2:   { state: 'done', d: 'Risk score 0.04, decision ALLOW', t: '38 ms' },
-      memo_: { state: 'done', d: 'Clean device telemetry, habitual payee', t: '210 ms' },
+      memo_: { state: 'done', d: 'Clean memo semantics, normal device telemetry', t: '0.02 ms' },
       final: { state: 'done', d: 'ALLOW · Biometric authorization required' }
     },
     warning: {
       to: 'Ramon Dela Cruz', amt: '3,500.00', memo: 'Emergency assistance',
       gate: { state: 'done', d: 'No hard-rule violations', t: '0.001 ms' },
       s2:   { state: 'done', d: 'Risk score 0.18, baseline ALLOW', t: '41 ms' },
-      memo_: { state: 'warn', d: 'Remote access active (AnyDesk background)', t: '260 ms' },
+      memo_: { state: 'warn', d: 'Remote access active (AnyDesk background)', t: '0.02 ms' },
       final: { state: 'warn', d: 'ADVISORY WARNING · In-app friction modal' }
     },
     blocked: {
@@ -679,10 +679,9 @@ h3{margin:0;font-size:20px;letter-spacing:-.02em}
       await W_fast(s2Ms);
       setStep(1, sc.s2.state, sc.s2.d, sc.s2.t);
 
-      // Stage B: Memo check (displayed as 312 ms / 356 ms)
+      // Stage B: Laya memo & threat synthesis (< 0.1 ms real-time)
       setProgress(2); setStep(2, 'active');
-      const memoMs = parseInt(sc.memo_.t, 10) || 312;
-      await W_fast(memoMs);
+      await W_fast(50);
       setStep(2, sc.memo_.state, sc.memo_.d, sc.memo_.t);
 
       // Final decision

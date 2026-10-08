@@ -43,10 +43,10 @@ In local development, the platform runs via Docker Compose with Oracle XE and Po
   * Refresh calls (`POST /api/v1/auth/refresh`) revoke the presented refresh token immediately and issue a new pair, recording the rotation inside the session's token family set (`token_family:<sessionId>`).
   * If an attacker attempts to replay a previously revoked refresh token, Redis triggers immediate breach detection (`purgeEntireTokenFamily`). The system purges all active refresh tokens associated with that session family, terminates the compromised session, and returns HTTP 401 Unauthorized.
 
-### ADR-04: Two-Stage Transfer Risk Engine (S2 Tabular and NanoJev Threat Synthesis)
+### ADR-04: Two-Stage Transfer Risk Engine (S2 Tabular and Laya Threat Synthesis)
 * **Decision:** Deploy an independent Python risk microservice (`risk-service`) on port 8084 utilizing a two-stage evaluation pipeline:
-  * **Stage A (Synchronous < 30 ms):** Evaluates deterministic Gate 0 rules (impossible travel velocity > 1,000 km/h, device tampering, mock location) and an XGBoost tabular model (S2) assessing 40+ behavioral and velocity features. Decisions (`ALLOW`, `ADVISORY_WARNING`, or `BLOCK`) return within a strict p99 < 200 ms SLA under load.
-  * **Stage B (Synchronous-Bounded, 1500 ms Timeout):** When a transfer presents device threat telemetry (remote-access tools like AnyDesk, active voice call state, purpose-payee mismatch) or a user memo and is not blocked, the orchestrator triggers threat synthesis. A quantized language model (NanoJev, based on Qwen2.5-0.5B INT8 ONNX with calibrated temperature T*=7.12) synthesizes the threat narrative and assigns an advisory warning modal with customer friction options (Cancel, 10-Minute Hold, or Proceed).
+  * **Stage A (Synchronous < 30 ms):** Evaluates deterministic Gate 0 rules (impossible travel velocity > 1,000 km/h, device tampering, mock location) and an XGBoost tabular model (S2) assessing 40+ behavioral and velocity features. Decisions (`ALLOW`, `ADVISORY_WARNING`, or `BLOCK`) return within a strict p99 < 30 ms SLA under load.
+  * **Stage B (Synchronous NLP Threat and Memo Synthesis, < 0.10 ms):** Powered by the **Laya** non-autoregressive encoder architecture (ModernBERT / mmBERT). When a transfer presents device threat telemetry (remote-access tools like AnyDesk, active voice call state, purpose-payee mismatch) or a user memo and is not blocked, Laya synthesizes threat signals and performs real-time semantic scoring on the transaction memo text against Philippine scam typologies (Task scams, Ponzi schemes, emergency impersonation, Tagalog/Taglish vernacular). Legacy NanoJev (Qwen2.5-0.5B ONNX) remains supported via `RISK_ENGINE_BACKEND=nanojev`.
   * **Escalate-Only Safety Invariant:** Enforced via `enforce_escalate_only()`, guaranteeing $\text{RiskTier}(a_1) \ge \text{RiskTier}(a_0)$ where `ALLOW` (0) < `ADVISORY_WARNING` (1) < `REQUIRE_2FA` (2) < `BLOCK` (3). The language model can escalate to friction or step-up authentication, but can never weaken an S2 decision or bypass security blocks.
   * **Asynchronous Audit & AMLC Reporting:** The orchestrator fires event records (`POST /risk/events`) asynchronously. The service logs immutable JSONL audit records, populates the analyst triage queue, and automatically drafts Suspicious Transaction Reports (STR/SAR) in Markdown for Anti-Money Laundering Council (AMLC) compliance review.
 
@@ -175,8 +175,9 @@ Every container attaches to the internal bridge network `banking-net`. Only peri
 | **Account Service** | `account-service` | *Internal* | `8081` | HTTP / REST | KYC onboarding, user profiles, JWT issuance, Refresh Token Rotation |
 | **Orchestration Engine** | `ledger-mutation-engine`| *Internal* | `8082` | HTTP / REST | Transaction orchestration, row locks, soft holds, outbox relay |
 | **Notification Service** | `notification-service` | *Internal* | `8083` | HTTP / REST | Kafka event listener, email receipts, 2FA OTP generation and dispatch |
-| **Fraud Risk Engine** | `risk-service` | *Internal* | `8084` | HTTP / REST | Two-stage S2 XGBoost (Stage A) + NanoJev threat synthesis & advisory modal (Stage B) |
+| **Fraud Risk Engine** | `risk-service` | *Internal* | `8084` | HTTP / REST | Two-stage S2 XGBoost (Stage A) + Laya threat synthesis & synchronous memo analysis (Stage B) |
 | **Redis Cache** | `redis-cache` | `6379` | `6379` | RESP / TCP | RTR token families, JWT blacklist, 5-minute OTP, rate limiting |
+| **Redis Insight** | `redis-insight` | `5540` | `5540` | HTTP | Web management dashboard for inspecting Redis keys, memory, and TTLs |
 | **Oracle Database XE** | `oracle-xe-master` | `1521` | `1521` | Oracle TNS | Operational relational state (`XEPDB1`), row locks, outbox events |
 | **PostgreSQL Audit** | `postgres-audit-vault`| `5433` | `5432` | PostgreSQL | Write-once append-only compliance audit journal (`banking_audit`) |
 | **Apache Kafka** | `kafka-broker` | `9092` | `9092` | PLAINTEXT | KRaft cluster event commit log (`banking.transfers.events`) |
@@ -198,7 +199,7 @@ Every container attaches to the internal bridge network `banking-net`. Only peri
 | **API Gateway Pods** | Spring Cloud Gateway (:8080) | AKS Deployment (`gateway-service`) | HPA: 2 to 10 pods on CPU > 70% or request rate |
 | **Account Pods** | Identity & Auth (:8081) | AKS Deployment (`account-service`) | HPA: 2 to 6 pods with JWT/RTR key rotation |
 | **Orchestration Pods** | Core Remittance (:8082) | AKS Deployment (`ledger-mutation-engine`) | HPA: 2 to 8 pods with SLA ≤ 200 ms timeout |
-| **Risk Engine Pods** | Python Fraud Analytics (:8084) | AKS Deployment (`risk-service`) | HPA: 2 to 6 pods with two-stage S2 + NanoJev threat synthesis |
+| **Risk Engine Pods** | Python Fraud Analytics (:8084) | AKS Deployment (`risk-service`) | HPA: 2 to 6 pods with two-stage S2 + Laya threat synthesis |
 | **Notification Pods** | Email & 2FA OTP (:8083) | AKS Deployment (`notification-service`) | KEDA scaled by Event Hubs topic consumer lag |
 | **Database & Ledger** | Operational State & Audit Vault | Azure SQL Database (General Purpose) | Pessimistic `UPDLOCK, ROWLOCK` + Azure SQL Ledger |
 | **In-Memory Cache** | RTR, Token Blacklist & OTP | Azure Cache for Redis (Standard C1 :6380) | Managed TLS in-memory cache with sub-5ms latency |
@@ -214,7 +215,7 @@ The project is executed across three official Capstone tracks mapped to a 100-po
 | Member | Track & Specialization | Key Codebase Ownership & Deliverables | Evaluation Pillar |
 | :--- | :--- | :--- | :--- |
 | **Zel** | Technical Lead, Core Mutation Engine & Ledger Testing | `BalanceMutationService.java`: row locking (Oracle XE & Azure SQL `UPDLOCK, ROWLOCK`), soft holds, transactional outbox, concurrency test harnesses, **Chaos Scenario 1** (DB degradation). | **Pillar 2 & 4** (Backend Logic & Chaos 1) |
-| **Maye** | Lead Risk Analytics Engineer & Scrum Backlog Lead | `backend/risk-service`: Gate 0 + S2 sync scoring (p99 < 200ms SLA), NanoJev INT8 threat synthesis, prompt caching, JIRA backlog tracking, **Chaos Scenario 2** (Risk service kill). | **Pillar 1 & 4** (JIRA & Chaos 2) |
+| **Maye** | Lead Risk Analytics Engineer & Scrum Backlog Lead | `backend/risk-service`: Gate 0 + S2 sync scoring (p99 < 30ms SLA), Laya sub-millisecond threat synthesis, synchronous memo analysis, prompt caching, JIRA backlog tracking, **Chaos Scenario 2** (Risk service kill). | **Pillar 1 & 4** (JIRA & Chaos 2) |
 | **JM** | Lead Flutter Architect & Datadog Observability | `flutter_client`: cross-platform Web/Mobile parity, client circuit breaker, Datadog APM Agent integration, W3C trace waterfalls, E2E testing passes. | **Pillar 3 & 4** (UI & Observability) |
 | **Wax** | Lead Core Banking Integration Engineer (Temenos T24) | `OfsMessageBuilder.java`, `TemenosLoopbackClient.java`: raw OFSCore serialization (`FUNDS.TRANSFER...`), local loopback simulation server. | **Pillar 2** (T24 Core Banking Hook) |
 | **Mae** | Flutter Mobile Engineer & Agile Scrum Coordinator | `flutter_client`: native KeyStore/Keychain encryption (`flutter_secure_storage`), responsive forms, JIRA sprint burn-down, evaluation demo runbook. | **Pillar 1 & 3** (JIRA & Mobile Client) |
@@ -378,5 +379,5 @@ For external database tools (DBeaver, pgAdmin, psql) connecting from the host ma
     ├── account-service/                # KYC onboarding, JWT token issuance, RTR token rotation
     ├── ledger-mutation-engine/         # Balance mutation orchestrator, locks, T24 hook, outbox
     ├── notification-service/           # Kafka consumer, email receipts, 2FA OTP, spool buffer
-    └── risk-service/                   # Decoupled S2 XGBoost and NanoJev second-look risk service
+    └── risk-service/                   # Decoupled S2 XGBoost and Laya second-look risk service
 ```

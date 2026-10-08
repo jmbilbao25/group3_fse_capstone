@@ -18,7 +18,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final BankService _bankService = BankService();
 
   static const Color brandViolet = AuraColors.primary;
-  static const Color accentGreen = AuraColors.creditGreen;
   static const Color textDark = AuraColors.textPrimary;
   static const Color textGray = AuraColors.textMuted;
   static const Color cardBorder = Color(0xFFE5E7EB);
@@ -231,15 +230,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Logout icon in soft violet circle
+            // Logout icon in soft red circle
             Container(
               width: 56,
               height: 56,
               decoration: const BoxDecoration(
-                color: Color(0xFFF3E8FF),
+                color: Color(0xFFFEE2E2),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.logout_rounded, color: brandViolet, size: 28),
+              child: const Icon(Icons.logout_rounded, color: Color(0xFFDC2626), size: 28),
             ),
 
             const SizedBox(height: 16),
@@ -273,7 +272,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               height: 48,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: brandViolet,
+                  backgroundColor: const Color(0xFFDC2626),
                   foregroundColor: Colors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -470,20 +469,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ],
                   ),
-                  // Bell Icon with indicator dot
+                  // Bell Icon with indicator dot (Consistent 40x40 circle)
                   Stack(
                     children: [
                       Container(
-                        width: 38,
-                        height: 38,
+                        width: 40,
+                        height: 40,
                         decoration: BoxDecoration(
                           color: Colors.white,
                           shape: BoxShape.circle,
-                          border: Border.all(color: const Color(0xFFEDE9FE)),
+                          border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
                           boxShadow: [
                             BoxShadow(
-                              color: brandViolet.withValues(alpha: 0.04),
-                              blurRadius: 6,
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
                           ],
@@ -502,13 +501,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                       Positioned(
-                        right: 2,
-                        top: 2,
+                        right: 3,
+                        top: 3,
                         child: Container(
                           width: 8,
                           height: 8,
                           decoration: const BoxDecoration(
-                            color: Color(0xFFDC2626),
+                            color: Color(0xFFEF4444),
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -520,7 +519,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               const SizedBox(height: 16),
 
-              // 2. User Identity Card (Monogram + Name + Privilege Badge + Phone + Edit + Client ID & Email Pills)
+              // 2. User Identity Card (Monogram + Name + Phone + Edit + Registered Email)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
@@ -540,90 +539,67 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     Row(
                       children: [
-                        // Monogram Avatar with Aura Violet Gradient & Emerald Verified Badge
-                        Stack(
-                          children: [
-                            Container(
-                              width: 60,
-                              height: 60,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: AuraColors.balanceHeroGradient,
-                                border: Border.all(color: const Color(0xFFDDD6FE), width: 2),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: brandViolet.withValues(alpha: 0.35),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
+                        // Monogram Avatar with Luxury Violet Gradient
+                        Container(
+                          width: 62,
+                          height: 62,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: AuraColors.balanceHeroGradient,
+                            boxShadow: [
+                              BoxShadow(
+                                color: brandViolet.withValues(alpha: 0.3),
+                                blurRadius: 14,
+                                offset: const Offset(0, 4),
                               ),
-                              alignment: Alignment.center,
-                              child: Text(
-                                initials.isNotEmpty ? initials : 'EM',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
+                            ],
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            initials.isNotEmpty ? initials : 'EM',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
                             ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Container(
-                                width: 18,
-                                height: 18,
-                                decoration: BoxDecoration(
-                                  color: accentGreen,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 2.2),
-                                ),
-                                child: const Icon(Icons.check, size: 11, color: Colors.white),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
 
                         const SizedBox(width: 14),
 
-                        // Name with Verified Badge & Phone
+                        // Name & Phone
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              Text(
+                                user.name,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                  color: textDark,
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
                               Row(
                                 children: [
-                                  Flexible(
+                                  const Icon(Icons.phone_iphone_rounded, size: 13, color: textGray),
+                                  const SizedBox(width: 4),
+                                  Expanded(
                                     child: Text(
-                                      user.name,
+                                      user.phoneNumber,
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(
-                                        fontSize: 17,
-                                        fontWeight: FontWeight.w900,
-                                        color: textDark,
-                                        letterSpacing: -0.3,
+                                        fontSize: 12.5,
+                                        color: textGray,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 6),
-                                  const Icon(
-                                    Icons.verified_rounded,
-                                    size: 17,
-                                    color: Color(0xFF3B82F6),
-                                  ),
                                 ],
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                user.phoneNumber,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 12.5,
-                                  color: textGray,
-                                  fontWeight: FontWeight.w500,
-                                ),
                               ),
                             ],
                           ),
@@ -654,7 +630,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                     const SizedBox(height: 18),
 
-                    // Registered Email Pill with Verified Tag
+                    // Registered Email Pill (No Verified Badge)
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -666,15 +642,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: Row(
                         children: [
                           Container(
-                            width: 34,
-                            height: 34,
+                            width: 36,
+                            height: 36,
                             decoration: BoxDecoration(
-                              color: brandViolet.withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
+                              color: brandViolet.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Icon(Icons.email_outlined, size: 16, color: brandViolet),
+                            child: const Icon(Icons.alternate_email_rounded, size: 18, color: brandViolet),
                           ),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -699,21 +675,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   ),
                                 ),
                               ],
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFDCFCE7),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Text(
-                              'Verified',
-                              style: TextStyle(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w800,
-                                color: Color(0xFF16A34A),
-                              ),
                             ),
                           ),
                         ],
@@ -896,23 +857,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               // 6. LOGOUT ACTION
               // Log Out of This Device only (Multi-device logout is on Trusted Devices & Sessions page)
-              SizedBox(
+              Container(
                 width: double.infinity,
                 height: 52,
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF2F2),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFFFEE2E2), width: 1.2),
+                ),
+                child: TextButton.icon(
+                  style: TextButton.styleFrom(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                    elevation: 0,
                   ),
-                  icon: const Icon(Icons.logout_rounded, size: 19, color: Color(0xFFEF4444)),
+                  icon: const Icon(Icons.logout_rounded, size: 19, color: Color(0xFFDC2626)),
                   label: const Text(
                     'Log Out of This Device',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFFEF4444),
+                      color: Color(0xFFDC2626),
                       letterSpacing: 0.2,
                     ),
                   ),

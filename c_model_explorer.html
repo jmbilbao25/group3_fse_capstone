@@ -415,8 +415,8 @@
         <span id="fs-icon">⛶</span> <span id="fs-label">Fullscreen</span>
       </button>
       <div style="height: 18px; width: 1px; background: var(--border); margin: 0 4px;"></div>
-      <a class="btn btn-primary" id="open-archify-btn" href="c1_system_context.html" target="_blank" title="Open full Archify interactive HTML in new tab">
-        Open Archify Standalone ↗
+      <a class="btn btn-primary" id="open-standalone-btn" href="c1_system_context.html" target="_blank" title="Open full interactive diagram in new tab">
+        Open Interactive Standalone ↗
       </a>
     </div>
   </header>
@@ -912,13 +912,13 @@
         </div>
 
         <div class="inspector-card">
-          <div class="card-label">Direct Archify Links</div>
+          <div class="card-label">Interactive Diagram Views</div>
           <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 6px;">
-            <a class="btn" href="c1_system_context.html" target="_blank">📄 View C1 Archify Standalone</a>
-            <a class="btn" href="c2_container.html" target="_blank">📄 View C2 Container Archify</a>
-            <a class="btn" href="c3_component.html" target="_blank">📄 View C3 Component Archify</a>
-            <a class="btn" href="c4_sequence.html" target="_blank">📄 View C4 Sequence Archify</a>
-            <a class="btn" href="architecture.html" target="_blank">📄 View System Architecture</a>
+            <a class="btn" href="c1_system_context.html" target="_blank">📄 View C1 System Context</a>
+            <a class="btn" href="c2_container.html" target="_blank">📄 View C2 Container View</a>
+            <a class="btn" href="c3_component.html" target="_blank">📄 View C3 Component View</a>
+            <a class="btn" href="c4_sequence.html" target="_blank">📄 View C4 Sequence View</a>
+            <a class="btn" href="architecture.html" target="_blank">📄 View Full System Architecture</a>
           </div>
         </div>
       </div>
@@ -983,7 +983,7 @@
       });
 
       // Update link button
-      document.getElementById('open-archify-btn').href = standaloneLinks[level];
+      document.getElementById('open-standalone-btn').href = standaloneLinks[level];
       document.getElementById('disp-level').textContent = levelDescriptions[level];
 
       // Smooth zoom reset for new level

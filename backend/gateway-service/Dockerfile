@@ -1,6 +1,7 @@
 FROM maven:3.9-eclipse-temurin-21-alpine AS builder
 WORKDIR /build
 COPY . .
+RUN rm -f .mvn/jvm.config
 RUN mvn clean package -DskipTests -pl gateway-service -am
 
 FROM eclipse-temurin:21-jre-alpine

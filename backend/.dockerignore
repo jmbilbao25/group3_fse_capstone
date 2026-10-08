@@ -3,3 +3,4 @@
 .git
 .idea
 *.iml
+.mvn/jvm.config

@@ -136,14 +136,15 @@ export default {
       // `full` survives for the two things that are genuinely circular: the
       // connection-state dot and the button spinner arc.
       borderRadius: {
-        none: '0',
-        sm: '0',
-        DEFAULT: '0',
-        md: '0',
-        lg: '0',
-        xl: '0',
-        '2xl': '0',
-        '3xl': '0',
+        none: '0px',
+        xs: '0.25rem',
+        sm: '0.375rem',
+        DEFAULT: '0.5rem',
+        md: '0.625rem',
+        lg: '0.75rem',
+        xl: '1rem',
+        '2xl': '1.25rem',
+        '3xl': '1.5rem',
         full: '9999px',
       },
 

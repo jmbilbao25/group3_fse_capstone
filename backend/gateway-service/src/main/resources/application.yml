@@ -60,6 +60,13 @@ spring:
                 redis-rate-limiter.burstCapacity: 20
                 key-resolver: "#{@userKeyResolver}"
 
+        - id: ledger-users
+          uri: ${LEDGER_ENGINE_URI:http://localhost:8082}
+          predicates:
+            - Path=/api/v1/users/**
+          filters:
+            - RewritePath=/api/v1/users(?<segment>/?.*), /api/v1/ledger/users$1
+
         - id: notification-service
           uri: ${NOTIFICATION_SERVICE_URI:http://localhost:8083}
           predicates:

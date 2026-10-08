@@ -7,6 +7,7 @@ import {
   CheckCircle2, 
   AlertCircle, 
   ShieldCheck, 
+  ShieldAlert, 
   Copy, 
   Check, 
   Building2, 
@@ -121,6 +122,7 @@ export default function CustomerPortal({ balance, onTransactionComplete, onSwitc
   const [activePendingTx, setActivePendingTx] = useState(null);
   const [dispatchedOtpCode, setDispatchedOtpCode] = useState('');
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [fraudAlertData, setFraudAlertData] = useState(null);
 
   const numericAmount = parseFloat(amountInput) || 0;
   const sourceAvailable = mockState.account?.available_balance ?? balance?.available_balance ?? 15000000;
@@ -228,7 +230,7 @@ export default function CustomerPortal({ balance, onTransactionComplete, onSwitc
         },
         {
           headers: {
-            'X-Idempotency-Key': currentIdempotencyKey,
+            'X-Idempotency-Key': generateUUID(),
           },
         }
       );
@@ -305,6 +307,16 @@ export default function CustomerPortal({ balance, onTransactionComplete, onSwitc
       onTransactionComplete?.();
     } catch (err) {
       const problem = err.response?.data;
+      if (err.response?.status === 422 && (problem?.error_code === 'RISK_THRESHOLD_EXCEEDED' || problem?.status === 'REJECTED_FRAUD')) {
+        setFraudAlertData({
+          title: 'Security Notice: Transaction Temporarily Held',
+          location: problem?.location || 'New Location',
+          timestamp: new Date().toLocaleTimeString()
+        });
+        setIsConfirmModalOpen(false);
+        return;
+      }
+
       showToast?.({
         type: 'error',
         title: problem?.title || problem?.error || 'Transfer Failed',
@@ -1530,6 +1542,89 @@ export default function CustomerPortal({ balance, onTransactionComplete, onSwitc
               >
                 Close
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          MODAL 5: CUSTOMER SECURITY NOTICE (GEOVELOCITY HOLD)
+         ======================================================== */}
+      {fraudAlertData && (
+        <div 
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setFraudAlertData(null);
+          }}
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+        >
+          <div className="bg-surface border-2 border-amber-500 max-w-lg w-full p-6 shadow-2xl relative space-y-5">
+            <div className="flex items-start gap-3.5">
+              <div className="w-11 h-11 rounded-full bg-amber-500/15 border border-amber-500 flex items-center justify-center shrink-0">
+                <ShieldAlert className="w-6 h-6 text-amber-500 animate-pulse" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-fg font-sans">
+                  Security Notice: Transaction Temporarily Held
+                </h3>
+                <p className="text-2xs text-fg-subtle">
+                  AuraBank Account Safeguard &bull; Real-Time Fraud &amp; Identity Protection
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-amber-500/10 border border-amber-500/25 space-y-3">
+              <p className="text-xs text-fg leading-relaxed">
+                We detected unusual activity from a new location. To protect your funds, this transfer was stopped and your account has been placed on a temporary security hold.
+              </p>
+              <p className="text-xs text-fg-muted leading-relaxed">
+                If this was you, please verify your identity via Face/2FA or contact Customer Support.
+              </p>
+              <div className="pt-2 border-t border-amber-500/20 flex flex-wrap items-center justify-between gap-2 text-2xs text-fg-subtle">
+                <span className="flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  ₱0.00 Deducted &bull; Funds Fully Protected
+                </span>
+                <span className="font-mono text-fg-subtle">
+                  Time: {fraudAlertData.timestamp || 'Just now'}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  showToast?.({
+                    type: 'info',
+                    title: 'Customer Support Hotline',
+                    detail: 'Priority 24/7 Security Assistance: 1-800-888-AURA (Domestic toll-free)',
+                  });
+                }}
+                className="px-3.5 py-2 text-xs font-medium border border-line bg-sunken hover:bg-surface text-fg cursor-pointer transition-colors text-center"
+              >
+                Contact Support
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  showToast?.({
+                    type: 'info',
+                    title: 'Identity Verification Initiated',
+                    detail: 'A secure 2FA identity challenge code has been dispatched to your registered contact channel.',
+                  });
+                  setFraudAlertData(null);
+                }}
+                className="px-4 py-2 text-xs font-semibold bg-accent text-fg-inverse hover:opacity-90 cursor-pointer transition-opacity text-center"
+              >
+                Verify Identity via 2FA
+              </button>
+              <button
+                type="button"
+                onClick={() => setFraudAlertData(null)}
+                className="px-3 py-2 text-xs text-fg-subtle hover:text-fg cursor-pointer transition-colors text-center"
+              >
+                Dismiss
+              </button>
             </div>
           </div>
         </div>

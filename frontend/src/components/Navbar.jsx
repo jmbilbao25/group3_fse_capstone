@@ -1,65 +1,42 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, ChevronDown, LogOut, UserCog } from 'lucide-react';
+import { Check, ChevronDown, LogOut, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Brand from './Brand';
 import ThemeToggle from './ThemeToggle';
 import Button from '../ui/Button';
 import { cn } from '../ui';
 
-/*
- * Application header.
- *
- * Removed from the previous version, all of it decoration presented as fact:
- *   - "Ledger :3000" and "SCN 982144" pills. Invented telemetry. A port number
- *     is not information a banking customer can act on, and the SCN was a
- *     hardcoded string dressed up as a live sequence number.
- *   - "PREMIER VAULT" badge beside the wordmark.
- *   - A mail menu badged "5" that rendered two items, and a bell badged "2"
- *     with two hardcoded notices. Counts that disagree with their own contents
- *     teach users to distrust every other number on the screen. The real
- *     notification stream already arrives as toasts from the SSE connection in
- *     App.jsx, so these menus were duplicating a feature that works.
- *   - A pulsing green dot, animating forever, meaning nothing.
- *
- * What remains: identity, the genuine connection state, the role switcher this
- * demo needs, theme, and sign out.
- */
-
-const ROLE_LABELS = {
-  ROLE_CUSTOMER: 'Customer',
-  ROLE_ADMIN: 'Admin',
-};
-
-/* The personas this build ships for demonstration. */
-const PERSONAS = [
+const ADMIN_PERSONAS = [
   {
-    role: 'ROLE_CUSTOMER',
-    name: 'Juan Dela Cruz',
-    title: 'Account holder',
-    id: 'U1001',
+    role: 'ROLE_ADMIN',
+    email: 'alex.rivera@bank.com',
+    name: 'Alex Rivera',
+    title: 'Fraud Ops Analyst',
+    id: 'usr-1007-sec-003',
   },
   {
     role: 'ROLE_ADMIN',
+    email: 'carlos.mendoza@bank.com',
+    name: 'Carlos Mendoza',
+    title: 'Branch Operations Officer',
+    id: 'usr-1006-mgr-002',
+  },
+  {
+    role: 'ROLE_ADMIN',
+    email: 'diana.admin@bank.com',
     name: 'Diana Vance',
-    title: 'Administrator',
-    id: 'U0001',
+    title: 'Compliance Lead (Checker)',
+    id: 'usr-1004-adm-001',
   },
 ];
 
-const ROLE_HOME = {
-  ROLE_CUSTOMER: '/customer',
-  ROLE_ADMIN: '/admin',
-};
-
-export default function Navbar({ onRefreshBalance, isLiveConnected }) {
+export default function Navbar() {
   const navigate = useNavigate();
-  const { user, switchRole, logout } = useAuth();
+  const { user, login, logout } = useAuth();
   const [menuOpen, setMenuOpen] = React.useState(false);
   const menuRef = React.useRef(null);
 
-  // Close on outside click and on Escape. The previous menus stayed open until
-  // another menu was clicked, so they could be left hanging over the content.
   React.useEffect(() => {
     if (!menuOpen) return;
 
@@ -78,118 +55,105 @@ export default function Navbar({ onRefreshBalance, isLiveConnected }) {
     };
   }, [menuOpen]);
 
-  const handleSelect = async (role) => {
+  const handleSelectAdmin = async (persona) => {
     setMenuOpen(false);
-    await switchRole(role);
-    onRefreshBalance?.();
-    const dest = ROLE_HOME[role] || '/customer';
-    navigate(dest);
+    await login(persona.email, 'password123');
+    navigate('/admin');
   };
 
   const initials = user?.name
     ? user.name.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]).join('')
-    : 'JD';
+    : 'CM';
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-surface">
-      <div className="mx-auto flex h-14 max-w-shell items-center justify-between gap-4 px-4 sm:px-6">
-        <Brand />
+    <header className="sticky top-0 z-40 border-b border-line bg-surface/80 backdrop-blur-md">
+      <div className="mx-auto flex h-16 max-w-shell items-center justify-between gap-4 px-6 lg:px-10">
+        <div className="flex items-center gap-3">
+          <Brand />
+          <span className="hidden sm:inline-block rounded-md bg-sunken border border-line px-2 py-0.5 text-[11px] font-medium text-fg-muted">
+            Operations
+          </span>
+        </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <ThemeToggle className="hidden sm:inline-flex" />
 
+          {/* Active Admin Persona Dropdown */}
           <div className="relative" ref={menuRef}>
             <button
               type="button"
               onClick={() => setMenuOpen((open) => !open)}
               aria-expanded={menuOpen}
-              aria-haspopup="menu"
               className={cn(
-                'flex items-center gap-2 border border-line py-1 pl-1 pr-2 text-left',
-                'transition-colors duration-[120ms] hover:bg-sunken',
+                'flex items-center gap-2.5 rounded-xl border border-line py-1.5 pl-2 pr-3 text-left bg-surface',
+                'transition hover:bg-sunken hover:border-line-strong',
                 menuOpen && 'bg-sunken'
               )}
             >
-              {/* Square avatar, matching the shape lock. Initials rather than a
-                  generic person icon, so the active identity is unambiguous
-                  when switching between four personas. */}
-              <span className="flex h-7 w-7 items-center justify-center bg-accent text-2xs font-semibold uppercase text-fg-inverse">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent text-xs font-semibold text-fg-inverse shadow-xs">
                 {initials}
               </span>
               <span className="hidden min-w-0 leading-tight md:block">
-                <span className="block truncate text-sm font-medium text-fg">
-                  {user?.name || 'Juan Dela Cruz'}
+                <span className="block truncate text-xs font-semibold text-fg">
+                  {user?.name || 'Alex Rivera'}
                 </span>
-                <span className="block text-2xs text-fg-subtle">
-                  {ROLE_LABELS[user?.role] || 'Customer'}
+                <span className="block text-[10px] text-fg-subtle">
+                  {user?.title || 'Fraud Ops Analyst'}
                 </span>
               </span>
               <ChevronDown className="h-3.5 w-3.5 shrink-0 text-fg-subtle" aria-hidden="true" />
             </button>
 
-            {menuOpen && <PersonaMenu currentRole={user?.role} onSelect={handleSelect} />}
+            {menuOpen && (
+              <div
+                role="menu"
+                className="absolute right-0 top-full z-50 mt-2 w-72 rounded-2xl border border-line bg-surface shadow-xl p-1.5 animate-in fade-in"
+              >
+                <div className="flex items-center gap-2 border-b border-line px-3 py-2 text-fg-subtle">
+                  <Users className="h-3.5 w-3.5" aria-hidden="true" />
+                  <p className="text-[10px] font-bold uppercase tracking-wider">
+                    Switch Active Operator
+                  </p>
+                </div>
+
+                <div className="p-1 space-y-1">
+                  {ADMIN_PERSONAS.map((admin) => {
+                    const active = user?.email === admin.email;
+
+                    return (
+                      <button
+                        key={admin.email}
+                        type="button"
+                        role="menuitem"
+                        onClick={() => handleSelectAdmin(admin)}
+                        className={cn(
+                          'flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left transition',
+                          'hover:bg-sunken',
+                          active && 'bg-accent/10 border border-accent/30'
+                        )}
+                      >
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-xs font-bold text-fg">{admin.name}</span>
+                          <span className="block text-[11px] text-fg-muted mt-0.5">
+                            {admin.title}
+                          </span>
+                        </span>
+                        {active && (
+                          <Check className="h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
-          <Button variant="ghost" size="md" icon={LogOut} onClick={logout} className="shrink-0">
-            <span className="hidden sm:inline">Sign out</span>
+          <Button variant="ghost" size="md" icon={LogOut} onClick={logout} className="shrink-0 rounded-xl">
+            <span className="hidden sm:inline text-xs">Sign out</span>
           </Button>
         </div>
       </div>
     </header>
-  );
-}
-
-
-/*
- * Persona menu.
- *
- * This is a demonstration affordance, so it says so plainly rather than dressing
- * itself up as an "RBAC Gateway" with a monospace badge. Being honest about what
- * a control is costs nothing and stops the UI from overclaiming.
- */
-function PersonaMenu({ currentRole, onSelect }) {
-  return (
-    <div
-      role="menu"
-      className="absolute right-0 top-full z-50 mt-1 w-72 animate-fade-up border border-line bg-surface shadow-lg"
-    >
-      <div className="flex items-center gap-2 border-b border-line bg-sunken px-3 py-2">
-        <UserCog className="h-3.5 w-3.5 text-fg-subtle" aria-hidden="true" />
-        <p className="text-2xs font-medium uppercase tracking-wider text-fg-subtle">
-          Switch demo persona
-        </p>
-      </div>
-
-      <div className="p-1">
-        {PERSONAS.map((persona) => {
-          const active = currentRole === persona.role;
-
-          return (
-            <button
-              key={persona.role}
-              type="button"
-              role="menuitem"
-              onClick={() => onSelect(persona.role)}
-              className={cn(
-                'flex w-full items-center gap-3 px-2 py-2 text-left',
-                'transition-colors duration-[120ms] hover:bg-sunken',
-                active && 'bg-accent-soft'
-              )}
-            >
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium text-fg">{persona.name}</span>
-                <span className="block text-xs text-fg-muted">
-                  {persona.title}
-                  <span className="ml-1.5 font-mono text-fg-subtle">{persona.id}</span>
-                </span>
-              </span>
-              {active && (
-                <Check className="h-3.5 w-3.5 shrink-0 text-accent-text" aria-hidden="true" />
-              )}
-            </button>
-          );
-        })}
-      </div>
-    </div>
   );
 }

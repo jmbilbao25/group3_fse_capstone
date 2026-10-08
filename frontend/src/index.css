@@ -18,64 +18,56 @@
 
 :root,
 [data-theme='light'] {
-  /* Surfaces, in elevation order. The canvas is very slightly cooler than
-     the panels that sit on it, which is what separates them without needing
-     a border on every edge. */
-  --canvas: 244 245 247;
+  /* Surfaces, in elevation order. Crisp white and serene soft canvas */
+  --canvas: 248 249 252;
   --surface: 255 255 255;
   --raised: 255 255 255;
-  --sunken: 248 249 250;
+  --sunken: 243 244 249;
 
-  /* Hairlines. `line` carries ordinary separation, `line-strong` marks real
-     structural boundaries such as a table header or a panel footer. */
-  --line: 228 230 234;
-  --line-strong: 205 209 215;
+  /* Hairlines. Clean, subtle borders */
+  --line: 226 232 240;
+  --line-strong: 203 213 225;
 
-  /* Text. 4 steps: primary is 15.8:1 on surface, muted 7.0:1, subtle 4.6:1.
-     Every one of them clears WCAG AA for body copy. */
-  --fg: 26 29 33;
-  --fg-muted: 84 90 99;
-  --fg-subtle: 111 118 128;
+  /* Text. Deep readable slate for high contrast and visual calm */
+  --fg: 15 23 42;
+  --fg-muted: 71 85 105;
+  --fg-subtle: 148 163 184;
   --fg-inverse: 255 255 255;
 
-  /* The single accent. Used for interactive affordances and the current
-     selection, never for decoration. */
-  --accent: 58 76 214;
-  --accent-hover: 47 61 180;
-  --accent-soft: 239 243 255;
-  --accent-line: 195 208 252;
-  --accent-text: 47 61 180;
+  /* Aura Bank Signature Royal Violet */
+  --accent: 49 16 117;          /* #311075 */
+  --accent-hover: 38 12 92;      /* #260C5C */
+  --accent-soft: 245 243 255;    /* #F5F3FF */
+  --accent-line: 221 214 254;    /* #DDD6FE */
+  --accent-text: 49 16 117;      /* #311075 */
 
-  --shadow: 26 29 33;
+  --shadow: 30 20 60;
   color-scheme: light;
 }
 
 .dark,
 [data-theme='dark'] {
-  /* Dark is a genuine peer of light, not an inversion. Elevation still rises
-     toward the viewer, hierarchy holds, and the accent stays recognisable
-     rather than being desaturated into the background. */
-  --canvas: 16 18 21;
-  --surface: 26 29 33;
-  --raised: 31 34 39;
-  --sunken: 16 18 21;
+  /* Deep Midnight Violet Palette */
+  --canvas: 15 13 25;
+  --surface: 24 21 41;
+  --raised: 34 30 56;
+  --sunken: 11 9 19;
 
-  --line: 42 46 52;
-  --line-strong: 63 68 75;
+  --line: 45 40 71;
+  --line-strong: 65 59 99;
 
-  /* Contrast on the dark surface: primary 14.2:1, muted 6.8:1, subtle 4.8:1. */
-  --fg: 241 242 244;
-  --fg-muted: 155 161 171;
-  --fg-subtle: 133 140 150;
-  --fg-inverse: 16 18 21;
+  /* Contrast on dark surface */
+  --fg: 245 244 250;
+  --fg-muted: 165 160 185;
+  --fg-subtle: 118 112 138;
+  --fg-inverse: 15 13 25;
 
-  /* Lifted two steps so the accent keeps its identity against a dark
-     surface while still holding AA against it. */
-  --accent: 113 137 242;
-  --accent-hover: 157 177 248;
-  --accent-soft: 26 32 80;
-  --accent-line: 41 52 143;
-  --accent-text: 157 177 248;
+  /* Royal Violet / Lavender Accent */
+  --accent: 147 98 255;
+  --accent-hover: 168 125 255;
+  --accent-soft: 38 31 66;
+  --accent-line: 76 60 125;
+  --accent-text: 168 125 255;
 
   --shadow: 0 0 0;
   color-scheme: dark;

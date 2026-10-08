@@ -565,6 +565,6 @@ void main() {
     await tester.tap(find.text('Confirm & Send'));
     await tester.pumpAndSettle();
     expect(find.text('Do you want to continue?'), findsOneWidget);
-    expect(find.text('Confirm Transfer'), findsOneWidget);
+    expect(find.text('Yes, Continue'), findsOneWidget);
   });
 }

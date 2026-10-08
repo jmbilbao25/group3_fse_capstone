@@ -530,138 +530,260 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: const BoxDecoration(
-            color: AuraColors.primary,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(2),
-                ),
+        return Align(
+          alignment: Alignment.bottomCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    blurRadius: 32,
+                    offset: const Offset(0, -6),
+                  ),
+                ],
               ),
-              const SizedBox(height: 20),
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE11D48).withValues(alpha: 0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.warning_amber_rounded, color: Color(0xFFE11D48), size: 36),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Do you want to continue?',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'You are sending PHP ${_formatAmount(widget.amount)}. Please make sure the recipient details are correct, as completed transfers cannot be reversed.',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 13, color: Colors.white70, height: 1.4),
-              ),
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('Amount', style: TextStyle(fontSize: 11, color: textMuted)),
-                          const SizedBox(height: 2),
-                          FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              'PHP ${_formatAmount(widget.amount)}',
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: textDark),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Warning Glyph Squircle Badge (Image 2 style)
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFD1D1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Icon(
+                      Icons.warning_amber_rounded,
+                      color: Color(0xFFEF4444),
+                      size: 36,
+                    ),
+                  ),
+
+                  const SizedBox(height: 18),
+
+                  // Title (Obsidian Ink)
+                  const Text(
+                    'Do you want to continue?',
+                    style: TextStyle(
+                      fontSize: 21,
+                      fontWeight: FontWeight.w900,
+                      color: textDark,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  // Subtitle with Highlighted Amount
+                  RichText(
+                    textAlign: TextAlign.center,
+                    text: TextSpan(
+                      style: const TextStyle(
+                        fontSize: 13.5,
+                        color: Color(0xFF475569),
+                        height: 1.45,
+                      ),
+                      children: [
+                        const TextSpan(text: 'You are sending '),
+                        TextSpan(
+                          text: 'PHP ${_formatAmount(widget.amount)}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            color: textDark,
+                          ),
+                        ),
+                        const TextSpan(
+                          text: '. Please make sure the recipient details are correct, as completed transfers cannot be reversed.',
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Transfer Recap Card (Porcelain Slate with Hairline Divider)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      children: [
+                        // Amount Row
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Amount',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: textMuted,
+                              ),
+                            ),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                'PHP ${_formatAmount(widget.amount)}',
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w900,
+                                  color: brandViolet,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          child: Divider(
+                            color: Color(0xFFCBD5E1),
+                            height: 1,
+                            thickness: 0.8,
+                          ),
+                        ),
+
+                        // To Recipient Row
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'To',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: textMuted,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                widget.recipientName.isNotEmpty ? widget.recipientName : 'Jessie Mae Dela Paz',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.right,
+                                style: const TextStyle(
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w900,
+                                  color: brandViolet,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Primary CTA: "Yes, Continue" (Image 2 style)
+                  Container(
+                    width: double.infinity,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: brandViolet,
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: [
+                        BoxShadow(
+                          color: brandViolet.withValues(alpha: 0.35),
+                          blurRadius: 18,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                      ),
+                      onPressed: () async {
+                        final navigator = Navigator.of(context);
+                        navigator.pop();
+                        final result = await _bankService.executeTransfer(
+                          targetAccount: widget.recipientAccount,
+                          recipientName: widget.recipientName,
+                          amount: widget.amount,
+                          destinationBank: widget.recipientBank,
+                          remarks: widget.remarks,
+                        );
+
+                        if (!mounted) return;
+                        navigator.pushReplacement(
+                          MaterialPageRoute(
+                            builder: (context) => TransactionReceiptScreen(
+                              isSuccess: result['success'] == true,
+                              senderName: widget.senderName,
+                              senderAccount: widget.senderAccount,
+                              recipientName: widget.recipientName,
+                              recipientAccount: widget.recipientAccount,
+                              recipientBank: widget.recipientBank,
+                              amount: widget.amount,
+                              fee: widget.fee,
+                              referenceNumber: result['reference'] ?? 'AUR-990123',
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          const Text('To', style: TextStyle(fontSize: 11, color: textMuted)),
-                          const SizedBox(height: 2),
-                          Text(
-                            widget.recipientName.isNotEmpty ? widget.recipientName : 'Jessie Mae Dela Paz',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: textDark),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: brandViolet,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                  ),
-                  onPressed: () async {
-                    final navigator = Navigator.of(context);
-                    navigator.pop();
-                    final result = await _bankService.executeTransfer(
-                      targetAccount: widget.recipientAccount,
-                      recipientName: widget.recipientName,
-                      amount: widget.amount,
-                      destinationBank: widget.recipientBank,
-                      remarks: widget.remarks,
-                    );
-
-                    if (!mounted) return;
-                    navigator.pushReplacement(
-                      MaterialPageRoute(
-                        builder: (context) => TransactionReceiptScreen(
-                          isSuccess: result['success'] == true,
-                          senderName: widget.senderName,
-                          senderAccount: widget.senderAccount,
-                          recipientName: widget.recipientName,
-                          recipientAccount: widget.recipientAccount,
-                          recipientBank: widget.recipientBank,
-                          amount: widget.amount,
-                          fee: widget.fee,
-                          referenceNumber: result['reference'] ?? 'AUR-990123',
+                        );
+                      },
+                      child: const Text(
+                        'Yes, Continue',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                          color: Colors.white,
+                          letterSpacing: 0.2,
                         ),
                       ),
-                    );
-                  },
-                  child: const Text('Confirm Transfer', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
-                ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Secondary CTA: "Cancel Transaction" (Image 2 Elevated White Pill Button)
+                  Container(
+                    width: double.infinity,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 14,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: TextButton(
+                      style: TextButton.styleFrom(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                      ),
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text(
+                        'Cancel Transaction',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: brandViolet,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 10),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancel Transaction', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600)),
-              ),
-            ],
+            ),
           ),
         );
       },

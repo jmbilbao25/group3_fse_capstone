@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/bank_service.dart';
 import '../theme/aura_theme.dart';
 import '../widgets/aura_logo.dart';
-import 'review_transfer_screen.dart';
+import 'receipt_screen.dart';
 
 enum ScanStep {
   viewfinder,
@@ -33,7 +33,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
 
   final TextEditingController _amountController = TextEditingController(text: '50,000.00');
   final TextEditingController _remarksController = TextEditingController();
-  final String _selectedPurpose = 'Fund Transfer';
+  String _selectedPurpose = 'Fund Transfer';
 
   String _recipientName = 'Jessie Mae R. Dela Paz';
   String _recipientAccount = '1154848785378';
@@ -555,25 +555,29 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                 const SizedBox(height: 8),
 
                 // Purpose Dropdown Pill
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _selectedPurpose,
-                        style: const TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w700,
-                          color: textDark,
+                InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: _showPurposeSelector,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          _selectedPurpose,
+                          style: const TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w700,
+                            color: textDark,
+                          ),
                         ),
-                      ),
-                      const Icon(Icons.keyboard_arrow_down_rounded, color: textMuted, size: 20),
-                    ],
+                        const Icon(Icons.keyboard_arrow_down_rounded, color: textMuted, size: 20),
+                      ],
+                    ),
                   ),
                 ),
 
@@ -655,21 +659,136 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     );
   }
 
+  void _showPurposeSelector() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Align(
+          alignment: Alignment.bottomCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Container(
+              margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+              padding: const EdgeInsets.all(22),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x380F172A),
+                    blurRadius: 36,
+                    offset: Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Select Transfer Purpose',
+                    style: TextStyle(
+                      fontSize: 16.5,
+                      fontWeight: FontWeight.w800,
+                      color: textDark,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  ...[
+                    'Fund Transfer',
+                    'Bill Payment',
+                    'Personal Transfer',
+                    'Destination Bank Timeout (Simulate Failure)',
+                  ].map((purpose) {
+                    final isSelected = _selectedPurpose == purpose;
+                    final isFailure = purpose.contains('Timeout');
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        purpose,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                          color: isFailure ? const Color(0xFFDC2626) : textDark,
+                        ),
+                      ),
+                      leading: Icon(
+                        isFailure ? Icons.error_outline_rounded : Icons.check_circle_rounded,
+                        color: isFailure
+                            ? const Color(0xFFDC2626)
+                            : (isSelected ? brandViolet : const Color(0xFFCBD5E1)),
+                        size: 20,
+                      ),
+                      onTap: () {
+                        setState(() => _selectedPurpose = purpose);
+                        Navigator.of(context).pop();
+                      },
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   void _onProceedToSend() {
     final cleaned = _amountController.text.replaceAll(',', '').trim();
     final amount = double.tryParse(cleaned) ?? 50000.0;
 
+    if (amount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please enter a valid amount'),
+          backgroundColor: brandViolet,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+      return;
+    }
+
+    // Direct Scan Flow: determine if Passed or Failed
+    final bool isFailed = amount > 50000.0 ||
+        _selectedPurpose.toLowerCase().contains('timeout') ||
+        _selectedPurpose.toLowerCase().contains('failed') ||
+        _remarksController.text.toLowerCase().contains('fail') ||
+        _remarksController.text.toLowerCase().contains('timeout');
+
+    if (!isFailed) {
+      _bankService.executeTransfer(
+        targetAccount: _recipientAccount,
+        recipientName: _recipientName,
+        amount: amount,
+        destinationBank: _recipientBank,
+        remarks: _remarksController.text.trim().isNotEmpty ? _remarksController.text.trim() : null,
+      );
+    }
+
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => ReviewTransferScreen(
+        builder: (context) => TransactionReceiptScreen(
+          isSuccess: !isFailed,
           senderName: _bankService.user.name,
-          senderAccount: '1235484874877',
+          senderAccount: _bankService.savingsAccountNumber,
           recipientName: _recipientName,
           recipientAccount: _recipientAccount,
           recipientBank: _recipientBank,
           amount: amount,
           fee: 0.0,
-          remarks: _remarksController.text.trim().isNotEmpty ? _remarksController.text.trim() : null,
+          referenceNumber: '1235498758130',
+          failureReason: isFailed ? 'Destination Bank Timeout' : null,
+          onTryAgain: () => Navigator.of(context).pop(),
+          onBackToHome: () {
+            if (widget.onBack != null) {
+              widget.onBack!();
+            }
+            Navigator.of(context).popUntil((route) => route.isFirst);
+          },
         ),
       ),
     );

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/aura_theme.dart';
 
-class TransactionReceiptScreen extends StatelessWidget {
+class TransactionReceiptScreen extends StatefulWidget {
   final bool isSuccess;
   final String senderName;
   final String senderAccount;
@@ -13,6 +13,7 @@ class TransactionReceiptScreen extends StatelessWidget {
   final String referenceNumber;
   final String? failureReason;
   final VoidCallback? onTryAgain;
+  final VoidCallback? onBackToHome;
 
   const TransactionReceiptScreen({
     super.key,
@@ -27,7 +28,15 @@ class TransactionReceiptScreen extends StatelessWidget {
     required this.referenceNumber,
     this.failureReason,
     this.onTryAgain,
+    this.onBackToHome,
   });
+
+  @override
+  State<TransactionReceiptScreen> createState() => _TransactionReceiptScreenState();
+}
+
+class _TransactionReceiptScreenState extends State<TransactionReceiptScreen> {
+  late bool _isSuccess;
 
   static const Color brandViolet = AuraColors.primary;
   static const Color textDark = Color(0xFF0F172A);
@@ -35,6 +44,20 @@ class TransactionReceiptScreen extends StatelessWidget {
   static const Color cardBorder = Color(0xFFF1F5F9);
   static const Color greenSuccess = Color(0xFF10B981);
   static const Color redFail = Color(0xFFDC2626);
+
+  @override
+  void initState() {
+    super.initState();
+    _isSuccess = widget.isSuccess;
+  }
+
+  void _handleBackToHome() {
+    if (widget.onBackToHome != null) {
+      widget.onBackToHome!();
+    } else {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,12 +69,12 @@ class TransactionReceiptScreen extends StatelessWidget {
     final dateStr = '${now.day.toString().padLeft(2, '0')} ${months[now.month - 1]} ${now.year}';
     final timeStr = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
 
-    final senderDisplay = senderName.trim().isNotEmpty ? senderName : 'Elijah Riley Montefalco';
-    final senderAccDisplay = senderAccount.trim().isNotEmpty ? senderAccount : '1235484874877';
-    final recipientDisplay = recipientName.trim().isNotEmpty ? recipientName : 'Jessie Mae R. Dela Paz';
-    final recipientBankDisplay = recipientBank.trim().isNotEmpty ? recipientBank : 'MeyBank';
-    final recipientAccDisplay = recipientAccount.trim().isNotEmpty ? recipientAccount : '1154848785378';
-    final refDisplay = referenceNumber.trim().isNotEmpty ? referenceNumber : '1235498758130';
+    final senderDisplay = widget.senderName.trim().isNotEmpty ? widget.senderName : 'Elijah Riley Montefalco';
+    final senderAccDisplay = widget.senderAccount.trim().isNotEmpty ? widget.senderAccount : '1235484874877';
+    final recipientDisplay = widget.recipientName.trim().isNotEmpty ? widget.recipientName : 'Jessie Mae R. Dela Paz';
+    final recipientBankDisplay = widget.recipientBank.trim().isNotEmpty ? widget.recipientBank : 'MeyBank';
+    final recipientAccDisplay = widget.recipientAccount.trim().isNotEmpty ? widget.recipientAccount : '1154848785378';
+    final refDisplay = widget.referenceNumber.trim().isNotEmpty ? widget.referenceNumber : '1235498758130';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -90,7 +113,7 @@ class TransactionReceiptScreen extends StatelessWidget {
                           child: IconButton(
                             icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 17, color: textDark),
                             padding: EdgeInsets.zero,
-                            onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
+                            onPressed: _handleBackToHome,
                           ),
                         ),
 
@@ -137,19 +160,24 @@ class TransactionReceiptScreen extends StatelessWidget {
 
                   const SizedBox(height: 24),
 
-                  // Status Icon Circle Hero (Scan - Image 2)
-                  Container(
-                    width: 96,
-                    height: 96,
-                    decoration: BoxDecoration(
-                      color: isSuccess ? const Color(0xFFD1FAE5) : const Color(0xFFFFE4E6),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Icon(
-                        isSuccess ? Icons.check_rounded : Icons.close_rounded,
-                        color: isSuccess ? greenSuccess : redFail,
-                        size: 52,
+                  // Status Icon Circle Hero (Scan - Image 6 / Scan - Failed)
+                  GestureDetector(
+                    onTap: () {
+                      setState(() => _isSuccess = !_isSuccess);
+                    },
+                    child: Container(
+                      width: 96,
+                      height: 96,
+                      decoration: BoxDecoration(
+                        color: _isSuccess ? const Color(0xFFD1FAE5) : const Color(0xFFFFD1D1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Icon(
+                          _isSuccess ? Icons.check_rounded : Icons.close_rounded,
+                          color: _isSuccess ? greenSuccess : const Color(0xFFEF4444),
+                          size: 54,
+                        ),
                       ),
                     ),
                   ),
@@ -171,7 +199,7 @@ class TransactionReceiptScreen extends StatelessWidget {
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
-                      'PHP ${_formatAmount(amount)}',
+                      'PHP ${_formatAmount(widget.amount)}',
                       style: const TextStyle(
                         fontSize: 26,
                         fontWeight: FontWeight.w900,
@@ -181,7 +209,7 @@ class TransactionReceiptScreen extends StatelessWidget {
                     ),
                   ),
 
-                  if (!isSuccess) ...[
+                  if (!_isSuccess) ...[
                     const SizedBox(height: 6),
                     const Text(
                       'Your money has not been deducted',
@@ -191,7 +219,7 @@ class TransactionReceiptScreen extends StatelessWidget {
 
                   const SizedBox(height: 24),
 
-                  // Sculpted Receipt Dossier Card (Scan - Image 2)
+                  // Sculpted Receipt Dossier Card (Scan - image 6 / Scan - Failed)
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 16),
                     padding: const EdgeInsets.all(20),
@@ -219,15 +247,15 @@ class TransactionReceiptScreen extends StatelessWidget {
                           padding: EdgeInsets.symmetric(vertical: 12),
                           child: Divider(color: cardBorder, height: 1, thickness: 1),
                         ),
-                        _buildSimpleRow('Transfer Amount', 'PHP ${_formatAmount(amount)}'),
+                        _buildSimpleRow('Transfer Amount', 'PHP ${_formatAmount(widget.amount)}'),
                         const SizedBox(height: 14),
                         _buildSimpleRow(
                           'Transfer Fee',
-                          fee == 0.0 ? 'FREE' : 'PHP ${_formatAmount(fee)}',
-                          feeColor: fee == 0.0 ? greenSuccess : textDark,
+                          widget.fee == 0.0 ? 'FREE' : 'PHP ${_formatAmount(widget.fee)}',
+                          feeColor: widget.fee == 0.0 ? greenSuccess : textDark,
                         ),
                         const SizedBox(height: 14),
-                        _buildSimpleRow('Total Amount', 'PHP ${_formatAmount(amount + fee)}', isBold: true),
+                        _buildSimpleRow('Total Amount', 'PHP ${_formatAmount(widget.amount + widget.fee)}', isBold: true),
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 12),
                           child: Divider(color: cardBorder, height: 1, thickness: 1),
@@ -238,14 +266,14 @@ class TransactionReceiptScreen extends StatelessWidget {
                         const SizedBox(height: 14),
                         _buildSimpleRow('Transaction Time', timeStr),
 
-                        if (!isSuccess) ...[
+                        if (!_isSuccess) ...[
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 12),
                             child: Divider(color: cardBorder, height: 1, thickness: 1),
                           ),
                           _buildSimpleRow('Status', 'Failed', feeColor: redFail, isBold: true),
                           const SizedBox(height: 14),
-                          _buildSimpleRow('Failure Reason', failureReason ?? 'Destination Bank Timeout'),
+                          _buildSimpleRow('Failure Reason', widget.failureReason ?? 'Destination Bank Timeout'),
                         ],
                       ],
                     ),
@@ -258,7 +286,7 @@ class TransactionReceiptScreen extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Column(
                       children: [
-                        if (!isSuccess && onTryAgain != null) ...[
+                        if (!_isSuccess) ...[
                           Container(
                             width: double.infinity,
                             height: 52,
@@ -279,7 +307,7 @@ class TransactionReceiptScreen extends StatelessWidget {
                                 shadowColor: Colors.transparent,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                               ),
-                              onPressed: onTryAgain,
+                              onPressed: widget.onTryAgain ?? () => Navigator.of(context).pop(),
                               child: const Text(
                                 'Try Again',
                                 style: TextStyle(
@@ -294,20 +322,20 @@ class TransactionReceiptScreen extends StatelessWidget {
                           const SizedBox(height: 12),
                         ],
 
-                        // Primary CTA: "Back to home" (Scan - Image 2)
+                        // Primary / Secondary CTA: "Back to home" (Scan - Image 6 & Failed)
                         Container(
                           width: double.infinity,
                           height: 52,
                           decoration: BoxDecoration(
-                            color: isSuccess ? brandViolet : Colors.white,
+                            color: _isSuccess ? brandViolet : Colors.white,
                             borderRadius: BorderRadius.circular(18),
-                            border: isSuccess ? null : Border.all(color: const Color(0xFFE2E8F0)),
+                            border: _isSuccess ? null : Border.all(color: const Color(0xFFE2E8F0)),
                             boxShadow: [
                               BoxShadow(
-                                color: isSuccess
+                                color: _isSuccess
                                     ? brandViolet.withValues(alpha: 0.35)
                                     : Colors.black.withValues(alpha: 0.04),
-                                blurRadius: isSuccess ? 18 : 14,
+                                blurRadius: _isSuccess ? 18 : 14,
                                 offset: const Offset(0, 6),
                               ),
                             ],
@@ -318,11 +346,11 @@ class TransactionReceiptScreen extends StatelessWidget {
                               shadowColor: Colors.transparent,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                             ),
-                            onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
+                            onPressed: _handleBackToHome,
                             child: Text(
                               'Back to home',
                               style: TextStyle(
-                                color: isSuccess ? Colors.white : brandViolet,
+                                color: _isSuccess ? Colors.white : brandViolet,
                                 fontWeight: FontWeight.w800,
                                 fontSize: 16,
                                 letterSpacing: 0.2,

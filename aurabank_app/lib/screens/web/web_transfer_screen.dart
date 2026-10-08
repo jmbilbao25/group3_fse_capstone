@@ -55,29 +55,6 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
         },
       ];
 
-  static const List<Map<String, dynamic>> _frequentPayees = [
-    {
-      'name': 'Jessie',
-      'fullName': 'Jessie Mae Dela Paz',
-      'initials': 'JM',
-      'account': '1234568898951',
-      'bgColor': Color(0xFFEDE9FE),
-      'textColor': Color(0xFF5B21B6),
-      'isAura': true,
-      'bank': 'Aura Bank Direct ••••• 98951',
-    },
-    {
-      'name': 'Alex',
-      'fullName': 'Alex Tan',
-      'initials': 'AT',
-      'account': '9876543210123',
-      'bgColor': Color(0xFFE0E7FF),
-      'textColor': Color(0xFF3730A3),
-      'isAura': false,
-      'bank': 'MeyBank ••••• 10123',
-    },
-  ];
-
   static const List<Map<String, dynamic>> _purposes = [
     {
       'title': 'Remittance',
@@ -157,14 +134,6 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
       (Match m) => '${m[1]},',
     );
     return '$integerPart.${parts[1]}';
-  }
-
-  void _applyPayee(Map<String, dynamic> payee) {
-    setState(() {
-      _recipientController.text = payee['fullName'] as String;
-      _accountController.text = payee['account'] as String;
-      _isAuraToAura = payee['isAura'] as bool;
-    });
   }
 
   void _initiateTransfer() {
@@ -637,8 +606,6 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               _buildTransferSummaryCard(),
-                              const SizedBox(height: 20),
-                              _buildFrequentPayeesCard(),
                             ],
                           ),
                         ),
@@ -651,8 +618,6 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
                         _buildMainTransferForm(),
                         const SizedBox(height: 24),
                         _buildTransferSummaryCard(),
-                        const SizedBox(height: 20),
-                        _buildFrequentPayeesCard(),
                       ],
                     ),
                 ],
@@ -1521,77 +1486,6 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
                 ),
               ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- RIGHT COLUMN: FREQUENT PAYEES CARD ---
-  Widget _buildFrequentPayeesCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderLight),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'FREQUENT PAYEES',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF6B7280),
-              letterSpacing: 0.8,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: _frequentPayees.map((p) {
-              return Padding(
-                padding: const EdgeInsets.only(right: 18.0),
-                child: InkWell(
-                  onTap: () => _applyPayee(p),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Column(
-                    children: [
-                      CircleAvatar(
-                        radius: 20,
-                        backgroundColor: p['bgColor'] as Color,
-                        child: Text(
-                          p['initials'] as String,
-                          style: TextStyle(
-                            color: p['textColor'] as Color,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        p['name'] as String,
-                        style: const TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF374151),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
           ),
         ],
       ),

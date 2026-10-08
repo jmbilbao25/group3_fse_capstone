@@ -712,12 +712,24 @@ class BankService extends ChangeNotifier {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         _applyLocalTransfer(amount, recipientName, ref, remarks);
         return {'success': true, 'reference': ref, 'amount': amount};
+      } else {
+        try {
+          final decoded = jsonDecode(response.body);
+          final errorMsg = decoded['message'] ?? decoded['error'] ?? 'Destination Bank Timeout';
+          return {'success': false, 'message': errorMsg, 'reference': ref, 'amount': amount};
+        } catch (_) {
+          return {'success': false, 'message': 'Destination Bank Timeout', 'reference': ref, 'amount': amount};
+        }
       }
     } catch (_) {
-      // Backend unavailable; seamlessly proceed with local state simulation
+      // Backend unavailable; local simulation fallback
     }
 
-    // 2. Perform in-memory mutation
+    // 2. Local fallback: if exceeds balance or transfer limit of 50,000, trigger failure
+    if (amount > availableBalance || amount > 50000.0) {
+      return {'success': false, 'message': 'Destination Bank Timeout', 'reference': ref, 'amount': amount};
+    }
+
     _applyLocalTransfer(amount, recipientName, ref, remarks);
     return {'success': true, 'reference': ref, 'amount': amount};
   }

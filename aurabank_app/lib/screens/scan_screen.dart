@@ -700,10 +700,9 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                     'Fund Transfer',
                     'Bill Payment',
                     'Personal Transfer',
-                    'Destination Bank Timeout (Simulate Failure)',
+                    'Payment for Goods & Services',
                   ].map((purpose) {
                     final isSelected = _selectedPurpose == purpose;
-                    final isFailure = purpose.contains('Timeout');
                     return ListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text(
@@ -711,14 +710,12 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                          color: isFailure ? const Color(0xFFDC2626) : textDark,
+                          color: textDark,
                         ),
                       ),
                       leading: Icon(
-                        isFailure ? Icons.error_outline_rounded : Icons.check_circle_rounded,
-                        color: isFailure
-                            ? const Color(0xFFDC2626)
-                            : (isSelected ? brandViolet : const Color(0xFFCBD5E1)),
+                        Icons.check_circle_rounded,
+                        color: isSelected ? brandViolet : const Color(0xFFCBD5E1),
                         size: 20,
                       ),
                       onTap: () {
@@ -736,7 +733,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     );
   }
 
-  void _onProceedToSend() {
+  void _onProceedToSend() async {
     final cleaned = _amountController.text.replaceAll(',', '').trim();
     final amount = double.tryParse(cleaned) ?? 50000.0;
 
@@ -752,27 +749,25 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       return;
     }
 
-    // Direct Scan Flow: determine if Passed or Failed
-    final bool isFailed = amount > 50000.0 ||
-        _selectedPurpose.toLowerCase().contains('timeout') ||
-        _selectedPurpose.toLowerCase().contains('failed') ||
-        _remarksController.text.toLowerCase().contains('fail') ||
-        _remarksController.text.toLowerCase().contains('timeout');
+    // Call backend to trigger transfer (handles success or failure)
+    final result = await _bankService.executeTransfer(
+      targetAccount: _recipientAccount,
+      recipientName: _recipientName,
+      amount: amount,
+      destinationBank: _recipientBank,
+      remarks: _remarksController.text.trim().isNotEmpty ? _remarksController.text.trim() : null,
+    );
 
-    if (!isFailed) {
-      _bankService.executeTransfer(
-        targetAccount: _recipientAccount,
-        recipientName: _recipientName,
-        amount: amount,
-        destinationBank: _recipientBank,
-        remarks: _remarksController.text.trim().isNotEmpty ? _remarksController.text.trim() : null,
-      );
-    }
+    if (!mounted) return;
+
+    final isSuccess = result['success'] == true;
+    final failureReason = result['message'] as String? ?? 'Destination Bank Timeout';
+    final ref = result['reference'] as String? ?? '1235498758130';
 
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => TransactionReceiptScreen(
-          isSuccess: !isFailed,
+          isSuccess: isSuccess,
           senderName: _bankService.user.name,
           senderAccount: _bankService.savingsAccountNumber,
           recipientName: _recipientName,
@@ -780,8 +775,8 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
           recipientBank: _recipientBank,
           amount: amount,
           fee: 0.0,
-          referenceNumber: '1235498758130',
-          failureReason: isFailed ? 'Destination Bank Timeout' : null,
+          referenceNumber: ref,
+          failureReason: isSuccess ? null : failureReason,
           onTryAgain: () => Navigator.of(context).pop(),
           onBackToHome: () {
             if (widget.onBack != null) {

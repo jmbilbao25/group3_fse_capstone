@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../widgets/aura_logo.dart';
+import '../../widgets/aura_logo.dart';
 import 'login_screen.dart';
 
 class LandingScreen extends StatefulWidget {

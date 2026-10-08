@@ -1,8 +1,9 @@
+import '../../widgets/aura_logo.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../models/bank_models.dart';
-import '../services/bank_service.dart';
-import '../theme/aura_theme.dart';
+import '../../models/bank_models.dart';
+import '../../services/bank_service.dart';
+import '../../theme/aura_theme.dart';
 
 class CardsScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -432,22 +433,10 @@ class _CardsScreenState extends State<CardsScreen> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(
-                              width: 18,
-                              height: 18,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF3C0092),
-                                borderRadius: BorderRadius.circular(5),
-                              ),
-                              alignment: Alignment.center,
-                              child: const Text(
-                                'A',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 11,
-                                ),
-                              ),
+                            const AuraLogo(
+                              size: 18,
+                              style: AuraLogoStyle.violet,
+                              borderRadius: 5,
                             ),
                             const SizedBox(width: 8),
                             const Text(
@@ -599,34 +588,27 @@ class _CardsScreenState extends State<CardsScreen> {
 
                       const SizedBox(height: 6),
 
-                      // Sub-row 2: Cardholder name & Mastercard emblem
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.end,
+                      // Sub-row 2: Cardholder name
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Cardholder',
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.65),
-                                  fontSize: 8.5,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                card.holderName,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
+                          Text(
+                            'Cardholder',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.65),
+                              fontSize: 8.5,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                          _buildMastercardLogo(),
+                          const SizedBox(height: 2),
+                          Text(
+                            card.holderName,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -682,36 +664,6 @@ class _CardsScreenState extends State<CardsScreen> {
     );
   }
 
-  // Overlapping Circles Mastercard Logo
-  Widget _buildMastercardLogo() {
-    return SizedBox(
-      width: 36,
-      height: 22,
-      child: Stack(
-        children: [
-          Container(
-            width: 22,
-            height: 22,
-            decoration: const BoxDecoration(
-              color: Color(0xFFEB001B),
-              shape: BoxShape.circle,
-            ),
-          ),
-          Positioned(
-            left: 14,
-            child: Container(
-              width: 22,
-              height: 22,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF79E1B).withValues(alpha: 0.95),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   // Transaction item card
   Widget _buildTransactionCard({

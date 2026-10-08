@@ -1,3 +1,4 @@
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -20,8 +21,8 @@ class BankService extends ChangeNotifier {
     dob: 'July 10, 1999',
     gender: 'Male',
     civilStatus: 'Married',
-    faceIdEnabled: true,
-    fingerprintEnabled: true,
+    faceIdEnabled: false,
+    fingerprintEnabled: false,
     pushAlertsEnabled: true,
   );
 
@@ -170,61 +171,61 @@ class BankService extends ChangeNotifier {
     '2026-10': MonthlyStatement(
       monthKey: '2026-10',
       title: 'October 2026',
-      dateRange: 'Oct 01 - Oct 31, 2026',
+      dateRange: 'October 1 - 31, 2026',
       totalReceived: 52000.00,
-      totalSent: 37750.00,
+      totalSent: 22000.00,
       transactions: [
         BankTransaction(
           id: 'TXN-OCT-01',
           reference: 'AUR-997540',
-          counterparty: 'Luis Tan',
+          counterparty: 'Drake Montero',
           type: TransactionType.incoming,
-          amount: 26000.00,
-          timestamp: DateTime(2026, 10, 2, 8, 0),
-          displayTime: 'Oct 02, 8:00 AM',
+          amount: 2000.00,
+          timestamp: DateTime(2026, 10, 1, 8, 0),
+          displayTime: '01 Oct 2026 - 8:00 AM',
           status: TransactionStatus.settled,
           channel: 'Same Bank',
-          initial: 'L',
-          avatarColorValue: 0xFF059669,
+          initial: 'D',
+          avatarColorValue: 0xFF3B0764,
         ),
         BankTransaction(
           id: 'TXN-OCT-02',
           reference: 'AUR-997811',
-          counterparty: 'Sofia Garcia',
+          counterparty: 'Klare Riego',
           type: TransactionType.incoming,
-          amount: 26000.00,
-          timestamp: DateTime(2026, 10, 7, 13, 20),
-          displayTime: 'Oct 07, 1:20 PM',
+          amount: 50000.00,
+          timestamp: DateTime(2026, 10, 5, 10, 0),
+          displayTime: '05 Oct 2026 - 10:00 AM',
           status: TransactionStatus.settled,
           channel: 'Same Bank',
-          initial: 'S',
-          avatarColorValue: 0xFF059669,
+          initial: 'K',
+          avatarColorValue: 0xFF581C87,
         ),
         BankTransaction(
           id: 'TXN-OCT-03',
           reference: 'AUR-996411',
-          counterparty: 'Alex Cruz',
+          counterparty: 'Jessi Mey',
           type: TransactionType.outgoing,
-          amount: 4800.00,
-          timestamp: DateTime(2026, 10, 10, 11, 20),
-          displayTime: 'Oct 10, 11:20 AM',
+          amount: 10000.00,
+          timestamp: DateTime(2026, 10, 10, 14, 0),
+          displayTime: '10 Oct 2026 - 2:00 PM',
           status: TransactionStatus.settled,
           channel: 'Other Bank',
-          initial: 'A',
-          avatarColorValue: 0xFF7928CA,
+          initial: 'J',
+          avatarColorValue: 0xFF7E22CE,
         ),
         BankTransaction(
           id: 'TXN-OCT-04',
           reference: 'AUR-998241',
-          counterparty: 'Maria Ramos',
+          counterparty: 'Angel Lou',
           type: TransactionType.outgoing,
-          amount: 32950.00,
-          timestamp: DateTime(2026, 10, 14, 14, 45),
-          displayTime: 'Oct 14, 2:45 PM',
+          amount: 12000.00,
+          timestamp: DateTime(2026, 10, 15, 16, 0),
+          displayTime: '15 Oct 2026 - 4:00 PM',
           status: TransactionStatus.settled,
           channel: 'Other Bank',
-          initial: 'M',
-          avatarColorValue: 0xFF7928CA,
+          initial: 'A',
+          avatarColorValue: 0xFF9333EA,
         ),
       ],
     ),
@@ -599,6 +600,33 @@ class BankService extends ChangeNotifier {
       cards[cardIndex].isLocked = !cards[cardIndex].isLocked;
       notifyListeners();
     }
+  }
+
+    Future<void> initPreferences() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      user.faceIdEnabled = prefs.getBool('face_id_enabled') ?? false;
+      user.fingerprintEnabled = prefs.getBool('fingerprint_enabled') ?? false;
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  Future<void> setFaceIdEnabled(bool enabled) async {
+    user.faceIdEnabled = enabled;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('face_id_enabled', enabled);
+    } catch (_) {}
+  }
+
+  Future<void> setFingerprintEnabled(bool enabled) async {
+    user.fingerprintEnabled = enabled;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('fingerprint_enabled', enabled);
+    } catch (_) {}
   }
 
   void updateUserProfile({

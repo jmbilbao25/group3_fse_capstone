@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../theme/aura_theme.dart';
-import 'app_shell.dart';
+import '../../theme/aura_theme.dart';
+import '../app_shell.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String email;

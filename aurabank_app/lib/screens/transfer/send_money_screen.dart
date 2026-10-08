@@ -1,18 +1,24 @@
 import 'package:flutter/material.dart';
-import '../services/bank_service.dart';
-import '../widgets/aura_logo.dart';
+import '../../services/bank_service.dart';
+import '../../widgets/aura_logo.dart';
 import 'review_transfer_screen.dart';
 
 class SendMoneyScreen extends StatefulWidget {
   final VoidCallback? onBack;
   final bool initialIsAuraToAura;
   final int initialPartnerBankIndex;
+  final String? initialAccountNo;
+  final String? initialRecipientName;
+  final String? initialAmount;
 
   const SendMoneyScreen({
     super.key,
     this.onBack,
     this.initialIsAuraToAura = true,
     this.initialPartnerBankIndex = 0,
+    this.initialAccountNo,
+    this.initialRecipientName,
+    this.initialAmount,
   });
 
   @override
@@ -27,12 +33,9 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
   String _selectedSourceAccount = 'Savings';
   String? _selectedPurpose;
 
-  final TextEditingController _accountController =
-      TextEditingController(text: '1234568898951');
-  final TextEditingController _recipientController =
-      TextEditingController(text: 'Jessie Mae Dela Paz');
-  final TextEditingController _amountController =
-      TextEditingController();
+  late final TextEditingController _accountController;
+  late final TextEditingController _recipientController;
+  late final TextEditingController _amountController;
   final TextEditingController _remarksController =
       TextEditingController();
 
@@ -159,6 +162,15 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
     super.initState();
     _isAuraToAura = widget.initialIsAuraToAura;
     _selectedPartnerBankIndex = widget.initialPartnerBankIndex;
+    _accountController = TextEditingController(
+      text: widget.initialAccountNo ?? '1234568898951',
+    );
+    _recipientController = TextEditingController(
+      text: widget.initialRecipientName ?? 'Jessie Mae Dela Paz',
+    );
+    _amountController = TextEditingController(
+      text: widget.initialAmount ?? '',
+    );
   }
 
   @override

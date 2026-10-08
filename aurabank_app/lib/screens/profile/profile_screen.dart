@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../services/bank_service.dart';
-import '../theme/aura_theme.dart';
-import '../widgets/aura_logo.dart';
+import '../../services/bank_service.dart';
+import '../../theme/aura_theme.dart';
+import '../../widgets/aura_logo.dart';
 import 'devices_sessions_screen.dart';
-import 'login_screen.dart';
+import '../auth/login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final VoidCallback? onBack;

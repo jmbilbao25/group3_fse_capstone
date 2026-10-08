@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:aurabank_app/main.dart';
-import 'package:aurabank_app/screens/statement_screen.dart';
-import 'package:aurabank_app/screens/statement_preview_screen.dart';
-import 'package:aurabank_app/screens/home_screen.dart';
-import 'package:aurabank_app/screens/cards_screen.dart';
-import 'package:aurabank_app/screens/send_money_screen.dart';
-import 'package:aurabank_app/screens/otp_verification_screen.dart';
-import 'package:aurabank_app/screens/devices_sessions_screen.dart';
-import 'package:aurabank_app/screens/security_gate_screen.dart';
-import 'package:aurabank_app/screens/profile_screen.dart';
-import 'package:aurabank_app/screens/analytics_screen.dart';
+import 'package:aurabank_app/screens/analytics/statement_screen.dart';
+import 'package:aurabank_app/screens/analytics/statement_preview_screen.dart';
+import 'package:aurabank_app/screens/home/home_screen.dart';
+import 'package:aurabank_app/screens/cards/cards_screen.dart';
+import 'package:aurabank_app/screens/transfer/send_money_screen.dart';
+import 'package:aurabank_app/screens/auth/otp_verification_screen.dart';
+import 'package:aurabank_app/screens/profile/devices_sessions_screen.dart';
+import 'package:aurabank_app/screens/auth/security_gate_screen.dart';
+import 'package:aurabank_app/screens/profile/profile_screen.dart';
+import 'package:aurabank_app/screens/analytics/analytics_screen.dart';
 import 'package:aurabank_app/screens/app_shell.dart';
-import 'package:aurabank_app/screens/login_screen.dart';
+import 'package:aurabank_app/screens/auth/login_screen.dart';
 import 'package:aurabank_app/services/bank_service.dart';
 
 void main() {

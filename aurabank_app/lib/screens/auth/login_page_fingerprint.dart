@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'app_shell.dart';
+import '../app_shell.dart';
 
 /// Screen: Login Page - Fingerprint
 class LoginPageFingerprint extends StatefulWidget {

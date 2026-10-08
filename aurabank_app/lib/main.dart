@@ -1,21 +1,23 @@
+import 'services/bank_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'screens/landing_screen.dart';
+import 'screens/auth/landing_screen.dart';
+import 'screens/auth/login_screen.dart';
 import 'screens/app_shell.dart';
-import 'screens/statement_screen.dart';
-import 'screens/annual_report_screen.dart';
-import 'screens/send_money_screen.dart';
-import 'screens/cards_screen.dart';
-import 'screens/settings_screen.dart';
-import 'screens/otp_verification_screen.dart';
-import 'screens/devices_sessions_screen.dart';
-import 'screens/security_gate_screen.dart';
-import 'screens/risk_showcase_screen.dart';
+import 'screens/analytics/statement_screen.dart';
+import 'screens/analytics/annual_report_screen.dart';
+import 'screens/transfer/send_money_screen.dart';
+import 'screens/cards/cards_screen.dart';
+import 'screens/profile/settings_screen.dart';
+import 'screens/auth/otp_verification_screen.dart';
+import 'screens/profile/devices_sessions_screen.dart';
+import 'screens/auth/security_gate_screen.dart';
+import 'screens/profile/risk_showcase_screen.dart';
 import 'theme/aura_theme.dart';
-import 'screens/biometric_router_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await BankService().initPreferences();
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -51,7 +53,7 @@ class AuraBankApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => const LandingScreen(),
-        '/login': (context) => const BiometricRouterScreen(),
+        '/login': (context) => const LoginScreen(),
         '/dashboard': (context) => const AppShell(initialIndex: 0),
         '/cards': (context) => const CardsScreen(),
         '/analytics': (context) => const AppShell(initialIndex: 3),

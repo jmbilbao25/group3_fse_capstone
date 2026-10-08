@@ -652,6 +652,35 @@ void main() {
     expect(backCalled, isTrue);
   });
 
+  testWidgets('ScanScreen viewfinder auto-scan runs 5-second timer before opening form', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ScanScreen(enableAnimation: true),
+      ),
+    );
+
+    // Initial state: scanning with 5s feedback
+    expect(find.text('Stop Scan'), findsOneWidget);
+    expect(find.text('Scanning QR code... (5s)'), findsOneWidget);
+    expect(find.text('Send Money'), findsNothing);
+
+    // After 2.5 seconds: still scanning
+    await tester.pump(const Duration(milliseconds: 2500));
+    expect(find.text('Scanning QR code... (5s)'), findsOneWidget);
+    expect(find.text('Send Money'), findsNothing);
+
+    // After another 2.6 seconds (total > 5s): transitions to form
+    await tester.pump(const Duration(milliseconds: 2600));
+    await tester.pump();
+    expect(find.text('Send Money'), findsOneWidget);
+    expect(find.text('Jessie Mae Dela Paz'), findsOneWidget);
+  });
+
   testWidgets('Scan flow: manual amount input -> Send Money -> Passed/Failed Receipt with X mark', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(800, 1600);
     tester.view.devicePixelRatio = 2.0;
@@ -708,8 +737,24 @@ void main() {
     await tester.enterText(find.byType(TextField).first, '25000');
     await tester.pumpAndSettle();
 
-    // Tap Send Money -> directly routes to TransactionReceiptScreen
+    // Tap Send Money -> routes to FaceIdVerificationScreen
     await tester.tap(find.text('Send Money'));
+    await tester.pumpAndSettle();
+
+    // Verify Face ID Verification Screen is rendered
+    expect(find.text('Face ID Verification'), findsOneWidget);
+    expect(find.text('Authorize Face ID'), findsOneWidget);
+    expect(find.text('PHP 25,000.00'), findsOneWidget);
+
+    // Tap Authorize Face ID and verify scanning feedback
+    await tester.tap(find.text('Authorize Face ID'));
+    await tester.pump();
+    expect(find.text('Scanning Face...'), findsOneWidget);
+
+    await tester.pump(const Duration(milliseconds: 750));
+    expect(find.text('Face ID Verified!'), findsOneWidget);
+
+    await tester.pump(const Duration(milliseconds: 450));
     await tester.pumpAndSettle();
 
     // Verify Receipt Screen rendered (Backend error -> renders Failed state with X mark)

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/bank_service.dart';
 import '../theme/aura_theme.dart';
 import '../widgets/aura_logo.dart';
-import 'receipt_screen.dart';
+import 'face_id_verification_screen.dart';
 
 enum ScanStep {
   viewfinder,
@@ -93,7 +93,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     _autoScanTimer?.cancel();
     if (!widget.enableAnimation) return;
     if (_step == ScanStep.scanning) {
-      _autoScanTimer = Timer(const Duration(milliseconds: 2200), () {
+      _autoScanTimer = Timer(const Duration(seconds: 5), () {
         if (mounted && _step == ScanStep.scanning) {
           setState(() {
             _step = ScanStep.form;
@@ -301,6 +301,19 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
             ),
           ),
         ),
+
+        if (isScanning) ...[
+          const SizedBox(height: 12),
+          const Text(
+            'Scanning QR code... (5s)',
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF00E676),
+              letterSpacing: 0.2,
+            ),
+          ),
+        ],
 
         const Spacer(),
 
@@ -941,7 +954,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     );
   }
 
-  void _onProceedToSend() async {
+  void _onProceedToSend() {
     final cleaned = _amountController.text.replaceAll(',', '').trim();
     final amount = double.tryParse(cleaned) ?? 0.0;
 
@@ -958,43 +971,22 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       return;
     }
 
-    // Call backend to trigger transfer (handles success or failure)
-    final result = await _bankService.executeTransfer(
-      targetAccount: _recipientAccount,
-      recipientName: _recipientName,
-      amount: amount,
-      destinationBank: _recipientBank,
-      remarks: _remarksController.text.trim().isNotEmpty ? _remarksController.text.trim() : null,
-    );
-
-    if (!mounted) return;
-
-    final isSuccess = result['success'] == true;
-    final failureReason = result['message'] as String? ?? 'Destination Bank Timeout';
-    final ref = result['reference'] as String? ?? '1235498758130';
+    final senderAccount = _selectedSourceIndex != null
+        ? _sourceAccounts[_selectedSourceIndex!]['accountNo'] as String
+        : _sourceAccounts[0]['accountNo'] as String;
 
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => TransactionReceiptScreen(
-          isSuccess: isSuccess,
+        builder: (context) => FaceIdVerificationScreen(
           senderName: _bankService.user.name,
-          senderAccount: _selectedSourceIndex != null
-              ? _sourceAccounts[_selectedSourceIndex!]['accountNo'] as String
-              : _sourceAccounts[0]['accountNo'] as String,
+          senderAccount: senderAccount,
           recipientName: _recipientName,
           recipientAccount: _recipientAccount,
           recipientBank: _recipientBank,
           amount: amount,
           fee: 0.0,
-          referenceNumber: ref,
-          failureReason: isSuccess ? null : failureReason,
-          onTryAgain: () => Navigator.of(context).pop(),
-          onBackToHome: () {
-            if (widget.onBack != null) {
-              widget.onBack!();
-            }
-            Navigator.of(context).popUntil((route) => route.isFirst);
-          },
+          remarks: _remarksController.text.trim().isNotEmpty ? _remarksController.text.trim() : null,
+          autoAuthenticate: false,
         ),
       ),
     );

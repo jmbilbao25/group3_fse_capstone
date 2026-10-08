@@ -1,40 +1,58 @@
 # Architecture Diagrams: Retail Ledger & Balance Mutation Engine
 
-This document provides visual architectural models for the retail banking platform. It includes system context, container topology, component internals, dual-storage pipelines, and state machines.
+This document provides visual architectural models for the retail banking platform. It formalizes the system across the C4 model hierarchy (Context, Container, Component, and Sequence) and documents the dual-endpoint Temenos T24 Core Banking System (CBS) integration.
+
+Interactive standalone HTML diagrams:
+* Interactive C1–C4 Zoom-in Explorer: [`c_model_explorer.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c_model_explorer.html)
+* C1 System Context Diagram: [`c1_system_context.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c1_system_context.html)
+* C2 Container Diagram: [`c2_container.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c2_container.html)
+* C3 Component Diagram: [`c3_component.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c3_component.html)
+* C4 Sequence Diagram: [`c4_sequence.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c4_sequence.html)
+* Primary System Showcase: [`architecture.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/architecture.html)
 
 ---
 
 ## 1. System Context Diagram (C4 Level 1)
 
-The system context diagram shows the core banking platform, user personas, and external third-party integration boundaries.
+The system context diagram shows the core banking platform, user personas, external clearing networks, and the core Temenos T24 CBS with dual endpoints.
 
 ```mermaid
 flowchart TD
     subgraph Users["User Personas"]
-        Customer["Retail Customer<br/>(Web & Mobile Browser)"]
-        Teller["Bank Teller / Operator<br/>(Maker-Checker Reviewer)"]
-        Admin["Compliance Admin<br/>(KYC & Account Provisioner)"]
-        Auditor["Regulatory Auditor<br/>(Immutable Log Inspector)"]
+        Customer["Retail Customer<br/>(Web & Mobile Apps)"]
+        Teller["Back-Office Operator<br/>(Telemetry & Audit Inspector)"]
+        Admin["Compliance Admin<br/>(KYC & Policy Officer)"]
     end
 
-    subgraph BankingSystem["Retail Ledger & Balance Mutation Engine"]
-        CorePlatform["Core Banking Platform<br/>(Docker Container Network: banking-net)"]
+    subgraph BankingSystem["Retail Banking Platform Boundary"]
+        CorePlatform["FSE Retail Banking Platform<br/>(Gateway, Account Svc, Transfer Orchestrator)"]
     end
 
-    subgraph ExternalSystems["External Systems & Service Providers"]
-        ClearingHouse["External Clearing Network<br/>(InstaPay / PESONet)"]
-        NotificationProviders["SMS & Email Gateways<br/>(Twilio / SendGrid)"]
-        CreditBureau["Credit Bureau & Collateral Services"]
+    subgraph CoreBanking["Core Banking System (CBS)"]
+        T24CBS["Temenos T24 Core Banking System<br/>(Port :9100)"]
+        T24_EP1["Endpoint 1: Funds Transfer<br/>POST /api/v1/t24/funds-transfer<br/>(OFS FUNDS.TRANSFER,AUTH)"]
+        T24_EP2["Endpoint 2: Reversal<br/>POST /api/v1/t24/reversal<br/>(OFS FUNDS.TRANSFER,REVERSE)"]
+        CBS_DB[("CBS Master Ledger DB<br/>Azure SQL Database :1433<br/>(Pessimistic balance locks)")]
+
+        T24CBS --- T24_EP1
+        T24CBS --- T24_EP2
+        T24CBS <-->|"ACID postings & lock engine"| CBS_DB
     end
 
-    Customer -->|"Manages accounts, views balances,<br/>initiates funds transfers (HTTPS)"| CorePlatform
-    Teller -->|"Reviews high-value transfers > 10M PHP,<br/>approves or rejects transactions (HTTPS)"| CorePlatform
-    Admin -->|"Verifies customer KYC profiles,<br/>provisions bank accounts (HTTPS)"| CorePlatform
-    Auditor -->|"Queries append-only audit trail<br/>for compliance audits (HTTPS)"| CorePlatform
+    subgraph ExternalSystems["External Integration Providers"]
+        ClearingHouse["Inter-bank Clearing Network<br/>(InstaPay / PESONet)"]
+        NotificationProviders["Email / SMS Gateways<br/>(MailHog / SendGrid / Twilio)"]
+    end
 
-    CorePlatform -->|"Dispatches inter-bank settlements"| ClearingHouse
-    CorePlatform -->|"Sends transaction alerts & receipts"| NotificationProviders
-    CorePlatform -->|"Verifies credit records & collateral"| CreditBureau
+    Customer -->|"Submits transfers & executes payments (HTTPS)"| CorePlatform
+    Teller -->|"Monitors real-time telemetry & traces (HTTPS)"| CorePlatform
+    Admin -->|"Reviews compliance & KYC audits (HTTPS)"| CorePlatform
+
+    CorePlatform -->|"1. Dispatches debit/credit settlement"| T24_EP1
+    CorePlatform -->|"2. Dispatches compensating reversal on failure"| T24_EP2
+
+    CorePlatform -->|"Routes external settlements"| ClearingHouse
+    CorePlatform -->|"Sends 2FA OTP codes & HTML transaction receipts"| NotificationProviders
 ```
 
 ---
@@ -46,7 +64,7 @@ All containers run inside the dedicated Docker Compose bridge network (`banking-
 ```mermaid
 flowchart TD
     subgraph ClientTier["Presentation Tier"]
-        ClientSPA["banking-frontend<br/>React 19, TypeScript, Vite<br/>Host: :3000 | Container: :80"]
+        ClientSPA["banking-frontend<br/>React 18, TypeScript, Vite<br/>Host: :3000 | Container: :80"]
     end
 
     subgraph PerimeterTier["Perimeter Security & Routing Tier"]
@@ -56,54 +74,56 @@ flowchart TD
 
     subgraph ServiceTier["Application Microservices Tier"]
         AccountSvc["account-service<br/>Spring Boot 3, Spring Data JPA<br/>Host: :8081 | Container: :8081"]
-        LedgerEngine["ledger-mutation-engine<br/>Spring Boot 3, Concurrency Kernel<br/>Host: :8082 | Container: :8082"]
+        Orchestrator["transfer-orchestrator<br/>Spring Boot 3, Saga Engine<br/>Host: :8082 | Container: :8082"]
         NotifSvc["notification-service<br/>Spring Boot 3, Kafka Consumer<br/>Host: :8083 | Container: :8083"]
     end
 
-    subgraph StorageTier["Persistence & Data Tier"]
-        OracleDB[("oracle-xe-master<br/>Oracle Database 21c XE<br/>Host: :1521 | Container: :1521")]
-        PostgresAudit[("postgres-audit-vault<br/>PostgreSQL 16 Alpine<br/>Host: :5432 | Container: :5432")]
+    subgraph CBSTier["Temenos T24 Core Banking System (:9100)"]
+        T24CBS["temenos-t24-cbs<br/>Dual-Endpoint Core Banking Kernel"]
+        T24EP1["EP1: /api/v1/t24/funds-transfer<br/>(Settlement)"]
+        T24EP2["EP2: /api/v1/t24/reversal<br/>(Compensation)"]
+        T24CBS --- T24EP1
+        T24CBS --- T24EP2
+    end
+
+    subgraph StorageTier["Persistence & Ledger Data Tier"]
+        AzureSQL[("azure-sql-db<br/>Azure SQL Database<br/>Host: :1433 | Port: :1433<br/>(CBS Master Ledger DB)")]
+        AzurePostgres[("azure-postgres-vault<br/>PostgreSQL 16 Alpine<br/>Host: :5432 | Port: :5432<br/>(Immutable Audit Vault)")]
     end
 
     subgraph MessagingTier["Event Streaming Tier"]
         Kafka["kafka-broker<br/>Apache Kafka 3.7+ (KRaft)<br/>Host: :9092 | Container: :9092"]
-        KafkaUI["kafka-ui<br/>Kafka Web Console<br/>Host: :8085 | Container: :8080"]
+        MailHog["mailhog-smtp<br/>Mock SMTP & Web Inbox<br/>Host: :8025 / :1025"]
     end
 
-    subgraph ObservabilityTier["Telemetry & Observability Tier"]
-        Datadog["dd-agent<br/>Datadog Agent 7<br/>Host: :8126 (APM) | :8125 (StatsD)"]
-    end
+    ClientSPA -->|"HTTPS / REST Bearer JWT"| Gateway
 
-    ClientSPA -->|"HTTPS / REST<br/>Bearer JWT"| Gateway
-
-    Gateway -->|"Blacklist checks & rate limiting<br/>(sub-5ms RESP)"| Redis
-    Gateway -->|"Route /api/v1/auth/**<br/>Route /api/v1/accounts/**<br/>Route /api/v1/kyc/**"| AccountSvc
-    Gateway -->|"Route /api/v1/ledger/**<br/>Route /api/v1/transfers/**"| LedgerEngine
+    Gateway -->|"Blacklist checks & rate limiting"| Redis
+    Gateway -->|"Route /api/v1/auth/**, /accounts/**"| AccountSvc
+    Gateway -->|"Route /api/v1/transfers/**"| Orchestrator
 
     AccountSvc -->|"Read-cache & RTR token families"| Redis
-    AccountSvc -->|"JPA / SQL (Port 1521)<br/>users, accounts, balance_master"| OracleDB
+    AccountSvc -->|"Customer credentials & KYC"| AzurePostgres
 
-    LedgerEngine -->|"Idempotency locks & cache eviction"| Redis
-    LedgerEngine -->|"Pessimistic row locks & outbox<br/>SELECT FOR UPDATE (Port 1521)"| OracleDB
-    LedgerEngine -->|"Publish command & event partitions<br/>(PLAINTEXT Port 9092)"| Kafka
+    Orchestrator -->|"Idempotency keys (SET NX EX)"| Redis
+    Orchestrator -->|"1. Funds Transfer (OFS AUTH)"| T24EP1
+    Orchestrator -->|"2. Reversal on Failure (OFS REVERSE)"| T24EP2
+    Orchestrator -->|"Publish transfer state events"| Kafka
 
-    Kafka -->|"Consume transfer commands<br/>(Partitioned by source_account_id)"| LedgerEngine
-    Kafka -->|"Consume transfer events<br/>(audit-vault-workers)"| PostgresAudit
-    Kafka -->|"Consume transfer events<br/>(notification-workers)"| NotifSvc
+    T24CBS <-->|"Row locks (UPDLOCK, ROWLOCK)"| AzureSQL
 
-    KafkaUI -->|"Topic & partition monitoring"| Kafka
+    Kafka -->|"Consume transfer events"| NotifSvc
+    Kafka -->|"Consume transfer events"| AzurePostgres
 
-    AccountSvc -->|"APM traces & DogStatsD metrics"| Datadog
-    LedgerEngine -->|"APM traces & DogStatsD metrics"| Datadog
-    Gateway -->|"APM traces & DogStatsD metrics"| Datadog
-    NotifSvc -->|"APM traces & DogStatsD metrics"| Datadog
+    NotifSvc -->|"Deliver 2FA OTP & HTML receipts"| MailHog
+```
 ```
 
 ---
 
 ## 3. Microservice Component Architecture (C4 Level 3)
 
-This diagram details the internal modules, service boundaries, and adapters inside each microservice.
+This diagram details the internal modules, service boundaries, and adapters inside each microservice, emphasizing the Transfer Orchestrator and Temenos T24 CBS dual endpoints.
 
 ```mermaid
 flowchart LR
@@ -116,179 +136,116 @@ flowchart LR
         JWTFilter --> BlacklistFilter --> RateLimiter --> RouteConfig
     end
 
-    subgraph AccountBoundary["account-service (:8081)"]
+    subgraph OrchestratorBoundary["transfer-orchestrator (:8082)"]
         direction TB
-        subgraph AccountControllers["Web Controllers"]
-            AuthCtrl["AuthController<br/>/api/v1/auth"]
-            AccCtrl["AccountController<br/>/api/v1/accounts"]
-            KycCtrl["KycController<br/>/api/v1/kyc"]
-        end
-        subgraph AccountServices["Business Services"]
-            AuthSvc["AuthService<br/>(Registration & Login)"]
-            TokenRotSvc["TokenRotationService<br/>(RTR & Breach Detection)"]
-            AccProvSvc["AccountProvisioningService<br/>(12-digit Number Generation)"]
-            BalInqSvc["BalanceInquiryService<br/>(30s Read-Cache)"]
-            KycSvc["KycService<br/>(Approval Workflow)"]
-        end
-        subgraph AccountAdapters["Security & Storage Adapters"]
-            JwtProv["JwtProvider<br/>(JJWT HMAC-SHA256)"]
-            RedisStore["RedisSessionStore<br/>(Token Families & Sessions)"]
-            UserRepo["UserRepository<br/>(Spring Data JPA)"]
-            AccRepo["AccountRepository<br/>(Spring Data JPA)"]
-            BalRepo["BalanceMasterRepository<br/>(Spring Data JPA)"]
-        end
+        TxCtrl["TransferController<br/>/api/v1/transfers"]
+        RiskCoord["RiskEngineCoordinator<br/>(200ms WebClient SLA)"]
+        ChallengeCoord["StepUpChallengeCoordinator<br/>(Email OTP for > 50k PHP)"]
+        SagaCoord["SagaCompensationCoordinator<br/>(Rollback on Downstream Timeout)"]
+        T24EP1Client["T24TransferClient<br/>POST /api/v1/t24/funds-transfer"]
+        T24EP2Client["T24ReversalClient<br/>POST /api/v1/t24/reversal"]
+        EventProducer["TransferEventProducer<br/>(Kafka banking.transfers.events)"]
 
-        AuthCtrl --> AuthSvc
-        AuthCtrl --> TokenRotSvc
-        AccCtrl --> AccProvSvc
-        AccCtrl --> BalInqSvc
-        KycCtrl --> KycSvc
-
-        AuthSvc --> JwtProv
-        AuthSvc --> RedisStore
-        AuthSvc --> UserRepo
-
-        TokenRotSvc --> RedisStore
-        TokenRotSvc --> JwtProv
-
-        AccProvSvc --> AccRepo
-        AccProvSvc --> BalRepo
-        AccProvSvc --> RedisStore
-
-        BalInqSvc --> RedisStore
-        BalInqSvc --> BalRepo
-        BalInqSvc --> AccRepo
-
-        KycSvc --> UserRepo
+        TxCtrl --> RiskCoord --> ChallengeCoord --> SagaCoord
+        SagaCoord -->|"1. Primary Settlement"| T24EP1Client
+        SagaCoord -->|"2. Compensating Rollback"| T24EP2Client
+        SagaCoord --> EventProducer
     end
 
-    subgraph LedgerBoundary["ledger-mutation-engine (:8082)"]
+    subgraph T24Boundary["temenos-t24-cbs (:9100)"]
         direction TB
-        subgraph LedgerControllers["Web Controllers"]
-            MutCtrl["MutationController<br/>/api/v1/ledger/mutate"]
-            TxCtrl["TransferController<br/>/api/v1/transfers"]
-            MakerCtrl["MakerCheckerController<br/>/api/v1/transfers/{id}/approve"]
-        end
-        subgraph LedgerServices["Core Concurrency & Outbox Engine"]
-            IdempInterceptor["IdempotencyInterceptor<br/>(X-Idempotency-Key in Redis)"]
-            TxOutboxSvc["TransactionalOutboxService<br/>(Local DB Outbox Writer)"]
-            BalMutSvc["BalanceMutationService<br/>(PESSIMISTIC_WRITE Lock)"]
-            MakerCheckerSvc["MakerCheckerWorkflowService<br/>(Threshold > 10M PHP)"]
-            OutboxWorker["OutboxPublisherWorker<br/>(SKIP LOCKED Poller)"]
-            SagaConsumer["TransferSagaConsumer<br/>(@KafkaListener Commands)"]
-        end
-        subgraph LedgerAdapters["Persistence & Messaging"]
-            OracleLockRepo["BalanceMasterRepository<br/>(@Lock PESSIMISTIC_WRITE)"]
-            OutboxRepo["OutboxEventRepository<br/>(Spring Data JPA)"]
-            KafkaProducer["KafkaEventProducer<br/>(Commands & Events)"]
-        end
+        EP1Handler["FundsTransferHandler<br/>(OFS FUNDS.TRANSFER,AUTH)"]
+        EP2Handler["ReversalHandler<br/>(OFS FUNDS.TRANSFER,REVERSE)"]
+        AccountingKernel["Double-Entry Accounting Kernel<br/>(Debit/Credit Postings, Tariff Rules)"]
+        SqlLockAdapter["Azure SQL Lock Adapter<br/>(SELECT ... WITH UPDLOCK, ROWLOCK)"]
 
-        TxCtrl --> IdempInterceptor --> TxOutboxSvc
-        MutCtrl --> BalMutSvc
-        MakerCtrl --> MakerCheckerSvc
-
-        TxOutboxSvc --> OutboxRepo
-        OutboxWorker --> OutboxRepo
-        OutboxWorker --> KafkaProducer
-
-        SagaConsumer --> BalMutSvc
-        BalMutSvc --> OracleLockRepo
-        MakerCheckerSvc --> OracleLockRepo
-        SagaConsumer --> KafkaProducer
+        EP1Handler --> AccountingKernel
+        EP2Handler --> AccountingKernel
+        AccountingKernel --> SqlLockAdapter
     end
 
     subgraph NotifBoundary["notification-service (:8083)"]
         direction TB
-        KafkaListener["TransactionEventConsumer<br/>(@KafkaListener Events)"]
+        KafkaConsumer["TransactionEventConsumer<br/>(@KafkaListener Events)"]
         ReceiptFmt["ReceiptFormatter<br/>(4-decimal Currency & Audit ID)"]
-        PushDispatcher["PushAlertDispatcher<br/>(Customer App Notifications)"]
-        TellerDispatcher["TellerAlertDispatcher<br/>(High-Value Alert Queue)"]
+        MailDispatcher["MailAlertDispatcher<br/>(Mock SMTP :1025)"]
 
-        KafkaListener --> ReceiptFmt
-        ReceiptFmt --> PushDispatcher
-        ReceiptFmt --> TellerDispatcher
+        KafkaConsumer --> ReceiptFmt --> MailDispatcher
     end
+
+    RouteConfig -->|"Routes /api/v1/transfers/**"| TxCtrl
 ```
 
 ---
 
-## 4. Dual-Storage & Transactional Outbox Pipeline
+## 4. Saga Execution & Dual-Endpoint Reversal Pipeline (C4 Level 4)
 
-The Transactional Outbox pattern guarantees that database writes and message broker events never fall out of sync, even if network failures occur.
+This diagram details the sequence flow of a transfer, including execution on Temenos T24 Endpoint 1 (Funds Transfer) followed by an automated compensating rollback on Temenos T24 Endpoint 2 (Reversal) upon downstream notification failure.
 
 ```mermaid
-flowchart TD
-    subgraph Step1["Step 1: Rapid Ingestion & Local Transaction"]
-        ClientReq["Customer Transfer Request<br/>POST /api/v1/transfers"] --> GatewayCheck["API Gateway verifies JWT &<br/>checks Redis Idempotency Key"]
-        GatewayCheck --> LedgerIngest["Ledger Engine creates Transfer<br/>status: INITIATED"]
-        LedgerIngest --> DBTransaction["Atomic Database Transaction<br/>(Oracle XE 21c)"]
+sequenceDiagram
+    autonumber
+    actor Customer as Retail Customer
+    participant Gateway as gateway-service (:8080)
+    participant Orchestrator as transfer-orchestrator (:8082)
+    participant T24 as temenos-t24-cbs (:9100)
+    participant CBSDB as azure-sql-db (:1433)
+    participant Kafka as kafka-broker (:9092)
+    participant Notif as notification-service (:8083)
 
-        subgraph LocalCommit["Single Local Transaction Boundary"]
-            InsertTx["INSERT INTO transactions<br/>status: INITIATED"]
-            InsertOutbox["INSERT INTO outbox_events<br/>status: PENDING"]
-        end
-        DBTransaction --> InsertTx
-        DBTransaction --> InsertOutbox
-    end
+    Note over Customer,Orchestrator: Phase 1: Ingestion & Primary Settlement (Endpoint 1)
+    Customer->>Gateway: POST /api/v1/transfers { amount: 15000.0000, recipient: ACC-992 }
+    Gateway->>Orchestrator: Forward validated transfer request
+    Orchestrator->>T24: POST /api/v1/t24/funds-transfer (OFS: FUNDS.TRANSFER,AUTH/I/PROCESS)
+    T24->>CBSDB: SELECT ... WITH (UPDLOCK, ROWLOCK) ON balance_master
+    T24->>CBSDB: UPDATE balance_master (debit source, credit dest)
+    CBSDB-->>T24: Row Locks Released & Transaction Committed
+    T24-->>Orchestrator: HTTP 200 OK (txn_ref: T24-FT-9901, status: SETTLED)
 
-    subgraph Step2["Step 2: Immediate Acknowledgment"]
-        DBTransaction -->|"Commit OK in < 15ms"| Response202["HTTP 202 Accepted<br/>transfer_id: TRX-101<br/>status_url: /api/v1/transfers/TRX-101"]
-    end
+    Note over Orchestrator,Kafka: Phase 2: Downstream Delivery & Timeout
+    Orchestrator->>Kafka: Produce TransferExecuted event
+    Kafka-->>Notif: Deliver event to notification-workers
+    Note over Notif: Timeout / SMTP Connection Drop (> 3000ms SLA)
+    Notif--x Orchestrator: Circuit Breaker Opens / Delivery Timeout Alert
 
-    subgraph Step3["Step 3: Reliable Outbox Polling & Publishing"]
-        OutboxPoller["OutboxPublisherWorker<br/>SELECT ... FOR UPDATE SKIP LOCKED"] --> ReadPending["Read PENDING outbox_events"]
-        ReadPending --> KafkaPublish["Publish to Kafka Topic<br/>banking.transfers.commands<br/>Key: source_account_id"]
-        KafkaPublish -->|"Ack received (acks=all)"| MarkPublished["UPDATE outbox_events<br/>status: PUBLISHED"]
-    end
+    Note over Orchestrator,CBSDB: Phase 3: Saga Compensating Reversal (Endpoint 2)
+    Orchestrator->>T24: POST /api/v1/t24/reversal (OFS: FUNDS.TRANSFER,REVERSE/I/PROCESS, original_ref: T24-FT-9901)
+    T24->>CBSDB: Reverse debit/credit entries, restore source balance
+    CBSDB-->>T24: Reversal Committed
+    T24-->>Orchestrator: HTTP 200 OK (reversal_ref: T24-REV-0012, status: REVERSED)
 
-    subgraph Step4["Step 4: Ordered Partition Consumption & Settlement"]
-        KafkaPartition["Kafka Command Partition<br/>(Strict FIFO per source_account_id)"] --> SagaWorker["TransferSagaConsumer<br/>(consumer-group: ledger-workers)"]
-        SagaWorker --> RowLock["Acquire Pessimistic Lock<br/>SELECT ... FOR UPDATE<br/>on balance_master"]
-
-        RowLock --> EvaluateThreshold{"Amount > 10M PHP?"}
-
-        EvaluateThreshold -->|"Yes: High-Value"| SoftHold["Apply Soft Hold<br/>hold_amount += amount<br/>status: PENDING_APPROVAL"]
-        EvaluateThreshold -->|"No: Standard"| DebitCredit["Atomic Balance Mutation<br/>source -= amount<br/>dest += amount<br/>status: EXECUTED"]
-
-        SoftHold --> PublishHoldEvent["Produce TransferPendingApproval<br/>to banking.transfers.events"]
-        DebitCredit --> PublishExecEvent["Produce TransferExecuted<br/>to banking.transfers.events"]
-    end
-
-    subgraph Step5["Step 5: Fan-Out to Asynchronous Consumers"]
-        PublishExecEvent --> AuditConsumer["PostgreSQL Audit Consumer<br/>(consumer-group: audit-vault-workers)"]
-        PublishExecEvent --> NotifConsumer["Notification Consumer<br/>(consumer-group: notification-workers)"]
-
-        AuditConsumer --> PostgresAppend["INSERT INTO ledger_mutation_audit<br/>(PostgreSQL 16 Vault)<br/>Trigger blocks UPDATE and DELETE"]
-        NotifConsumer --> SendAlerts["Format Receipt & Dispatch<br/>SMS, Email, and Push Notifications"]
-    end
+    Note over Orchestrator,Customer: Phase 4: State Reversal & Client Notification
+    Orchestrator->>Kafka: Produce TransferReversed event
+    Orchestrator-->>Gateway: Problem Details (HTTP 500 / REVERSED)
+    Gateway-->>Customer: HTTP 500 (Status: REVERSED, Balance Restored)
 ```
 
 ---
 
-## 5. Dual-Storage Ledger vs Audit Vault Topology
+## 5. Dual-Storage Persistence Topology: CBS Master Ledger vs PostgreSQL Audit Vault
 
-This diagram illustrates the architectural separation between the live operational transactional state in Oracle XE and the append-only regulatory audit vault in PostgreSQL.
+This diagram illustrates the architectural separation between the live operational transactional state in Azure SQL and the append-only regulatory audit vault in PostgreSQL.
 
 ```mermaid
 flowchart LR
-    subgraph OperationalStore["Master Operational State (Oracle XE 21c)"]
+    subgraph OperationalStore["Master Operational State (Azure SQL :1433)"]
         direction TB
-        OracleUsers[("users<br/>Customer profiles, credentials,<br/>KYC status, session limits")]
-        OracleAccounts[("accounts<br/>12-digit account numbers,<br/>SAVINGS, CHECKING, CREDIT")]
-        OracleBalance[("balance_master<br/>balance_amount, hold_amount,<br/>available_balance (NUMBER 18, 4)<br/>Row-locked via SELECT FOR UPDATE")]
-        OracleTx[("transactions<br/>Transfer state, maker-checker flags,<br/>approval references")]
-        OracleOutbox[("outbox_events<br/>Transactional outbox staging table")]
+        AccountTable[("account_master<br/>12-digit account numbers,<br/>SAVINGS, CHECKING, CREDIT")]
+        BalanceTable[("balance_master<br/>balance_amount, hold_amount,<br/>available_balance (NUMBER 18, 4)<br/>Row-locked via UPDLOCK, ROWLOCK")]
+        GLJournal[("gl_journal_entries<br/>Double-entry financial journal lines,<br/>EOD rollups and reconciliations")]
+
+        AccountTable --- BalanceTable --- GLJournal
     end
 
-    subgraph LiveTransactions["Transactional Core (:8082)"]
-        LedgerCore["Ledger Mutation Engine<br/>Handles debit, credit, soft holds,<br/>and high-concurrency locking"]
+    subgraph CoreCBS["Core Banking System (:9100)"]
+        T24Kernel["Temenos T24 CBS Kernel<br/>Handles debit, credit, fee tariffs,<br/>and pessimistic row locking"]
     end
 
     subgraph EventStream["Kafka Commit Log (:9092)"]
         EventsTopic["Topic: banking.transfers.events<br/>Carries immutable state change events"]
     end
 
-    subgraph AuditStore["Immutable Audit Vault (PostgreSQL 16)"]
+    subgraph AuditStore["Immutable Audit Vault (PostgreSQL 16 :5432)"]
         direction TB
         AuditLog[("ledger_mutation_audit<br/>audit_id (BIGSERIAL PK)<br/>transaction_id, account_id<br/>mutation_type, amount, balance_after<br/>operator_id, terminal_ip, timestamp")]
         TriggerBlock["PostgreSQL Database Trigger:<br/>trg_no_update_delete_mutation_audit<br/>(Strictly rejects UPDATE & DELETE)"]
@@ -299,17 +256,17 @@ flowchart LR
         AuditorEndpoint["GET /api/v1/audit/account/{id}<br/>Fast B-Tree Index: (account_id, created_at)<br/>Sub-5ms query response time"]
     end
 
-    LedgerCore <-->|"ACID Transactions & Row Locks"| OperationalStore
-    LedgerCore -->|"Publishes state events"| EventStream
+    T24Kernel <-->|"ACID Transactions & Row Locks"| OperationalStore
+    T24Kernel -->|"Emits state events"| EventStream
     EventStream -->|"Asynchronous consumer projection"| AuditLog
     AuditorEndpoint -->|"Read-only compliance queries"| AuditLog
 ```
 
 ---
 
-## 6. High-Value Maker-Checker State Transition Model
+## 6. High-Value Customer 2FA Verification State Transition Model
 
-Transactions exceeding 10,000,000.0000 PHP require two distinct banking operators: the Maker who initiates the transaction, and the Checker who reviews and releases the funds.
+Transactions exceeding PHP 50,000.00 require customer multi-factor verification via email OTP before settlement is dispatched to Temenos T24.
 
 ```mermaid
 stateDiagram-v2
@@ -317,27 +274,28 @@ stateDiagram-v2
 
     state INITIATED {
         [*] --> CheckValue
-        CheckValue --> DirectQueue: Amount <= 10,000,000.0000 PHP
-        CheckValue --> MakerCheckerQueue: Amount > 10,000,000.0000 PHP
+        CheckValue --> DirectSTP: Amount <= 50,000.0000 PHP
+        CheckValue --> Requires2FA: Amount > 50,000.0000 PHP
     }
 
-    DirectQueue --> EXECUTED: Automatic debit & credit settled
+    DirectSTP --> DISPATCHED_T24: Direct dispatch to T24 Endpoint 1
 
-    MakerCheckerQueue --> PENDING_APPROVAL: System applies soft hold<br/>(hold_amount += amount)
+    Requires2FA --> PENDING_VERIFICATION: 6-digit OTP generated & cached in Redis (TTL 300s)
 
-    state PENDING_APPROVAL {
-        [*] --> AwaitingReview: Appears on Teller Dashboard
-        AwaitingReview --> ValidatingChecker: Checker inspects documents
-        ValidatingChecker --> SegregationCheck: Verify maker_id != checker_id
+    state PENDING_VERIFICATION {
+        [*] --> EmailDispatched: Notification service sends OTP email via MailHog
+        EmailDispatched --> WaitingForInput: Customer enters OTP in frontend modal
+        WaitingForInput --> OTPValidated: Code matched in Redis
     }
 
-    SegregationCheck --> EXECUTED: Checker Approves<br/>Soft hold released<br/>Source debited, Destination credited
+    OTPValidated --> DISPATCHED_T24: Verified; dispatch to T24 Endpoint 1
 
-    SegregationCheck --> FAILED: Checker Rejects<br/>Soft hold released<br/>hold_amount decremented
+    DISPATCHED_T24 --> EXECUTED: T24 returns 200 OK (Settled)
 
-    EXECUTED --> AUDITED: Emitted to Kafka<br/>Recorded in PostgreSQL Audit Vault
+    DISPATCHED_T24 --> REVERSED: Downstream failure triggers T24 Endpoint 2 (Reversed)
 
-    FAILED --> AUDITED: Rejection reason logged in Audit Vault
+    EXECUTED --> AUDITED: Event emitted to Kafka; appended to PostgreSQL Audit Vault
+    REVERSED --> AUDITED: Compensation recorded in Audit Vault
 
     AUDITED --> [*]
 ```
@@ -387,16 +345,34 @@ sequenceDiagram
 
 | Container | Host Port | Internal Port | Protocol | Scope | Role |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| `banking-frontend` | `3000` | `80` | HTTP / Web | Public | React 19 Single Page Application |
+| `banking-frontend` | `3000` | `80` | HTTP / Web | Public | React 18 Single Page Application |
 | `gateway-service` | `8080` | `8080` | HTTP / REST | Public | Perimeter security, rate limiting, and routing |
 | `account-service` | `8081` | `8081` | HTTP / REST | Internal | Customer onboarding, KYC, account provisioning |
-| `ledger-mutation-engine` | `8082` | `8082` | HTTP / REST | Internal | Concurrency row locking, balance mutations, outbox |
-| `notification-service` | `8083` | `8083` | HTTP / REST | Internal | Asynchronous alert dispatching and receipt generation |
-| `redis-cache` | `6379` | `6379` | RESP / TCP | Internal | Token blacklists, idempotency locks, balance read-cache |
-| `oracle-xe-master` | `1521` | `1521` | Oracle TNS | Internal | Primary transactional state and pessimistic locking |
-| `postgres-audit-vault` | `5432` | `5432` | PostgreSQL | Internal | Append-only immutable regulatory audit vault |
+| `transfer-orchestrator` | `8082` | `8082` | HTTP / REST | Internal | Transfer lifecycle, Risk Engine, Saga compensation |
+| `temenos-t24-cbs` | `9100` | `9100` | HTTP / OFS | Internal | Core Banking System: EP1 Funds Transfer & EP2 Reversal |
+| `notification-service` | `8083` | `8083` | HTTP / REST | Internal | Asynchronous alert dispatching and 2FA email generation |
+| `mailhog-smtp` | `8025` / `1025` | `8025` / `1025` | HTTP / SMTP | Public / Host | Mock email web inbox (:8025) and SMTP server (:1025) |
+| `redis-cache` | `6379` | `6379` | RESP / TCP | Internal | Token blacklists, idempotency locks, 2FA OTP cache |
+| `azure-sql-db` | `1433` | `1433` | TDS / SQL | Internal | Temenos T24 Master Ledger DB (pessimistic row locks) |
+| `azure-postgres-vault`| `5432` | `5432` | PostgreSQL | Internal | Append-only immutable regulatory audit vault |
 | `kafka-broker` | `9092` | `9092` | PLAINTEXT | Internal | Event streaming commit log (KRaft mode) |
 | `kafka-ui` | `8085` | `8080` | HTTP / Web | Host Browser | Kafka partition, message, and consumer management |
-| `dd-agent` | `8126` / `8125` | `8126` / `8125` | APM / StatsD | Host / Internal | Enterprise Observability: APM traces, DogStatsD metrics, container logs |
-| `jaeger-tracing` | `16686` / `4317` | `16686` / `4317` | HTTP / gRPC | Host Browser | OpenTelemetry distributed trace visualizer (:16686) & OTLP receiver |
+| `dd-agent` | `8126` / `8125` | `8126` / `8125` | APM / StatsD | Host / Internal | Enterprise Observability: APM traces, DogStatsD metrics |
+| `jaeger-tracing` | `16686` / `4317` | `16686` / `4317` | HTTP / gRPC | Host Browser | OpenTelemetry distributed trace visualizer (:16686) |
+
+---
+
+## 9. C1–C4 Archify Diagrams & Interactive Zoom Explorer
+
+The architecture is rendered as standalone interactive HTML artifacts compiled with Archify v3:
+
+* **Interactive Zoom & Drill-Down Explorer**: [`c_model_explorer.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c_model_explorer.html)
+  Allows clicking any component node to smoothly zoom in from high-level C1 System Context down to C2 Containers, C3 Components, and C4 Sequence execution flows.
+* **C1 System Context Diagram**: [`c1_system_context.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c1_system_context.html)
+* **C2 Container Diagram**: [`c2_container.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c2_container.html)
+* **C3 Component Diagram**: [`c3_component.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c3_component.html)
+* **C4 Sequence Diagram**: [`c4_sequence.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c4_sequence.html)
+* **Full Primary System Architecture**: [`architecture.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/architecture.html)
+
+
 

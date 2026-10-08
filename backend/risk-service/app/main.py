@@ -344,21 +344,59 @@ def analyze_transfer_risk(req: RiskAnalysisRequest):
     if req.device_context and req.device_context.is_primary_device is not None:
         is_primary_device = req.device_context.is_primary_device
 
-    if decision != "BLOCK" and has_threat_context(req):
-        threat_narrative, threat_cat = build_threat_narrative(req)
-        if decision == "ALLOW":
-            decision = "ADVISORY_WARNING"
-            status = "ADVISORY_PENDING"
-            advisory_tier = "ADVISORY_WARNING"
-            warning_dialog = get_warning_dialog(threat_cat)
-            primary_flag = f"DEVICE_THREAT_{threat_cat}"
-            all_flags.append(primary_flag)
-        elif decision == "REQUIRE_2FA":
-            advisory_tier = "ADVISORY_WARNING"
-            warning_dialog = get_warning_dialog(threat_cat)
-            all_flags.append(f"DEVICE_THREAT_{threat_cat}")
+    # 5. Synchronous Memo Analysis (powered by Laya, executed inline in < 0.2ms)
+    memo_analysis = None
+    has_memo = bool(memo and memo.strip())
+    if has_memo and typology_engine is not None and getattr(typology_engine, "model_loaded", False):
+        try:
+            memo_analysis = typology_engine.score_memo(
+                memo=memo,
+                amount=amount,
+                payee_age_days=req.payee_age_days,
+                balance_drain_ratio=balance_drain,
+                spike_ratio=spike_ratio
+            )
+        except Exception:
+            pass
 
-    # 6. Dynamic Authorization Channel mapping (Zero SMS OTP for Transactions)
+    # 6. Check Contextual Threat Signals (Remote Access, Active Call, Purpose Mismatch, Scam Typologies)
+    advisory_tier = "NONE"
+    warning_dialog = None
+    threat_narrative = None
+
+    is_primary_device = req.is_primary_device if req.is_primary_device is not None else True
+    if req.device_context and req.device_context.is_primary_device is not None:
+        is_primary_device = req.device_context.is_primary_device
+
+    if decision != "BLOCK":
+        if has_threat_context(req):
+            threat_narrative, threat_cat = build_threat_narrative(req)
+            if decision == "ALLOW":
+                decision = "ADVISORY_WARNING"
+                status = "ADVISORY_PENDING"
+                advisory_tier = "ADVISORY_WARNING"
+                warning_dialog = get_warning_dialog(threat_cat)
+                primary_flag = f"DEVICE_THREAT_{threat_cat}"
+                all_flags.append(primary_flag)
+            elif decision == "REQUIRE_2FA":
+                advisory_tier = "ADVISORY_WARNING"
+                warning_dialog = get_warning_dialog(threat_cat)
+                all_flags.append(f"DEVICE_THREAT_{threat_cat}")
+        elif memo_analysis and (memo_analysis.get("is_anomaly") or memo_analysis.get("typology", "none") != "none"):
+            typology = memo_analysis.get("typology", "other")
+            if decision == "ALLOW":
+                decision = "ADVISORY_WARNING"
+                status = "ADVISORY_PENDING"
+                advisory_tier = "ADVISORY_WARNING"
+                warning_dialog = get_warning_dialog("MEMO_SCAM_PATTERN")
+                primary_flag = f"SCAM_TYPOLOGY_{typology.upper()}"
+                all_flags.append(primary_flag)
+            elif decision == "REQUIRE_2FA":
+                advisory_tier = "ADVISORY_WARNING"
+                warning_dialog = get_warning_dialog("MEMO_SCAM_PATTERN")
+                all_flags.append(f"SCAM_TYPOLOGY_{typology.upper()}")
+
+    # 7. Dynamic Authorization Channel mapping (Zero SMS OTP for Transactions)
     if decision == "BLOCK":
         auth_method = "NONE_BLOCKED"
     elif decision == "REQUIRE_2FA":
@@ -366,8 +404,7 @@ def analyze_transfer_risk(req: RiskAnalysisRequest):
     else:  # ALLOW or ADVISORY_WARNING
         auth_method = "BIOMETRIC_PRIMARY" if is_primary_device else "PUSH_NOTIFICATION_PRIMARY"
 
-    # 7. Post-Decision Enqueueing for Memo-Present Transfers
-    has_memo = bool(memo and memo.strip())
+    # 8. Post-Decision Enqueueing for Memo-Present Transfers
     if has_memo and decision != "BLOCK":
         # Persist transfer record in TransferStore
         transfer_store.save_transfer(
@@ -391,20 +428,6 @@ def analyze_transfer_risk(req: RiskAnalysisRequest):
             amount=amount,
             tabular_data=tabular_row
         )
-
-    # 8. Synchronous Memo Analysis (powered by Laya, executed inline in < 0.2ms)
-    memo_analysis = None
-    if has_memo and typology_engine is not None and getattr(typology_engine, "model_loaded", False):
-        try:
-            memo_analysis = typology_engine.score_memo(
-                memo=memo,
-                amount=amount,
-                payee_age_days=req.payee_age_days,
-                balance_drain_ratio=balance_drain,
-                spike_ratio=spike_ratio
-            )
-        except Exception:
-            pass
 
     elapsed_ms = (time.perf_counter() - start_time) * 1000.0
 

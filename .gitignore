@@ -77,3 +77,8 @@ scratch/
 scratch_*.txt
 package-lock.json
 .github/
+*.browser-check.json
+*.delivery.json
+*.finalize-summary.json
+*.finalize.json
+

@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: account-service
+  namespace: banking
+  labels:
+    app: account-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: account-service
+  template:
+    metadata:
+      labels:
+        app: account-service
+    spec:
+      containers:
+        - name: account-service
+          image: __ACR_NAME__.azurecr.io/account-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8081
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8081
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8081
+            initialDelaySeconds: 45
+            periodSeconds: 15
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:+UseSerialGC -Xms128m -Xmx320m"
+            - name: SPRING_PROFILES_ACTIVE
+              value: "azure"
+            - name: AZURE_SQL_URL
+              valueFrom:
+                secretKeyRef:
+                  name: banking-secrets
+                  key: azure-sql-url
+            - name: AZURE_SQL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: banking-secrets
+                  key: azure-sql-username
+            - name: AZURE_SQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: banking-secrets
+                  key: azure-sql-password
+            - name: AZURE_REDIS_HOST
+              value: "redis.banking.svc.cluster.local"
+            - name: AZURE_REDIS_PORT
+              value: "6379"
+            - name: AZURE_REDIS_SSL
+              value: "false"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: account-service
+  namespace: banking
+  labels:
+    app: account-service
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8081
+      targetPort: 8081
+  selector:
+    app: account-service

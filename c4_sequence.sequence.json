@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "C4 Sequence: T24 Funds Transfer (EP1) & Automatic Reversal (EP2)",
+    "output": "c4_sequence.html",
+    "viewBox": [1070, 680],
+    "animation": "trace",
+    "quality_profile": "standard",
+    "column_fit": "spread"
+  },
+  "participants": [
+    { "id": "client", "type": "external", "label": "Client App", "sublabel": "Web / Mobile :3000" },
+    { "id": "gateway", "type": "security", "label": "API Gateway", "sublabel": "Spring Cloud :8080" },
+    { "id": "orch", "type": "backend", "label": "Orchestrator", "sublabel": "Saga Engine :8082" },
+    { "id": "t24_cbs", "type": "external", "label": "Temenos T24 CBS", "sublabel": "EP1 & EP2 Ingress" },
+    { "id": "cbs_db", "type": "database", "label": "CBS Master DB", "sublabel": "Azure SQL :1433" },
+    { "id": "kafka", "type": "messagebus", "label": "Kafka Broker", "sublabel": "KRaft :9092" },
+    { "id": "notif", "type": "backend", "label": "Notification Svc", "sublabel": "Port :8083" }
+  ],
+  "segments": [
+    { "from": 140, "to": 298, "label": "Phase 1: Ingestion & Primary Settlement (Endpoint 1)" },
+    { "from": 308, "to": 495, "label": "Phase 2: Downstream Timeout & Reversal Trigger (Endpoint 2)" },
+    { "from": 505, "to": 600, "label": "Phase 3: Rollback Completion & Client Notice" }
+  ],
+  "messages": [
+    { "id": "msg-post-transfer", "from": "client", "to": "gateway", "y": 160, "label": "POST /api/v1/transfers", "variant": "emphasis" },
+    { "id": "msg-fwd-orch", "from": "gateway", "to": "orch", "y": 190, "label": "Forward validated request", "variant": "emphasis" },
+    { "id": "msg-call-t24-ep1", "from": "orch", "to": "t24_cbs", "y": 220, "label": "POST /funds-transfer (EP1 OFS)", "variant": "emphasis" },
+    { "id": "msg-lock-cbs", "from": "t24_cbs", "to": "cbs_db", "y": 250, "label": "UPDATE balance (UPDLOCK)", "variant": "emphasis" },
+    { "id": "msg-ep1-ok", "from": "t24_cbs", "to": "orch", "y": 280, "label": "200 OK (ref: T24-FT-9021)", "variant": "return" },
+
+    { "id": "msg-exec-event", "from": "orch", "to": "kafka", "y": 325, "label": "Produce TransferExecuted", "variant": "default" },
+    { "id": "msg-deliver-notif", "from": "kafka", "to": "notif", "y": 355, "label": "Deliver event to worker", "variant": "default" },
+    { "id": "msg-detect-failure", "from": "notif", "to": "orch", "y": 385, "label": "delivery timeout (> 2000ms SLA)", "variant": "security" },
+    { "id": "msg-call-t24-ep2", "from": "orch", "to": "t24_cbs", "y": 415, "label": "POST /reversal (EP2 ref: T24-FT-9021)", "variant": "security" },
+    { "id": "msg-reverse-cbs", "from": "t24_cbs", "to": "cbs_db", "y": 445, "label": "Reverse debit & restore balance", "variant": "security" },
+    { "id": "msg-ep2-ok", "from": "t24_cbs", "to": "orch", "y": 475, "label": "200 OK (ref: T24-REV-0012)", "variant": "return" },
+
+    { "id": "msg-rev-event", "from": "orch", "to": "kafka", "y": 520, "label": "Produce TransferReversed", "variant": "default" },
+    { "id": "msg-orch-reply", "from": "orch", "to": "gateway", "y": 550, "label": "Problem Details (HTTP 500)", "variant": "return" },
+    { "id": "msg-client-resp", "from": "gateway", "to": "client", "y": 580, "label": "HTTP 500 (Status: REVERSED)", "variant": "return" }
+  ],
+  "activations": [
+    { "participant": "gateway", "from": 155, "to": 200, "type": "security" },
+    { "participant": "orch", "from": 185, "to": 290, "type": "backend" },
+    { "participant": "t24_cbs", "from": 215, "to": 285, "type": "external" },
+    { "participant": "cbs_db", "from": 245, "to": 275, "type": "database" },
+    { "participant": "orch", "from": 320, "to": 560, "type": "backend" },
+    { "participant": "notif", "from": 350, "to": 395, "type": "backend" },
+    { "participant": "t24_cbs", "from": 410, "to": 480, "type": "external" },
+    { "participant": "cbs_db", "from": 440, "to": 470, "type": "database" },
+    { "participant": "gateway", "from": 545, "to": 585, "type": "security" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Temenos T24 Endpoint 1: Funds Transfer",
+      "items": [
+        "Primary Settlement: Orchestrator translates validated requests into T24 OFS commands (FUNDS.TRANSFER,AUTH) dispatched to /api/v1/t24/funds-transfer.",
+        "ACID Balance Locking: T24 acquires row-level pessimistic locks (UPDLOCK, ROWLOCK) in Azure SQL, guaranteeing strict balance consistency."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Temenos T24 Endpoint 2: Compensating Reversal",
+      "items": [
+        "Saga Recovery: Triggered immediately when downstream notifications, network timeouts, or circuit breakers trip.",
+        "Balance Restitution: Endpoint 2 (/api/v1/t24/reversal) reverses ledger postings using the original transaction reference, ensuring zero funds leakage."
+      ]
+    }
+  ]
+}

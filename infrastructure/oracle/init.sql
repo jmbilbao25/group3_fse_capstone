@@ -54,6 +54,7 @@ CREATE TABLE users (
     last_known_location_name VARCHAR2(100) DEFAULT 'Manila, Philippines',
     last_known_ip           VARCHAR2(45)  DEFAULT '112.198.45.10',
     last_geo_updated_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    last_login_at           TIMESTAMP WITH TIME ZONE,
     created_at              TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at              TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     CONSTRAINT chk_usr_role CHECK (role IN ('CUSTOMER', 'TELLER', 'MANAGER', 'ADMIN')),

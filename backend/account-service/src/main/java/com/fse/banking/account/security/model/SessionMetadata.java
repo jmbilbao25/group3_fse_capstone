@@ -19,5 +19,7 @@ public class SessionMetadata implements Serializable {
     private String activeRefreshTokenId;
     private String clientIp;
     private String userAgent;
+    private String deviceId;
+    private String deviceName;
     private Instant createdAt;
 }

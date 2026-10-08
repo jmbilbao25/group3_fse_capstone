@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  namespace: banking
+  labels:
+    app: notification-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+    spec:
+      containers:
+        - name: notification-service
+          image: __ACR_NAME__.azurecr.io/notification-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8083
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8083
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8083
+            initialDelaySeconds: 45
+            periodSeconds: 15
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:+UseSerialGC -Xms128m -Xmx320m"
+            - name: SPRING_PROFILES_ACTIVE
+              value: "azure"
+            - name: AZURE_SQL_URL
+              valueFrom:
+                secretKeyRef:
+                  name: banking-secrets
+                  key: azure-sql-url
+            - name: AZURE_SQL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: banking-secrets
+                  key: azure-sql-username
+            - name: AZURE_SQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: banking-secrets
+                  key: azure-sql-password
+            - name: AZURE_REDIS_HOST
+              value: "redis.banking.svc.cluster.local"
+            - name: AZURE_REDIS_PORT
+              value: "6379"
+            - name: AZURE_REDIS_SSL
+              value: "false"
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka.banking.svc.cluster.local:9092"
+            - name: KAFKA_SECURITY_PROTOCOL
+              value: "PLAINTEXT"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+  namespace: banking
+  labels:
+    app: notification-service
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8083
+      targetPort: 8083
+  selector:
+    app: notification-service

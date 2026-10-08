@@ -102,12 +102,49 @@ transfer_store = TransferStore(settlement_window_seconds=SETTLEMENT_WINDOW_SECON
 analyst_store = AnalystDecisionStore()
 reviewer_metrics = ReviewerMetrics()
 
-nanojev_engine = NanoJevSecondLookEngine(
-    intra_op_threads=ONNX_INTRA_OP_THREADS,
-    temperature=5.0,
-    theta_block=0.40,
-    theta_2fa=0.60
-)
+# Laya non-autoregressive decision engine & Typology scoring
+RISK_ENGINE_BACKEND = os.environ.get("RISK_ENGINE_BACKEND", "laya").lower()
+typology_temp = float(os.environ.get("TYPOLOGY_TEMP", 7.12))
+THETA_MEDIUM = float(os.environ.get("THETA_MEDIUM", 0.25))
+THETA_HIGH = float(os.environ.get("THETA_HIGH", 0.50))
+
+laya_engine_instance = None
+typology_engine = None
+
+if RISK_ENGINE_BACKEND == "laya":
+    try:
+        from app.reviewer import LayaSecondLookEngine
+        from app.laya_engine import LayaEngine
+        laya_engine_instance = LayaEngine(model_name="laya-multilingual")
+        nanojev_engine = LayaSecondLookEngine(
+            model_name="laya-multilingual",
+            intra_op_threads=4,
+            temperature=typology_temp,
+            theta_block=THETA_HIGH,
+            theta_2fa=THETA_MEDIUM
+        )
+        typology_engine = laya_engine_instance
+        print("[INIT] Laya non-autoregressive System 1 engine initialized as primary backend.", flush=True)
+    except Exception as e:
+        print(f"[INIT] Laya initialization fallback to NanoJev: {e}", flush=True)
+        nanojev_engine = NanoJevSecondLookEngine(
+            intra_op_threads=ONNX_INTRA_OP_THREADS,
+            temperature=5.0,
+            theta_block=0.40,
+            theta_2fa=0.60
+        )
+else:
+    nanojev_engine = NanoJevSecondLookEngine(
+        intra_op_threads=ONNX_INTRA_OP_THREADS,
+        temperature=5.0,
+        theta_block=0.40,
+        theta_2fa=0.60
+    )
+    try:
+        from hybrid_bench.nanojev_typology import NanoJevTypologyEngine
+        typology_engine = NanoJevTypologyEngine(temp=typology_temp)
+    except Exception:
+        typology_engine = None
 
 worker_pool = AsyncReviewWorkerPool(
     engine=nanojev_engine,
@@ -138,31 +175,36 @@ class RiskRequestHandler(BaseHTTPRequestHandler):
         self.send_response(status_code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(response_bytes)))
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+        # Only attach CORS headers if direct client access (not proxied through an API Gateway with CORS)
+        if not self.headers.get("X-Forwarded-For") and not self.headers.get("X-Forwarded-Host"):
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
         self.end_headers()
         self.wfile.write(response_bytes)
 
     def do_OPTIONS(self):
         self.send_response(204)
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+        if not self.headers.get("X-Forwarded-For") and not self.headers.get("X-Forwarded-Host"):
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
         self.end_headers()
 
     def do_GET(self):
         path = self.path.split("?")[0].rstrip("/")
 
         if path in ("/health", ""):
+            engine_name = "Laya (ModernBERT / mmBERT)" if RISK_ENGINE_BACKEND == "laya" else "Qwen2.5-0.5B INT8 ONNX"
             self._send_json(200, {
                 "status": "UP",
                 "service": DD_SERVICE,
-                "architecture": "Decoupled Sync S2 + Async NanoJev Reviewer",
+                "architecture": f"Decoupled Sync S2 + Synchronous {'Laya' if RISK_ENGINE_BACKEND == 'laya' else 'NanoJev'} Threat & Memo Engine",
                 "version": DD_VERSION,
                 "sync_engine": "Gate 0 + XGBoost (S2)",
+                "threat_engine": engine_name,
                 "async_reviewer": {
-                    "model": "Qwen2.5-0.5B INT8 ONNX",
+                    "model": engine_name,
                     "model_loaded": nanojev_engine.model_loaded,
                     "intra_op_threads": nanojev_engine.intra_op_threads,
                     "settlement_window_seconds": SETTLEMENT_WINDOW_SECONDS
@@ -202,7 +244,7 @@ class RiskRequestHandler(BaseHTTPRequestHandler):
         body = self.rfile.read(content_length) if content_length > 0 else b"{}"
 
         try:
-            payload = json.loads(body.decode("utf-8")) if body else {}
+            payload = json.loads(body.decode("utf-8-sig")) if body else {}
         except Exception:
             self._send_json(400, {"error": "Invalid JSON payload"})
             return
@@ -389,7 +431,22 @@ class RiskRequestHandler(BaseHTTPRequestHandler):
                 primary_flag = "NONE" if decision == "ALLOW" else ("ELEVATED_S2_SCORE" if decision == "REQUIRE_2FA" else "CRITICAL_FRAUD_RISK")
                 all_flags = [primary_flag] if primary_flag != "NONE" else []
 
-            # 3. Contextual Device Threat & Advisory Warning Analysis
+            # 3. Synchronous Memo & Typology Analysis (powered by Laya < 0.2ms)
+            memo_analysis = None
+            clean_memo = memo.strip()
+            if clean_memo and typology_engine is not None and getattr(typology_engine, "model_loaded", False):
+                try:
+                    memo_analysis = typology_engine.score_memo(
+                        memo=clean_memo,
+                        amount=amount,
+                        payee_age_days=float(req.get("payee_age_days", 180.0)),
+                        balance_drain_ratio=drain_ratio if 'drain_ratio' in locals() else 0.0,
+                        spike_ratio=spike_ratio if 'spike_ratio' in locals() else 1.0
+                    )
+                except Exception as e:
+                    print(f"[MEMO ANALYSIS ERROR] {e}", flush=True)
+
+            # 4. Contextual Device Threat & Advisory Warning Analysis
             advisory_tier = "NONE"
             warning_dialog = None
             threat_narrative = None
@@ -418,6 +475,21 @@ class RiskRequestHandler(BaseHTTPRequestHandler):
                             wd = get_warning_dialog(threat_cat)
                             warning_dialog = wd.model_dump() if hasattr(wd, "model_dump") else wd.dict()
                             all_flags.append(f"DEVICE_THREAT_{threat_cat}")
+                    elif memo_analysis and (memo_analysis.get("is_anomaly") or memo_analysis.get("typology", "none") != "none"):
+                        typology = memo_analysis.get("typology", "other")
+                        if decision == "ALLOW":
+                            decision = "ADVISORY_WARNING"
+                            status = "ADVISORY_PENDING"
+                            advisory_tier = "ADVISORY_WARNING"
+                            wd = get_warning_dialog("MEMO_SCAM_PATTERN")
+                            warning_dialog = wd.model_dump() if hasattr(wd, "model_dump") else wd.dict()
+                            primary_flag = f"SCAM_TYPOLOGY_{typology.upper()}"
+                            all_flags.append(primary_flag)
+                        elif decision == "REQUIRE_2FA":
+                            advisory_tier = "ADVISORY_WARNING"
+                            wd = get_warning_dialog("MEMO_SCAM_PATTERN")
+                            warning_dialog = wd.model_dump() if hasattr(wd, "model_dump") else wd.dict()
+                            all_flags.append(f"SCAM_TYPOLOGY_{typology.upper()}")
                 except Exception as e:
                     print(f"[THREAT EVAL ERROR] {e}", flush=True)
 
@@ -522,7 +594,8 @@ class RiskRequestHandler(BaseHTTPRequestHandler):
                     "average_transfer": avg_amount,
                     "home_location": home_coords.get("label", "Unknown")
                 },
-                "evaluation_time_ms": round(elapsed_ms, 2)
+                "evaluation_time_ms": round(elapsed_ms, 2),
+                "memo_analysis": memo_analysis
             }
         finally:
             if span:

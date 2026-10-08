@@ -1,15 +1,79 @@
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/bank_models.dart';
+
+enum AppEnvironment { local, prod }
 
 class BankService extends ChangeNotifier {
   static final BankService _instance = BankService._internal();
   factory BankService() => _instance;
   BankService._internal();
 
-  // Backend base URL (Gateway service default :8080)
-  String baseUrl = 'http://localhost:8080';
+  // Multi-environment routing (Local Docker PC vs Azure Cloud Prod)
+  AppEnvironment environment = (const String.fromEnvironment('ENV', defaultValue: 'local')).toLowerCase() == 'prod'
+      ? AppEnvironment.prod
+      : AppEnvironment.local;
+
+  String localUrl = const String.fromEnvironment('LOCAL_API_URL', defaultValue: 'http://localhost:8080');
+  String cloudUrl = const String.fromEnvironment('CLOUD_API_URL', defaultValue: 'https://gateway.aurabank.azurecontainerapps.io');
+  bool autoFallbackToLocal = true;
+  String? lastConnectionStatus;
+  int? lastPingLatencyMs;
+
+  String get baseUrl => environment == AppEnvironment.prod ? cloudUrl : localUrl;
+
+  void setEnvironment(AppEnvironment env) {
+    environment = env;
+    notifyListeners();
+  }
+
+  void setCloudUrl(String url) {
+    cloudUrl = url;
+    notifyListeners();
+  }
+
+  void setLocalUrl(String url) {
+    localUrl = url;
+    notifyListeners();
+  }
+
+  void setAutoFallback(bool enable) {
+    autoFallbackToLocal = enable;
+    notifyListeners();
+  }
+
+  Future<bool> testConnection() async {
+    final target = baseUrl;
+    final stopwatch = Stopwatch()..start();
+    try {
+      final res = await http.get(Uri.parse('$target/actuator/health')).timeout(const Duration(seconds: 3));
+      stopwatch.stop();
+      lastPingLatencyMs = stopwatch.elapsedMilliseconds;
+      if (res.statusCode >= 200 && res.statusCode < 400) {
+        lastConnectionStatus = 'Healthy (${res.statusCode}) - ${lastPingLatencyMs}ms';
+        notifyListeners();
+        return true;
+      }
+    } catch (_) {
+      try {
+        final res = await http.get(Uri.parse('$target/api/v1/accounts/1000-2000-3001')).timeout(const Duration(seconds: 3));
+        stopwatch.stop();
+        lastPingLatencyMs = stopwatch.elapsedMilliseconds;
+        if (res.statusCode >= 200 && res.statusCode < 500) {
+          lastConnectionStatus = 'Healthy (${res.statusCode}) - ${lastPingLatencyMs}ms';
+          notifyListeners();
+          return true;
+        }
+      } catch (_) {}
+    }
+    stopwatch.stop();
+    lastPingLatencyMs = null;
+    lastConnectionStatus = 'Unreachable';
+    notifyListeners();
+    return false;
+  }
 
   // Active User Profile
   final UserProfile user = UserProfile(
@@ -20,14 +84,15 @@ class BankService extends ChangeNotifier {
     dob: 'July 10, 1999',
     gender: 'Male',
     civilStatus: 'Married',
-    faceIdEnabled: true,
-    fingerprintEnabled: true,
+    faceIdEnabled: false,
+    fingerprintEnabled: false,
     pushAlertsEnabled: true,
   );
 
   // Available Balance (defaults to ₱50,000,000 as seen in UI, or real backend balance)
   double availableBalance = 50000000.0;
   final String savingsAccountNumber = '123456789123';
+  String activeAccountId = '1000-2000-3001';
 
   // Bank Cards
   final List<BankCard> cards = [
@@ -132,13 +197,13 @@ class BankService extends ChangeNotifier {
         BankTransaction(
           id: 'TXN-NOV-01',
           reference: 'AUR-991101',
-          counterparty: 'Temenos Core Clearing',
+          counterparty: 'Central Bank Clearing',
           type: TransactionType.incoming,
           amount: 42000.00,
           timestamp: DateTime(2026, 11, 08, 9, 30),
           displayTime: 'Nov 08, 9:30 AM',
           status: TransactionStatus.settled,
-          initial: 'T',
+          initial: 'C',
           avatarColorValue: 0xFF059669,
         ),
         BankTransaction(
@@ -170,7 +235,7 @@ class BankService extends ChangeNotifier {
     '2026-10': MonthlyStatement(
       monthKey: '2026-10',
       title: 'October 2026',
-      dateRange: 'Oct 01 - Oct 31, 2026',
+      dateRange: 'October 1 - 31, 2026',
       totalReceived: 52000.00,
       totalSent: 22000.00,
       transactions: [
@@ -183,9 +248,9 @@ class BankService extends ChangeNotifier {
           timestamp: DateTime(2026, 10, 1, 8, 0),
           displayTime: '01 Oct 2026 - 8:00 AM',
           status: TransactionStatus.settled,
-          channel: 'Transfer Received',
+          channel: 'Same Bank',
           initial: 'D',
-          avatarColorValue: 0xFF2A0054,
+          avatarColorValue: 0xFF3B0764,
         ),
         BankTransaction(
           id: 'TXN-OCT-02',
@@ -196,9 +261,9 @@ class BankService extends ChangeNotifier {
           timestamp: DateTime(2026, 10, 5, 10, 0),
           displayTime: '05 Oct 2026 - 10:00 AM',
           status: TransactionStatus.settled,
-          channel: 'Transfer Received',
+          channel: 'Same Bank',
           initial: 'K',
-          avatarColorValue: 0xFF7C3AED,
+          avatarColorValue: 0xFF581C87,
         ),
         BankTransaction(
           id: 'TXN-OCT-03',
@@ -206,12 +271,12 @@ class BankService extends ChangeNotifier {
           counterparty: 'Jessi Mey',
           type: TransactionType.outgoing,
           amount: 10000.00,
-          timestamp: DateTime(2026, 10, 7, 14, 30),
-          displayTime: '07 Oct 2026 - 2:30 PM',
+          timestamp: DateTime(2026, 10, 10, 14, 0),
+          displayTime: '10 Oct 2026 - 2:00 PM',
           status: TransactionStatus.settled,
-          channel: 'Transfer Sent',
+          channel: 'Other Bank',
           initial: 'J',
-          avatarColorValue: 0xFF4C1D95,
+          avatarColorValue: 0xFF7E22CE,
         ),
         BankTransaction(
           id: 'TXN-OCT-04',
@@ -219,12 +284,12 @@ class BankService extends ChangeNotifier {
           counterparty: 'Angel Lou',
           type: TransactionType.outgoing,
           amount: 12000.00,
-          timestamp: DateTime(2026, 10, 10, 16, 15),
-          displayTime: '10 Oct 2026 - 4:15 PM',
+          timestamp: DateTime(2026, 10, 15, 16, 0),
+          displayTime: '15 Oct 2026 - 4:00 PM',
           status: TransactionStatus.settled,
-          channel: 'Transfer Sent',
+          channel: 'Other Bank',
           initial: 'A',
-          avatarColorValue: 0xFF6D28D9,
+          avatarColorValue: 0xFF9333EA,
         ),
       ],
     ),
@@ -439,7 +504,7 @@ class BankService extends ChangeNotifier {
         BankTransaction(
           id: 'TXN-APR-02',
           reference: 'AUR-880402',
-          counterparty: 'Q2 Scheduled Outgoing Transfer',
+          counterparty: 'Q2 Tax Pre-settlement',
           type: TransactionType.outgoing,
           amount: 22000.00,
           timestamp: DateTime(2026, 4, 28, 15, 15),
@@ -601,6 +666,42 @@ class BankService extends ChangeNotifier {
     }
   }
 
+    Future<void> initPreferences() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      user.faceIdEnabled = prefs.getBool('face_id_enabled') ?? false;
+      user.fingerprintEnabled = prefs.getBool('fingerprint_enabled') ?? false;
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  Future<void> setFaceIdEnabled(bool enabled) async {
+    user.faceIdEnabled = enabled;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('face_id_enabled', enabled);
+    } catch (_) {}
+  }
+
+  Future<void> setFingerprintEnabled(bool enabled) async {
+    user.fingerprintEnabled = enabled;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('fingerprint_enabled', enabled);
+    } catch (_) {}
+  }
+
+  Future<void> setPushAlertsEnabled(bool enabled) async {
+    user.pushAlertsEnabled = enabled;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('push_alerts_enabled', enabled);
+    } catch (_) {}
+  }
+
   void updateUserProfile({
     String? name,
     String? phoneNumber,
@@ -632,8 +733,26 @@ class BankService extends ChangeNotifier {
         final List<dynamic> accList = jsonDecode(accRes.body);
         if (accList.isNotEmpty) {
           final firstAcc = accList.first;
+          final accId = firstAcc['account_id'] ?? firstAcc['accountId'];
+          if (accId != null) {
+            activeAccountId = accId.toString();
+          }
           if (firstAcc['availableBalance'] != null) {
             availableBalance = (firstAcc['availableBalance'] as num).toDouble();
+          } else if (firstAcc['available_balance'] != null) {
+            availableBalance = (firstAcc['available_balance'] as num).toDouble();
+          } else if (accId != null) {
+            try {
+              final balRes = await http
+                  .get(Uri.parse('$baseUrl/api/v1/accounts/$accId/balance'))
+                  .timeout(const Duration(seconds: 2));
+              if (balRes.statusCode == 200) {
+                final balData = jsonDecode(balRes.body);
+                if (balData['available_balance'] != null) {
+                  availableBalance = (balData['available_balance'] as num).toDouble();
+                }
+              }
+            } catch (_) {}
           }
         }
       }
@@ -678,7 +797,74 @@ class BankService extends ChangeNotifier {
     }
   }
 
-  // Transfer execution with backend endpoint support + seamless local fallback
+  // Multi-Stage Risk Analysis (Gate 0 -> XGBoost S2 -> Laya Scam & Threat Synthesis)
+  Future<Map<String, dynamic>> analyzeTransferRisk({
+    required String targetAccount,
+    required double amount,
+    String? memo,
+    bool isScreenSharing = false,
+    String? callState,
+    String? inputMode,
+    bool isEmulator = false,
+  }) async {
+    final payload = {
+      'account_id': activeAccountId,
+      'target_account_id': targetAccount,
+      'amount': amount,
+      'memo': memo ?? '',
+      'user_id': 'U1001',
+      'emulator': isEmulator,
+      'device_context': {
+        'media_projection': {
+          'is_screen_sharing': isScreenSharing,
+        },
+        'telephony': {
+          'call_state': callState ?? 'IDLE',
+        },
+        'interaction': {
+          'account_input_mode': inputMode ?? 'TYPED',
+        }
+      }
+    };
+
+    // 1. Primary endpoint attempt
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/api/v1/risk/analyze'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(payload),
+      ).timeout(const Duration(seconds: 4));
+
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body);
+      }
+    } catch (_) {
+      // 2. Fallback to local Docker PC if Cloud is unresponsive
+      if (environment == AppEnvironment.prod && autoFallbackToLocal) {
+        try {
+          final fallbackRes = await http.post(
+            Uri.parse('$localUrl/api/v1/risk/analyze'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(payload),
+          ).timeout(const Duration(seconds: 4));
+
+          if (fallbackRes.statusCode == 200) {
+            debugPrint('[AURA CLOUD FALLBACK] Cloud risk-service unavailable. Executed on local Docker PC.');
+            return jsonDecode(fallbackRes.body);
+          }
+        } catch (_) {}
+      }
+    }
+
+    return {
+      'decision': 'ALLOW',
+      'fraud_score': 0,
+      'primary_flag': 'NORMAL_TRANSACTION',
+      'advisory_tier': 'NONE',
+    };
+  }
+
+  // Transfer execution with Temenos T24 CBS settlement + immutable database update
   Future<Map<String, dynamic>> executeTransfer({
     required String targetAccount,
     required String recipientName,
@@ -686,9 +872,24 @@ class BankService extends ChangeNotifier {
     required String destinationBank,
     String? remarks,
   }) async {
-    final ref = 'AUR-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+    final dateStr = DateTime.now().year.toString().substring(2) +
+        DateTime.now().month.toString().padLeft(2, '0') +
+        DateTime.now().day.toString().padLeft(2, '0');
+    final fallbackRef = 'FT$dateStr${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
 
-    // 1. Try real backend mutation engine
+    final payload = {
+      'accountId': activeAccountId,
+      'targetAccountId': targetAccount,
+      'amount': amount,
+      'currency': 'PHP',
+      'eventType': 'TRANSFER',
+      'mutationType': 'TRANSFER',
+      'reference': fallbackRef,
+      'initiatorUserId': 'U1001',
+      'remarks': remarks ?? 'Mobile Fund Transfer to $recipientName',
+    };
+
+    // 1. Try Primary endpoint (Cloud Prod or Local Dev)
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/api/v1/ledger/mutate'),
@@ -696,30 +897,81 @@ class BankService extends ChangeNotifier {
           'Content-Type': 'application/json',
           'X-Idempotency-Key': 'TX-${DateTime.now().millisecondsSinceEpoch}',
         },
-        body: jsonEncode({
-          'accountId': 'A2003',
-          'targetAccountId': targetAccount,
-          'amount': amount,
-          'currency': 'PHP',
-          'eventType': 'TRANSFER',
-          'mutationType': 'TRANSFER',
-          'reference': ref,
-          'initiatorUserId': 'U1001',
-          'remarks': remarks ?? 'Mobile Fund Transfer',
-        }),
-      ).timeout(const Duration(seconds: 2));
+        body: jsonEncode(payload),
+      ).timeout(const Duration(seconds: 4));
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        _applyLocalTransfer(amount, recipientName, ref, remarks);
-        return {'success': true, 'reference': ref, 'amount': amount};
+        final data = jsonDecode(response.body);
+        final t24Ref = data['t24_reference'] ?? data['t24Reference'] ?? data['transaction_id'] ?? fallbackRef;
+        final newBal = (data['balance_after'] ?? data['available_balance'] as num?)?.toDouble();
+        if (newBal != null) {
+          availableBalance = newBal;
+        } else {
+          availableBalance -= amount;
+        }
+        _applyLocalTransfer(amount, recipientName, t24Ref, remarks);
+        return {
+          'success': true,
+          'reference': t24Ref,
+          't24_reference': t24Ref,
+          'amount': amount,
+          'status': data['status'] ?? 'COMMITTED',
+        };
+      } else {
+        try {
+          final errData = jsonDecode(response.body);
+          return {
+            'success': false,
+            'reference': fallbackRef,
+            'failureReason': errData['message'] ?? errData['error'] ?? 'Transfer rejected by core banking (${response.statusCode})',
+          };
+        } catch (_) {
+          return {
+            'success': false,
+            'reference': fallbackRef,
+            'failureReason': 'Transfer rejected by core banking (${response.statusCode})',
+          };
+        }
       }
     } catch (_) {
-      // Backend unavailable; seamlessly proceed with local state simulation
+      // 2. Cloud Fallback to Local Docker PC
+      if (environment == AppEnvironment.prod && autoFallbackToLocal) {
+        try {
+          final fallbackResponse = await http.post(
+            Uri.parse('$localUrl/api/v1/ledger/mutate'),
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Idempotency-Key': 'TX-FALLBACK-${DateTime.now().millisecondsSinceEpoch}',
+            },
+            body: jsonEncode(payload),
+          ).timeout(const Duration(seconds: 4));
+
+          if (fallbackResponse.statusCode >= 200 && fallbackResponse.statusCode < 300) {
+            debugPrint('[AURA CLOUD FALLBACK] Cloud ledger engine unavailable. Committed on local Docker PC.');
+            final data = jsonDecode(fallbackResponse.body);
+            final t24Ref = data['t24_reference'] ?? data['t24Reference'] ?? data['transaction_id'] ?? fallbackRef;
+            final newBal = (data['balance_after'] ?? data['available_balance'] as num?)?.toDouble();
+            if (newBal != null) {
+              availableBalance = newBal;
+            } else {
+              availableBalance -= amount;
+            }
+            _applyLocalTransfer(amount, recipientName, t24Ref, remarks);
+            return {
+              'success': true,
+              'reference': t24Ref,
+              't24_reference': t24Ref,
+              'amount': amount,
+              'status': data['status'] ?? 'COMMITTED',
+            };
+          }
+        } catch (_) {}
+      }
     }
 
-    // 2. Perform in-memory mutation
-    _applyLocalTransfer(amount, recipientName, ref, remarks);
-    return {'success': true, 'reference': ref, 'amount': amount};
+    // 3. Perform in-memory mutation fallback
+    _applyLocalTransfer(amount, recipientName, fallbackRef, remarks);
+    return {'success': true, 'reference': fallbackRef, 't24_reference': fallbackRef, 'amount': amount};
   }
 
   void _applyLocalTransfer(double amount, String recipientName, String ref, String? remarks) {

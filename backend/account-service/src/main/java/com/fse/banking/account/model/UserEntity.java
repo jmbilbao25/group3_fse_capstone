@@ -95,6 +95,9 @@ public class UserEntity {
     @Column(name = "last_geo_updated_at")
     private Instant lastGeoUpdatedAt;
 
+    @Column(name = "last_login_at")
+    private Instant lastLoginAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

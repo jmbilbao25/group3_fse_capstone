@@ -5,9 +5,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface AccountMasterRepository extends JpaRepository<AccountMaster, String> {
     boolean existsByUserId(String userId);
     List<AccountMaster> findByUserId(String userId);
+    Optional<AccountMaster> findByAccountNumber(String accountNumber);
+    Optional<AccountMaster> findFirstByUserId(String userId);
 }

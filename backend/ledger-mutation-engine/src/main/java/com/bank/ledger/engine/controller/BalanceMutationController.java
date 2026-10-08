@@ -31,7 +31,7 @@ public class BalanceMutationController {
      * - Immediate settlement if <= PHP 50,000.00
      * - Soft hold & Maker-Checker routed if > PHP 50,000.00
      */
-    @PostMapping({"/transfer", "/transfers"})
+    @PostMapping({"/transfer", "/transfers", "/mutate"})
     public ResponseEntity<MutationResponse> executeTransfer(
             @RequestHeader(value = "X-Idempotency-Key", required = false) String idempotencyKey,
             @Valid @RequestBody MutationRequest request) {
@@ -60,35 +60,49 @@ public class BalanceMutationController {
     /**
      * 2. Teller Approval of High-Value Transfer (TRX-502, TRX-503)
      */
-    @PostMapping({"/transfers/{transactionId}/approve", "/transfers/{transactionId}/sign-l1", "/transfers/{transactionId}/sign-l2", "/transfers/{transactionId}/approve-first", "/transfers/{transactionId}/approve-second"})
+    @PostMapping({"/transfers/{transactionId}/approve", "/transfers/{transactionId}/sign-l1", "/transfers/{transactionId}/sign-l2", "/transfers/{transactionId}/approve-first", "/transfers/{transactionId}/approve-second", "/approve"})
     public ResponseEntity<MutationResponse> approveTransfer(
-            @PathVariable String transactionId,
+            @PathVariable(required = false) String transactionId,
             @Valid @RequestBody CheckerActionRequest request) {
-        log.info("[HTTP REQUEST] POST /api/v1/ledger/transfers/{}/approve by checker {}",
-                transactionId, request.getCheckerUserId());
+        String effectiveTxId = transactionId != null && !transactionId.isBlank()
+                ? transactionId
+                : request.getTransactionId();
+        if (effectiveTxId == null || effectiveTxId.isBlank()) {
+            throw new IllegalArgumentException("Transaction ID is required in path or body for approval.");
+        }
 
-        MutationResponse response = mutationService.approveTransfer(transactionId, request);
+        log.info("[HTTP REQUEST] POST /api/v1/ledger/transfers/{}/approve by checker {}",
+                effectiveTxId, request.getCheckerUserId());
+
+        MutationResponse response = mutationService.approveTransfer(effectiveTxId, request);
         return ResponseEntity.ok(response);
     }
 
     /**
      * 3. Teller Rejection of High-Value Transfer (TRX-502)
      */
-    @PostMapping("/transfers/{transactionId}/reject")
+    @PostMapping({"/transfers/{transactionId}/reject", "/reject"})
     public ResponseEntity<MutationResponse> rejectTransfer(
-            @PathVariable String transactionId,
+            @PathVariable(required = false) String transactionId,
             @Valid @RequestBody CheckerActionRequest request) {
-        log.info("[HTTP REQUEST] POST /api/v1/ledger/transfers/{}/reject by checker {}",
-                transactionId, request.getCheckerUserId());
+        String effectiveTxId = transactionId != null && !transactionId.isBlank()
+                ? transactionId
+                : request.getTransactionId();
+        if (effectiveTxId == null || effectiveTxId.isBlank()) {
+            throw new IllegalArgumentException("Transaction ID is required in path or body for rejection.");
+        }
 
-        MutationResponse response = mutationService.rejectTransfer(transactionId, request);
+        log.info("[HTTP REQUEST] POST /api/v1/ledger/transfers/{}/reject by checker {}",
+                effectiveTxId, request.getCheckerUserId());
+
+        MutationResponse response = mutationService.rejectTransfer(effectiveTxId, request);
         return ResponseEntity.ok(response);
     }
 
     /**
      * 4. Teller Review Queue: Query all pending approval transfers (UI-703)
      */
-    @GetMapping("/transfers/pending")
+    @GetMapping({"/transfers/pending", "/pending"})
     public ResponseEntity<List<TransactionMaster>> getPendingTransfers() {
         return ResponseEntity.ok(mutationService.getPendingTransfers());
     }

@@ -894,20 +894,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               const SizedBox(height: 24),
 
-              // Version Note
-              const Center(
-                child: Text(
-                  'Aura Core Banking Engine • v2.4.1 (Build 2026)',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF9CA3AF),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
               // 6. LOGOUT ACTION
               // Log Out of This Device only (Multi-device logout is on Trusted Devices & Sessions page)
               SizedBox(

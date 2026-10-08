@@ -7,8 +7,8 @@ enum AuraLogoStyle {
   dark, // Modern onyx slate (#181824)
 }
 
-/// Redesigned Aura Bank Logo: "The Aura Horizon Monogram"
-/// A simple yet creative vector mark featuring an architectural 'A' apex
+/// Official Aura Bank Logo: "The Aura Horizon Monogram"
+/// The signature vector mark featuring an architectural 'A' apex
 /// fused with an orbital continuous radiant ribbon and central geometric spark.
 class AuraLogo extends StatelessWidget {
   final double size;
@@ -117,7 +117,6 @@ class _AuraMonogramPainter extends CustomPainter {
       ..strokeJoin = StrokeJoin.round;
 
     final chevronPath = Path();
-    // Start at bottom left, climb up to apex with slight curvature, down to bottom right
     chevronPath.moveTo(w * 0.16, h * 0.88);
     chevronPath.lineTo(w * 0.50, h * 0.14);
     chevronPath.lineTo(w * 0.84, h * 0.88);
@@ -131,7 +130,6 @@ class _AuraMonogramPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     final loopPath = Path();
-    // Flowing infinity arch through the middle
     loopPath.moveTo(w * 0.08, h * 0.58);
     loopPath.cubicTo(
       w * 0.30, h * 0.42,

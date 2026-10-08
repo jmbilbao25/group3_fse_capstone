@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../theme/aura_theme.dart';
+import '../../theme/aura_theme.dart';
 
 class TransactionReceiptScreen extends StatefulWidget {
   final bool isSuccess;

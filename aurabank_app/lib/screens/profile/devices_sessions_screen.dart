@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../theme/aura_theme.dart';
-import 'login_screen.dart';
+import '../../theme/aura_theme.dart';
+import '../auth/login_screen.dart';
 
 class DevicesSessionsScreen extends StatefulWidget {
   const DevicesSessionsScreen({super.key});

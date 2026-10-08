@@ -10,7 +10,11 @@ import '../theme/aura_theme.dart';
 import 'web/web_sidebar.dart';
 import 'web/web_header.dart';
 import 'web/web_dashboard_screen.dart';
-import 'transfer/send_money_screen.dart';
+import 'web/web_transfer_screen.dart';
+import 'web/web_cards_screen.dart';
+import 'web/web_scan_screen.dart';
+import 'web/web_analytics_screen.dart';
+import 'web/web_profile_screen.dart';
 
 class AppShell extends StatefulWidget {
   final int initialIndex;
@@ -53,10 +57,11 @@ class _AppShellState extends State<AppShell> {
   Widget _buildWebDesktopShell() {
     final webScreens = [
       WebDashboardScreen(onNavigateTab: _onNavigateTab),
-      const CardsScreen(),
-      ScanScreen(onBack: () => _onNavigateTab(0)),
-      const AnalyticsScreen(),
-      const ProfileScreen(),
+      const WebTransferScreen(),
+      const WebCardsScreen(),
+      WebScanScreen(onBack: () => _onNavigateTab(0)),
+      const WebAnalyticsScreen(),
+      const WebProfileScreen(),
     ];
 
     return Scaffold(
@@ -78,12 +83,7 @@ class _AppShellState extends State<AppShell> {
               children: [
                 // Top Header Bar
                 WebHeader(
-                  onQuickTransfer: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const SendMoneyScreen()),
-                    );
-                  },
+                  onQuickTransfer: () => _onNavigateTab(1),
                   onRefresh: () {
                     BankService().syncWithBackend();
                   },
@@ -113,11 +113,22 @@ class _AppShellState extends State<AppShell> {
     ];
 
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: screens,
+      backgroundColor: const Color(0xFFF9FAFB),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 540),
+          child: IndexedStack(
+            index: _currentIndex.clamp(0, screens.length - 1),
+            children: screens,
+          ),
+        ),
       ),
-      bottomNavigationBar: _buildLuxuryBottomBar(),
+      bottomNavigationBar: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 540),
+          child: _buildLuxuryBottomBar(),
+        ),
+      ),
     );
   }
 

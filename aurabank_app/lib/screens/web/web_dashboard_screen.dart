@@ -216,7 +216,7 @@ class _WebDashboardScreenState extends State<WebDashboardScreen> {
                 children: [
                   OutlinedButton.icon(
                     onPressed: () {
-                      if (widget.onNavigateTab != null) widget.onNavigateTab!(3);
+                      if (widget.onNavigateTab != null) widget.onNavigateTab!(4);
                     },
                     icon: const Icon(Icons.receipt_long_rounded, size: 14, color: Colors.white),
                     label: const Text('Statement of Account', style: TextStyle(color: Colors.white, fontSize: 12)),
@@ -567,10 +567,14 @@ class _WebDashboardScreenState extends State<WebDashboardScreen> {
               ),
               TextButton(
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const SendMoneyScreen()),
-                  );
+                  if (widget.onNavigateTab != null) {
+                    widget.onNavigateTab!(1);
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const SendMoneyScreen()),
+                    );
+                  }
                 },
                 child: const Text('Full Flow →', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
               ),
@@ -682,10 +686,14 @@ class _WebDashboardScreenState extends State<WebDashboardScreen> {
             height: 44,
             child: ElevatedButton(
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SendMoneyScreen()),
-                );
+                if (widget.onNavigateTab != null) {
+                  widget.onNavigateTab!(1);
+                } else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SendMoneyScreen()),
+                  );
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AuraColors.primary,

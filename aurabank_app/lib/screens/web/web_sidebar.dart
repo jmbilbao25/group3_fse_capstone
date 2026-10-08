@@ -112,11 +112,85 @@ class WebSidebar extends StatelessWidget {
           ),
 
           const Divider(color: borderSubtle, height: 1),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
+
+          // Primary Account Mini Card (as shown in prototype)
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFAF5FF),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE9D5FF)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Primary Account',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF6B21A8),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFDCFCE7),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.check_circle_rounded, size: 10, color: Color(0xFF16A34A)),
+                          SizedBox(width: 3),
+                          Text(
+                            'Verified',
+                            style: TextStyle(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF16A34A),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'PHP Savings •••• 9081',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF6B7280),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'PHP 1,248,930.50',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF1E103F),
+                    letterSpacing: -0.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 14),
+          const Divider(color: borderSubtle, height: 1),
+          const SizedBox(height: 12),
 
           // Section Label
           const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 6),
+            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 4),
             child: Text(
               'FINANCIAL SERVICES',
               style: TextStyle(
@@ -141,24 +215,30 @@ class WebSidebar extends StatelessWidget {
                 ),
                 _buildNavItem(
                   index: 1,
+                  icon: Icons.swap_horiz_rounded,
+                  label: 'Transfer',
+                  badge: null,
+                ),
+                _buildNavItem(
+                  index: 2,
                   icon: Icons.credit_card_rounded,
                   label: 'Cards & Control',
                   badge: '2 Active',
                 ),
                 _buildNavItem(
-                  index: 2,
+                  index: 3,
                   icon: Icons.qr_code_scanner_rounded,
                   label: 'Scan & Pay',
                   badge: null,
                 ),
                 _buildNavItem(
-                  index: 3,
+                  index: 4,
                   icon: Icons.bar_chart_rounded,
-                  label: 'Analytics & Ledger',
+                  label: 'Analytics & Reports',
                   badge: null,
                 ),
                 _buildNavItem(
-                  index: 4,
+                  index: 5,
                   icon: Icons.manage_accounts_rounded,
                   label: 'Security & Profile',
                   badge: null,

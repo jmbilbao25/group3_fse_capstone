@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'home_screen.dart';
-import 'cards_screen.dart';
-import 'scan_screen.dart';
-import 'analytics_screen.dart';
-import 'profile_screen.dart';
+import 'home/home_screen.dart';
+import 'cards/cards_screen.dart';
+import 'scan/scan_screen.dart';
+import 'analytics/analytics_screen.dart';
+import 'profile/profile_screen.dart';
 import '../services/bank_service.dart';
 import '../theme/aura_theme.dart';
 
@@ -38,7 +38,7 @@ class _AppShellState extends State<AppShell> {
     final screens = [
       HomeScreen(onNavigateTab: _onNavigateTab),
       const CardsScreen(),
-      const ScanScreen(),
+      ScanScreen(onBack: () => _onNavigateTab(0)),
       const AnalyticsScreen(),
       const ProfileScreen(),
     ];
@@ -84,8 +84,8 @@ class _AppShellState extends State<AppShell> {
               children: [
                 _buildNavItem(
                   index: 0,
-                  icon: Icons.account_balance_rounded,
-                  unselectedIcon: Icons.account_balance_outlined,
+                  icon: Icons.home_rounded,
+                  unselectedIcon: Icons.home_outlined,
                   label: 'Home',
                 ),
                 _buildNavItem(
@@ -199,15 +199,6 @@ class _AppShellState extends State<AppShell> {
                 fontSize: 10.5,
                 fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
                 color: isSelected ? brandViolet : textGray,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Container(
-              width: 3.5,
-              height: 3.5,
-              decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFF10B981) : Colors.transparent,
-                shape: BoxShape.circle,
               ),
             ),
           ],

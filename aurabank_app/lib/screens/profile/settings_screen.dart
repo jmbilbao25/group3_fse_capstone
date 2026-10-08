@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import '../services/bank_service.dart';
-import '../theme/aura_theme.dart';
-import '../widgets/aura_logo.dart';
+import '../../services/bank_service.dart';
+import '../../theme/aura_theme.dart';
+import '../../widgets/aura_logo.dart';
 import 'devices_sessions_screen.dart';
-import 'security_gate_screen.dart';
 import 'risk_showcase_screen.dart';
-import 'otp_verification_screen.dart';
-import 'login_screen.dart';
+import '../auth/security_gate_screen.dart';
+import '../auth/otp_verification_screen.dart';
+import '../auth/login_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -287,14 +287,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       title: 'Biometric Login (Face ID)',
                       subtitle: 'Unlock app instantly with Face ID',
                       value: user.faceIdEnabled,
-                      onChanged: (val) => setState(() => user.faceIdEnabled = val),
+                      onChanged: (val) {
+                        setState(() => user.faceIdEnabled = val);
+                        _bankService.setFaceIdEnabled(val);
+                      },
                     ),
                     const Divider(color: AuraColors.divider, height: 1),
                     _buildSwitchTile(
                       title: 'Biometric Login (Fingerprint)',
                       subtitle: 'Authenticate with Touch ID / Fingerprint',
                       value: user.fingerprintEnabled,
-                      onChanged: (val) => setState(() => user.fingerprintEnabled = val),
+                      onChanged: (val) {
+                        setState(() => user.fingerprintEnabled = val);
+                        _bankService.setFingerprintEnabled(val);
+                      },
                     ),
                     const Divider(color: AuraColors.divider, height: 1),
                     _buildNavTile(

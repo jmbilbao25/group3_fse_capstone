@@ -52,6 +52,7 @@ Every containerized service in the Docker Compose bridge network (`banking-net`)
   2. `TokenBlacklistFilter`: Queries Redis (`blacklist:jti:<jti>`) in sub-5ms; instantly blocks revoked tokens from logged-out users or frozen accounts.
   3. `RedisRateLimiter`: Token-bucket algorithm enforcing 100 requests/sec per IP to prevent brute-force attacks.
   4. `RouteConfiguration`:
+     - `/api/v1/bff/**` routes to `bff-service:8085` (presentation aggregation & drafts)
      - `/api/v1/auth/**` routes to `account-service:8081`
      - `/api/v1/accounts/**` routes to `account-service:8081`
      - `/api/v1/ledger/**` routes to `ledger-mutation-engine:8082`
@@ -74,11 +75,22 @@ Every containerized service in the Docker Compose bridge network (`banking-net`)
      - `POST /api/v1/accounts`: Generates unique account number, links to customer profile, creates initial `balance_master` record with `0.0000 PHP`.
      - `PATCH /api/v1/accounts/{id}/status`: Locks or closes accounts upon fraud flags.
    4. `BalanceInquiryService`:
-     - `GET /api/v1/accounts/{id}/balance`: Inspects Redis cache (`account:balance:<id>`). On cache miss, queries Oracle XE and writes to Redis with 30-second TTL.
+     - `GET /api/v1/accounts/{id}/balance`: Inspects Redis cache (`account:balance:<id>`). On cache miss, queries Azure SQL and writes to Redis with 30-second TTL.
 
 ---
 
-### D. Funds Transfer Orchestrator (`transfer-orchestrator` :8082)
+### D. Backend for Frontend (BFF) Service (`bff-service` :8085) & Dedicated BFF DB (`bff-postgres-db` :5433)
+- **Runtime**: Spring Boot 3, Spring WebClient, Spring Data JPA.
+- **Datasource**: Exclusively connected to **Dedicated BFF DB** (`bff-postgres-db` on port 5433 / PostgreSQL). Completely isolated from the CBS Master Database.
+- **Core Functions**:
+  1. `DraftTransferManager`: Saves in-progress transfer forms, multi-step stepper states, and unsubmitted payment drafts with zero lock impact on the CBS.
+  2. `ClientPreferenceService`: Stores customer UI themes, favorite beneficiaries, quick-transfer presets, and push notification configurations.
+  3. `SessionAndDeviceStore`: Validates client device fingerprints, web push tokens, and biometric public keys.
+  4. `PresentationAggregator`: Combines account profile summaries, transaction history caches, and pending draft statuses into low-latency composite JSON payloads for the frontend apps.
+
+---
+
+### E. Funds Transfer Orchestrator (`transfer-orchestrator` :8082)
 - **Runtime**: Spring Boot 3, Spring WebClient, Spring Kafka.
 - **Core Functions**:
   1. `PerimeterValidator`: Enforces `@Digits(integer=14, fraction=4)` and `@Positive` on mutation requests; intercepts malformed requests via `GlobalControllerAdvice` returning RFC-7807 Problem Details.
@@ -88,26 +100,29 @@ Every containerized service in the Docker Compose bridge network (`banking-net`)
      - Receives risk evaluation verdict (`ALLOW`, `2FA_CHALLENGE`, or `BLOCK`).
   4. `StepUpChallengeCoordinator`:
      - If risk evaluation mandates 2FA or transfer > PHP 50,000.00, coordinates with `notification-service` to deliver 6-digit OTP to the customer and verifies the OTP before proceeding.
-  5. `OfsMessageBuilder & T24 Dispatcher`:
-     - Converts validated JSON transfer request into standard Temenos Open Financial Services (OFS) syntax:
-       `FUNDS.TRANSFER,AUTH/I/PROCESS,//PH100223,TXN.REF=...,DEBIT.ACCT=...,CREDIT.ACCT=...,AMOUNT=...`
-     - Dispatches OFS message to Temenos T24 CBS via high-performance TCP / message queue socket.
-     - Parses OFS response (`TXN-XXXX//1/SUCCESS` or error code).
+  5. `T24 Dispatcher & Saga Compensation Coordinator`:
+     - **Funds Transfer (Endpoint 1)**: Converts validated transfer request into OFS syntax (`FUNDS.TRANSFER,AUTH/I/PROCESS`) and dispatches to `POST /api/v1/t24/funds-transfer`.
+     - **Compensating Reversal (Endpoint 2)**: Upon downstream timeout, circuit breaker abort, or notification failure, dispatches compensating reversal (`FUNDS.TRANSFER,REVERSE/I/PROCESS`) to `POST /api/v1/t24/reversal` with the original `TXN.REF` to restore debited customer balances immediately.
   6. `TransferEventProducer`:
-     - Publishes state change events to `banking.transfers.events` (`TransferExecuted`, `TransferPendingVerification`, `TransferFailed`).
+     - Publishes state change events to `banking.transfers.events` (`TransferExecuted`, `TransferPendingVerification`, `TransferFailed`, `TransferReversed`).
 
 ---
 
-### E. Temenos T24 Core Banking System (`temenos-t24-cbs` :9100)
+### F. Temenos T24 Core Banking System (`temenos-t24-cbs` :9100)
 - **Runtime**: Temenos T24 Core Banking System runtime / Enterprise CBS.
-- **Datasource**: Direct and main connection point to `azure-sql-db:1433`.
+- **Datasource**: Direct and exclusive connection point to `azure-sql-db:1433`.
+- **Dual Ingress Endpoints**:
+  1. **Endpoint 1: Funds Transfer (`POST /api/v1/t24/funds-transfer`)**:
+     - OFS command: `FUNDS.TRANSFER,AUTH/I/PROCESS,//PH100223,TXN.REF=...,DEBIT.ACCT=...,CREDIT.ACCT=...,AMOUNT=...`
+     - Validates balances, executes atomic debit and credit mutations, posts GL ledger lines, and records fee tariffs.
+  2. **Endpoint 2: Financial Reversal (`POST /api/v1/t24/reversal`)**:
+     - OFS command: `FUNDS.TRANSFER,REVERSE/I/PROCESS,//PH100223,TXN.REF=...,ORIGINAL.REF=...`
+     - Compensating transaction: restores debited funds, offsets recipient credits, and registers reversal audit trails.
 - **Core Functions**:
-  1. `OFS Ingestion Engine`: Listens on port 9100 for OFS financial strings, deserializes commands, and manages application locks.
-  2. `Double-Entry Balance Engine`: Primary owner of accounts, customer ledgers, and transaction postings in Azure SQL Database.
-  3. `End-of-Day (EOD) & Batch Processing`: Automated daily batch cycles, balance rollups, GL reconciliation, and statement generation.
-  4. `Fee Engine`: Computes and posts real-time and batch service fees, remittance tariffs, and transaction charges.
-  5. `Interest Engine`: Calculates interest accruals, periodic capitalization, and regulatory withholding tax.
-  6. `ACID Concurrency Kernel`: Acquires row-level pessimistic locks (`SELECT ... WITH (UPDLOCK, ROWLOCK)`) directly on Azure SQL tables.
+  1. `Double-Entry Balance Engine`: Primary owner of accounts, customer ledgers, and transaction postings in Azure SQL Database.
+  2. `End-of-Day (EOD) & Batch Processing`: Automated daily batch cycles, balance rollups, GL reconciliation, and statement generation.
+  3. `Fee & Interest Engines`: Computes real-time transfer tariffs, interest accruals, and regulatory withholding tax.
+  4. `ACID Concurrency Kernel`: Acquires row-level pessimistic locks (`SELECT ... WITH (UPDLOCK, ROWLOCK)`) directly on Azure SQL tables.
 
 ---
 
@@ -270,3 +285,42 @@ sequenceDiagram
         Kafka->>Notif: Notification Consumer dispatches HTML Email Receipt & Push
     end
 ```
+
+---
+
+## 3. Database Segregation Architecture: BFF Database vs CBS Master Database
+
+A core architectural principle of this system is the strict separation between the **BFF Presentation Database (`bff-postgres-db` :5433)** and the **CBS Master Ledger Database (`azure-sql-db` :1433)**:
+
+| Architectural Dimension | Dedicated BFF Database (`bff-postgres-db` :5433) | CBS Master Ledger Database (`azure-sql-db` :1433) |
+| :--- | :--- | :--- |
+| **Primary Owner** | `bff-service` (:8085) | `temenos-t24-cbs` (:9100) exclusively |
+| **Storage Engine** | PostgreSQL 16 (Lightweight Micro-DB) | Azure SQL Database (Relational ACID Kernel) |
+| **Data Scope** | Presentation state, transfer drafts, UI preferences, device tokens, composite caches | Core accounts, customer master ledgers, GL double-entry journals, EOD balances |
+| **Concurrency Model** | Optimistic, ephemeral, fast read/write with low lock contention | Strict row-level pessimistic locking (`UPDLOCK, ROWLOCK`), ACID serialization |
+| **SLA & Scaling** | Horizontally scalable with frontend pods; independent restart & schema evolution | Mission-critical core financial SLA; failover-protected, regulated double-entry |
+| **Blast Radius Isolation** | High-frequency client polling or draft form saves never consume CBS connections | Protected from client traffic spikes, mobile retries, and UI query loads |
+
+### Rationale & Benefits
+1. **Zero Contention on Master Balance Locks**: Client users frequently save draft transfers, browse beneficiary lists, and check UI settings. Executing these operations on the isolated BFF DB ensures that the Temenos T24 CBS balance mutation kernel never encounters lock contention from presentation-tier workloads.
+2. **Independent Lifecycle & Schema Evolution**: The presentation layer changes frequently as new mobile/web features are shipped. The BFF DB can evolve without requiring risk audits or regulatory schema migration reviews on the core banking system database.
+3. **Resilience & Offline Drafts**: If core CBS connectivity is degraded, customers can still prepare and stage transfer drafts in the BFF DB, which the orchestrator dispatches once connectivity resumes.
+
+---
+
+## 4. C1–C4 Architectural Hierarchy & Interactive Presentation Explorer
+
+The system is formalized across the C4 model hierarchy to facilitate presentations ranging from executive high-level overviews to low-level engineering execution flows:
+
+* **Interactive Presentation Navigator**: [`c_model_explorer.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c_model_explorer.html)
+  An interactive canvas that allows clicking any component node to smoothly zoom in from high-level C1 System Context down to C2 Containers, C3 Components, and C4 Sequence execution flows. Includes keyboard navigation (`1..4` to jump levels, `Esc` to zoom out), node inspection drawer, and instant theme switching.
+* **C1: System Context Diagram**: [`c1_system_context.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c1_system_context.html)
+  Depicts Retail Customers, Back-Office Ops, the Core Platform Boundary, Notification Gateways, and the external Temenos T24 CBS with its dual ingress capabilities.
+* **C2: Container Diagram**: [`c2_container.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c2_container.html)
+  Depicts all containerized deployment units, including Frontends, Gateway, BFF Service, Dedicated BFF Database (:5433), Orchestrator, T24 CBS (:9100), and CBS Master DB (:1433).
+* **C3: Component Diagram**: [`c3_component.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c3_component.html)
+  Exposes the internal code-level modules: BFF Draft Controller, State Repository, Saga Compensation Coordinator, T24 Transfer Client (EP1), T24 Reversal Client (EP2), and T24 Core Accounting Kernel.
+* **C4: Sequence / Flow Diagram**: [`c4_sequence.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c4_sequence.html)
+  Details the execution sequence of a fund transfer via T24 Endpoint 1, followed by a simulated downstream timeout that triggers an automated compensating reversal via T24 Endpoint 2.
+* **Full Primary System Architecture**: [`architecture.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/architecture.html)
+  The comprehensive showcase diagram compiled and verified under Archify v3.

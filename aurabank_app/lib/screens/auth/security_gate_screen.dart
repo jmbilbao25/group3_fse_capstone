@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../theme/aura_theme.dart';
-import 'app_shell.dart';
+import '../../theme/aura_theme.dart';
+import '../app_shell.dart';
 
 enum SecurityGateMode {
   gate0Scanning,

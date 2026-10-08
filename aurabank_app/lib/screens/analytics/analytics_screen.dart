@@ -1,7 +1,7 @@
+import '../../widgets/aura_logo.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../theme/aura_theme.dart';
-import '../widgets/aura_logo.dart';
+import '../../theme/aura_theme.dart';
 import 'statement_screen.dart';
 import 'annual_report_screen.dart';
 
@@ -1222,7 +1222,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
       case 4:
         return full.sublist(9, 12);
       default:
-        return full;
+        return full.length > 5 ? full.sublist(0, 5) : full;
     }
   }
 
@@ -1239,11 +1239,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
 
   String get _currentMonthName => _monthsCatalog[_selectedMonthOfYear].monthName;
 
-  String get _currentPeriodLabel {
-    if (_isMonthly) return _currentMonthName;
-    if (_selectedQuarterIndex == 0) return '$_selectedYear';
-    return 'Q$_selectedQuarterIndex $_selectedYear';
-  }
 
   // Grand totals
   double get _totalSentMonth {
@@ -1278,49 +1273,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     return sum;
   }
 
-  double get _totalSentPeriod {
-    if (_selectedQuarterIndex == 0 && _selectedYear == 2026) {
-      return 508000.0;
-    }
-    double sum = 0;
-    for (final m in _currentYearlyFilteredMonths) {
-      sum += m.sent;
-    }
-    return sum;
-  }
 
-  double get _totalReceivedPeriod {
-    if (_selectedQuarterIndex == 0 && _selectedYear == 2026) {
-      return 160000.0;
-    }
-    double sum = 0;
-    for (final m in _currentYearlyFilteredMonths) {
-      sum += m.received;
-    }
-    return sum;
-  }
 
-  int get _transfersOutPeriod {
-    if (_selectedQuarterIndex == 0 && _selectedYear == 2026) {
-      return 185;
-    }
-    int sum = 0;
-    for (final m in _currentYearlyFilteredMonths) {
-      sum += m.outTransfers;
-    }
-    return sum;
-  }
 
-  int get _transfersInPeriod {
-    if (_selectedQuarterIndex == 0 && _selectedYear == 2026) {
-      return 43;
-    }
-    int sum = 0;
-    for (final m in _currentYearlyFilteredMonths) {
-      sum += m.inTransfers;
-    }
-    return sum;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -1344,7 +1299,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                     ),
                     const SizedBox(width: 4),
                   ],
-                  const AuraLogo(size: 40, style: AuraLogoStyle.violet, borderRadius: 10),
+                  const AuraLogo(
+                    size: 40,
+                    style: AuraLogoStyle.violet,
+                    borderRadius: 10,
+                  ),
                   const SizedBox(width: 12),
                   const Text(
                     'Aura Bank',
@@ -1352,6 +1311,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: textDark,
+                      decoration: TextDecoration.underline,
                     ),
                   ),
                 ],
@@ -1365,8 +1325,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFF5E17EB), width: 1.5),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
                 child: Row(
                   children: [
@@ -1375,18 +1342,18 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                         onTap: () => _onToggleMode(true),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          padding: const EdgeInsets.symmetric(vertical: 8),
                           decoration: BoxDecoration(
-                            color: _isMonthly ? const Color(0xFFEDE9FE) : Colors.transparent,
-                            borderRadius: BorderRadius.circular(10),
+                            color: _isMonthly ? const Color(0xFFBEBEC4) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(16),
                           ),
                           child: Center(
                             child: Text(
                               'Monthly',
                               style: TextStyle(
-                                fontSize: 15,
+                                fontSize: 14,
                                 fontWeight: FontWeight.bold,
-                                color: _isMonthly ? brandViolet : textGray,
+                                color: _isMonthly ? const Color(0xFF380084) : const Color(0xFF9CA3AF),
                               ),
                             ),
                           ),
@@ -1398,18 +1365,18 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                         onTap: () => _onToggleMode(false),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          padding: const EdgeInsets.symmetric(vertical: 8),
                           decoration: BoxDecoration(
-                            color: !_isMonthly ? const Color(0xFFEDE9FE) : Colors.transparent,
-                            borderRadius: BorderRadius.circular(10),
+                            color: !_isMonthly ? const Color(0xFFBEBEC4) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(16),
                           ),
                           child: Center(
                             child: Text(
                               'Yearly',
                               style: TextStyle(
-                                fontSize: 15,
+                                fontSize: 14,
                                 fontWeight: FontWeight.bold,
-                                color: !_isMonthly ? brandViolet : textGray,
+                                color: !_isMonthly ? const Color(0xFF380084) : const Color(0xFF9CA3AF),
                               ),
                             ),
                           ),
@@ -1420,25 +1387,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 ),
               ),
 
-              // Mode-specific selector card:
-              // - Monthly Mode: Month Dropdown Selector
-              // - Yearly Mode: Fiscal Year & Quarter Filter Card
-              if (_isMonthly) ...[
-                const SizedBox(height: 14),
-                _buildMonthDropdownSelector(),
-              ] else ...[
-                const SizedBox(height: 14),
-                _buildYearAndQuarterFilterCard(),
-              ],
+              const SizedBox(height: 18),
 
-              const SizedBox(height: 16),
-
-              // Active filter pill indicator
-              _buildSelectionBanner(),
-
-              const SizedBox(height: 12),
-
-              // 3. KPI Cards: Total Sent & Total Received (Dynamic with selected week/month)
+              // 3. KPI Cards: Total Sent & Total Received
               _buildDynamicKpiCards(),
 
               const SizedBox(height: 18),
@@ -1448,13 +1399,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
 
               const SizedBox(height: 18),
 
-              // 5. Flow Cashflow Delta Card
-              _buildFlowBreakdownCard(),
-
-              const SizedBox(height: 18),
-
-              // 6. History Section (Monthly History vs Yearly Summaries)
-              _isMonthly ? _buildMonthlyHistorySection() : _buildYearlySummariesSection(),
+              // 5. History Section (Monthly History vs Yearly Summaries)
+              if (_isMonthly) ...[
+                _buildMonthlyHistorySection(),
+              ] else ...[
+                _buildYearlySummariesSection(),
+              ],
 
               const SizedBox(height: 24),
             ],
@@ -1464,337 +1414,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     );
   }
 
-  Widget _buildMonthDropdownSelector() {
-    final canGoPrev = _selectedMonthOfYear > 0;
-    final canGoNext = _selectedMonthOfYear < _monthsCatalog.length - 1;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFEDE9FE), width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: brandViolet.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Calendar Icon Badge in soft lavender
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF3E8FF),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.calendar_month_rounded, color: brandViolet, size: 20),
-          ),
-          const SizedBox(width: 12),
-          // Month Dropdown Trigger & Label
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'STATEMENT PERIOD',
-                  style: TextStyle(
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w800,
-                    color: brandViolet,
-                    letterSpacing: 0.6,
-                  ),
-                ),
-                const SizedBox(height: 1),
-                DropdownButtonHideUnderline(
-                  child: DropdownButton<int>(
-                    key: const ValueKey('monthDropdownButton'),
-                    value: _selectedMonthOfYear,
-                    isDense: true,
-                    icon: const Icon(Icons.keyboard_arrow_down_rounded, color: brandViolet, size: 22),
-                    dropdownColor: Colors.white,
-                    borderRadius: BorderRadius.circular(18),
-                    elevation: 8,
-                    style: const TextStyle(
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w800,
-                      color: textDark,
-                    ),
-                    items: List.generate(_monthsCatalog.length, (idx) {
-                      final item = _monthsCatalog[idx];
-                      final isSelected = idx == _selectedMonthOfYear;
-                      return DropdownMenuItem<int>(
-                        value: idx,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              item.monthName,
-                              style: TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                                color: isSelected ? brandViolet : textDark,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
-                              decoration: BoxDecoration(
-                                color: isSelected ? const Color(0xFFF3E8FF) : const Color(0xFFF9FAFB),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                  color: isSelected ? const Color(0xFFDDD6FE) : const Color(0xFFE5E7EB),
-                                  width: 0.8,
-                                ),
-                              ),
-                              child: Text(
-                                '${item.weeks.length} Weeks',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  color: isSelected ? brandViolet : textGray,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-                    onChanged: (newIdx) {
-                      if (newIdx != null) {
-                        _onSelectMonthOfYear(newIdx);
-                      }
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          // Micro Navigation Chevrons (< and >)
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                key: const ValueKey('prevMonthBtn'),
-                visualDensity: VisualDensity.compact,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                icon: Icon(
-                  Icons.chevron_left_rounded,
-                  size: 20,
-                  color: canGoPrev ? brandViolet : const Color(0xFFD1D5DB),
-                ),
-                onPressed: canGoPrev ? () => _onSelectMonthOfYear(_selectedMonthOfYear - 1) : null,
-              ),
-              const SizedBox(width: 2),
-              IconButton(
-                key: const ValueKey('nextMonthBtn'),
-                visualDensity: VisualDensity.compact,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                icon: Icon(
-                  Icons.chevron_right_rounded,
-                  size: 20,
-                  color: canGoNext ? brandViolet : const Color(0xFFD1D5DB),
-                ),
-                onPressed: canGoNext ? () => _onSelectMonthOfYear(_selectedMonthOfYear + 1) : null,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildYearAndQuarterFilterCard() {
-    final canGoPrevYear = _selectedYear > 2025;
-    final canGoNextYear = _selectedYear < 2026;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFEDE9FE), width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: brandViolet.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Row 1: Year selection with icon and quick-nav chevrons
-          Row(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF3E8FF),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.calendar_today_rounded, color: brandViolet, size: 18),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'FISCAL YEAR',
-                      style: TextStyle(
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w800,
-                        color: brandViolet,
-                        letterSpacing: 0.6,
-                      ),
-                    ),
-                    const SizedBox(height: 1),
-                    DropdownButtonHideUnderline(
-                      child: DropdownButton<int>(
-                        key: const ValueKey('yearDropdownButton'),
-                        value: _selectedYear,
-                        isDense: true,
-                        icon: const Icon(Icons.keyboard_arrow_down_rounded, color: brandViolet, size: 20),
-                        dropdownColor: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        elevation: 8,
-                        style: const TextStyle(
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w800,
-                          color: textDark,
-                        ),
-                        items: const [
-                          DropdownMenuItem<int>(
-                            value: 2026,
-                            child: Text(
-                              '2026 (Current)',
-                              style: TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w800,
-                                color: textDark,
-                              ),
-                            ),
-                          ),
-                          DropdownMenuItem<int>(
-                            value: 2025,
-                            child: Text(
-                              '2025 (Previous)',
-                              style: TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w700,
-                                color: textDark,
-                              ),
-                            ),
-                          ),
-                        ],
-                        onChanged: (newYear) {
-                          if (newYear != null) {
-                            _onSelectYear(newYear);
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              // Chevron buttons for Year navigation
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    key: const ValueKey('prevYearBtn'),
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                    icon: Icon(
-                      Icons.chevron_left_rounded,
-                      size: 20,
-                      color: canGoPrevYear ? brandViolet : const Color(0xFFD1D5DB),
-                    ),
-                    onPressed: canGoPrevYear ? () => _onSelectYear(2025) : null,
-                  ),
-                  const SizedBox(width: 2),
-                  IconButton(
-                    key: const ValueKey('nextYearBtn'),
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                    icon: Icon(
-                      Icons.chevron_right_rounded,
-                      size: 20,
-                      color: canGoNextYear ? brandViolet : const Color(0xFFD1D5DB),
-                    ),
-                    onPressed: canGoNextYear ? () => _onSelectYear(2026) : null,
-                  ),
-                ],
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 8),
-
-          // Subtle Divider
-          Container(
-            height: 1,
-            color: const Color(0xFFF3F4F6),
-          ),
-
-          const SizedBox(height: 8),
-
-          // Row 2: Quarter Filter segmented pill bar
-          Row(
-            children: [
-              const Text(
-                'QUARTER',
-                style: TextStyle(
-                  fontSize: 9.5,
-                  fontWeight: FontWeight.w800,
-                  color: textGray,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Container(
-                  height: 32,
-                  padding: const EdgeInsets.all(2.5),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF7F5FA),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFEDE9FE), width: 1.0),
-                  ),
-                  child: Row(
-                    children: [
-                      _buildQuarterPill(0, 'All'),
-                      _buildQuarterPill(1, 'Q1'),
-                      _buildQuarterPill(2, 'Q2'),
-                      _buildQuarterPill(3, 'Q3'),
-                      _buildQuarterPill(4, 'Q4'),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildQuarterPill(int index, String label) {
     final isSelected = _selectedQuarterIndex == index;
@@ -1832,62 +1452,175 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     );
   }
 
-  Widget _buildSelectionBanner() {
-    final active = _activePointData;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFAF7FF),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE9D5FF)),
-      ),
+
+  Widget _buildDynamicKpiCards() {
+    final sentTitle = _isMonthly ? 'Total Sent' : 'Total Sent ($_selectedYear)';
+    final sentAmount = _isMonthly ? _totalSentMonth : 508000.00;
+    final sentCount = _isMonthly ? '$_transfersOutMonth Transfers Out' : '185 Transfers Out';
+
+    final receivedTitle = _isMonthly ? 'Total Received' : 'Total Received ($_selectedYear)';
+    final receivedAmount = _isMonthly ? _totalReceivedMonth : 160000.00;
+    final receivedCount = _isMonthly ? '$_transfersInMonth Transfers In' : '43 Transfers In';
+
+    return IntrinsicHeight(
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Total Sent Card (Deep Solid Violet #380084)
           Expanded(
-            child: Row(
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: brandViolet,
-                    shape: BoxShape.circle,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF380084),
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF380084).withValues(alpha: 0.28),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _showAllTotals
-                        ? (_isMonthly
-                            ? 'Full Month Summary ($_currentMonthName)'
-                            : (_selectedQuarterIndex == 0
-                                ? 'Full Year Summary ($_selectedYear)'
-                                : 'Quarter $_selectedQuarterIndex Summary ($_selectedYear)'))
-                        : '${active.label} Selected (${active.dateSubtitle})',
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: brandViolet,
-                    ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        sentTitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'PHP ${_formatCurrency(sentAmount)}',
+                        style: const TextStyle(
+                          fontSize: 16.5,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 12),
+                      Container(
+                        height: 1,
+                        color: Colors.white.withValues(alpha: 0.25),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              sentCount,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontStyle: FontStyle.italic,
+                                color: Colors.white.withValues(alpha: 0.85),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.arrow_downward_rounded, color: Colors.white, size: 14),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: () {
-              setState(() => _showAllTotals = !_showAllTotals);
-            },
-            child: Text(
-              _showAllTotals ? 'Filter by Flow' : 'Show All',
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF7C3AED),
-                decoration: TextDecoration.underline,
+          const SizedBox(width: 14),
+          // Total Received Card (White with Purple Text)
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFFE5E7EB)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        receivedTitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF6B21A8),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'PHP ${_formatCurrency(receivedAmount)}',
+                        style: const TextStyle(
+                          fontSize: 16.5,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF380084),
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 12),
+                      Container(
+                        height: 1,
+                        color: const Color(0xFFE5E7EB),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              receivedCount,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontStyle: FontStyle.italic,
+                                color: Color(0xFF6B21A8),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.arrow_upward_rounded, color: Color(0xFF6B21A8), size: 14),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ),
@@ -1896,145 +1629,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     );
   }
 
-  Widget _buildDynamicKpiCards() {
-    final active = _activePointData;
-
-    final sentAmount = _showAllTotals
-        ? (_isMonthly ? _totalSentMonth : _totalSentPeriod)
-        : active.sent;
-    final sentCount = _showAllTotals
-        ? (_isMonthly ? _transfersOutMonth : _transfersOutPeriod)
-        : active.outTransfers;
-
-    final receivedAmount = _showAllTotals
-        ? (_isMonthly ? _totalReceivedMonth : _totalReceivedPeriod)
-        : active.received;
-    final receivedCount = _showAllTotals
-        ? (_isMonthly ? _transfersInMonth : _transfersInPeriod)
-        : active.inTransfers;
-
-    final sentTitle = _showAllTotals
-        ? (_isMonthly ? 'Total Sent' : 'Total Sent ($_currentPeriodLabel)')
-        : 'Sent (${active.shortLabel})';
-    final receivedTitle = _showAllTotals
-        ? (_isMonthly ? 'Total Received' : 'Total Received ($_currentPeriodLabel)')
-        : 'Received (${active.shortLabel})';
-
-    return Row(
-      children: [
-        // Total Sent Card (Deep Royal Violet)
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: brandViolet,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: brandViolet.withValues(alpha: 0.25),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  sentTitle,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.white70,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'PHP ${_formatCurrency(sentAmount)}',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '$sentCount Transfers Out',
-                      style: const TextStyle(fontSize: 10, color: Colors.white70),
-                    ),
-                    const Icon(Icons.arrow_downward, color: Colors.white, size: 14),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(width: 14),
-        // Total Received Card (White with Green Accents)
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE5E7EB)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  receivedTitle,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: textGray,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'PHP ${_formatCurrency(receivedAmount)}',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: textDark,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '$receivedCount Transfers In',
-                      style: const TextStyle(fontSize: 10, color: textGray),
-                    ),
-                    const Icon(Icons.arrow_upward, color: accentGreen, size: 14),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildInteractiveTransferFlowSection() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(color: const Color(0xFFE5E7EB)),
         boxShadow: [
           BoxShadow(
@@ -2051,41 +1652,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Flexible(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Flexible(
-                      child: Text(
-                        'Transfer Flow',
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: textDark,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEDE9FE),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Text(
-                        'Drag / Tap',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          color: brandViolet,
-                        ),
-                      ),
-                    ),
-                  ],
+              const Text(
+                'Transfer Flow',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF380084),
                 ),
               ),
-              const SizedBox(width: 8),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -2173,52 +1747,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: List.generate(weeks.length, (index) {
         final isSelected = _selectedWeekIndex == index;
-        return Expanded(
+        return GestureDetector(
+          onTap: () => _onSelectWeek(index),
+          behavior: HitTestBehavior.opaque,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2.0),
-            child: GestureDetector(
-              onTap: () => _onSelectWeek(index),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  color: isSelected ? brandViolet : const Color(0xFFF9FAFB),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: isSelected ? brandViolet : const Color(0xFFE5E7EB),
-                    width: isSelected ? 1.5 : 1.0,
-                  ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: brandViolet.withValues(alpha: 0.25),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      'Week ${index + 1}',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                        color: isSelected ? Colors.white : textDark,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Container(
-                      width: 4,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: isSelected ? accentGreen : Colors.transparent,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ],
-                ),
+            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 4.0),
+            child: Text(
+              'Week ${index + 1}',
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                color: isSelected ? const Color(0xFF380084) : const Color(0xFF9CA3AF),
               ),
             ),
           ),
@@ -2228,152 +1767,35 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   Widget _buildMonthClickablePills() {
-    final dataset = _currentYearlyFilteredMonths;
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
+    const months = ['January', 'February', 'March', 'April', 'May'];
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14.0),
       child: Row(
-        children: List.generate(dataset.length, (index) {
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: months.asMap().entries.map((entry) {
+          final index = entry.key;
+          final m = entry.value;
           final isSelected = _selectedMonthIndex == index;
-          final item = dataset[index];
-          return Padding(
-            padding: const EdgeInsets.only(right: 6.0),
-            child: GestureDetector(
-              onTap: () => _onSelectMonth(index),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isSelected ? brandViolet : const Color(0xFFF9FAFB),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: isSelected ? brandViolet : const Color(0xFFE5E7EB),
-                    width: isSelected ? 1.5 : 1.0,
-                  ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: brandViolet.withValues(alpha: 0.25),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      item.label,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                        color: isSelected ? Colors.white : textDark,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Container(
-                      width: 4,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: isSelected ? accentGreen : Colors.transparent,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ],
+          return GestureDetector(
+            onTap: () => _onSelectMonth(index),
+            behavior: HitTestBehavior.opaque,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4.0),
+              child: Text(
+                m,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                  color: isSelected ? const Color(0xFF380084) : const Color(0xFF9CA3AF),
                 ),
               ),
             ),
           );
-        }),
+        }).toList(),
       ),
     );
   }
 
-  Widget _buildFlowBreakdownCard() {
-    final active = _activePointData;
-    final isPositive = active.net >= 0;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFAF7FF),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE9D5FF)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: isPositive ? const Color(0xFFE8F8EE) : const Color(0xFFFEE2E2),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    isPositive ? Icons.trending_up_rounded : Icons.trending_down_rounded,
-                    color: isPositive ? accentGreen : const Color(0xFFDC2626),
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${active.label} Net Flow',
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: textDark,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        isPositive ? 'Surplus / Positive Cash In' : 'Deficit / High Outflow',
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: isPositive ? accentGreen : const Color(0xFFDC2626),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '${isPositive ? '+' : '-'} PHP ${_formatCurrency(active.net.abs())}',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  color: isPositive ? accentGreen : const Color(0xFFDC2626),
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                '${active.inTransfers} In • ${active.outTransfers} Out',
-                style: const TextStyle(fontSize: 10, color: textGray),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildLegendDot(Color color, String label) {
     return Row(
@@ -2393,20 +1815,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   Widget _buildMonthlyHistorySection() {
-    final active = _activePointData;
-    final txList = active.transactions;
-
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(color: const Color(0xFFE5E7EB)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
+            blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
@@ -2421,16 +1840,23 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Monthly History',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark),
-                    ),
-                    const SizedBox(height: 2),
+                  children: const [
                     Text(
-                      'Showing ${active.label} (${active.dateSubtitle})',
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 11, color: textGray),
+                      'Monthly History',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF380084),
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Transfers settled in October 2026',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF6B21A8),
+                      ),
                     ),
                   ],
                 ),
@@ -2446,13 +1872,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                   );
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: brandViolet,
-                    borderRadius: BorderRadius.circular(14),
+                    color: const Color(0xFF380084),
+                    borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: brandViolet.withValues(alpha: 0.3),
+                        color: const Color(0xFF380084).withValues(alpha: 0.3),
                         blurRadius: 6,
                         offset: const Offset(0, 2),
                       ),
@@ -2465,7 +1891,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                       color: Colors.white,
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      height: 1.1,
+                      height: 1.15,
                     ),
                   ),
                 ),
@@ -2473,56 +1899,76 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             ],
           ),
 
+          const SizedBox(height: 18),
+
+          // Date Group 1: October 14, 2026
+          const Text(
+            'October 14, 2026',
+            style: TextStyle(
+              fontSize: 12,
+              color: Color(0xFF9CA3AF),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 10),
+          _buildTransactionItem(
+            avatarBg: const Color(0xFF220055),
+            initial: 'D',
+            name: 'Drake Montefalco',
+            time: 'Today, 2:45 pm',
+            amount: '- Php 2,500.00',
+            status: 'COMPLETED',
+            statusColor: const Color(0xFF10B981),
+          ),
+          const SizedBox(height: 12),
+          _buildTransactionItem(
+            avatarBg: const Color(0xFFBA68C8),
+            initial: 'K',
+            name: 'Klare Riego',
+            time: 'Today, 1:45 pm',
+            amount: '+ Php 26,500.00',
+            status: 'RECEIVED',
+            statusColor: const Color(0xFF10B981),
+          ),
+
           const SizedBox(height: 16),
 
-          if (txList.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 20),
-              child: Center(
-                child: Text(
-                  'No transactions recorded for ${active.label}.',
-                  style: const TextStyle(fontSize: 12, color: textGray),
-                ),
-              ),
-            )
-          else ...[
-            Text(
-              active.dateSubtitle,
-              style: const TextStyle(fontSize: 12, color: textGray, fontWeight: FontWeight.w600),
+          // Date Group 2: October 03, 2026
+          const Text(
+            'October 03, 2026',
+            style: TextStyle(
+              fontSize: 12,
+              color: Color(0xFF9CA3AF),
+              fontWeight: FontWeight.w600,
             ),
-            const SizedBox(height: 10),
-            for (int i = 0; i < txList.length; i++) ...[
-              if (i > 0) const SizedBox(height: 12),
-              _buildTransactionItem(
-                avatarBg: txList[i].avatarBg,
-                initial: txList[i].initial,
-                name: txList[i].name,
-                time: txList[i].time,
-                amount: '${txList[i].isReceived ? '+' : '-'} Php ${_formatCurrency(txList[i].amount)}',
-                status: txList[i].status,
-                statusColor: txList[i].isReceived ? accentGreen : accentGreen,
-              ),
-            ],
-          ],
+          ),
+          const SizedBox(height: 10),
+          _buildTransactionItem(
+            avatarBg: const Color(0xFF7C4DFF),
+            initial: 'A',
+            name: 'Angel Lou',
+            time: 'Today, 2:45 pm',
+            amount: '- Php 2,500.00',
+            status: 'COMPLETED',
+            statusColor: const Color(0xFF10B981),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildYearlySummariesSection() {
-    final active = _activePointData;
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(color: const Color(0xFFE5E7EB)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
+            blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
@@ -2537,16 +1983,23 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Monthly Summaries',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark),
-                    ),
-                    const SizedBox(height: 2),
+                  children: const [
                     Text(
-                      'Highlighted: ${active.label} $_selectedYear',
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 11, color: textGray),
+                      'Monthly Summaries',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF380084),
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Quarterly disbursement (2026)',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF4A0E4E),
+                      ),
                     ),
                   ],
                 ),
@@ -2562,13 +2015,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                   );
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: brandViolet,
-                    borderRadius: BorderRadius.circular(14),
+                    color: const Color(0xFF380084),
+                    borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: brandViolet.withValues(alpha: 0.3),
+                        color: const Color(0xFF380084).withValues(alpha: 0.3),
                         blurRadius: 6,
                         offset: const Offset(0, 2),
                       ),
@@ -2591,87 +2044,59 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
 
           const SizedBox(height: 16),
 
-          // Active Month Highlight
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFAF7FF),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFD8B4FE)),
+          // Quarter 3
+          const Text(
+            'Quarter 3',
+            style: TextStyle(
+              fontSize: 12,
+              color: Color(0xFF9CA3AF),
+              fontWeight: FontWeight.w600,
             ),
-            child: _buildQuarterRow(
-              initial: active.shortLabel,
-              monthTitle: '${active.label} $_selectedYear (Selected)',
-              transfers: '${active.inTransfers + active.outTransfers} Transfers • + ${_formatCurrency(active.received)}',
-              gross: 'PHP ${_formatCurrency(active.sent)}',
-              net: '${active.net >= 0 ? '+' : '-'} PHP ${_formatCompactK(active.net.abs())} net',
-              avatarBg: brandViolet,
-            ),
+          ),
+          const SizedBox(height: 10),
+
+          _buildQuarterRow(
+            initial: 'Jul',
+            monthTitle: 'July 2026',
+            transfersText: '24 transfers • ',
+            greenAmount: '+ 55,000.00',
+            gross: 'PHP 42,000.00',
+            net: '+ PHP 26.5k net',
+            avatarBg: const Color(0xFF6200EA),
+          ),
+          const SizedBox(height: 10),
+          _buildQuarterRow(
+            initial: 'Aug',
+            monthTitle: 'August 2026',
+            transfersText: '19 Transfers • ',
+            greenAmount: '+ 39,000.00',
+            gross: 'PHP 38,200.00',
+            net: '+ PHP 13.8k net',
+            avatarBg: const Color(0xFF7C4DFF),
           ),
 
           const SizedBox(height: 16),
 
-          if (_selectedQuarterIndex == 0) ...[
-            const Text(
-              'Quarter 3',
-              style: TextStyle(fontSize: 12, color: textGray, fontWeight: FontWeight.w600),
+          // Quarter 2
+          const Text(
+            'Quarter 2',
+            style: TextStyle(
+              fontSize: 12,
+              color: Color(0xFF9CA3AF),
+              fontWeight: FontWeight.w600,
             ),
-            const SizedBox(height: 10),
+          ),
+          const SizedBox(height: 10),
 
-            _buildQuarterRow(
-              initial: 'Jul',
-              monthTitle: 'July $_selectedYear',
-              transfers: '24 transfers • + 38,000.00',
-              gross: 'PHP 42,000.00',
-              net: '+ PHP 25.5k net',
-              avatarBg: const Color(0xFF6200EA),
-            ),
-            const SizedBox(height: 10),
-            _buildQuarterRow(
-              initial: 'Aug',
-              monthTitle: 'August $_selectedYear',
-              transfers: '19 Transfers • + 38,000.00',
-              gross: 'PHP 38,200.00',
-              net: '+ PHP 13.8k net',
-              avatarBg: const Color(0xFF9C27B0),
-            ),
-
-            const SizedBox(height: 16),
-
-            const Text(
-              'Quarter 2',
-              style: TextStyle(fontSize: 12, color: textGray, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 10),
-
-            _buildQuarterRow(
-              initial: 'Jun',
-              monthTitle: 'June $_selectedYear',
-              transfers: '10 Transfers • + 38,000.00',
-              gross: 'PHP 50,000.00',
-              net: '+ PHP 15.2k net',
-              avatarBg: const Color(0xFFBA68C8),
-            ),
-          ] else ...[
-            Text(
-              'Quarter $_selectedQuarterIndex Overview ($_selectedYear)',
-              style: const TextStyle(fontSize: 12, color: textGray, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 10),
-            for (final m in _currentYearlyFilteredMonths) ...[
-              if (m != active) ...[
-                _buildQuarterRow(
-                  initial: m.shortLabel,
-                  monthTitle: '${m.label} $_selectedYear',
-                  transfers: '${m.inTransfers + m.outTransfers} Transfers • + ${_formatCurrency(m.received)}',
-                  gross: 'PHP ${_formatCurrency(m.sent)}',
-                  net: '${m.net >= 0 ? '+' : '-'} PHP ${_formatCompactK(m.net.abs())} net',
-                  avatarBg: const Color(0xFF6200EA),
-                ),
-                const SizedBox(height: 10),
-              ],
-            ],
-          ],
+          _buildQuarterRow(
+            initial: 'Jun',
+            monthTitle: 'June 2026',
+            transfersText: '10 Transfers • ',
+            greenAmount: '+ 32,000.00',
+            gross: 'PHP 50,000.00',
+            net: '+ PHP 15.2k net',
+            avatarBg: const Color(0xFFB388FF),
+          ),
         ],
       ),
     );
@@ -2680,7 +2105,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   Widget _buildQuarterRow({
     required String initial,
     required String monthTitle,
-    required String transfers,
+    required String transfersText,
+    required String greenAmount,
     required String gross,
     required String net,
     required Color avatarBg,
@@ -2696,7 +2122,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 backgroundColor: avatarBg,
                 child: Text(
                   initial,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -2707,12 +2137,30 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                     Text(
                       monthTitle,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: textDark),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13.5,
+                        color: textDark,
+                      ),
                     ),
-                    Text(
-                      transfers,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 11, color: textGray),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Text(
+                          transfersText,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 11, color: textGray),
+                        ),
+                        Text(
+                          greenAmount,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: accentGreen,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -2726,13 +2174,18 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           children: [
             Text(
               gross,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: textDark),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                color: textDark,
+              ),
             ),
+            const SizedBox(height: 2),
             Text(
               net,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 11,
-                color: net.startsWith('+') ? accentGreen : const Color(0xFFDC2626),
+                color: accentGreen,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -2886,11 +2339,9 @@ class _PointedTransferFlowPainter extends CustomPainter {
       violetPoints.add(Offset(x, yViolet));
     }
 
-    // Build path:
-    // For Monthly: draw clean straight pointed segments connecting the exact week vertices
-    // For Yearly: retain smooth spline across the 12 months
-    final greenPath = _buildPath(greenPoints, isMonthly: isMonthly);
-    final violetPath = _buildPath(violetPoints, isMonthly: isMonthly);
+    // Build smooth spline across points
+    final greenPath = _buildPath(greenPoints);
+    final violetPath = _buildPath(violetPoints);
 
     // 1. Draw subtle area gradients under curves
     final greenAreaPath = Path.from(greenPath)
@@ -2989,47 +2440,58 @@ class _PointedTransferFlowPainter extends CustomPainter {
     canvas.drawCircle(Offset(scrubX, scrubYViolet), 5.5, violetNodePaint);
     canvas.drawCircle(Offset(scrubX, scrubYViolet), 3.0, whiteInnerPaint);
 
-    // 7. Draw Floating Pointed Callout Badges
-    _drawPointedBadge(
-      canvas: canvas,
-      center: Offset(scrubX, scrubYGreen - 18),
-      text: '+${_formatCompactK(scrubValGreen)} In',
-      bgColor: const Color(0xFF059669),
-      pointDown: true,
-    );
+    // 7. Draw Floating Callout Text (+68.5k and -16.5k in Yearly mode, or active scrub in Monthly mode)
+    if (!isMonthly) {
+      final peakGreen = greenPoints.reduce((a, b) => a.dy < b.dy ? a : b);
+      final dipViolet = violetPoints.reduce((a, b) => a.dy > b.dy ? a : b);
 
-    _drawPointedBadge(
-      canvas: canvas,
-      center: Offset(scrubX, scrubYViolet + 18),
-      text: '-${_formatCompactK(scrubValViolet)} Out',
-      bgColor: const Color(0xFF220055),
-      pointDown: false,
-    );
+      _drawCalloutText(
+        canvas: canvas,
+        center: Offset(peakGreen.dx + 4, peakGreen.dy - 16),
+        text: '+68.5k',
+        color: const Color(0xFF16A34A),
+      );
+
+      _drawCalloutText(
+        canvas: canvas,
+        center: Offset(dipViolet.dx + 20, dipViolet.dy + 18),
+        text: '-16.5k',
+        color: const Color(0xFF6B21A8),
+      );
+    } else {
+      _drawCalloutText(
+        canvas: canvas,
+        center: Offset(scrubX, scrubYGreen - 18),
+        text: '+${_formatCompactK(scrubValGreen)}',
+        color: const Color(0xFF2ECC71),
+      );
+
+      _drawCalloutText(
+        canvas: canvas,
+        center: Offset(scrubX, scrubYViolet + 20),
+        text: '-${_formatCompactK(scrubValViolet)}',
+        color: const Color(0xFF5E17EB),
+      );
+    }
   }
 
-  Path _buildPath(List<Offset> points, {required bool isMonthly}) {
+  Path _buildPath(List<Offset> points) {
     final path = Path();
     if (points.isEmpty) return path;
     path.moveTo(points[0].dx, points[0].dy);
 
-    if (isMonthly) {
-      for (int i = 1; i < points.length; i++) {
-        path.lineTo(points[i].dx, points[i].dy);
-      }
-    } else {
-      for (int i = 0; i < points.length - 1; i++) {
-        final p0 = i > 0 ? points[i - 1] : points[i];
-        final p1 = points[i];
-        final p2 = points[i + 1];
-        final p3 = (i + 2 < points.length) ? points[i + 2] : p2;
+    for (int i = 0; i < points.length - 1; i++) {
+      final p0 = i > 0 ? points[i - 1] : points[i];
+      final p1 = points[i];
+      final p2 = points[i + 1];
+      final p3 = (i + 2 < points.length) ? points[i + 2] : p2;
 
-        final cp1x = p1.dx + (p2.dx - p0.dx) / 6;
-        final cp1y = p1.dy + (p2.dy - p0.dy) / 6;
-        final cp2x = p2.dx - (p3.dx - p1.dx) / 6;
-        final cp2y = p2.dy - (p3.dy - p1.dy) / 6;
+      final cp1x = p1.dx + (p2.dx - p0.dx) / 6;
+      final cp1y = p1.dy + (p2.dy - p0.dy) / 6;
+      final cp2x = p2.dx - (p3.dx - p1.dx) / 6;
+      final cp2y = p2.dy - (p3.dy - p1.dy) / 6;
 
-        path.cubicTo(cp1x, cp1y, cp2x, cp2y, p2.dx, p2.dy);
-      }
+      path.cubicTo(cp1x, cp1y, cp2x, cp2y, p2.dx, p2.dy);
     }
 
     return path;
@@ -3073,18 +2535,17 @@ class _PointedTransferFlowPainter extends CustomPainter {
     }
   }
 
-  void _drawPointedBadge({
+  void _drawCalloutText({
     required Canvas canvas,
     required Offset center,
     required String text,
-    required Color bgColor,
-    required bool pointDown,
+    required Color color,
   }) {
-    const textStyle = TextStyle(
-      color: Colors.white,
-      fontSize: 10,
+    final textStyle = TextStyle(
+      color: color,
+      fontSize: 13,
       fontWeight: FontWeight.w800,
-      letterSpacing: 0.2,
+      letterSpacing: -0.2,
     );
     final textSpan = TextSpan(text: text, style: textStyle);
     final textPainter = TextPainter(
@@ -3092,29 +2553,9 @@ class _PointedTransferFlowPainter extends CustomPainter {
       textDirection: TextDirection.ltr,
     )..layout();
 
-    const paddingH = 9.0;
-    const paddingV = 4.0;
-    final badgeW = textPainter.width + (2 * paddingH);
-    final badgeH = textPainter.height + (2 * paddingV);
-
-    final left = center.dx - (badgeW / 2);
-    final top = center.dy - (badgeH / 2);
-    final rrect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(left, top, badgeW, badgeH),
-      const Radius.circular(8),
-    );
-
-    canvas.drawRRect(rrect, Paint()..color = bgColor);
-
-    final borderPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.35)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
-    canvas.drawRRect(rrect, borderPaint);
-
     final textOffset = Offset(
-      left + paddingH,
-      top + paddingV,
+      center.dx - (textPainter.width / 2),
+      center.dy - (textPainter.height / 2),
     );
     textPainter.paint(canvas, textOffset);
   }

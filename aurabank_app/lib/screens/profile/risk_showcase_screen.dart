@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../theme/aura_theme.dart';
+import '../../theme/aura_theme.dart';
 
 enum ShowcaseScenario {
   allowed,

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/bank_models.dart';
+import '../../models/bank_models.dart';
 
 class CardDetailsScreen extends StatelessWidget {
   final BankCard card;

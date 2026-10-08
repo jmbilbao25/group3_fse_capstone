@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'app_shell.dart';
+import '../app_shell.dart';
 
 /// Custom Face ID Icon Widget matching the Aura Bank biometric design
 class FaceIdIcon extends StatelessWidget {

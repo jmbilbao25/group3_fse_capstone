@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../services/bank_service.dart';
-import '../theme/aura_theme.dart';
+import '../../services/bank_service.dart';
+import '../../theme/aura_theme.dart';
 import 'receipt_screen.dart';
 
 class ReviewTransferScreen extends StatefulWidget {

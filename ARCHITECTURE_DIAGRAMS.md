@@ -1,40 +1,60 @@
 # Architecture Diagrams: Retail Ledger & Balance Mutation Engine
 
-This document provides visual architectural models for the retail banking platform. It includes system context, container topology, component internals, dual-storage pipelines, and state machines.
+This document provides visual architectural models for the retail banking platform. It formalizes the system across the C4 model hierarchy (Context, Container, Component, and Sequence) and documents the dual-endpoint Temenos T24 Core Banking System (CBS) integration and dedicated BFF database segregation.
+
+Interactive standalone HTML diagrams:
+* Interactive C1–C4 Zoom-in Explorer: [`c_model_explorer.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c_model_explorer.html)
+* C1 System Context Diagram: [`c1_system_context.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c1_system_context.html)
+* C2 Container Diagram: [`c2_container.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c2_container.html)
+* C3 Component Diagram: [`c3_component.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c3_component.html)
+* C4 Sequence Diagram: [`c4_sequence.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/c4_sequence.html)
+* Primary System Showcase: [`architecture.html`](file:///c:/Users/JLB83807/The%20Vault/workspaces/FSE-Capstone/architecture.html)
 
 ---
 
 ## 1. System Context Diagram (C4 Level 1)
 
-The system context diagram shows the core banking platform, user personas, and external third-party integration boundaries.
+The system context diagram shows the core banking platform, user personas, external clearing networks, and the core Temenos T24 CBS with dual endpoints.
 
 ```mermaid
 flowchart TD
     subgraph Users["User Personas"]
-        Customer["Retail Customer<br/>(Web & Mobile Browser)"]
-        Teller["Bank Teller / Operator<br/>(Maker-Checker Reviewer)"]
-        Admin["Compliance Admin<br/>(KYC & Account Provisioner)"]
-        Auditor["Regulatory Auditor<br/>(Immutable Log Inspector)"]
+        Customer["Retail Customer<br/>(Web & Mobile Apps)"]
+        Teller["Back-Office Operator<br/>(Telemetry & Audit Inspector)"]
+        Admin["Compliance Admin<br/>(KYC & Policy Officer)"]
     end
 
-    subgraph BankingSystem["Retail Ledger & Balance Mutation Engine"]
-        CorePlatform["Core Banking Platform<br/>(Docker Container Network: banking-net)"]
+    subgraph BankingSystem["Retail Banking Platform Boundary"]
+        CorePlatform["FSE Retail Banking Platform<br/>(Gateway, BFF, Account Svc, Transfer Orchestrator)"]
+        BFFStore[("Dedicated BFF Database<br/>PostgreSQL :5433<br/>(Drafts, UI state, device tokens)")]
+        CorePlatform <-->|"Persists drafts & preferences"| BFFStore
     end
 
-    subgraph ExternalSystems["External Systems & Service Providers"]
-        ClearingHouse["External Clearing Network<br/>(InstaPay / PESONet)"]
-        NotificationProviders["SMS & Email Gateways<br/>(Twilio / SendGrid)"]
-        CreditBureau["Credit Bureau & Collateral Services"]
+    subgraph CoreBanking["Core Banking System (CBS)"]
+        T24CBS["Temenos T24 Core Banking System<br/>(Port :9100)"]
+        T24_EP1["Endpoint 1: Funds Transfer<br/>POST /api/v1/t24/funds-transfer<br/>(OFS FUNDS.TRANSFER,AUTH)"]
+        T24_EP2["Endpoint 2: Reversal<br/>POST /api/v1/t24/reversal<br/>(OFS FUNDS.TRANSFER,REVERSE)"]
+        CBS_DB[("CBS Master Ledger DB<br/>Azure SQL Database :1433<br/>(Pessimistic balance locks)")]
+
+        T24CBS --- T24_EP1
+        T24CBS --- T24_EP2
+        T24CBS <-->|"ACID postings & lock engine"| CBS_DB
     end
 
-    Customer -->|"Manages accounts, views balances,<br/>initiates funds transfers (HTTPS)"| CorePlatform
-    Teller -->|"Reviews high-value transfers > 10M PHP,<br/>approves or rejects transactions (HTTPS)"| CorePlatform
-    Admin -->|"Verifies customer KYC profiles,<br/>provisions bank accounts (HTTPS)"| CorePlatform
-    Auditor -->|"Queries append-only audit trail<br/>for compliance audits (HTTPS)"| CorePlatform
+    subgraph ExternalSystems["External Integration Providers"]
+        ClearingHouse["Inter-bank Clearing Network<br/>(InstaPay / PESONet)"]
+        NotificationProviders["Email / SMS Gateways<br/>(MailHog / SendGrid / Twilio)"]
+    end
 
-    CorePlatform -->|"Dispatches inter-bank settlements"| ClearingHouse
-    CorePlatform -->|"Sends transaction alerts & receipts"| NotificationProviders
-    CorePlatform -->|"Verifies credit records & collateral"| CreditBureau
+    Customer -->|"Submits transfer drafts & executes payments (HTTPS)"| CorePlatform
+    Teller -->|"Monitors real-time telemetry & traces (HTTPS)"| CorePlatform
+    Admin -->|"Reviews compliance & KYC audits (HTTPS)"| CorePlatform
+
+    CorePlatform -->|"1. Dispatches debit/credit settlement"| T24_EP1
+    CorePlatform -->|"2. Dispatches compensating reversal on failure"| T24_EP2
+
+    CorePlatform -->|"Routes external settlements"| ClearingHouse
+    CorePlatform -->|"Sends 2FA OTP codes & HTML transaction receipts"| NotificationProviders
 ```
 
 ---
@@ -46,7 +66,7 @@ All containers run inside the dedicated Docker Compose bridge network (`banking-
 ```mermaid
 flowchart TD
     subgraph ClientTier["Presentation Tier"]
-        ClientSPA["banking-frontend<br/>React 19, TypeScript, Vite<br/>Host: :3000 | Container: :80"]
+        ClientSPA["banking-frontend<br/>React 18, TypeScript, Vite<br/>Host: :3000 | Container: :80"]
     end
 
     subgraph PerimeterTier["Perimeter Security & Routing Tier"]
@@ -54,49 +74,59 @@ flowchart TD
         Redis["redis-cache<br/>Redis 7 Alpine<br/>Host: :6379 | Container: :6379"]
     end
 
+    subgraph BFFTier["Backend for Frontend Tier"]
+        BFFSvc["bff-service<br/>Spring Boot 3 WebFlux<br/>Host: :8085 | Container: :8085"]
+        BFFDB[("bff-postgres-db<br/>PostgreSQL 16 Alpine<br/>Host: :5433 | Container: :5432<br/>(Dedicated Draft & UI Store)")]
+    end
+
     subgraph ServiceTier["Application Microservices Tier"]
         AccountSvc["account-service<br/>Spring Boot 3, Spring Data JPA<br/>Host: :8081 | Container: :8081"]
-        LedgerEngine["ledger-mutation-engine<br/>Spring Boot 3, Concurrency Kernel<br/>Host: :8082 | Container: :8082"]
+        Orchestrator["transfer-orchestrator<br/>Spring Boot 3, Saga Engine<br/>Host: :8082 | Container: :8082"]
         NotifSvc["notification-service<br/>Spring Boot 3, Kafka Consumer<br/>Host: :8083 | Container: :8083"]
     end
 
-    subgraph StorageTier["Persistence & Data Tier"]
-        OracleDB[("oracle-xe-master<br/>Oracle Database 21c XE<br/>Host: :1521 | Container: :1521")]
-        PostgresAudit[("postgres-audit-vault<br/>PostgreSQL 16 Alpine<br/>Host: :5432 | Container: :5432")]
+    subgraph CBSTier["Temenos T24 Core Banking System (:9100)"]
+        T24CBS["temenos-t24-cbs<br/>Dual-Endpoint Core Banking Kernel"]
+        T24EP1["EP1: /api/v1/t24/funds-transfer<br/>(Settlement)"]
+        T24EP2["EP2: /api/v1/t24/reversal<br/>(Compensation)"]
+        T24CBS --- T24EP1
+        T24CBS --- T24EP2
+    end
+
+    subgraph StorageTier["Persistence & Ledger Data Tier"]
+        AzureSQL[("azure-sql-db<br/>Azure SQL Database<br/>Host: :1433 | Port: :1433<br/>(CBS Master Ledger DB)")]
+        AzurePostgres[("azure-postgres-vault<br/>PostgreSQL 16 Alpine<br/>Host: :5432 | Port: :5432<br/>(Immutable Audit Vault)")]
     end
 
     subgraph MessagingTier["Event Streaming Tier"]
         Kafka["kafka-broker<br/>Apache Kafka 3.7+ (KRaft)<br/>Host: :9092 | Container: :9092"]
-        KafkaUI["kafka-ui<br/>Kafka Web Console<br/>Host: :8085 | Container: :8080"]
+        MailHog["mailhog-smtp<br/>Mock SMTP & Web Inbox<br/>Host: :8025 / :1025"]
     end
 
-    subgraph ObservabilityTier["Telemetry & Observability Tier"]
-        Datadog["dd-agent<br/>Datadog Agent 7<br/>Host: :8126 (APM) | :8125 (StatsD)"]
-    end
+    ClientSPA -->|"HTTPS / REST Bearer JWT"| Gateway
 
-    ClientSPA -->|"HTTPS / REST<br/>Bearer JWT"| Gateway
+    Gateway -->|"Blacklist checks & rate limiting"| Redis
+    Gateway -->|"Route /api/v1/bff/**"| BFFSvc
+    Gateway -->|"Route /api/v1/auth/**, /accounts/**"| AccountSvc
+    Gateway -->|"Route /api/v1/transfers/**"| Orchestrator
 
-    Gateway -->|"Blacklist checks & rate limiting<br/>(sub-5ms RESP)"| Redis
-    Gateway -->|"Route /api/v1/auth/**<br/>Route /api/v1/accounts/**<br/>Route /api/v1/kyc/**"| AccountSvc
-    Gateway -->|"Route /api/v1/ledger/**<br/>Route /api/v1/transfers/**"| LedgerEngine
+    BFFSvc <-->|"Draft forms, UI preferences (Port 5433)"| BFFDB
+    BFFSvc -->|"Submits validated transfer payload"| Orchestrator
 
     AccountSvc -->|"Read-cache & RTR token families"| Redis
-    AccountSvc -->|"JPA / SQL (Port 1521)<br/>users, accounts, balance_master"| OracleDB
+    AccountSvc -->|"Customer credentials & KYC"| AzurePostgres
 
-    LedgerEngine -->|"Idempotency locks & cache eviction"| Redis
-    LedgerEngine -->|"Pessimistic row locks & outbox<br/>SELECT FOR UPDATE (Port 1521)"| OracleDB
-    LedgerEngine -->|"Publish command & event partitions<br/>(PLAINTEXT Port 9092)"| Kafka
+    Orchestrator -->|"Idempotency keys (SET NX EX)"| Redis
+    Orchestrator -->|"1. Funds Transfer (OFS AUTH)"| T24EP1
+    Orchestrator -->|"2. Reversal on Failure (OFS REVERSE)"| T24EP2
+    Orchestrator -->|"Publish transfer state events"| Kafka
 
-    Kafka -->|"Consume transfer commands<br/>(Partitioned by source_account_id)"| LedgerEngine
-    Kafka -->|"Consume transfer events<br/>(audit-vault-workers)"| PostgresAudit
-    Kafka -->|"Consume transfer events<br/>(notification-workers)"| NotifSvc
+    T24CBS <-->|"Row locks (UPDLOCK, ROWLOCK)"| AzureSQL
 
-    KafkaUI -->|"Topic & partition monitoring"| Kafka
+    Kafka -->|"Consume transfer events"| NotifSvc
+    Kafka -->|"Consume transfer events"| AzurePostgres
 
-    AccountSvc -->|"APM traces & DogStatsD metrics"| Datadog
-    LedgerEngine -->|"APM traces & DogStatsD metrics"| Datadog
-    Gateway -->|"APM traces & DogStatsD metrics"| Datadog
-    NotifSvc -->|"APM traces & DogStatsD metrics"| Datadog
+    NotifSvc -->|"Deliver 2FA OTP & HTML receipts"| MailHog
 ```
 
 ---

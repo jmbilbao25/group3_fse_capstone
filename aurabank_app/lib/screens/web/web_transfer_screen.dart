@@ -78,12 +78,27 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
     },
   ];
 
-  static const List<String> _purposes = [
-    'Remittance',
-    'Funds Transfer',
-    'Bills Payment',
-    'Savings & Stash',
-    'Payroll / Allowance',
+  static const List<Map<String, dynamic>> _purposes = [
+    {
+      'title': 'Remittance',
+      'subtitle': 'Family support & personal remittance',
+      'icon': Icons.send_rounded,
+    },
+    {
+      'title': 'Funds Transfer',
+      'subtitle': 'General fund & account movement',
+      'icon': Icons.swap_horiz_rounded,
+    },
+    {
+      'title': 'Bills Payment',
+      'subtitle': 'Utilities, dues & merchant checkout',
+      'icon': Icons.receipt_long_rounded,
+    },
+    {
+      'title': 'Savings',
+      'subtitle': 'Personal stash & emergency reserve',
+      'icon': Icons.account_balance_rounded,
+    },
   ];
 
   @override
@@ -1083,7 +1098,7 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
                         ),
                         const SizedBox(height: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
                             color: bgSurface,
                             borderRadius: BorderRadius.circular(10),
@@ -1093,26 +1108,98 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
                             child: DropdownButton<String>(
                               value: _selectedPurpose,
                               isExpanded: true,
+                              itemHeight: 64,
                               icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: Color(0xFF6B7280)),
                               items: _purposes.map((p) {
-                                return DropdownMenuItem(
-                                  value: p,
+                                final title = p['title'] as String;
+                                final subtitle = p['subtitle'] as String;
+                                final icon = p['icon'] as IconData;
+
+                                return DropdownMenuItem<String>(
+                                  value: title,
                                   child: Row(
                                     children: [
-                                      const Icon(Icons.send_rounded, size: 14, color: brandViolet),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        p,
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600,
-                                          color: Color(0xFF111827),
+                                      Container(
+                                        width: 36,
+                                        height: 36,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFFAF5FF),
+                                          borderRadius: BorderRadius.circular(10),
+                                          border: Border.all(color: const Color(0xFFF3E8FF)),
+                                        ),
+                                        child: Icon(
+                                          icon,
+                                          size: 18,
+                                          color: brandViolet,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              title,
+                                              style: const TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w700,
+                                                color: Color(0xFF111827),
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 1),
+                                            Text(
+                                              subtitle,
+                                              style: const TextStyle(
+                                                fontSize: 10.5,
+                                                fontWeight: FontWeight.w400,
+                                                color: Color(0xFF6B7280),
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ],
                                   ),
                                 );
                               }).toList(),
+                              selectedItemBuilder: (context) {
+                                return _purposes.map((p) {
+                                  final title = p['title'] as String;
+                                  final icon = p['icon'] as IconData;
+                                  return Row(
+                                    children: [
+                                      Container(
+                                        width: 28,
+                                        height: 28,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFFAF5FF),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Icon(
+                                          icon,
+                                          size: 16,
+                                          color: brandViolet,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          title,
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w700,
+                                            color: Color(0xFF111827),
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                }).toList();
+                              },
                               onChanged: (val) {
                                 if (val != null) setState(() => _selectedPurpose = val);
                               },

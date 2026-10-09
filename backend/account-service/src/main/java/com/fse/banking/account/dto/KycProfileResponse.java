@@ -45,6 +45,12 @@ public class KycProfileResponse {
     @JsonProperty("status")
     private String status;
 
+    @JsonProperty("kyc_status")
+    private String kycStatus;
+
+    @JsonProperty("kyc_review_reason")
+    private String kycReviewReason;
+
     @JsonProperty("created_at")
     private Instant createdAt;
 }

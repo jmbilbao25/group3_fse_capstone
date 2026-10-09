@@ -133,10 +133,17 @@ class _AppShellState extends State<AppShell> {
           ),
         ),
       ),
-      bottomNavigationBar: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 540),
-          child: _buildLuxuryBottomBar(),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Center(
+          heightFactor: 1.0,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 540),
+            child: SizedBox(
+              height: 66 + MediaQuery.of(context).padding.bottom,
+              child: _buildLuxuryBottomBar(),
+            ),
+          ),
         ),
       ),
     );

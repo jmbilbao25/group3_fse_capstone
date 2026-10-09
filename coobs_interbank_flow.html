@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="generator" content="Interactive Architecture Diagram">
   <meta name="diagram-reader-contract" content="declared-wide-v1">
-  <title>Inter-Bank Funds Transfer: Aura Bank &amp; CooBS Settlement Architecture Diagram</title>
+  <title>Bilateral Inter-Bank Settlement Flow: Aura Bank and CooBS Diagram</title>
   <script>
     // Resolve the theme before first paint so light-preference users don't
     // see a dark flash. The toolbar script below re-applies with UI state.
@@ -5043,7 +5043,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
            data-preset-badge-blueprint="BLUEPRINT / REV 01"
            data-preset-badge-editorial="EDITORIAL / FIELD NOTE">
         <div class="pulse-dot"></div>
-        <h1>Inter-Bank Funds Transfer: Aura Bank &amp; CooBS Settlement Architecture</h1>
+        <h1>Bilateral Inter-Bank Settlement Flow: Aura Bank and CooBS</h1>
       </div>
     </div>
 
@@ -5052,8 +5052,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     <!-- Main Diagram -->
     <div class="diagram-container" data-detail-level="read"
          data-preset-badge-editorial-plate="PLATE 04">
-      <svg viewBox="0 0 1770 528" role="img" aria-label="Inter-Bank Funds Transfer: Aura Bank &amp; CooBS Settlement Architecture" lang="en" data-preset="classic" data-quality-profile="standard" data-reader-fit="intrinsic-height" data-reader-min-text="7.5" data-reader-primary-text="14">
-        <desc id="diagram-description">An architecture diagram.</desc>
+      <svg viewBox="0 0 1180 800" data-sequence-column-fit="spread" role="img" aria-label="Bilateral Inter-Bank Settlement Flow: Aura Bank and CooBS" lang="en" data-animation="trace" data-preset="classic" data-quality-profile="standard">
+        <desc id="diagram-description">A sequence diagram.</desc>
         <!-- Definitions -->
         <defs>
           <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
@@ -5076,363 +5076,269 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <!-- Background Grid -->
         <rect width="100%" height="100%" fill="url(#grid)" />
 
-        <!-- Boundaries (behind everything) -->
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="0" data-composition-frame-label="AuraBank Platform Perimeter (Our Bank - Group 3)" x="10" y="110" width="750" height="350" rx="12" class="c-region" stroke-width="1"/>
+        <!-- Time Segments -->
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="segment" data-composition-frame-id="0" x="48" y="140" width="1084" height="275" rx="10" class="c-lane" stroke-width="1"/>
 
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="security-group" data-composition-frame-id="1" data-composition-frame-label="Inter-Bank Clearing &amp; Bilateral Settlement Corridor" x="806.283855667742" y="110" width="367.432288664516" height="292" rx="8" class="c-security-group" stroke-width="1"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="segment" data-composition-frame-id="1" x="48" y="435" width="1084" height="275" rx="10" class="c-lane" stroke-width="1"/>
 
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="2" data-composition-frame-label="CooBS Platform Perimeter (Coo Banking System)" x="1230" y="110" width="500" height="292" rx="12" class="c-region" stroke-width="1"/>
+        <!-- Lifelines -->
+        <path d="M 138 142 L 138 735" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
+        <path d="M 323.2 142 L 323.2 735" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
+        <path d="M 508.4 142 L 508.4 735" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
+        <path d="M 693.5999999999999 142 L 693.5999999999999 735" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
+        <path d="M 878.8 142 L 878.8 735" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
+        <path d="M 1064 142 L 1064 735" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
 
-        <!-- Connection paths (before components for correct z-order) -->
-        <g data-graph-role="automatic-crossover" style="--step:0">
-          <path data-graph-role="automatic-crossover-underlay" d="M 200 172 L 290 172" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="aura_client" data-edge-to="aura_gateway" data-edge-label="HTTPS :443" data-edge-key="0" data-edge-id="client-to-gateway" data-composition-points="200,172;290,172" data-composition-crossover="halo" data-composition-independent="true" d="M 200 172 L 290 172" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <!-- Activations -->
+        <rect x="318.2" y="160" width="10" height="250" rx="3" class="c-mask"/>
+        <rect x="318.2" y="160" width="10" height="250" rx="3" class="c-backend" stroke-width="1"/>
+        <rect x="503.4" y="190" width="10" height="40" rx="3" class="c-mask"/>
+        <rect x="503.4" y="190" width="10" height="40" rx="3" class="c-database" stroke-width="1"/>
+        <rect x="873.8" y="250" width="10" height="130" rx="3" class="c-mask"/>
+        <rect x="873.8" y="250" width="10" height="130" rx="3" class="c-backend" stroke-width="1"/>
+        <rect x="688.5999999999999" y="280" width="10" height="70" rx="3" class="c-mask"/>
+        <rect x="688.5999999999999" y="280" width="10" height="70" rx="3" class="c-database" stroke-width="1"/>
+        <rect x="873.8" y="455" width="10" height="250" rx="3" class="c-mask"/>
+        <rect x="873.8" y="455" width="10" height="250" rx="3" class="c-backend" stroke-width="1"/>
+        <rect x="688.5999999999999" y="485" width="10" height="40" rx="3" class="c-mask"/>
+        <rect x="688.5999999999999" y="485" width="10" height="40" rx="3" class="c-database" stroke-width="1"/>
+        <rect x="318.2" y="545" width="10" height="130" rx="3" class="c-mask"/>
+        <rect x="318.2" y="545" width="10" height="130" rx="3" class="c-backend" stroke-width="1"/>
+        <rect x="503.4" y="575" width="10" height="70" rx="3" class="c-mask"/>
+        <rect x="503.4" y="575" width="10" height="70" rx="3" class="c-database" stroke-width="1"/>
+
+        <!-- Messages -->
+        <g data-edge-from="alice" data-edge-to="aura_gw" data-edge-label="POST /api/v1/transfers (Send 1,000 PHP to Bob at CooBS)" data-edge-key="0" data-edge-id="m1">
+          <path data-composition-edge-from="alice" data-composition-edge-to="aura_gw" data-composition-edge-id="m1" data-composition-points="145,165;316.2,165" d="M 145 165 L 316.2 165" class="a-emphasis" data-animate="edge" style="--step:0" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <g data-detail="context">
+          <rect x="81.6" y="145" width="298" height="16" rx="3" class="c-mask"/>
+          <text x="230.6" y="155" class="t-edge-emphasis" font-size="9" text-anchor="middle">POST /api/v1/transfers (Send 1,000 PHP to Bob at CooBS)</text>
         </g>
-        <g data-graph-role="automatic-crossover" style="--step:1">
-          <path data-graph-role="automatic-crossover-underlay" d="M 450 167.95 L 560 167.95" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="aura_gateway" data-edge-to="aura_orchestrator" data-edge-label="POST /transfers" data-edge-key="1" data-edge-id="gateway-to-orch" data-composition-points="450,167.95;560,167.95" data-composition-crossover="halo" data-composition-independent="true" d="M 450 167.95 L 560 167.95" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        </g>
-        <g data-graph-role="automatic-crossover" style="--step:2">
-          <path data-graph-role="automatic-crossover-underlay" d="M 560 183 L 544 183 Q 536 183 536 191 L 536 278 Q 536 286 528 286 L 403 286 Q 395 286 395 294 L 395 310" fill="none" stroke="var(--mask)" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="aura_orchestrator" data-edge-to="aura_t24" data-edge-label="Leg 1: Debit -&gt; Nostro" data-edge-key="2" data-edge-id="orch-to-t24-ft" data-composition-points="560,183;536,183;536,286;395,286;395,310" data-composition-crossover="halo" data-composition-independent="true" d="M 560 183 L 544 183 Q 536 183 536 191 L 536 278 Q 536 286 528 286 L 403 286 Q 395 286 395 294 L 395 310" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        </g>
-        <g data-graph-role="automatic-crossover" style="--step:3">
-          <path data-graph-role="automatic-crossover-underlay" d="M 638 212 L 638 259 Q 638 267 630 267 L 512 267 Q 504 267 504 275 L 504 338 Q 504 346 496 346 L 480 346" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="aura_orchestrator" data-edge-to="aura_t24" data-edge-label="Saga Reversal" data-edge-key="3" data-edge-id="orch-to-t24-rev" data-composition-points="638,212;638,267;504,267;504,346;480,346" data-composition-crossover="halo" data-composition-independent="true" d="M 638 212 L 638 259 Q 638 267 630 267 L 512 267 Q 504 267 504 275 L 504 338 Q 504 346 496 346 L 480 346" class="a-security" stroke-width="1.5" marker-end="url(#arrowhead-security)"/>
-        </g>
-        <g data-graph-role="automatic-crossover" style="--step:4">
-          <path data-graph-role="automatic-crossover-underlay" d="M 310 346 L 190 346" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="aura_t24" data-edge-to="aura_db" data-edge-label="ACID row lock" data-edge-key="4" data-edge-id="t24-to-db" data-composition-points="310,346;190,346" data-composition-crossover="halo" data-composition-independent="true" d="M 310 346 L 190 346" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        </g>
-        <g data-graph-role="automatic-crossover" style="--step:5">
-          <path data-graph-role="automatic-crossover-underlay" d="M 730 176 L 900 176" fill="none" stroke="var(--mask)" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="aura_orchestrator" data-edge-to="interbank_wire" data-edge-label="Leg 2: Outward Wire (HTTP)" data-edge-key="5" data-edge-id="orch-to-wire" data-composition-points="730,176;900,176" data-composition-crossover="halo" data-composition-independent="true" d="M 730 176 L 900 176" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        </g>
-        <g data-graph-role="automatic-crossover" style="--step:6">
-          <path data-graph-role="automatic-crossover-underlay" d="M 990 212 L 990 310" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="interbank_wire" data-edge-to="settlement_model" data-edge-label="Nostro/Vostro Sync" data-edge-key="6" data-edge-id="wire-to-settlement" data-composition-points="990,212;990,310" data-composition-crossover="halo" data-composition-independent="true" d="M 990 212 L 990 310" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        </g>
-        <g data-graph-role="automatic-crossover" style="--step:7">
-          <path data-graph-role="automatic-crossover-underlay" d="M 1080 176 L 1096 176 Q 1104 176 1104 184 L 1104 184 Q 1104 192 1112 192 L 1228 192 Q 1236 192 1236 184 L 1236 180 Q 1236 172 1244 172 L 1260 172" fill="none" stroke="var(--mask)" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="interbank_wire" data-edge-to="partner_gateway" data-edge-label="HTTP Inward Wire" data-edge-key="7" data-edge-id="wire-to-partner-gw" data-composition-points="1080,176;1104,176;1104,192;1236,192;1236,172;1260,172" data-composition-crossover="halo" data-composition-independent="true" d="M 1080 176 L 1096 176 Q 1104 176 1104 184 L 1104 184 Q 1104 192 1112 192 L 1228 192 Q 1236 192 1236 184 L 1236 180 Q 1236 172 1244 172 L 1260 172" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        </g>
-        <g data-graph-role="automatic-crossover" style="--step:8">
-          <path data-graph-role="automatic-crossover-underlay" d="M 1420 172 L 1436 172 Q 1444 172 1444 180 L 1444 184 Q 1444 192 1452 192 L 1498 192 Q 1506 192 1506 184 L 1506 184 Q 1506 176 1514 176 L 1530 176" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="partner_gateway" data-edge-to="partner_orchestrator" data-edge-label="Dispatch Wire" data-edge-key="8" data-edge-id="partner-gw-to-orch" data-composition-points="1420,172;1444,172;1444,192;1506,192;1506,176;1530,176" data-composition-crossover="halo" data-composition-independent="true" d="M 1420 172 L 1436 172 Q 1444 172 1444 180 L 1444 184 Q 1444 192 1452 192 L 1498 192 Q 1506 192 1506 184 L 1506 184 Q 1506 176 1514 176 L 1530 176" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        </g>
-        <g data-graph-role="automatic-crossover" style="--step:9">
-          <path data-graph-role="automatic-crossover-underlay" d="M 1615 212 L 1615 310" fill="none" stroke="var(--mask)" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="partner_orchestrator" data-edge-to="partner_t24" data-edge-label="Leg 3: Debit Vostro -&gt; Credit Bob" data-edge-key="9" data-edge-id="partner-orch-to-t24" data-composition-points="1615,212;1615,310" data-composition-crossover="halo" data-composition-independent="true" d="M 1615 212 L 1615 310" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        </g>
-        <g data-graph-role="automatic-crossover" style="--step:10">
-          <path data-graph-role="automatic-crossover-underlay" d="M 1530 346 L 1410 346" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="partner_t24" data-edge-to="partner_db" data-edge-label="Commit Balance" data-edge-key="10" data-edge-id="partner-t24-to-db" data-composition-points="1530,346;1410,346" data-composition-crossover="halo" data-composition-independent="true" d="M 1530 346 L 1410 346" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        </g>
-        <g data-graph-role="automatic-crossover" style="--step:11">
-          <path data-graph-role="automatic-crossover-underlay" d="M 652 212 L 652 270" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="aura_orchestrator" data-edge-to="aura_kafka" data-edge-label="outbox events" data-edge-key="11" data-edge-id="orch-to-kafka" data-composition-points="652,212;652,270" data-composition-crossover="halo" data-composition-independent="true" d="M 652 212 L 652 270" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        </g>
-        <g data-graph-role="automatic-crossover" style="--step:12">
-          <path data-graph-role="automatic-crossover-underlay" d="M 645 330 L 645 380" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="aura_kafka" data-edge-to="aura_audit" data-edge-label="audit stream" data-edge-key="12" data-edge-id="kafka-to-audit" data-composition-points="645,330;645,380" data-composition-crossover="halo" data-composition-independent="true" d="M 645 330 L 645 380" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
         </g>
 
-        <!-- Components -->
-        <g id="node-aura_client" data-node-id="aura_client" data-node-label="AuraBank Channels" tabindex="0" role="button" aria-label="Focus AuraBank Channels, Flutter Mobile &amp; Web :3000, AuraBank Platform Perimeter (Our Bank - Group 3)" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="Flutter Mobile &amp; Web :3000" data-node-tag="Customer Inter-Bank UI" data-node-context="AuraBank Platform Perimeter (Our Bank - Group 3)">
+        <g data-edge-from="aura_gw" data-edge-to="aura_ledger" data-edge-label="Debit Alice 1,000 PHP / Credit ACC-SETTLE-COOBS" data-edge-key="1" data-edge-id="m2">
+          <path data-composition-edge-from="aura_gw" data-composition-edge-to="aura_ledger" data-composition-edge-id="m2" data-composition-points="330.2,195;501.4,195" d="M 330.2 195 L 501.4 195" class="a-emphasis" data-animate="edge" style="--step:1" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <g data-detail="context">
+          <rect x="287.59999999999997" y="175" width="256.4" height="16" rx="3" class="c-mask"/>
+          <text x="415.79999999999995" y="185" class="t-edge-emphasis" font-size="9" text-anchor="middle">Debit Alice 1,000 PHP / Credit ACC-SETTLE-COOBS</text>
+        </g>
+        </g>
+
+        <g data-edge-from="aura_ledger" data-edge-to="aura_gw" data-edge-label="200 OK (Aura Local Settlement Committed)" data-edge-key="2" data-edge-id="m3">
+          <path data-composition-edge-from="aura_ledger" data-composition-edge-to="aura_gw" data-composition-edge-id="m3" data-composition-points="501.4,225;330.2,225" d="M 501.4 225 L 330.2 225" class="a-default" data-animate="edge" style="--step:2" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
+        <g data-detail="context">
+          <rect x="305.79999999999995" y="205" width="220" height="16" rx="3" class="c-mask"/>
+          <text x="415.79999999999995" y="215" class="t-muted" font-size="9" text-anchor="middle">200 OK (Aura Local Settlement Committed)</text>
+        </g>
+        </g>
+
+        <g data-edge-from="aura_gw" data-edge-to="coobs_gw" data-edge-label="POST /api/v1/interbank/transfers/inbound (Ref: TXN-AURA-1001)" data-edge-key="3" data-edge-id="m4">
+          <path data-composition-edge-from="aura_gw" data-composition-edge-to="coobs_gw" data-composition-edge-id="m4" data-composition-points="330.2,255;871.8,255" d="M 330.2 255 L 871.8 255" class="a-emphasis" data-animate="edge" style="--step:3" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <g data-detail="context">
+          <rect x="436.4" y="235" width="329.2" height="16" rx="3" class="c-mask"/>
+          <text x="601" y="245" class="t-edge-emphasis" font-size="9" text-anchor="middle">POST /api/v1/interbank/transfers/inbound (Ref: TXN-AURA-1001)</text>
+        </g>
+        </g>
+
+        <g data-edge-from="coobs_gw" data-edge-to="coobs_ledger" data-edge-label="Debit ACC-SETTLE-AURA / Credit Bob 1,000 PHP" data-edge-key="4" data-edge-id="m5">
+          <path data-composition-edge-from="coobs_gw" data-composition-edge-to="coobs_ledger" data-composition-edge-id="m5" data-composition-points="871.8,285;700.5999999999999,285" d="M 871.8 285 L 700.5999999999999 285" class="a-emphasis" data-animate="edge" style="--step:4" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <g data-detail="context">
+          <rect x="665.8" y="265" width="240.8" height="16" rx="3" class="c-mask"/>
+          <text x="786.1999999999999" y="275" class="t-edge-emphasis" font-size="9" text-anchor="middle">Debit ACC-SETTLE-AURA / Credit Bob 1,000 PHP</text>
+        </g>
+        </g>
+
+        <g data-edge-from="coobs_ledger" data-edge-to="bob" data-edge-label="Push Notification (+1,000.00 PHP from Alice)" data-edge-key="5" data-edge-id="m6">
+          <path data-composition-edge-from="coobs_ledger" data-composition-edge-to="bob" data-composition-edge-id="m6" data-composition-points="700.5999999999999,315;1057,315" d="M 700.5999999999999 315 L 1057 315" class="a-default" data-animate="edge" style="--step:5" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <g data-detail="context">
+          <rect x="758.4" y="295" width="240.8" height="16" rx="3" class="c-mask"/>
+          <text x="878.8" y="305" class="t-muted" font-size="9" text-anchor="middle">Push Notification (+1,000.00 PHP from Alice)</text>
+        </g>
+        </g>
+
+        <g data-edge-from="coobs_ledger" data-edge-to="coobs_gw" data-edge-label="200 OK (Bob Account Credited)" data-edge-key="6" data-edge-id="m7">
+          <path data-composition-edge-from="coobs_ledger" data-composition-edge-to="coobs_gw" data-composition-edge-id="m7" data-composition-points="700.5999999999999,345;871.8,345" d="M 700.5999999999999 345 L 871.8 345" class="a-default" data-animate="edge" style="--step:6" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
+        <g data-detail="context">
+          <rect x="704.8" y="325" width="162.8" height="16" rx="3" class="c-mask"/>
+          <text x="786.1999999999999" y="335" class="t-muted" font-size="9" text-anchor="middle">200 OK (Bob Account Credited)</text>
+        </g>
+        </g>
+
+        <g data-edge-from="coobs_gw" data-edge-to="aura_gw" data-edge-label="200 OK (status: SUCCESS, ref: TXN-AURA-1001)" data-edge-key="7" data-edge-id="m8">
+          <path data-composition-edge-from="coobs_gw" data-composition-edge-to="aura_gw" data-composition-edge-id="m8" data-composition-points="871.8,375;330.2,375" d="M 871.8 375 L 330.2 375" class="a-default" data-animate="edge" style="--step:7" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
+        <g data-detail="context">
+          <rect x="480.6" y="355" width="240.8" height="16" rx="3" class="c-mask"/>
+          <text x="601" y="365" class="t-muted" font-size="9" text-anchor="middle">200 OK (status: SUCCESS, ref: TXN-AURA-1001)</text>
+        </g>
+        </g>
+
+        <g data-edge-from="aura_gw" data-edge-to="alice" data-edge-label="200 OK (Transfer Complete: 1,000 PHP sent)" data-edge-key="8" data-edge-id="m9">
+          <path data-composition-edge-from="aura_gw" data-composition-edge-to="alice" data-composition-edge-id="m9" data-composition-points="316.2,405;145,405" d="M 316.2 405 L 145 405" class="a-default" data-animate="edge" style="--step:8" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
+        <g data-detail="context">
+          <rect x="115.39999999999999" y="385" width="230.4" height="16" rx="3" class="c-mask"/>
+          <text x="230.6" y="395" class="t-muted" font-size="9" text-anchor="middle">200 OK (Transfer Complete: 1,000 PHP sent)</text>
+        </g>
+        </g>
+
+        <g data-edge-from="bob" data-edge-to="coobs_gw" data-edge-label="POST /api/v1/transfers (Send 1,000 PHP to Alice at Aura Bank)" data-edge-key="9" data-edge-id="m10">
+          <path data-composition-edge-from="bob" data-composition-edge-to="coobs_gw" data-composition-edge-id="m10" data-composition-points="1057,460;885.8,460" d="M 1057 460 L 885.8 460" class="a-emphasis" data-animate="edge" style="--step:9" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <g data-detail="context">
+          <rect x="806.8" y="440" width="329.2" height="16" rx="3" class="c-mask"/>
+          <text x="971.4" y="450" class="t-edge-emphasis" font-size="9" text-anchor="middle">POST /api/v1/transfers (Send 1,000 PHP to Alice at Aura Bank)</text>
+        </g>
+        </g>
+
+        <g data-edge-from="coobs_gw" data-edge-to="coobs_ledger" data-edge-label="Debit Bob 1,000 PHP / Credit ACC-SETTLE-AURA" data-edge-key="10" data-edge-id="m11">
+          <path data-composition-edge-from="coobs_gw" data-composition-edge-to="coobs_ledger" data-composition-edge-id="m11" data-composition-points="871.8,490;700.5999999999999,490" d="M 871.8 490 L 700.5999999999999 490" class="a-emphasis" data-animate="edge" style="--step:10" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <g data-detail="context">
+          <rect x="665.8" y="470" width="240.8" height="16" rx="3" class="c-mask"/>
+          <text x="786.1999999999999" y="480" class="t-edge-emphasis" font-size="9" text-anchor="middle">Debit Bob 1,000 PHP / Credit ACC-SETTLE-AURA</text>
+        </g>
+        </g>
+
+        <g data-edge-from="coobs_ledger" data-edge-to="coobs_gw" data-edge-label="200 OK (CooBS Local Settlement Committed)" data-edge-key="11" data-edge-id="m12">
+          <path data-composition-edge-from="coobs_ledger" data-composition-edge-to="coobs_gw" data-composition-edge-id="m12" data-composition-points="700.5999999999999,520;871.8,520" d="M 700.5999999999999 520 L 871.8 520" class="a-default" data-animate="edge" style="--step:11" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
+        <g data-detail="context">
+          <rect x="673.5999999999999" y="500" width="225.20000000000002" height="16" rx="3" class="c-mask"/>
+          <text x="786.1999999999999" y="510" class="t-muted" font-size="9" text-anchor="middle">200 OK (CooBS Local Settlement Committed)</text>
+        </g>
+        </g>
+
+        <g data-edge-from="coobs_gw" data-edge-to="aura_gw" data-edge-label="POST /api/v1/interbank/transfers/inbound (Ref: TXN-COOBS-2002)" data-edge-key="12" data-edge-id="m13">
+          <path data-composition-edge-from="coobs_gw" data-composition-edge-to="aura_gw" data-composition-edge-id="m13" data-composition-points="871.8,550;330.2,550" d="M 871.8 550 L 330.2 550" class="a-emphasis" data-animate="edge" style="--step:12" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <g data-detail="context">
+          <rect x="433.79999999999995" y="530" width="334.40000000000003" height="16" rx="3" class="c-mask"/>
+          <text x="601" y="540" class="t-edge-emphasis" font-size="9" text-anchor="middle">POST /api/v1/interbank/transfers/inbound (Ref: TXN-COOBS-2002)</text>
+        </g>
+        </g>
+
+        <g data-edge-from="aura_gw" data-edge-to="aura_ledger" data-edge-label="Debit ACC-SETTLE-COOBS / Credit Alice 1,000 PHP" data-edge-key="13" data-edge-id="m14">
+          <path data-composition-edge-from="aura_gw" data-composition-edge-to="aura_ledger" data-composition-edge-id="m14" data-composition-points="330.2,580;501.4,580" d="M 330.2 580 L 501.4 580" class="a-emphasis" data-animate="edge" style="--step:12" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <g data-detail="context">
+          <rect x="287.59999999999997" y="560" width="256.4" height="16" rx="3" class="c-mask"/>
+          <text x="415.79999999999995" y="570" class="t-edge-emphasis" font-size="9" text-anchor="middle">Debit ACC-SETTLE-COOBS / Credit Alice 1,000 PHP</text>
+        </g>
+        </g>
+
+        <g data-edge-from="aura_ledger" data-edge-to="alice" data-edge-label="Push Notification (+1,000.00 PHP from Bob)" data-edge-key="14" data-edge-id="m15">
+          <path data-composition-edge-from="aura_ledger" data-composition-edge-to="alice" data-composition-edge-id="m15" data-composition-points="501.4,610;145,610" d="M 501.4 610 L 145 610" class="a-default" data-animate="edge" style="--step:12" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <g data-detail="context">
+          <rect x="208" y="590" width="230.4" height="16" rx="3" class="c-mask"/>
+          <text x="323.2" y="600" class="t-muted" font-size="9" text-anchor="middle">Push Notification (+1,000.00 PHP from Bob)</text>
+        </g>
+        </g>
+
+        <g data-edge-from="aura_ledger" data-edge-to="aura_gw" data-edge-label="200 OK (Alice Account Credited)" data-edge-key="15" data-edge-id="m16">
+          <path data-composition-edge-from="aura_ledger" data-composition-edge-to="aura_gw" data-composition-edge-id="m16" data-composition-points="501.4,640;330.2,640" d="M 501.4 640 L 330.2 640" class="a-default" data-animate="edge" style="--step:12" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
+        <g data-detail="context">
+          <rect x="329.19999999999993" y="620" width="173.20000000000002" height="16" rx="3" class="c-mask"/>
+          <text x="415.79999999999995" y="630" class="t-muted" font-size="9" text-anchor="middle">200 OK (Alice Account Credited)</text>
+        </g>
+        </g>
+
+        <g data-edge-from="aura_gw" data-edge-to="coobs_gw" data-edge-label="200 OK (status: SUCCESS, ref: TXN-COOBS-2002)" data-edge-key="16" data-edge-id="m17">
+          <path data-composition-edge-from="aura_gw" data-composition-edge-to="coobs_gw" data-composition-edge-id="m17" data-composition-points="330.2,670;871.8,670" d="M 330.2 670 L 871.8 670" class="a-default" data-animate="edge" style="--step:12" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
+        <g data-detail="context">
+          <rect x="478" y="650" width="246" height="16" rx="3" class="c-mask"/>
+          <text x="601" y="660" class="t-muted" font-size="9" text-anchor="middle">200 OK (status: SUCCESS, ref: TXN-COOBS-2002)</text>
+        </g>
+        </g>
+
+        <g data-edge-from="coobs_gw" data-edge-to="bob" data-edge-label="200 OK (Transfer Complete: 1,000 PHP sent)" data-edge-key="17" data-edge-id="m18">
+          <path data-composition-edge-from="coobs_gw" data-composition-edge-to="bob" data-composition-edge-id="m18" data-composition-points="885.8,700;1057,700" d="M 885.8 700 L 1057 700" class="a-default" data-animate="edge" style="--step:12" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
+        <g data-detail="context">
+          <rect x="856.1999999999999" y="680" width="230.4" height="16" rx="3" class="c-mask"/>
+          <text x="971.4" y="690" class="t-muted" font-size="9" text-anchor="middle">200 OK (Transfer Complete: 1,000 PHP sent)</text>
+        </g>
+        </g>
+
+        <!-- Segment Labels -->
+        <g data-graph-role="segment-label" data-segment-id="0">
+          <rect x="56" y="118" width="305.2" height="18" rx="3" class="c-mask"/>
+          <text x="62" y="131" class="t-dim" font-size="9" font-weight="600">Leg 1: Aura Bank to CooBS (Alice sends 1,000 PHP to Bob)</text>
+        </g>
+        <g data-graph-role="segment-label" data-segment-id="1">
+          <rect x="56" y="413" width="305.2" height="18" rx="3" class="c-mask"/>
+          <text x="62" y="426" class="t-dim" font-size="9" font-weight="600">Leg 2: CooBS to Aura Bank (Bob sends 1,000 PHP to Alice)</text>
+        </g>
+
+        <!-- Participants -->
+        <g id="node-alice" data-node-id="alice" data-node-label="Alice" tabindex="0" role="button" aria-label="Focus Alice, Aura Client, Sequence participant" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="Aura Client" data-node-context="Sequence participant">
           
-          <rect x="40" y="140" width="160" height="64" rx="6" class="c-mask"/>
-          <rect x="40" y="140" width="160" height="64" rx="6" class="c-frontend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(46 146) scale(0.6875)">
+          <rect x="62" y="72" width="152" height="60" rx="6" class="c-mask"/>
+          <rect x="62" y="72" width="152" height="60" rx="6" class="c-frontend" data-animate="node" style="--step:0" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(68 78) scale(0.6875)">
             <rect x="2" y="3" width="12" height="10" rx="2"/>
             <path d="M2 6.5h12"/>
             <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"/>
             <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="120" y="170" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">AuraBank Channels</text>
-        <text data-detail="context" x="120" y="186" class="t-muted" font-size="9" text-anchor="middle">Flutter Mobile &amp; Web :3000</text>
-        <text data-detail="fine" x="120" y="196" class="t-frontend" font-size="7" text-anchor="middle">Customer Inter-Bank UI</text>
+          <text data-node-label="" data-detail-anchor="" x="138" y="108" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Alice</text>
+          <text data-detail="context" x="138" y="122" class="t-muted" font-size="7" text-anchor="middle">Aura Client</text>
         </g>
 
-        <g id="node-aura_gateway" data-node-id="aura_gateway" data-node-label="API Gateway" tabindex="0" role="button" aria-label="Focus API Gateway, Spring Cloud :8080, AuraBank Platform Perimeter (Our Bank - Group 3), Spring" aria-pressed="false" data-node-kind="security" data-node-sublabel="Spring Cloud :8080" data-node-tag="JWT &amp; Rate Limiter" data-node-context="AuraBank Platform Perimeter (Our Bank - Group 3)" data-node-brand="Spring" data-node-brand-id="spring" data-node-brand-status="preset" data-node-brand-source="https://spring.io/trademarks">
+        <g id="node-aura_gw" data-node-id="aura_gw" data-node-label="Aura Gateway" tabindex="0" role="button" aria-label="Focus Aura Gateway, Wire API :8080, Sequence participant" aria-pressed="false" data-node-kind="backend" data-node-sublabel="Wire API :8080" data-node-context="Sequence participant">
           
-          <rect x="290" y="140" width="160" height="64" rx="6" class="c-mask"/>
-          <rect x="290" y="140" width="160" height="64" rx="6" class="c-security" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(296 146) scale(0.6875)">
-            <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
-            <path d="m5.8 8 1.5 1.5 3-3"/>
-          </g>
-          <g aria-hidden="true" data-brand-mark="spring" data-brand-title="Spring" data-brand-status="preset" data-brand-source="https://spring.io/trademarks" class="brand-mark" transform="translate(428 146)">
-            <rect width="16" height="16" rx="4" class="brand-mark-badge"/>
-            <path d="M21.8537 1.4158a10.4504 10.4504 0 0 1-1.284 2.2471A11.9666 11.9666 0 1 0 3.8518 20.7757l.4445.3951a11.9543 11.9543 0 0 0 19.6316-8.2971c.3457-3.0126-.568-6.8649-2.0743-11.458zM5.5805 20.8745a1.0174 1.0174 0 1 1-.1482-1.4323 1.0396 1.0396 0 0 1 .1482 1.4323zm16.1991-3.5806c-2.9385 3.9263-9.2601 2.5928-13.2852 2.7904 0 0-.7161.0494-1.4323.1481 0 0 .2717-.1234.6174-.2469 2.8398-.9877 4.1732-1.1853 5.9018-2.0743 3.2349-1.6545 6.4698-5.2844 7.1118-9.0379-1.2347 3.6053-4.9881 6.7167-8.3959 7.9761-2.3459.8643-6.5685 1.7039-6.5685 1.7039l-.1729-.0988c-2.8645-1.4076-2.9632-7.6304 2.2718-9.6306 2.2966-.889 4.4696-.395 6.9637-.9877 2.6422-.6174 5.7043-2.5929 6.939-5.1857 1.3828 4.1732 3.062 10.643.0493 14.6434z" transform="translate(3 3) scale(0.4166666666666667)" fill="#6DB33F"/>
-            <rect width="16" height="16" rx="4" class="brand-mark-frame"/>
-          </g>
-          <text data-node-label="" data-detail-anchor="" x="370" y="170" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">API Gateway</text>
-        <text data-detail="context" x="370" y="186" class="t-muted" font-size="9" text-anchor="middle">Spring Cloud :8080</text>
-        <text data-detail="fine" x="370" y="196" class="t-security" font-size="7" text-anchor="middle">JWT &amp; Rate Limiter</text>
-        </g>
-
-        <g id="node-aura_orchestrator" data-node-id="aura_orchestrator" data-node-label="Transfer Orchestrator" tabindex="0" role="button" aria-label="Focus Transfer Orchestrator, Spring Boot :8082, AuraBank Platform Perimeter (Our Bank - Group 3), Spring" aria-pressed="false" data-node-kind="backend" data-node-sublabel="Spring Boot :8082" data-node-tag="Saga Inter-Bank Coordinator" data-node-context="AuraBank Platform Perimeter (Our Bank - Group 3)" data-node-brand="Spring" data-node-brand-id="spring" data-node-brand-status="preset" data-node-brand-source="https://spring.io/trademarks">
-          
-          <rect x="560" y="140" width="170" height="72" rx="6" class="c-mask"/>
-          <rect x="560" y="140" width="170" height="72" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(566 146) scale(0.6875)">
+          <rect x="247.2" y="72" width="152" height="60" rx="6" class="c-mask"/>
+          <rect x="247.2" y="72" width="152" height="60" rx="6" class="c-backend" data-animate="node" style="--step:1" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(253.2 78) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <g aria-hidden="true" data-brand-mark="spring" data-brand-title="Spring" data-brand-status="preset" data-brand-source="https://spring.io/trademarks" class="brand-mark" transform="translate(708 146)">
-            <rect width="16" height="16" rx="4" class="brand-mark-badge"/>
-            <path d="M21.8537 1.4158a10.4504 10.4504 0 0 1-1.284 2.2471A11.9666 11.9666 0 1 0 3.8518 20.7757l.4445.3951a11.9543 11.9543 0 0 0 19.6316-8.2971c.3457-3.0126-.568-6.8649-2.0743-11.458zM5.5805 20.8745a1.0174 1.0174 0 1 1-.1482-1.4323 1.0396 1.0396 0 0 1 .1482 1.4323zm16.1991-3.5806c-2.9385 3.9263-9.2601 2.5928-13.2852 2.7904 0 0-.7161.0494-1.4323.1481 0 0 .2717-.1234.6174-.2469 2.8398-.9877 4.1732-1.1853 5.9018-2.0743 3.2349-1.6545 6.4698-5.2844 7.1118-9.0379-1.2347 3.6053-4.9881 6.7167-8.3959 7.9761-2.3459.8643-6.5685 1.7039-6.5685 1.7039l-.1729-.0988c-2.8645-1.4076-2.9632-7.6304 2.2718-9.6306 2.2966-.889 4.4696-.395 6.9637-.9877 2.6422-.6174 5.7043-2.5929 6.939-5.1857 1.3828 4.1732 3.062 10.643.0493 14.6434z" transform="translate(3 3) scale(0.4166666666666667)" fill="#6DB33F"/>
-            <rect width="16" height="16" rx="4" class="brand-mark-frame"/>
-          </g>
-          <text data-node-label="" data-detail-anchor="" x="645" y="174" class="t-primary" font-size="9" font-weight="600" text-anchor="middle">Transfer Orchestrator</text>
-        <text data-detail="context" x="645" y="190" class="t-muted" font-size="9" text-anchor="middle">Spring Boot :8082</text>
-        <text data-detail="fine" x="645" y="204" class="t-backend" font-size="7" text-anchor="middle">Saga Inter-Bank Coordinator</text>
+          <text data-node-label="" data-detail-anchor="" x="323.2" y="108" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Aura Gateway</text>
+          <text data-detail="context" x="323.2" y="122" class="t-muted" font-size="7" text-anchor="middle">Wire API :8080</text>
         </g>
 
-        <g id="node-aura_t24" data-node-id="aura_t24" data-node-label="Temenos T24 Mock CBS" tabindex="0" role="button" aria-label="Focus Temenos T24 Mock CBS, Core Engine :9100, AuraBank Platform Perimeter (Our Bank - Group 3)" aria-pressed="false" data-node-kind="backend" data-node-sublabel="Core Engine :9100" data-node-tag="FT &amp; Reversal Endpoints" data-node-context="AuraBank Platform Perimeter (Our Bank - Group 3)">
+        <g id="node-aura_ledger" data-node-id="aura_ledger" data-node-label="Aura CBS Ledger" tabindex="0" role="button" aria-label="Focus Aura CBS Ledger, ACC-SETTLE-COOBS, Sequence participant" aria-pressed="false" data-node-kind="database" data-node-sublabel="ACC-SETTLE-COOBS" data-node-context="Sequence participant">
           
-          <rect x="310" y="310" width="170" height="72" rx="6" class="c-mask"/>
-          <rect x="310" y="310" width="170" height="72" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(316 316) scale(0.6875)">
-            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
-          </g>
-          <text data-node-label="" data-detail-anchor="" x="395" y="344" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Temenos T24 Mock CBS</text>
-        <text data-detail="context" x="395" y="360" class="t-muted" font-size="9" text-anchor="middle">Core Engine :9100</text>
-        <text data-detail="fine" x="395" y="374" class="t-backend" font-size="7" text-anchor="middle">FT &amp; Reversal Endpoints</text>
-        </g>
-
-        <g id="node-aura_db" data-node-id="aura_db" data-node-label="AuraBank Master DB" tabindex="0" role="button" aria-label="Focus AuraBank Master DB, Azure SQL :1433, AuraBank Platform Perimeter (Our Bank - Group 3)" aria-pressed="false" data-node-kind="database" data-node-sublabel="Azure SQL :1433" data-node-tag="Customers &amp; Nostro Account" data-node-context="AuraBank Platform Perimeter (Our Bank - Group 3)">
-          
-          <rect x="40" y="310" width="150" height="72" rx="6" class="c-mask"/>
-          <rect x="40" y="310" width="150" height="72" rx="6" class="c-database" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(46 316) scale(0.6875)">
+          <rect x="432.4" y="72" width="152" height="60" rx="6" class="c-mask"/>
+          <rect x="432.4" y="72" width="152" height="60" rx="6" class="c-database" data-animate="node" style="--step:2" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(438.4 78) scale(0.6875)">
             <ellipse cx="8" cy="4" rx="5" ry="2"/>
             <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="115" y="344" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">AuraBank Master DB</text>
-        <text data-detail="context" x="115" y="360" class="t-muted" font-size="9" text-anchor="middle">Azure SQL :1433</text>
-        <text data-detail="fine" x="115" y="374" class="t-database" font-size="7" text-anchor="middle">Customers &amp; Nostro Account</text>
+          <text data-node-label="" data-detail-anchor="" x="508.4" y="108" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Aura CBS Ledger</text>
+          <text data-detail="context" x="508.4" y="122" class="t-muted" font-size="7" text-anchor="middle">ACC-SETTLE-COOBS</text>
         </g>
 
-        <g id="node-aura_kafka" data-node-id="aura_kafka" data-node-label="Kafka Event Bus" tabindex="0" role="button" aria-label="Focus Kafka Event Bus, KRaft Broker :9092, AuraBank Platform Perimeter (Our Bank - Group 3), Apache Kafka" aria-pressed="false" data-node-kind="messagebus" data-node-sublabel="KRaft Broker :9092" data-node-tag="Outbox Event Streaming" data-node-context="AuraBank Platform Perimeter (Our Bank - Group 3)" data-node-brand="Apache Kafka" data-node-brand-id="apache-kafka" data-node-brand-status="preset" data-node-brand-source="https://apache.org/logos">
+        <g id="node-coobs_ledger" data-node-id="coobs_ledger" data-node-label="CooBS CBS Ledger" tabindex="0" role="button" aria-label="Focus CooBS CBS Ledger, ACC-SETTLE-AURA, Sequence participant" aria-pressed="false" data-node-kind="database" data-node-sublabel="ACC-SETTLE-AURA" data-node-context="Sequence participant">
           
-          <rect x="560" y="270" width="170" height="60" rx="6" class="c-mask"/>
-          <rect x="560" y="270" width="170" height="60" rx="6" class="c-messagebus" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="messagebus" class="semantic-sigil s-messagebus" transform="translate(566 276) scale(0.6875)">
-            <path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11"/>
-            <circle cx="5" cy="4.5" r="1" class="sigil-fill"/>
-            <circle cx="10.5" cy="8" r="1" class="sigil-fill"/>
-            <circle cx="7" cy="11.5" r="1" class="sigil-fill"/>
-          </g>
-          <g aria-hidden="true" data-brand-mark="apache-kafka" data-brand-title="Apache Kafka" data-brand-status="preset" data-brand-source="https://apache.org/logos" class="brand-mark" transform="translate(708 276)">
-            <rect width="16" height="16" rx="4" class="brand-mark-badge"/>
-            <path d="M9.71 2.136a1.43 1.43 0 0 0-2.047 0h-.007a1.48 1.48 0 0 0-.421 1.042c0 .41.161.777.422 1.039l.007.007c.257.264.616.426 1.019.426.404 0 .766-.162 1.027-.426l.003-.007c.261-.262.421-.629.421-1.039 0-.408-.159-.777-.421-1.042H9.71zM8.683 22.295c.404 0 .766-.167 1.027-.429l.003-.008c.261-.261.421-.631.421-1.036 0-.41-.159-.778-.421-1.044H9.71a1.42 1.42 0 0 0-1.027-.432 1.4 1.4 0 0 0-1.02.432h-.007c-.26.266-.422.634-.422 1.044 0 .406.161.775.422 1.036l.007.008c.258.262.617.429 1.02.429zm7.89-4.462c.359-.096.683-.33.882-.684l.027-.052a1.47 1.47 0 0 0 .114-1.067 1.454 1.454 0 0 0-.675-.896l-.021-.014a1.425 1.425 0 0 0-1.078-.132c-.36.091-.684.335-.881.686-.2.349-.241.75-.146 1.119.099.363.33.691.675.896h.002c.346.203.737.239 1.101.144zm-6.405-7.342a2.083 2.083 0 0 0-1.485-.627c-.58 0-1.103.242-1.482.627-.378.385-.612.916-.612 1.507s.233 1.124.612 1.514a2.08 2.08 0 0 0 2.967 0c.379-.39.612-.923.612-1.514s-.233-1.122-.612-1.507zm-.835-2.51c.843.141 1.6.552 2.178 1.144h.004c.092.093.182.196.265.299l1.446-.851a3.176 3.176 0 0 1-.047-1.808 3.149 3.149 0 0 1 1.456-1.926l.025-.016a3.062 3.062 0 0 1 2.345-.306c.77.21 1.465.721 1.898 1.482v.002c.431.757.518 1.626.313 2.408a3.145 3.145 0 0 1-1.456 1.928l-.198.118h-.02a3.095 3.095 0 0 1-2.154.201 3.127 3.127 0 0 1-1.514-.944l-1.444.848a4.162 4.162 0 0 1 0 2.879l1.444.846c.413-.47.939-.789 1.514-.944a3.041 3.041 0 0 1 2.371.319l.048.023v.002a3.17 3.17 0 0 1 1.408 1.906 3.215 3.215 0 0 1-.313 2.405l-.026.053-.003-.005a3.147 3.147 0 0 1-1.867 1.436 3.096 3.096 0 0 1-2.371-.318v-.006a3.156 3.156 0 0 1-1.456-1.927 3.175 3.175 0 0 1 .047-1.805l-1.446-.848a3.905 3.905 0 0 1-.265.294l-.004.005a3.938 3.938 0 0 1-2.178 1.138v1.699a3.09 3.09 0 0 1 1.56.862l.002.004c.565.572.914 1.368.914 2.243 0 .873-.35 1.664-.914 2.239l-.002.009a3.1 3.1 0 0 1-2.21.931 3.1 3.1 0 0 1-2.206-.93h-.002v-.009a3.186 3.186 0 0 1-.916-2.239c0-.875.35-1.672.916-2.243v-.004h.002a3.1 3.1 0 0 1 1.558-.862v-1.699a3.926 3.926 0 0 1-2.176-1.138l-.006-.005a4.098 4.098 0 0 1-1.173-2.874c0-1.122.452-2.136 1.173-2.872h.006a3.947 3.947 0 0 1 2.176-1.144V6.289a3.137 3.137 0 0 1-1.558-.864h-.002v-.004a3.192 3.192 0 0 1-.916-2.243c0-.871.35-1.669.916-2.243l.002-.002A3.084 3.084 0 0 1 8.683 0c.861 0 1.641.355 2.21.932v.002h.002c.565.574.914 1.372.914 2.243 0 .876-.35 1.667-.914 2.243l-.002.005a3.142 3.142 0 0 1-1.56.864v1.692zm8.121-1.129l-.012-.019a1.452 1.452 0 0 0-.87-.668 1.43 1.43 0 0 0-1.103.146h.002c-.347.2-.58.529-.677.896-.095.365-.054.768.146 1.119l.007.009c.2.347.519.579.874.673.357.103.755.059 1.098-.144l.019-.009a1.47 1.47 0 0 0 .657-.885 1.493 1.493 0 0 0-.141-1.118" transform="translate(3 3) scale(0.4166666666666667)" fill="#231F20"/>
-            <rect width="16" height="16" rx="4" class="brand-mark-frame"/>
-          </g>
-          <text data-node-label="" data-detail-anchor="" x="645" y="298" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Kafka Event Bus</text>
-        <text data-detail="context" x="645" y="314" class="t-muted" font-size="9" text-anchor="middle">KRaft Broker :9092</text>
-        <text data-detail="fine" x="645" y="322" class="t-messagebus" font-size="7" text-anchor="middle">Outbox Event Streaming</text>
-        </g>
-
-        <g id="node-aura_audit" data-node-id="aura_audit" data-node-label="Immutable Audit Vault" tabindex="0" role="button" aria-label="Focus Immutable Audit Vault, PostgreSQL 16 :5432, AuraBank Platform Perimeter (Our Bank - Group 3), PostgreSQL" aria-pressed="false" data-node-kind="database" data-node-sublabel="PostgreSQL 16 :5432" data-node-tag="AMLA Compliance Trail" data-node-context="AuraBank Platform Perimeter (Our Bank - Group 3)" data-node-brand="PostgreSQL" data-node-brand-id="postgresql" data-node-brand-status="preset" data-node-brand-source="https://wiki.postgresql.org/wiki/Logo">
-          
-          <rect x="560" y="380" width="170" height="60" rx="6" class="c-mask"/>
-          <rect x="560" y="380" width="170" height="60" rx="6" class="c-database" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(566 386) scale(0.6875)">
+          <rect x="617.5999999999999" y="72" width="152" height="60" rx="6" class="c-mask"/>
+          <rect x="617.5999999999999" y="72" width="152" height="60" rx="6" class="c-database" data-animate="node" style="--step:3" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(623.5999999999999 78) scale(0.6875)">
             <ellipse cx="8" cy="4" rx="5" ry="2"/>
             <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
           </g>
-          <g aria-hidden="true" data-brand-mark="postgresql" data-brand-title="PostgreSQL" data-brand-status="preset" data-brand-source="https://wiki.postgresql.org/wiki/Logo" class="brand-mark" transform="translate(708 386)">
-            <rect width="16" height="16" rx="4" class="brand-mark-badge"/>
-            <path d="M23.5594 14.7228a.5269.5269 0 0 0-.0563-.1191c-.139-.2632-.4768-.3418-1.0074-.2321-1.6533.3411-2.2935.1312-2.5256-.0191 1.342-2.0482 2.445-4.522 3.0411-6.8297.2714-1.0507.7982-3.5237.1222-4.7316a1.5641 1.5641 0 0 0-.1509-.235C21.6931.9086 19.8007.0248 17.5099.0005c-1.4947-.0158-2.7705.3461-3.1161.4794a9.449 9.449 0 0 0-.5159-.0816 8.044 8.044 0 0 0-1.3114-.1278c-1.1822-.0184-2.2038.2642-3.0498.8406-.8573-.3211-4.7888-1.645-7.2219.0788C.9359 2.1526.3086 3.8733.4302 6.3043c.0409.818.5069 3.334 1.2423 5.7436.4598 1.5065.9387 2.7019 1.4334 3.582.553.9942 1.1259 1.5933 1.7143 1.7895.4474.1491 1.1327.1441 1.8581-.7279.8012-.9635 1.5903-1.8258 1.9446-2.2069.4351.2355.9064.3625 1.39.3772a.0569.0569 0 0 0 .0004.0041 11.0312 11.0312 0 0 0-.2472.3054c-.3389.4302-.4094.5197-1.5002.7443-.3102.064-1.1344.2339-1.1464.8115-.0025.1224.0329.2309.0919.3268.2269.4231.9216.6097 1.015.6331 1.3345.3335 2.5044.092 3.3714-.6787-.017 2.231.0775 4.4174.3454 5.0874.2212.5529.7618 1.9045 2.4692 1.9043.2505 0 .5263-.0291.8296-.0941 1.7819-.3821 2.5557-1.1696 2.855-2.9059.1503-.8707.4016-2.8753.5388-4.1012.0169-.0703.0357-.1207.057-.1362.0007-.0005.0697-.0471.4272.0307a.3673.3673 0 0 0 .0443.0068l.2539.0223.0149.001c.8468.0384 1.9114-.1426 2.5312-.4308.6438-.2988 1.8057-1.0323 1.5951-1.6698zM2.371 11.8765c-.7435-2.4358-1.1779-4.8851-1.2123-5.5719-.1086-2.1714.4171-3.6829 1.5623-4.4927 1.8367-1.2986 4.8398-.5408 6.108-.13-.0032.0032-.0066.0061-.0098.0094-2.0238 2.044-1.9758 5.536-1.9708 5.7495-.0002.0823.0066.1989.0162.3593.0348.5873.0996 1.6804-.0735 2.9184-.1609 1.1504.1937 2.2764.9728 3.0892.0806.0841.1648.1631.2518.2374-.3468.3714-1.1004 1.1926-1.9025 2.1576-.5677.6825-.9597.5517-1.0886.5087-.3919-.1307-.813-.5871-1.2381-1.3223-.4796-.839-.9635-2.0317-1.4155-3.5126zm6.0072 5.0871c-.1711-.0428-.3271-.1132-.4322-.1772.0889-.0394.2374-.0902.4833-.1409 1.2833-.2641 1.4815-.4506 1.9143-1.0002.0992-.126.2116-.2687.3673-.4426a.3549.3549 0 0 0 .0737-.1298c.1708-.1513.2724-.1099.4369-.0417.156.0646.3078.26.3695.4752.0291.1016.0619.2945-.0452.4444-.9043 1.2658-2.2216 1.2494-3.1676 1.0128zm2.094-3.988-.0525.141c-.133.3566-.2567.6881-.3334 1.003-.6674-.0021-1.3168-.2872-1.8105-.8024-.6279-.6551-.9131-1.5664-.7825-2.5004.1828-1.3079.1153-2.4468.079-3.0586-.005-.0857-.0095-.1607-.0122-.2199.2957-.2621 1.6659-.9962 2.6429-.7724.4459.1022.7176.4057.8305.928.5846 2.7038.0774 3.8307-.3302 4.7363-.084.1866-.1633.3629-.2311.5454zm7.3637 4.5725c-.0169.1768-.0358.376-.0618.5959l-.146.4383a.3547.3547 0 0 0-.0182.1077c-.0059.4747-.054.6489-.115.8693-.0634.2292-.1353.4891-.1794 1.0575-.11 1.4143-.8782 2.2267-2.4172 2.5565-1.5155.3251-1.7843-.4968-2.0212-1.2217a6.5824 6.5824 0 0 0-.0769-.2266c-.2154-.5858-.1911-1.4119-.1574-2.5551.0165-.5612-.0249-1.9013-.3302-2.6462.0044-.2932.0106-.5909.019-.8918a.3529.3529 0 0 0-.0153-.1126 1.4927 1.4927 0 0 0-.0439-.208c-.1226-.4283-.4213-.7866-.7797-.9351-.1424-.059-.4038-.1672-.7178-.0869.067-.276.1831-.5875.309-.9249l.0529-.142c.0595-.16.134-.3257.213-.5012.4265-.9476 1.0106-2.2453.3766-5.1772-.2374-1.0981-1.0304-1.6343-2.2324-1.5098-.7207.0746-1.3799.3654-1.7088.5321a5.6716 5.6716 0 0 0-.1958.1041c.0918-1.1064.4386-3.1741 1.7357-4.4823a4.0306 4.0306 0 0 1 .3033-.276.3532.3532 0 0 0 .1447-.0644c.7524-.5706 1.6945-.8506 2.802-.8325.4091.0067.8017.0339 1.1742.081 1.939.3544 3.2439 1.4468 4.0359 2.3827.8143.9623 1.2552 1.9315 1.4312 2.4543-1.3232-.1346-2.2234.1268-2.6797.779-.9926 1.4189.543 4.1729 1.2811 5.4964.1353.2426.2522.4522.2889.5413.2403.5825.5515.9713.7787 1.2552.0696.087.1372.1714.1885.245-.4008.1155-1.1208.3825-1.0552 1.717-.0123.1563-.0423.4469-.0834.8148-.0461.2077-.0702.4603-.0994.7662zm.8905-1.6211c-.0405-.8316.2691-.9185.5967-1.0105a2.8566 2.8566 0 0 0 .135-.0406 1.202 1.202 0 0 0 .1342.103c.5703.3765 1.5823.4213 3.0068.1344-.2016.1769-.5189.3994-.9533.6011-.4098.1903-1.0957.333-1.7473.3636-.7197.0336-1.0859-.0807-1.1721-.151zm.5695-9.2712c-.0059.3508-.0542.6692-.1054 1.0017-.055.3576-.112.7274-.1264 1.1762-.0142.4368.0404.8909.0932 1.3301.1066.887.216 1.8003-.2075 2.7014a3.5272 3.5272 0 0 1-.1876-.3856c-.0527-.1276-.1669-.3326-.3251-.6162-.6156-1.1041-2.0574-3.6896-1.3193-4.7446.3795-.5427 1.3408-.5661 2.1781-.463zm.2284 7.0137a12.3762 12.3762 0 0 0-.0853-.1074l-.0355-.0444c.7262-1.1995.5842-2.3862.4578-3.4385-.0519-.4318-.1009-.8396-.0885-1.2226.0129-.4061.0666-.7543.1185-1.0911.0639-.415.1288-.8443.1109-1.3505.0134-.0531.0188-.1158.0118-.1902-.0457-.4855-.5999-1.938-1.7294-3.253-.6076-.7073-1.4896-1.4972-2.6889-2.0395.5251-.1066 1.2328-.2035 2.0244-.1859 2.0515.0456 3.6746.8135 4.8242 2.2824a.908.908 0 0 1 .0667.1002c.7231 1.3556-.2762 6.2751-2.9867 10.5405zm-8.8166-6.1162c-.025.1794-.3089.4225-.6211.4225a.5821.5821 0 0 1-.0809-.0056c-.1873-.026-.3765-.144-.5059-.3156-.0458-.0605-.1203-.178-.1055-.2844.0055-.0401.0261-.0985.0925-.1488.1182-.0894.3518-.1226.6096-.0867.3163.0441.6426.1938.6113.4186zm7.9305-.4114c.0111.0792-.049.201-.1531.3102-.0683.0717-.212.1961-.4079.2232a.5456.5456 0 0 1-.075.0052c-.2935 0-.5414-.2344-.5607-.3717-.024-.1765.2641-.3106.5611-.352.297-.0414.6111.0088.6356.1851z" transform="translate(3 3) scale(0.4166666666666667)" fill="#4169E1"/>
-            <rect width="16" height="16" rx="4" class="brand-mark-frame"/>
-          </g>
-          <text data-node-label="" data-detail-anchor="" x="645" y="408" class="t-primary" font-size="9" font-weight="600" text-anchor="middle">Immutable Audit Vault</text>
-        <text data-detail="context" x="645" y="424" class="t-muted" font-size="9" text-anchor="middle">PostgreSQL 16 :5432</text>
-        <text data-detail="fine" x="645" y="432" class="t-database" font-size="7" text-anchor="middle">AMLA Compliance Trail</text>
+          <text data-node-label="" data-detail-anchor="" x="693.5999999999999" y="108" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">CooBS CBS Ledger</text>
+          <text data-detail="context" x="693.5999999999999" y="122" class="t-muted" font-size="7" text-anchor="middle">ACC-SETTLE-AURA</text>
         </g>
 
-        <g id="node-interbank_wire" data-node-id="interbank_wire" data-node-label="Inter-Bank Wire Gateway" tabindex="0" role="button" aria-label="Focus Inter-Bank Wire Gateway, HTTP REST / API Key, Inter-Bank Clearing &amp; Bilateral Settlement Corridor" aria-pressed="false" data-node-kind="cloud" data-node-sublabel="HTTP REST / API Key" data-node-tag="POST /interbank/inward" data-node-context="Inter-Bank Clearing &amp; Bilateral Settlement Corridor">
+        <g id="node-coobs_gw" data-node-id="coobs_gw" data-node-label="CooBS Gateway" tabindex="0" role="button" aria-label="Focus CooBS Gateway, CooBS Inbound API, Sequence participant" aria-pressed="false" data-node-kind="backend" data-node-sublabel="CooBS Inbound API" data-node-context="Sequence participant">
           
-          <rect x="900" y="140" width="180" height="72" rx="6" class="c-mask"/>
-          <rect x="900" y="140" width="180" height="72" rx="6" class="c-cloud" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="cloud" class="semantic-sigil s-cloud" transform="translate(906 146) scale(0.6875)">
-            <path d="M4.3 12.5h7.3a2.4 2.4 0 0 0 .2-4.8 4 4 0 0 0-7.5-1.3A3.1 3.1 0 0 0 4.3 12.5Z"/>
-          </g>
-          <text data-node-label="" data-detail-anchor="" x="990" y="174" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Inter-Bank Wire Gateway</text>
-        <text data-detail="context" x="990" y="190" class="t-muted" font-size="9" text-anchor="middle">HTTP REST / API Key</text>
-        <text data-detail="fine" x="990" y="204" class="t-cloud" font-size="7" text-anchor="middle">POST /interbank/inward</text>
-        </g>
-
-        <g id="node-settlement_model" data-node-id="settlement_model" data-node-label="Bilateral Settlement Model" tabindex="0" role="button" aria-label="Focus Bilateral Settlement Model, Pre-Funded Nostro/Vostro, Inter-Bank Clearing &amp; Bilateral Settlement Corridor" aria-pressed="false" data-node-kind="external" data-node-sublabel="Pre-Funded Nostro/Vostro" data-node-tag="Net Balance Buffer" data-node-context="Inter-Bank Clearing &amp; Bilateral Settlement Corridor">
-          
-          <rect x="900" y="310" width="180" height="72" rx="6" class="c-mask"/>
-          <rect x="900" y="310" width="180" height="72" rx="6" class="c-external" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(906 316) scale(0.6875)">
-            <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
-            <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
-          </g>
-          <text data-node-label="" data-detail-anchor="" x="990" y="344" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Bilateral Settlement Model</text>
-        <text data-detail="context" x="990" y="360" class="t-muted" font-size="9" text-anchor="middle">Pre-Funded Nostro/Vostro</text>
-        <text data-detail="fine" x="990" y="374" class="t-external" font-size="7" text-anchor="middle">Net Balance Buffer</text>
-        </g>
-
-        <g id="node-partner_gateway" data-node-id="partner_gateway" data-node-label="CooBS Inbound Gateway" tabindex="0" role="button" aria-label="Focus CooBS Inbound Gateway, CooBS Wire Ingress, CooBS Platform Perimeter (Coo Banking System)" aria-pressed="false" data-node-kind="security" data-node-sublabel="CooBS Wire Ingress" data-node-tag="Inbound Wire Auth" data-node-context="CooBS Platform Perimeter (Coo Banking System)">
-          
-          <rect x="1260" y="140" width="160" height="64" rx="6" class="c-mask"/>
-          <rect x="1260" y="140" width="160" height="64" rx="6" class="c-security" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(1266 146) scale(0.6875)">
-            <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
-            <path d="m5.8 8 1.5 1.5 3-3"/>
-          </g>
-          <text data-node-label="" data-detail-anchor="" x="1340" y="170" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">CooBS Inbound Gateway</text>
-        <text data-detail="context" x="1340" y="186" class="t-muted" font-size="9" text-anchor="middle">CooBS Wire Ingress</text>
-        <text data-detail="fine" x="1340" y="196" class="t-security" font-size="7" text-anchor="middle">Inbound Wire Auth</text>
-        </g>
-
-        <g id="node-partner_orchestrator" data-node-id="partner_orchestrator" data-node-label="CooBS Orchestrator" tabindex="0" role="button" aria-label="Focus CooBS Orchestrator, CooBS Core Engine, CooBS Platform Perimeter (Coo Banking System), Spring" aria-pressed="false" data-node-kind="backend" data-node-sublabel="CooBS Core Engine" data-node-tag="Beneficiary Verifier" data-node-context="CooBS Platform Perimeter (Coo Banking System)" data-node-brand="Spring" data-node-brand-id="spring" data-node-brand-status="preset" data-node-brand-source="https://spring.io/trademarks">
-          
-          <rect x="1530" y="140" width="170" height="72" rx="6" class="c-mask"/>
-          <rect x="1530" y="140" width="170" height="72" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(1536 146) scale(0.6875)">
+          <rect x="802.8" y="72" width="152" height="60" rx="6" class="c-mask"/>
+          <rect x="802.8" y="72" width="152" height="60" rx="6" class="c-backend" data-animate="node" style="--step:4" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(808.8 78) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <g aria-hidden="true" data-brand-mark="spring" data-brand-title="Spring" data-brand-status="preset" data-brand-source="https://spring.io/trademarks" class="brand-mark" transform="translate(1678 146)">
-            <rect width="16" height="16" rx="4" class="brand-mark-badge"/>
-            <path d="M21.8537 1.4158a10.4504 10.4504 0 0 1-1.284 2.2471A11.9666 11.9666 0 1 0 3.8518 20.7757l.4445.3951a11.9543 11.9543 0 0 0 19.6316-8.2971c.3457-3.0126-.568-6.8649-2.0743-11.458zM5.5805 20.8745a1.0174 1.0174 0 1 1-.1482-1.4323 1.0396 1.0396 0 0 1 .1482 1.4323zm16.1991-3.5806c-2.9385 3.9263-9.2601 2.5928-13.2852 2.7904 0 0-.7161.0494-1.4323.1481 0 0 .2717-.1234.6174-.2469 2.8398-.9877 4.1732-1.1853 5.9018-2.0743 3.2349-1.6545 6.4698-5.2844 7.1118-9.0379-1.2347 3.6053-4.9881 6.7167-8.3959 7.9761-2.3459.8643-6.5685 1.7039-6.5685 1.7039l-.1729-.0988c-2.8645-1.4076-2.9632-7.6304 2.2718-9.6306 2.2966-.889 4.4696-.395 6.9637-.9877 2.6422-.6174 5.7043-2.5929 6.939-5.1857 1.3828 4.1732 3.062 10.643.0493 14.6434z" transform="translate(3 3) scale(0.4166666666666667)" fill="#6DB33F"/>
-            <rect width="16" height="16" rx="4" class="brand-mark-frame"/>
-          </g>
-          <text data-node-label="" data-detail-anchor="" x="1615" y="174" class="t-primary" font-size="10.5" font-weight="600" text-anchor="middle">CooBS Orchestrator</text>
-        <text data-detail="context" x="1615" y="190" class="t-muted" font-size="9" text-anchor="middle">CooBS Core Engine</text>
-        <text data-detail="fine" x="1615" y="204" class="t-backend" font-size="7" text-anchor="middle">Beneficiary Verifier</text>
+          <text data-node-label="" data-detail-anchor="" x="878.8" y="108" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">CooBS Gateway</text>
+          <text data-detail="context" x="878.8" y="122" class="t-muted" font-size="7" text-anchor="middle">CooBS Inbound API</text>
         </g>
 
-        <g id="node-partner_t24" data-node-id="partner_t24" data-node-label="CooBS CBS Ledger" tabindex="0" role="button" aria-label="Focus CooBS CBS Ledger, CooBS Core Ledger, CooBS Platform Perimeter (Coo Banking System)" aria-pressed="false" data-node-kind="backend" data-node-sublabel="CooBS Core Ledger" data-node-tag="Debit Settlement | Credit Bob" data-node-context="CooBS Platform Perimeter (Coo Banking System)">
+        <g id="node-bob" data-node-id="bob" data-node-label="Bob" tabindex="0" role="button" aria-label="Focus Bob, CooBS Client, Sequence participant" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="CooBS Client" data-node-context="Sequence participant">
           
-          <rect x="1530" y="310" width="170" height="72" rx="6" class="c-mask"/>
-          <rect x="1530" y="310" width="170" height="72" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(1536 316) scale(0.6875)">
-            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          <rect x="988" y="72" width="152" height="60" rx="6" class="c-mask"/>
+          <rect x="988" y="72" width="152" height="60" rx="6" class="c-frontend" data-animate="node" style="--step:5" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(994 78) scale(0.6875)">
+            <rect x="2" y="3" width="12" height="10" rx="2"/>
+            <path d="M2 6.5h12"/>
+            <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"/>
+            <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="1615" y="344" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">CooBS CBS Ledger</text>
-        <text data-detail="context" x="1615" y="360" class="t-muted" font-size="9" text-anchor="middle">CooBS Core Ledger</text>
-        <text data-detail="fine" x="1615" y="374" class="t-backend" font-size="7" text-anchor="middle">Debit Settlement | Credit Bob</text>
-        </g>
-
-        <g id="node-partner_db" data-node-id="partner_db" data-node-label="CooBS Master DB" tabindex="0" role="button" aria-label="Focus CooBS Master DB, CooBS Ledger Storage, CooBS Platform Perimeter (Coo Banking System)" aria-pressed="false" data-node-kind="database" data-node-sublabel="CooBS Ledger Storage" data-node-tag="ACC-SETTLEMENT-AURABANK" data-node-context="CooBS Platform Perimeter (Coo Banking System)">
-          
-          <rect x="1260" y="310" width="150" height="72" rx="6" class="c-mask"/>
-          <rect x="1260" y="310" width="150" height="72" rx="6" class="c-database" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(1266 316) scale(0.6875)">
-            <ellipse cx="8" cy="4" rx="5" ry="2"/>
-            <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
-          </g>
-          <text data-node-label="" data-detail-anchor="" x="1335" y="344" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">CooBS Master DB</text>
-        <text data-detail="context" x="1335" y="360" class="t-muted" font-size="9" text-anchor="middle">CooBS Ledger Storage</text>
-        <text data-detail="fine" x="1335" y="374" class="t-database" font-size="7" text-anchor="middle">ACC-SETTLEMENT-AURABANK</text>
-        </g>
-
-        <!-- Connection labels -->
-        <g data-detail="context" data-edge-from="aura_client" data-edge-to="aura_gateway" data-edge-label="HTTPS :443" data-edge-key="0" data-edge-id="client-to-gateway">
-          <rect x="216" y="152" width="58" height="14" rx="3" class="c-mask"/>
-          <text x="245" y="162" class="t-edge-default" font-size="8" text-anchor="middle">HTTPS :443</text>
-        </g>
-        <g data-detail="context" data-edge-from="aura_gateway" data-edge-to="aura_orchestrator" data-edge-label="POST /transfers" data-edge-key="1" data-edge-id="gateway-to-orch">
-          <rect x="464" y="147.95" width="82" height="14" rx="3" class="c-mask"/>
-          <text x="505" y="157.95" class="t-edge-default" font-size="8" text-anchor="middle">POST /transfers</text>
-        </g>
-        <g data-detail="context" data-edge-from="aura_orchestrator" data-edge-to="aura_t24" data-edge-label="Leg 1: Debit -&gt; Nostro" data-edge-key="2" data-edge-id="orch-to-t24-ft">
-          <rect x="478.2" y="214.5" width="115.6" height="14" rx="3" class="c-mask"/>
-          <text x="536" y="224.5" class="t-edge-emphasis" font-size="8" text-anchor="middle">Leg 1: Debit -&gt; Nostro</text>
-        </g>
-        <g data-detail="context" data-edge-from="aura_orchestrator" data-edge-to="aura_t24" data-edge-label="Saga Reversal" data-edge-key="3" data-edge-id="orch-to-t24-rev">
-          <rect x="559.5999999999999" y="232.5" width="72.4" height="14" rx="3" class="c-mask"/>
-          <text x="595.8" y="242.5" class="t-edge-security" font-size="8" text-anchor="middle">Saga Reversal</text>
-        </g>
-        <g data-detail="context" data-edge-from="aura_t24" data-edge-to="aura_db" data-edge-label="ACID row lock" data-edge-key="4" data-edge-id="t24-to-db">
-          <rect x="213.8" y="326" width="72.4" height="14" rx="3" class="c-mask"/>
-          <text x="250" y="336" class="t-edge-default" font-size="8" text-anchor="middle">ACID row lock</text>
-        </g>
-        <g data-detail="context" data-edge-from="aura_orchestrator" data-edge-to="interbank_wire" data-edge-label="Leg 2: Outward Wire (HTTP)" data-edge-key="5" data-edge-id="orch-to-wire">
-          <rect x="747.6" y="156" width="134.8" height="14" rx="3" class="c-mask"/>
-          <text x="815" y="166" class="t-edge-emphasis" font-size="8" text-anchor="middle">Leg 2: Outward Wire (HTTP)</text>
-        </g>
-        <g data-detail="context" data-edge-from="interbank_wire" data-edge-to="settlement_model" data-edge-label="Nostro/Vostro Sync" data-edge-key="6" data-edge-id="wire-to-settlement">
-          <rect x="887.5999999999999" y="254" width="96.39999999999999" height="14" rx="3" class="c-mask"/>
-          <text x="935.8" y="264" class="t-edge-dashed" font-size="8" text-anchor="middle">Nostro/Vostro Sync</text>
-        </g>
-        <g data-detail="context" data-edge-from="interbank_wire" data-edge-to="partner_gateway" data-edge-label="HTTP Inward Wire" data-edge-key="7" data-edge-id="wire-to-partner-gw">
-          <rect x="1126.6" y="172" width="86.8" height="14" rx="3" class="c-mask"/>
-          <text x="1170" y="182" class="t-edge-emphasis" font-size="8" text-anchor="middle">HTTP Inward Wire</text>
-        </g>
-        <g data-detail="context" data-edge-from="partner_gateway" data-edge-to="partner_orchestrator" data-edge-label="Dispatch Wire" data-edge-key="8" data-edge-id="partner-gw-to-orch">
-          <rect x="1444" y="200" width="72.4" height="14" rx="3" class="c-mask"/>
-          <text x="1480.2" y="210" class="t-edge-default" font-size="8" text-anchor="middle">Dispatch Wire</text>
-        </g>
-        <g data-detail="context" data-edge-from="partner_orchestrator" data-edge-to="partner_t24" data-edge-label="Leg 3: Debit Vostro -&gt; Credit Bob" data-edge-key="9" data-edge-id="partner-orch-to-t24">
-          <rect x="1440.6" y="254" width="168.4" height="14" rx="3" class="c-mask"/>
-          <text x="1524.8" y="264" class="t-edge-emphasis" font-size="8" text-anchor="middle">Leg 3: Debit Vostro -&gt; Credit Bob</text>
-        </g>
-        <g data-detail="context" data-edge-from="partner_t24" data-edge-to="partner_db" data-edge-label="Commit Balance" data-edge-key="10" data-edge-id="partner-t24-to-db">
-          <rect x="1431.4" y="326" width="77.2" height="14" rx="3" class="c-mask"/>
-          <text x="1470" y="336" class="t-edge-default" font-size="8" text-anchor="middle">Commit Balance</text>
-        </g>
-        <g data-detail="context" data-edge-from="aura_orchestrator" data-edge-to="aura_kafka" data-edge-label="outbox events" data-edge-key="11" data-edge-id="orch-to-kafka">
-          <rect x="658" y="234" width="72.4" height="14" rx="3" class="c-mask"/>
-          <text x="694.2" y="244" class="t-edge-dashed" font-size="8" text-anchor="middle">outbox events</text>
-        </g>
-        <g data-detail="context" data-edge-from="aura_kafka" data-edge-to="aura_audit" data-edge-label="audit stream" data-edge-key="12" data-edge-id="kafka-to-audit">
-          <rect x="571.4000000000001" y="348" width="67.6" height="14" rx="3" class="c-mask"/>
-          <text x="605.2" y="358" class="t-edge-dashed" font-size="8" text-anchor="middle">audit stream</text>
-        </g>
-
-        <!-- Boundary labels (foreground masks keep routes out of titles) -->
-        <g data-graph-role="structural-frame-label" data-composition-frame-id="0" data-composition-frame-kind="region" data-composition-frame-label="AuraBank Platform Perimeter (Our Bank - Group 3)">
-          <rect data-graph-role="structural-frame-label-mask" x="14" y="117" width="338.87744815483865" height="19" rx="3" class="c-mask"/>
-          <text data-boundary-label="" x="18" y="132.41935583870966" class="t-cloud" font-size="11.419355838709675" font-weight="600">AuraBank Platform Perimeter (Our Bank - Group 3)</text>
-        </g>
-
-        <g data-graph-role="structural-frame-label" data-composition-frame-id="1" data-composition-frame-kind="security-group" data-composition-frame-label="Inter-Bank Clearing &amp; Bilateral Settlement Corridor">
-          <rect data-graph-role="structural-frame-label-mask" x="810.283855667742" y="117" width="359.432288664516" height="19" rx="3" class="c-mask"/>
-          <text data-boundary-label="" x="814.283855667742" y="132.41935583870966" class="t-security" font-size="11.419355838709675" font-weight="600">Inter-Bank Clearing &amp; Bilateral Settlement Corridor</text>
-        </g>
-
-        <g data-graph-role="structural-frame-label" data-composition-frame-id="2" data-composition-frame-kind="region" data-composition-frame-label="CooBS Platform Perimeter (Coo Banking System)">
-          <rect data-graph-role="structural-frame-label-mask" x="1234" y="117" width="318.3226076451612" height="19" rx="3" class="c-mask"/>
-          <text data-boundary-label="" x="1238" y="132.41935583870966" class="t-cloud" font-size="11.419355838709675" font-weight="600">CooBS Platform Perimeter (Coo Banking System)</text>
+          <text data-node-label="" data-detail-anchor="" x="1064" y="108" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Bob</text>
+          <text data-detail="context" x="1064" y="122" class="t-muted" font-size="7" text-anchor="middle">CooBS Client</text>
         </g>
 
         <!-- Legend -->
-        <g data-legend="" data-legend-bridge="">
-          <text x="40" y="492" class="t-primary" font-size="12" font-weight="650">Legend</text>
-          <g data-legend-semantic-kind="frontend" data-legend-kind="frontend" data-legend-label="Frontend" data-legend-x="40" data-legend-baseline="512" data-legend-width="83">
-            <rect x="40" y="503" width="16" height="10" rx="2.5" class="c-frontend" stroke-width="1"/>
-            <text x="62" y="512" class="t-muted" font-size="10" font-weight="500">Frontend</text>
-          </g>
-          <g data-legend-semantic-kind="backend" data-legend-kind="backend" data-legend-label="Backend" data-legend-x="145" data-legend-baseline="512" data-legend-width="78">
-            <rect x="145" y="503" width="16" height="10" rx="2.5" class="c-backend" stroke-width="1"/>
-            <text x="167" y="512" class="t-muted" font-size="10" font-weight="500">Backend</text>
-          </g>
-          <g data-legend-semantic-kind="database" data-legend-kind="database" data-legend-label="Database" data-legend-x="245" data-legend-baseline="512" data-legend-width="83">
-            <rect x="245" y="503" width="16" height="10" rx="2.5" class="c-database" stroke-width="1"/>
-            <text x="267" y="512" class="t-muted" font-size="10" font-weight="500">Database</text>
-          </g>
-          <g data-legend-semantic-kind="cloud" data-legend-kind="cloud" data-legend-label="Cloud" data-legend-x="350" data-legend-baseline="512" data-legend-width="68">
-            <rect x="350" y="503" width="16" height="10" rx="2.5" class="c-cloud" stroke-width="1"/>
-            <text x="372" y="512" class="t-muted" font-size="10" font-weight="500">Cloud</text>
-          </g>
-          <g data-legend-semantic-kind="security" data-legend-kind="security" data-legend-label="Security" data-legend-x="440" data-legend-baseline="512" data-legend-width="83">
-            <rect x="440" y="503" width="16" height="10" rx="2.5" class="c-security" stroke-width="1"/>
-            <text x="462" y="512" class="t-muted" font-size="10" font-weight="500">Security</text>
-          </g>
-          <g data-legend-semantic-kind="messagebus" data-legend-kind="messagebus" data-legend-label="Message bus" data-legend-x="545" data-legend-baseline="512" data-legend-width="98">
-            <rect x="545" y="503" width="16" height="10" rx="2.5" class="c-messagebus" stroke-width="1"/>
-            <text x="567" y="512" class="t-muted" font-size="10" font-weight="500">Message bus</text>
-          </g>
-          <g data-legend-semantic-kind="external" data-legend-kind="external" data-legend-label="External" data-legend-x="665" data-legend-baseline="512" data-legend-width="83">
-            <rect x="665" y="503" width="16" height="10" rx="2.5" class="c-external" stroke-width="1"/>
-            <text x="687" y="512" class="t-muted" font-size="10" font-weight="500">External</text>
-          </g>
-        </g>
+
       </svg>
       <p class="intent-trace-status no-print" id="intent-trace-status" role="status" aria-live="polite" aria-atomic="true"></p>
       <div class="diagram-guide no-print" id="diagram-guide" hidden role="dialog" aria-modal="false" aria-labelledby="diagram-guide-title">
@@ -5618,25 +5524,12 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       <div class="card">
         <div class="card-header">
           <div class="card-dot emerald"></div>
-          <h3>Bilateral Settlement Model: Aura Bank &amp; CooBS</h3>
+          <h3>Bilateral Settlement Rules &amp; Invariant Guarantees</h3>
         </div>
         <ul>
-          <li>Pre-Funded Settlement Buffers: Aura Bank maintains ACC-SETTLEMENT-COOBS in its CBS. CooBS maintains ACC-SETTLEMENT-AURABANK in its CBS (each seeded with a 5,000,000 PHP buffer).</li>
-          <li>Direct Ledger Postings: Debiting Alice credits the CooBS buffer in Aura Bank. Debiting the Aura Bank buffer credits Bob in CooBS. Money is never created or destroyed.</li>
-          <li>Zero Third-Party Dependency: No centralized clearing switch needed. Both institutions agree on an authenticated JSON HTTP contract for instant bilateral settlement.</li>
-        </ul>
-      </div>
-
-      <div class="card">
-        <div class="card-header">
-          <div class="card-dot amber"></div>
-          <h3>Outbound &amp; Inbound Inter-Bank Wire Lifecycle</h3>
-        </div>
-        <ul>
-          <li>Leg 1 (Domestic Debit): Aura Bank Orchestrator executes internal CBS transfer (Debit: Alice 1,000 PHP, Credit: ACC-SETTLEMENT-COOBS).</li>
-          <li>Leg 2 (Wire Dispatch): Orchestrator sends standard HTTP POST to CooBS endpoint POST /api/v1/interbank/transfers/inbound with reference number.</li>
-          <li>Leg 3 (Beneficiary Credit): CooBS CBS executes internal transfer (Debit: ACC-SETTLEMENT-AURABANK, Credit: Bob) and returns 200 OK with status SUCCESS.</li>
-          <li>Saga Compensation (Rollback): If CooBS returns an error or times out, Aura Bank Orchestrator calls CBS reversal to immediately refund Alice.</li>
+          <li>Pre-Funded Reciprocal Buffers: Aura Bank hosts ACC-SETTLEMENT-COOBS and CooBS hosts ACC-SETTLEMENT-AURABANK (each seeded with a 5,000,000 PHP settlement buffer).</li>
+          <li>Symmetric API Contract: Both institutions expose the identical endpoint: POST /api/v1/interbank/transfers/inbound with the same JSON request and response payloads.</li>
+          <li>Zero Money Leakage: Debiting the sender credits the counterparty buffer. Debiting the counterparty buffer credits the beneficiary. Balance across both banks remains constant.</li>
         </ul>
       </div>
     </div>

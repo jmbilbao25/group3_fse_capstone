@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Bilateral Inter-Bank Settlement Flow: Aura Bank and CooBS",
+    "output": "coobs_interbank_flow.html",
+    "viewBox": [1180, 800],
+    "animation": "trace",
+    "quality_profile": "standard",
+    "column_fit": "spread"
+  },
+  "participants": [
+    { "id": "alice", "type": "frontend", "label": "Alice", "sublabel": "Aura Client" },
+    { "id": "aura_gw", "type": "backend", "label": "Aura Gateway", "sublabel": "Wire API :8080" },
+    { "id": "aura_ledger", "type": "database", "label": "Aura CBS Ledger", "sublabel": "ACC-SETTLE-COOBS" },
+    { "id": "coobs_ledger", "type": "database", "label": "CooBS CBS Ledger", "sublabel": "ACC-SETTLE-AURA" },
+    { "id": "coobs_gw", "type": "backend", "label": "CooBS Gateway", "sublabel": "CooBS Inbound API" },
+    { "id": "bob", "type": "frontend", "label": "Bob", "sublabel": "CooBS Client" }
+  ],
+  "segments": [
+    { "from": 140, "to": 415, "label": "Leg 1: Aura Bank to CooBS (Alice sends 1,000 PHP to Bob)" },
+    { "from": 435, "to": 710, "label": "Leg 2: CooBS to Aura Bank (Bob sends 1,000 PHP to Alice)" }
+  ],
+  "messages": [
+    { "id": "m1", "from": "alice", "to": "aura_gw", "y": 165, "label": "POST /api/v1/transfers (Send 1,000 PHP to Bob at CooBS)", "variant": "emphasis" },
+    { "id": "m2", "from": "aura_gw", "to": "aura_ledger", "y": 195, "label": "Debit Alice 1,000 PHP / Credit ACC-SETTLE-COOBS", "variant": "emphasis" },
+    { "id": "m3", "from": "aura_ledger", "to": "aura_gw", "y": 225, "label": "200 OK (Aura Local Settlement Committed)", "variant": "return" },
+    { "id": "m4", "from": "aura_gw", "to": "coobs_gw", "y": 255, "label": "POST /api/v1/interbank/transfers/inbound (Ref: TXN-AURA-1001)", "variant": "emphasis" },
+    { "id": "m5", "from": "coobs_gw", "to": "coobs_ledger", "y": 285, "label": "Debit ACC-SETTLE-AURA / Credit Bob 1,000 PHP", "variant": "emphasis" },
+    { "id": "m6", "from": "coobs_ledger", "to": "bob", "y": 315, "label": "Push Notification (+1,000.00 PHP from Alice)", "variant": "default" },
+    { "id": "m7", "from": "coobs_ledger", "to": "coobs_gw", "y": 345, "label": "200 OK (Bob Account Credited)", "variant": "return" },
+    { "id": "m8", "from": "coobs_gw", "to": "aura_gw", "y": 375, "label": "200 OK (status: SUCCESS, ref: TXN-AURA-1001)", "variant": "return" },
+    { "id": "m9", "from": "aura_gw", "to": "alice", "y": 405, "label": "200 OK (Transfer Complete: 1,000 PHP sent)", "variant": "return" },
+
+    { "id": "m10", "from": "bob", "to": "coobs_gw", "y": 460, "label": "POST /api/v1/transfers (Send 1,000 PHP to Alice at Aura Bank)", "variant": "emphasis" },
+    { "id": "m11", "from": "coobs_gw", "to": "coobs_ledger", "y": 490, "label": "Debit Bob 1,000 PHP / Credit ACC-SETTLE-AURA", "variant": "emphasis" },
+    { "id": "m12", "from": "coobs_ledger", "to": "coobs_gw", "y": 520, "label": "200 OK (CooBS Local Settlement Committed)", "variant": "return" },
+    { "id": "m13", "from": "coobs_gw", "to": "aura_gw", "y": 550, "label": "POST /api/v1/interbank/transfers/inbound (Ref: TXN-COOBS-2002)", "variant": "emphasis" },
+    { "id": "m14", "from": "aura_gw", "to": "aura_ledger", "y": 580, "label": "Debit ACC-SETTLE-COOBS / Credit Alice 1,000 PHP", "variant": "emphasis" },
+    { "id": "m15", "from": "aura_ledger", "to": "alice", "y": 610, "label": "Push Notification (+1,000.00 PHP from Bob)", "variant": "default" },
+    { "id": "m16", "from": "aura_ledger", "to": "aura_gw", "y": 640, "label": "200 OK (Alice Account Credited)", "variant": "return" },
+    { "id": "m17", "from": "aura_gw", "to": "coobs_gw", "y": 670, "label": "200 OK (status: SUCCESS, ref: TXN-COOBS-2002)", "variant": "return" },
+    { "id": "m18", "from": "coobs_gw", "to": "bob", "y": 700, "label": "200 OK (Transfer Complete: 1,000 PHP sent)", "variant": "return" }
+  ],
+  "activations": [
+    { "participant": "aura_gw", "from": 160, "to": 410, "type": "backend" },
+    { "participant": "aura_ledger", "from": 190, "to": 230, "type": "database" },
+    { "participant": "coobs_gw", "from": 250, "to": 380, "type": "backend" },
+    { "participant": "coobs_ledger", "from": 280, "to": 350, "type": "database" },
+
+    { "participant": "coobs_gw", "from": 455, "to": 705, "type": "backend" },
+    { "participant": "coobs_ledger", "from": 485, "to": 525, "type": "database" },
+    { "participant": "aura_gw", "from": 545, "to": 675, "type": "backend" },
+    { "participant": "aura_ledger", "from": 575, "to": 645, "type": "database" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Bilateral Settlement Rules & Invariant Guarantees",
+      "items": [
+        "Pre-Funded Reciprocal Buffers: Aura Bank hosts ACC-SETTLEMENT-COOBS and CooBS hosts ACC-SETTLEMENT-AURABANK (each seeded with a 5,000,000 PHP settlement buffer).",
+        "Symmetric API Contract: Both institutions expose the identical endpoint: POST /api/v1/interbank/transfers/inbound with the same JSON request and response payloads.",
+        "Zero Money Leakage: Debiting the sender credits the counterparty buffer. Debiting the counterparty buffer credits the beneficiary. Balance across both banks remains constant."
+      ]
+    }
+  ]
+}

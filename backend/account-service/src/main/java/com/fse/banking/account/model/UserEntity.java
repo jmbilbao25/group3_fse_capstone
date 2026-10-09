@@ -1,5 +1,6 @@
 package com.fse.banking.account.model;
 
+import com.fse.banking.common.enums.KycStatus;
 import com.fse.banking.common.enums.UserRole;
 import com.fse.banking.common.enums.UserStatus;
 import jakarta.persistence.Column;
@@ -76,6 +77,14 @@ public class UserEntity {
     @Builder.Default
     private UserStatus status = UserStatus.ACTIVE;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "kyc_status", length = 30)
+    @Builder.Default
+    private KycStatus kycStatus = KycStatus.PENDING;
+
+    @Column(name = "kyc_review_reason", length = 500)
+    private String kycReviewReason;
+
     @Column(name = "last_known_latitude")
     @Builder.Default
     private Double lastKnownLatitude = 14.5995;
@@ -119,6 +128,9 @@ public class UserEntity {
         }
         if (this.status == null) {
             this.status = UserStatus.ACTIVE;
+        }
+        if (this.kycStatus == null) {
+            this.kycStatus = KycStatus.PENDING;
         }
     }
 

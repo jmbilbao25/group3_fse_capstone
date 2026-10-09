@@ -1051,3 +1051,24 @@ def simulate_scenario(scenario_name: str):
         )
 
     return analyze_transfer_risk(scenarios[scenario_name])
+
+
+# ==============================================================================
+# Laya Vision & e-KYC Decision Pipeline Endpoint
+# ==============================================================================
+from app.kyc import KycEvaluator, KycEvaluationRequest, KycEvaluationResponse
+
+kyc_evaluator = KycEvaluator()
+
+
+@app.post("/api/v1/kyc/evaluate", response_model=KycEvaluationResponse)
+def evaluate_kyc_submission(req: KycEvaluationRequest):
+    """
+    Automated multi-modal identity evaluation:
+    1. Document layout and OCR validation for Philippine government IDs
+    2. ArcFace 512-D unit-normalized facial biometric similarity
+    3. Passive Presentation Attack Detection (liveness scoring)
+    4. Three-tier decision routing (Tier A: APPROVED, Tier B: PENDING_REVIEW, Tier C: REJECTED)
+    """
+    return kyc_evaluator.evaluate(req)
+

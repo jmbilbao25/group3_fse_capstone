@@ -5,6 +5,7 @@ import '../../services/notification_stream_service.dart';
 import '../../theme/aura_theme.dart';
 import '../../widgets/aura_logo.dart';
 import '../auth/login_screen.dart';
+import '../kyc_wizard_screen.dart';
 import 'devices_sessions_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -1256,10 +1257,177 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               const SizedBox(height: 14),
 
+              // 2.5 Identity Verification (e-KYC) Status Card
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: user.isKycVerified
+                        ? const Color(0xFFA7F3D0)
+                        : (user.kycStatus == 'PENDING_REVIEW'
+                            ? const Color(0xFFFDE68A)
+                            : AuraColors.borderLavender),
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: user.isKycVerified
+                            ? AuraColors.creditGreenBg
+                            : (user.kycStatus == 'PENDING_REVIEW'
+                                ? const Color(0xFFFEF3C7)
+                                : AuraColors.tintPurple),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        user.isKycVerified
+                            ? Icons.verified_user_rounded
+                            : (user.kycStatus == 'PENDING_REVIEW'
+                                ? Icons.pending_actions_rounded
+                                : Icons.shield_outlined),
+                        color: user.isKycVerified
+                            ? AuraColors.creditGreen
+                            : (user.kycStatus == 'PENDING_REVIEW'
+                                ? AuraColors.amberWarning
+                                : AuraColors.primary),
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 6,
+                            runSpacing: 4,
+                            children: [
+                              const Text(
+                                'Identity Verification',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                  color: textDark,
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: user.isKycVerified
+                                      ? AuraColors.creditGreenBg
+                                      : (user.kycStatus == 'PENDING_REVIEW'
+                                          ? const Color(0xFFFEF3C7)
+                                          : AuraColors.tintPurple),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  user.isKycVerified
+                                      ? 'Verified'
+                                      : (user.kycStatus == 'PENDING_REVIEW'
+                                          ? 'Under Review'
+                                          : 'Unverified'),
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: user.isKycVerified
+                                        ? AuraColors.creditGreen
+                                        : (user.kycStatus == 'PENDING_REVIEW'
+                                            ? AuraColors.amberWarning
+                                            : AuraColors.primary),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            user.isKycVerified
+                                ? 'Government ID verified. Full banking limits active.'
+                                : (user.kycStatus == 'PENDING_REVIEW'
+                                    ? 'Your documents are being reviewed by compliance.'
+                                    : 'Verify your ID and selfie to unlock full transfers.'),
+                            style: const TextStyle(
+                              fontSize: 11.5,
+                              color: textGray,
+                              height: 1.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (!user.isKycVerified && user.kycStatus != 'PENDING_REVIEW')
+                      InkWell(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => KycWizardScreen(
+                                onCompleted: () => setState(() {}),
+                              ),
+                            ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                          decoration: BoxDecoration(
+                            color: brandViolet,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Text(
+                            'Verify',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      )
+                    else if (user.isKycVerified)
+                      const Icon(Icons.check_circle_rounded, color: AuraColors.creditGreen, size: 20),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
               // 3. Card 2: Security & Authentication
               _buildSectionCardContainer(
                 title: 'Security & Authentication',
                 children: [
+                  _buildActionNavRow(
+                    title: 'Government ID & Identity Verification',
+                    subtitle: user.isKycVerified
+                        ? 'Philippine ID verified'
+                        : (user.kycStatus == 'PENDING_REVIEW'
+                            ? 'Submission under compliance review'
+                            : 'Upload Philippine ID & selfie'),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => KycWizardScreen(
+                            onCompleted: () => setState(() {}),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 14),
                   _buildActionSwitchRow(
                     title: 'Biometric Login (Face ID)',
                     subtitle: 'Unlock app instantly with Face ID',

@@ -112,6 +112,13 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Azure Storage Blob SDK -->
+        <dependency>
+            <groupId>com.azure</groupId>
+            <artifactId>azure-storage-blob</artifactId>
+            <version>12.28.1</version>
+        </dependency>
+
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>

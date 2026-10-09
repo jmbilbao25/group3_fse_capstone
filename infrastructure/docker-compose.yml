@@ -182,8 +182,22 @@ services:
       - redisinsight_data:/data
     networks:
       - banking-net
-    depends_on:
-      - redis-cache
+  # ============================================================================
+  # 7c. Local Azure Blob Storage Emulator (Azurite)
+  # Container Name: azurite-storage
+  # Emulates Azure Blob Storage for e-KYC documents and biometric vaults
+  # ============================================================================
+  azurite-storage:
+    container_name: azurite-storage
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    restart: unless-stopped
+    ports:
+      - "10000:10000" # Blob Service
+    command: ["azurite-blob", "--blobHost", "0.0.0.0", "--blobPort", "10000", "-l", "/data", "--skipApiVersionCheck"]
+    volumes:
+      - azurite_data:/data
+    networks:
+      - banking-net
 
   # ============================================================================
   # 8. Account & Identity Service (Spring Boot :8081)
@@ -200,6 +214,7 @@ services:
       - "8081:8081"
     volumes:
       - ./datadog/dd-java-agent.jar:/app/dd-java-agent.jar:ro
+      - ../backend/account-service/target/account-service-1.0.0-SNAPSHOT.jar:/app/app.jar:ro
     environment:
       - JAVA_TOOL_OPTIONS=-javaagent:/app/dd-java-agent.jar
       - DD_AGENT_HOST=dd-agent
@@ -215,6 +230,10 @@ services:
       - SPRING_DATA_REDIS_HOST=redis-cache
       - SPRING_DATA_REDIS_PORT=6379
       - NOTIFICATION_SERVICE_URL=http://notification-service:8083
+      - AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite-storage:10000/devstoreaccount1;
+      - AZURE_STORAGE_CONTAINER_NAME=kyc-vault
+      - AZURE_STORAGE_PUBLIC_ENDPOINT=http://localhost:10000/devstoreaccount1
+      - APP_SERVICES_RISK_SERVICE_URL=http://risk-service:8084
     labels:
       com.datadoghq.ad.logs: '[{"source": "java", "service": "account-service"}]'
     networks:
@@ -222,6 +241,8 @@ services:
     depends_on:
       - oracle-xe-master
       - redis-cache
+      - azurite-storage
+      - risk-service
       - dd-agent
 
   # ============================================================================
@@ -290,6 +311,7 @@ services:
     volumes:
       - ../backend/risk-service/app:/app/app
       - ../backend/risk-service/data:/app/data
+      - ../backend/risk-service/tests:/app/tests
       - ../hybrid_bench:/app/hybrid_bench
     environment:
       - DD_AGENT_HOST=dd-agent
@@ -553,4 +575,5 @@ volumes:
   prometheus_data:
   grafana_data:
   redisinsight_data:
+  azurite_data:
 

@@ -977,10 +977,11 @@ class BankService extends ChangeNotifier {
       if (detectedThreats != null && detectedThreats.isNotEmpty) 'detectedThreats': detectedThreats,
     };
 
+    final token = DeviceStorage.getAccessToken() ?? 'active_token';
     final headers = {
       'Content-Type': 'application/json',
-      'X-Idempotency-Key': 'TX-${DateTime.now().millisecondsSinceEpoch}',
-      'Authorization': 'Bearer active_token',
+      'X-Idempotency-Key': 'TX-${DateTime.now().millisecondsSinceEpoch}-${DateTime.now().microsecondsSinceEpoch}',
+      'Authorization': 'Bearer $token',
     };
 
     // Candidate endpoints: Gateway (:8080) and direct Ledger Engine (:8082)

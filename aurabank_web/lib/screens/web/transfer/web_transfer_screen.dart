@@ -2,10 +2,24 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:aurabank_core/services/bank_service.dart';
 
+class QuickTransferDraft {
+  QuickTransferDraft({
+    required this.accountNumber,
+    required this.amount,
+    required this.bank,
+  }) : id = DateTime.now().microsecondsSinceEpoch;
+
+  final int id;
+  final String accountNumber;
+  final String amount;
+  final String bank;
+}
+
 class WebTransferScreen extends StatefulWidget {
   final VoidCallback? onBack;
+  final QuickTransferDraft? draft;
 
-  const WebTransferScreen({super.key, this.onBack});
+  const WebTransferScreen({super.key, this.onBack, this.draft});
 
   @override
   State<WebTransferScreen> createState() => _WebTransferScreenState();
@@ -71,10 +85,31 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
   void initState() {
     super.initState();
     _bankService.addListener(_onServiceUpdate);
+    final draft = widget.draft;
+    if (draft != null) _applyDraft(draft);
     _amountController.addListener(() => setState(() {}));
     _accountController.addListener(() => setState(() {}));
     _recipientController.addListener(() => setState(() {}));
     _remarksController.addListener(() => setState(() {}));
+  }
+
+  @override
+  void didUpdateWidget(WebTransferScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final draft = widget.draft;
+    if (draft != null && draft.id != oldWidget.draft?.id) {
+      _applyDraft(draft);
+    }
+  }
+
+  void _applyDraft(QuickTransferDraft draft) {
+    _accountController.text = draft.accountNumber.trim();
+    _amountController.text = draft.amount.replaceAll(',', '').replaceAll('₱', '').trim();
+    final isAura = draft.bank == 'Aura Bank';
+    _isAuraToAura = isAura;
+    if (!isAura && draft.bank.isNotEmpty) {
+      _selectedPartnerBank = draft.bank;
+    }
   }
 
   @override
@@ -1112,10 +1147,10 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
                   children: [
                     const TextSpan(text: 'Transfer Fee: '),
                     TextSpan(
-                      text: _isAuraToAura ? 'FREE' : 'PHP 10.00',
-                      style: TextStyle(
+                      text: 'FREE',
+                      style: const TextStyle(
                         fontWeight: FontWeight.w800,
-                        color: _isAuraToAura ? const Color(0xFF10B981) : const Color(0xFF111827),
+                        color: Color(0xFF10B981),
                       ),
                     ),
                   ],

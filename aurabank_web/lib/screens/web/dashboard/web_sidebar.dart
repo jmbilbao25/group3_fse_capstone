@@ -223,7 +223,7 @@ class WebSidebar extends StatelessWidget {
                   index: 2,
                   icon: Icons.credit_card_rounded,
                   label: 'Cards & Control',
-                  badge: '2 Active',
+                  badge: '1 Active',
                 ),
                 _buildNavItem(
                   index: 3,

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/bank_service.dart';
+import '../../../services/bank_service.dart';
 
 class WebHeader extends StatelessWidget {
   final VoidCallback? onQuickTransfer;

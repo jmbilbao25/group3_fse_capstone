@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../../services/bank_service.dart';
+import '../../../services/bank_service.dart';
 
 class WebTransferScreen extends StatefulWidget {
   final VoidCallback? onBack;

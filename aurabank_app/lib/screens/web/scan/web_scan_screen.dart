@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import '../../services/bank_service.dart';
-import '../../theme/aura_theme.dart';
-import '../transfer/send_money_screen.dart';
+import '../../../services/bank_service.dart';
+import '../../../theme/aura_theme.dart';
+import '../../transfer/send_money_screen.dart';
 
 class WebScanScreen extends StatefulWidget {
   final VoidCallback? onBack;

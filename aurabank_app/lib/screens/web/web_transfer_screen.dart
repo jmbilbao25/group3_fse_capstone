@@ -571,534 +571,466 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
 
   // --- MAIN FORM (LEFT COLUMN) ---
   Widget _buildMainTransferForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Section Header: FROM SOURCE ACCOUNT
-        const Text(
-          'FROM SOURCE ACCOUNT',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF6B7280),
-            letterSpacing: 0.8,
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderLight),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
-        ),
-        const SizedBox(height: 10),
-
-        // Source Account Selector Card
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: borderLight),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: _selectedSourceAccount,
-              isExpanded: true,
-              icon: const Icon(
-                Icons.keyboard_arrow_down_rounded,
-                color: Color(0xFF6B7280),
-                size: 22,
-              ),
-              items: _sourceAccounts.map((acc) {
-                return DropdownMenuItem<String>(
-                  value: acc['type'] as String,
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: const BoxDecoration(
-                          color: brandViolet,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.account_balance_rounded,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              acc['title'] as String,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF111827),
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            RichText(
-                              text: TextSpan(
-                                style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
-                                children: [
-                                  TextSpan(
-                                    text: '${acc['accountNo']} • Available: ',
-                                  ),
-                                  TextSpan(
-                                    text: '₱${_formatCurrency(acc['balance'] as double)}',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      color: Color(0xFF111827),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-              onChanged: (val) {
-                if (val != null) setState(() => _selectedSourceAccount = val);
-              },
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section Header: FROM SOURCE ACCOUNT
+          const Text(
+            'FROM SOURCE ACCOUNT',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF6B7280),
+              letterSpacing: 0.8,
             ),
           ),
-        ),
+          const SizedBox(height: 12),
 
-        const SizedBox(height: 20),
-
-        // Channel Segmented Buttons: Aura to Aura vs Other Bank
-        Container(
-          height: 44,
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: const Color(0xFFE5E7EB),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: InkWell(
-                  onTap: () => setState(() => _isAuraToAura = true),
-                  borderRadius: BorderRadius.circular(9),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: _isAuraToAura ? Colors.white : Colors.transparent,
-                      borderRadius: BorderRadius.circular(9),
-                      boxShadow: _isAuraToAura
-                          ? [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.05),
-                                blurRadius: 4,
-                                offset: const Offset(0, 1),
-                              ),
-                            ]
-                          : null,
-                    ),
+          // Source Account Selector Card
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF9FAFB),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: borderLight),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _selectedSourceAccount,
+                isExpanded: true,
+                icon: const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: Color(0xFF6B7280),
+                  size: 22,
+                ),
+                items: _sourceAccounts.map((acc) {
+                  return DropdownMenuItem<String>(
+                    value: acc['type'] as String,
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.bolt_rounded,
-                          size: 16,
-                          color: _isAuraToAura ? brandViolet : const Color(0xFF6B7280),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Aura to Aura',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: _isAuraToAura ? const Color(0xFF111827) : const Color(0xFF4B5563),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFDCFCE7),
-                            borderRadius: BorderRadius.circular(4),
+                          width: 40,
+                          height: 40,
+                          decoration: const BoxDecoration(
+                            color: brandViolet,
+                            shape: BoxShape.circle,
                           ),
-                          child: const Text(
-                            'Free',
+                          child: const Icon(
+                            Icons.account_balance_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                acc['title'] as String,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF111827),
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              RichText(
+                                text: TextSpan(
+                                  style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                                  children: [
+                                    TextSpan(
+                                      text: '${acc['accountNo']} • Available: ',
+                                    ),
+                                    TextSpan(
+                                      text: '₱${_formatCurrency(acc['balance'] as double)}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF111827),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) setState(() => _selectedSourceAccount = val);
+                },
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Channel Segmented Buttons: Aura to Aura vs Other Bank
+          Container(
+            height: 44,
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3F4F6),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () => setState(() => _isAuraToAura = true),
+                    borderRadius: BorderRadius.circular(9),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: _isAuraToAura ? Colors.white : Colors.transparent,
+                        borderRadius: BorderRadius.circular(9),
+                        boxShadow: _isAuraToAura
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.bolt_rounded,
+                            size: 16,
+                            color: _isAuraToAura ? brandViolet : const Color(0xFF6B7280),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Aura to Aura',
                             style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF16A34A),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: _isAuraToAura ? const Color(0xFF111827) : const Color(0xFF4B5563),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: InkWell(
-                  onTap: () => setState(() => _isAuraToAura = false),
-                  borderRadius: BorderRadius.circular(9),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: !_isAuraToAura ? Colors.white : Colors.transparent,
-                      borderRadius: BorderRadius.circular(9),
-                      boxShadow: !_isAuraToAura
-                          ? [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.05),
-                                blurRadius: 4,
-                                offset: const Offset(0, 1),
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.account_balance_rounded,
-                          size: 15,
-                          color: !_isAuraToAura ? brandViolet : const Color(0xFF6B7280),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Other Bank',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: !_isAuraToAura ? const Color(0xFF111827) : const Color(0xFF4B5563),
-                          ),
-                        ),
-                        const SizedBox(width: 5),
-                        const Text(
-                          'InstaPay (₱10)',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF6B7280),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 20),
-
-        // Form Fields Container
-        Container(
-          padding: const EdgeInsets.all(22),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: borderLight),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (!_isAuraToAura) ...[
-                const Text(
-                  'Destination Bank',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF374151),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: bgSurface,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: borderLight),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _selectedPartnerBank,
-                      isExpanded: true,
-                      icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: Color(0xFF6B7280)),
-                      items: const [
-                        DropdownMenuItem(value: 'MeyBank', child: Text('MeyBank (Group 2 Partner)')),
-                        DropdownMenuItem(value: 'Apex Digital Bank', child: Text('Apex Digital Bank (Group 1 Partner)')),
-                        DropdownMenuItem(value: 'Nexus Core Bank', child: Text('Nexus Core Bank (Group 4 Partner)')),
-                        DropdownMenuItem(value: 'BDO Unibank', child: Text('BDO Unibank')),
-                        DropdownMenuItem(value: 'BPI', child: Text('Bank of the Philippine Islands')),
-                        DropdownMenuItem(value: 'GCash', child: Text('GCash Wallet')),
-                      ],
-                      onChanged: (val) {
-                        if (val != null) setState(() => _selectedPartnerBank = val);
-                      },
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 18),
-              ],
-
-              // Account Number
-              const Text(
-                'Account Number',
-                style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF374151),
-                ),
-              ),
-              const SizedBox(height: 6),
-              Container(
-                decoration: BoxDecoration(
-                  color: bgSurface,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: borderLight),
-                ),
-                child: TextField(
-                  controller: _accountController,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF111827),
-                    letterSpacing: 0.5,
-                  ),
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 18),
-
-              // Recipient Name
-              const Text(
-                'Recipient Name',
-                style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF374151),
-                ),
-              ),
-              const SizedBox(height: 6),
-              Container(
-                decoration: BoxDecoration(
-                  color: bgSurface,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: borderLight),
-                ),
-                child: TextField(
-                  controller: _recipientController,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF111827),
-                  ),
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 18),
-
-              // Enter Amount Header + Transfer Fee indicator
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Enter Amount',
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF374151),
-                    ),
-                  ),
-                  RichText(
-                    text: TextSpan(
-                      style: const TextStyle(fontSize: 11.5, color: Color(0xFF6B7280)),
-                      children: [
-                        const TextSpan(text: 'Transfer Fee: '),
-                        TextSpan(
-                          text: _isAuraToAura ? 'FREE' : 'PHP 10.00',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            color: _isAuraToAura ? const Color(0xFF10B981) : const Color(0xFF111827),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-
-              // Amount Input Field with leading PHP
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: bgSurface,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: borderLight),
-                ),
-                child: Row(
-                  children: [
-                    const Text(
-                      'PHP',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF6B7280),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: TextField(
-                        controller: _amountController,
-                        keyboardType: TextInputType.number,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          color: Color(0xFF111827),
-                        ),
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          hintText: '0',
-                          isDense: true,
-                          contentPadding: EdgeInsets.symmetric(vertical: 6),
-                        ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: InkWell(
+                    onTap: () => setState(() => _isAuraToAura = false),
+                    borderRadius: BorderRadius.circular(9),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: !_isAuraToAura ? Colors.white : Colors.transparent,
+                        borderRadius: BorderRadius.circular(9),
+                        boxShadow: !_isAuraToAura
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.account_balance_rounded,
+                            size: 15,
+                            color: !_isAuraToAura ? brandViolet : const Color(0xFF6B7280),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Other Bank',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: !_isAuraToAura ? const Color(0xFF111827) : const Color(0xFF4B5563),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          if (!_isAuraToAura) ...[
+            const Text(
+              'Destination Bank',
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF374151),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
+              decoration: BoxDecoration(
+                color: bgSurface,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: borderLight),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _selectedPartnerBank,
+                  isExpanded: true,
+                  icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: Color(0xFF6B7280)),
+                  items: const [
+                    DropdownMenuItem(value: 'MeyBank', child: Text('MeyBank (Group 2 Partner)')),
+                    DropdownMenuItem(value: 'Apex Digital Bank', child: Text('Apex Digital Bank (Group 1 Partner)')),
+                    DropdownMenuItem(value: 'Nexus Core Bank', child: Text('Nexus Core Bank (Group 4 Partner)')),
+                    DropdownMenuItem(value: 'BDO Unibank', child: Text('BDO Unibank')),
+                    DropdownMenuItem(value: 'BPI', child: Text('Bank of the Philippine Islands')),
+                    DropdownMenuItem(value: 'GCash', child: Text('GCash Wallet')),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) setState(() => _selectedPartnerBank = val);
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+          ],
+
+          // Account Number
+          const Text(
+            'Account Number',
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF374151),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            decoration: BoxDecoration(
+              color: bgSurface,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: borderLight),
+            ),
+            child: TextField(
+              controller: _accountController,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF111827),
+                letterSpacing: 0.5,
+              ),
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          // Recipient Name
+          const Text(
+            'Recipient Name',
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF374151),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            decoration: BoxDecoration(
+              color: bgSurface,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: borderLight),
+            ),
+            child: TextField(
+              controller: _recipientController,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF111827),
+              ),
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          // Enter Amount Header + Transfer Fee indicator
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Enter Amount',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF374151),
+                ),
+              ),
+              RichText(
+                text: TextSpan(
+                  style: const TextStyle(fontSize: 11.5, color: Color(0xFF6B7280)),
+                  children: [
+                    const TextSpan(text: 'Transfer Fee: '),
+                    TextSpan(
+                      text: _isAuraToAura ? 'FREE' : 'PHP 10.00',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: _isAuraToAura ? const Color(0xFF10B981) : const Color(0xFF111827),
                       ),
                     ),
                   ],
                 ),
               ),
+            ],
+          ),
+          const SizedBox(height: 6),
 
-              const SizedBox(height: 12),
+          // Amount Input Field with leading PHP
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: bgSurface,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: borderLight),
+            ),
+            child: Row(
+              children: [
+                const Text(
+                  'PHP',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF6B7280),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextField(
+                    controller: _amountController,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF111827),
+                    ),
+                    decoration: const InputDecoration(
+                      border: InputBorder.none,
+                      hintText: '0',
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(vertical: 6),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
 
-              // Quick Amount Pills (+ PHP 1,000, + PHP 5,000, + PHP 10,000)
-              Row(
-                children: [
-                  _buildQuickAmountPill('+ PHP 1,000', 1000.0),
-                  const SizedBox(width: 8),
-                  _buildQuickAmountPill('+ PHP 5,000', 5000.0),
-                  const SizedBox(width: 8),
-                  _buildQuickAmountPill('+ PHP 10,000', 10000.0),
-                ],
-              ),
+          const SizedBox(height: 12),
 
-              const SizedBox(height: 18),
+          // Quick Amount Pills (+ PHP 1,000, + PHP 5,000, + PHP 10,000)
+          Row(
+            children: [
+              _buildQuickAmountPill('+ PHP 1,000', 1000.0),
+              const SizedBox(width: 8),
+              _buildQuickAmountPill('+ PHP 5,000', 5000.0),
+              const SizedBox(width: 8),
+              _buildQuickAmountPill('+ PHP 10,000', 10000.0),
+            ],
+          ),
 
-              // Purpose & Remarks side by side
-              Row(
-                children: [
-                  // Purpose Dropdown
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Purpose',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF374151),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: bgSurface,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: borderLight),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: _selectedPurpose,
-                              isExpanded: true,
-                              itemHeight: 64,
-                              icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: Color(0xFF6B7280)),
-                              items: _purposes.map((p) {
-                                final title = p['title'] as String;
-                                final subtitle = p['subtitle'] as String;
-                                final icon = p['icon'] as IconData;
+          const SizedBox(height: 18),
 
-                                return DropdownMenuItem<String>(
-                                  value: title,
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 36,
-                                        height: 36,
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFFAF5FF),
-                                          borderRadius: BorderRadius.circular(10),
-                                          border: Border.all(color: const Color(0xFFF3E8FF)),
-                                        ),
-                                        child: Icon(
-                                          icon,
-                                          size: 18,
-                                          color: brandViolet,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Text(
-                                              title,
-                                              style: const TextStyle(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w700,
-                                                color: Color(0xFF111827),
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            const SizedBox(height: 1),
-                                            Text(
-                                              subtitle,
-                                              style: const TextStyle(
-                                                fontSize: 10.5,
-                                                fontWeight: FontWeight.w400,
-                                                color: Color(0xFF6B7280),
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
+          // Purpose & Remarks side by side
+          Row(
+            children: [
+              // Purpose Dropdown
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Purpose',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF374151),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: bgSurface,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: borderLight),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _selectedPurpose,
+                          isExpanded: true,
+                          itemHeight: 64,
+                          icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: Color(0xFF6B7280)),
+                          items: _purposes.map((p) {
+                            final title = p['title'] as String;
+                            final subtitle = p['subtitle'] as String;
+                            final icon = p['icon'] as IconData;
+
+                            return DropdownMenuItem<String>(
+                              value: title,
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFAF5FF),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: const Color(0xFFF3E8FF)),
+                                    ),
+                                    child: Icon(
+                                      icon,
+                                      size: 18,
+                                      color: brandViolet,
+                                    ),
                                   ),
-                                );
-                              }).toList(),
-                              selectedItemBuilder: (context) {
-                                return _purposes.map((p) {
-                                  final title = p['title'] as String;
-                                  final icon = p['icon'] as IconData;
-                                  return Row(
-                                    children: [
-                                      Container(
-                                        width: 28,
-                                        height: 28,
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFFAF5FF),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Icon(
-                                          icon,
-                                          size: 16,
-                                          color: brandViolet,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text(
                                           title,
                                           style: const TextStyle(
                                             fontSize: 13,
@@ -1107,70 +1039,115 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
-                                      ),
-                                    ],
-                                  );
-                                }).toList();
-                              },
-                              onChanged: (val) {
-                                if (val != null) setState(() => _selectedPurpose = val);
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(width: 14),
-
-                  // Remarks (Optional)
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Remarks (Optional)',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF374151),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: bgSurface,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: borderLight),
-                          ),
-                          child: TextField(
-                            controller: _remarksController,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF111827),
-                            ),
-                            decoration: const InputDecoration(
-                              hintText: 'Enter details...',
-                              hintStyle: TextStyle(
-                                color: Color(0xFF9CA3AF),
-                                fontSize: 13,
+                                        const SizedBox(height: 1),
+                                        Text(
+                                          subtitle,
+                                          style: const TextStyle(
+                                            fontSize: 10.5,
+                                            fontWeight: FontWeight.w400,
+                                            color: Color(0xFF6B7280),
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
-                              border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                            ),
-                          ),
+                            );
+                          }).toList(),
+                          selectedItemBuilder: (context) {
+                            return _purposes.map((p) {
+                              final title = p['title'] as String;
+                              final icon = p['icon'] as IconData;
+                              return Row(
+                                children: [
+                                  Container(
+                                    width: 28,
+                                    height: 28,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFAF5FF),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Icon(
+                                      icon,
+                                      size: 16,
+                                      color: brandViolet,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      title,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF111827),
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }).toList();
+                          },
+                          onChanged: (val) {
+                            if (val != null) setState(() => _selectedPurpose = val);
+                          },
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 14),
+
+              // Remarks (Optional)
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Remarks (Optional)',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF374151),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: bgSurface,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: borderLight),
+                      ),
+                      child: TextField(
+                        controller: _remarksController,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF111827),
+                        ),
+                        decoration: const InputDecoration(
+                          hintText: 'Enter details...',
+                          hintStyle: TextStyle(
+                            color: Color(0xFF9CA3AF),
+                            fontSize: 13,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

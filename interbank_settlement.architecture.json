@@ -78,7 +78,7 @@
       "id": "interbank_wire",
       "type": "cloud",
       "label": "Inter-Bank Wire Gateway",
-      "sublabel": "HTTPS REST / mTLS Hook",
+      "sublabel": "HTTP REST / API Key",
       "pos": [900, 140],
       "size": [180, 72],
       "tag": "POST /interbank/inward"
@@ -210,7 +210,7 @@
       "id": "orch-to-wire",
       "from": "aura_orchestrator",
       "to": "interbank_wire",
-      "label": "Leg 2: Outward Wire (mTLS)",
+      "label": "Leg 2: Outward Wire (HTTP)",
       "variant": "emphasis",
       "fromSide": "right",
       "toSide": "left"
@@ -228,7 +228,7 @@
       "id": "wire-to-partner-gw",
       "from": "interbank_wire",
       "to": "partner_gateway",
-      "label": "mTLS Inward Wire",
+      "label": "HTTP Inward Wire",
       "variant": "emphasis",
       "fromSide": "right",
       "toSide": "left"
@@ -292,7 +292,7 @@
       "title": "Outbound & Inbound Inter-Bank Transaction Lifecycle",
       "items": [
         "Leg 1 (Domestic Debit): AuraBank Transfer Orchestrator invokes internal T24 CBS POST /api/v1/cbs/funds-transfer (Debit: Alice, Credit: ACC-NOSTRO-BANK-B).",
-        "Leg 2 (Inter-Bank Wire Dispatch): Orchestrator sends authenticated HTTPS payload with HMAC signature and idempotency token to Partner Bank POST /api/v1/transfers/interbank/inward.",
+        "Leg 2 (Inter-Bank Wire Dispatch): Orchestrator sends authenticated HTTP REST payload with API Key header and idempotency token to Partner Bank POST /api/v1/transfers/interbank/inward.",
         "Leg 3 (Beneficiary Credit): Partner Bank CBS executes internal funds transfer (Debit: ACC-VOSTRO-AURABANK, Credit: Bob) and returns 200 OK with partner transaction reference.",
         "Saga Compensation (Rollback on Failure): If Partner Bank returns 404/500 or times out, AuraBank Orchestrator calls T24 POST /api/v1/cbs/reversal to immediately restore Alice's funds."
       ]

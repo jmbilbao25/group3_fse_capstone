@@ -5106,7 +5106,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         </g>
         <g data-graph-role="automatic-crossover" style="--step:5">
           <path data-graph-role="automatic-crossover-underlay" d="M 730 176 L 900 176" fill="none" stroke="var(--mask)" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="aura_orchestrator" data-edge-to="interbank_wire" data-edge-label="Leg 2: Outward Wire (mTLS)" data-edge-key="5" data-edge-id="orch-to-wire" data-composition-points="730,176;900,176" data-composition-crossover="halo" data-composition-independent="true" d="M 730 176 L 900 176" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+          <path data-edge-from="aura_orchestrator" data-edge-to="interbank_wire" data-edge-label="Leg 2: Outward Wire (HTTP)" data-edge-key="5" data-edge-id="orch-to-wire" data-composition-points="730,176;900,176" data-composition-crossover="halo" data-composition-independent="true" d="M 730 176 L 900 176" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         </g>
         <g data-graph-role="automatic-crossover" style="--step:6">
           <path data-graph-role="automatic-crossover-underlay" d="M 990 212 L 990 310" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
@@ -5114,7 +5114,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         </g>
         <g data-graph-role="automatic-crossover" style="--step:7">
           <path data-graph-role="automatic-crossover-underlay" d="M 1080 176 L 1096 176 Q 1104 176 1104 184 L 1104 184 Q 1104 192 1112 192 L 1228 192 Q 1236 192 1236 184 L 1236 180 Q 1236 172 1244 172 L 1260 172" fill="none" stroke="var(--mask)" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="interbank_wire" data-edge-to="partner_gateway" data-edge-label="mTLS Inward Wire" data-edge-key="7" data-edge-id="wire-to-partner-gw" data-composition-points="1080,176;1104,176;1104,192;1236,192;1236,172;1260,172" data-composition-crossover="halo" data-composition-independent="true" d="M 1080 176 L 1096 176 Q 1104 176 1104 184 L 1104 184 Q 1104 192 1112 192 L 1228 192 Q 1236 192 1236 184 L 1236 180 Q 1236 172 1244 172 L 1260 172" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+          <path data-edge-from="interbank_wire" data-edge-to="partner_gateway" data-edge-label="HTTP Inward Wire" data-edge-key="7" data-edge-id="wire-to-partner-gw" data-composition-points="1080,176;1104,176;1104,192;1236,192;1236,172;1260,172" data-composition-crossover="halo" data-composition-independent="true" d="M 1080 176 L 1096 176 Q 1104 176 1104 184 L 1104 184 Q 1104 192 1112 192 L 1228 192 Q 1236 192 1236 184 L 1236 180 Q 1236 172 1244 172 L 1260 172" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         </g>
         <g data-graph-role="automatic-crossover" style="--step:8">
           <path data-graph-role="automatic-crossover-underlay" d="M 1420 172 L 1436 172 Q 1444 172 1444 180 L 1444 184 Q 1444 192 1452 192 L 1498 192 Q 1506 192 1506 184 L 1506 184 Q 1506 176 1514 176 L 1530 176" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
@@ -5251,7 +5251,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <text data-detail="fine" x="645" y="432" class="t-database" font-size="7" text-anchor="middle">AMLA Compliance Trail</text>
         </g>
 
-        <g id="node-interbank_wire" data-node-id="interbank_wire" data-node-label="Inter-Bank Wire Gateway" tabindex="0" role="button" aria-label="Focus Inter-Bank Wire Gateway, HTTPS REST / mTLS Hook, Inter-Bank Clearing &amp; Bilateral Settlement Corridor" aria-pressed="false" data-node-kind="cloud" data-node-sublabel="HTTPS REST / mTLS Hook" data-node-tag="POST /interbank/inward" data-node-context="Inter-Bank Clearing &amp; Bilateral Settlement Corridor">
+        <g id="node-interbank_wire" data-node-id="interbank_wire" data-node-label="Inter-Bank Wire Gateway" tabindex="0" role="button" aria-label="Focus Inter-Bank Wire Gateway, HTTP REST / API Key, Inter-Bank Clearing &amp; Bilateral Settlement Corridor" aria-pressed="false" data-node-kind="cloud" data-node-sublabel="HTTP REST / API Key" data-node-tag="POST /interbank/inward" data-node-context="Inter-Bank Clearing &amp; Bilateral Settlement Corridor">
           
           <rect x="900" y="140" width="180" height="72" rx="6" class="c-mask"/>
           <rect x="900" y="140" width="180" height="72" rx="6" class="c-cloud" stroke-width="1.5"/>
@@ -5259,7 +5259,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             <path d="M4.3 12.5h7.3a2.4 2.4 0 0 0 .2-4.8 4 4 0 0 0-7.5-1.3A3.1 3.1 0 0 0 4.3 12.5Z"/>
           </g>
           <text data-node-label="" data-detail-anchor="" x="990" y="174" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Inter-Bank Wire Gateway</text>
-        <text data-detail="context" x="990" y="190" class="t-muted" font-size="9" text-anchor="middle">HTTPS REST / mTLS Hook</text>
+        <text data-detail="context" x="990" y="190" class="t-muted" font-size="9" text-anchor="middle">HTTP REST / API Key</text>
         <text data-detail="fine" x="990" y="204" class="t-cloud" font-size="7" text-anchor="middle">POST /interbank/inward</text>
         </g>
 
@@ -5352,17 +5352,17 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           <rect x="213.8" y="326" width="72.4" height="14" rx="3" class="c-mask"/>
           <text x="250" y="336" class="t-edge-default" font-size="8" text-anchor="middle">ACID row lock</text>
         </g>
-        <g data-detail="context" data-edge-from="aura_orchestrator" data-edge-to="interbank_wire" data-edge-label="Leg 2: Outward Wire (mTLS)" data-edge-key="5" data-edge-id="orch-to-wire">
+        <g data-detail="context" data-edge-from="aura_orchestrator" data-edge-to="interbank_wire" data-edge-label="Leg 2: Outward Wire (HTTP)" data-edge-key="5" data-edge-id="orch-to-wire">
           <rect x="747.6" y="156" width="134.8" height="14" rx="3" class="c-mask"/>
-          <text x="815" y="166" class="t-edge-emphasis" font-size="8" text-anchor="middle">Leg 2: Outward Wire (mTLS)</text>
+          <text x="815" y="166" class="t-edge-emphasis" font-size="8" text-anchor="middle">Leg 2: Outward Wire (HTTP)</text>
         </g>
         <g data-detail="context" data-edge-from="interbank_wire" data-edge-to="settlement_model" data-edge-label="Nostro/Vostro Sync" data-edge-key="6" data-edge-id="wire-to-settlement">
           <rect x="887.5999999999999" y="254" width="96.39999999999999" height="14" rx="3" class="c-mask"/>
           <text x="935.8" y="264" class="t-edge-dashed" font-size="8" text-anchor="middle">Nostro/Vostro Sync</text>
         </g>
-        <g data-detail="context" data-edge-from="interbank_wire" data-edge-to="partner_gateway" data-edge-label="mTLS Inward Wire" data-edge-key="7" data-edge-id="wire-to-partner-gw">
+        <g data-detail="context" data-edge-from="interbank_wire" data-edge-to="partner_gateway" data-edge-label="HTTP Inward Wire" data-edge-key="7" data-edge-id="wire-to-partner-gw">
           <rect x="1126.6" y="172" width="86.8" height="14" rx="3" class="c-mask"/>
-          <text x="1170" y="182" class="t-edge-emphasis" font-size="8" text-anchor="middle">mTLS Inward Wire</text>
+          <text x="1170" y="182" class="t-edge-emphasis" font-size="8" text-anchor="middle">HTTP Inward Wire</text>
         </g>
         <g data-detail="context" data-edge-from="partner_gateway" data-edge-to="partner_orchestrator" data-edge-label="Dispatch Wire" data-edge-key="8" data-edge-id="partner-gw-to-orch">
           <rect x="1444" y="200" width="72.4" height="14" rx="3" class="c-mask"/>
@@ -5634,7 +5634,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         </div>
         <ul>
           <li>Leg 1 (Domestic Debit): AuraBank Transfer Orchestrator invokes internal T24 CBS POST /api/v1/cbs/funds-transfer (Debit: Alice, Credit: ACC-NOSTRO-BANK-B).</li>
-          <li>Leg 2 (Inter-Bank Wire Dispatch): Orchestrator sends authenticated HTTPS payload with HMAC signature and idempotency token to Partner Bank POST /api/v1/transfers/interbank/inward.</li>
+          <li>Leg 2 (Inter-Bank Wire Dispatch): Orchestrator sends authenticated HTTP REST payload with API Key header and idempotency token to Partner Bank POST /api/v1/transfers/interbank/inward.</li>
           <li>Leg 3 (Beneficiary Credit): Partner Bank CBS executes internal funds transfer (Debit: ACC-VOSTRO-AURABANK, Credit: Bob) and returns 200 OK with partner transaction reference.</li>
           <li>Saga Compensation (Rollback on Failure): If Partner Bank returns 404/500 or times out, AuraBank Orchestrator calls T24 POST /api/v1/cbs/reversal to immediately restore Alice&#39;s funds.</li>
         </ul>

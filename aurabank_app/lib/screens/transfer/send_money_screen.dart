@@ -48,20 +48,6 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
       'balance': _bankService.availableBalance,
       'icon': Icons.account_balance_rounded,
     },
-    {
-      'type': 'Current',
-      'title': 'Current Account',
-      'accountNo': 'AUR-CUR-4412',
-      'balance': 125000.0,
-      'icon': Icons.account_balance_wallet_rounded,
-    },
-    {
-      'type': 'Credit',
-      'title': 'Credit Account',
-      'accountNo': 'AUR-CRD-7703',
-      'balance': 75000.0,
-      'icon': Icons.credit_card_rounded,
-    },
   ];
 
   static const List<Map<String, dynamic>> _purposes = [

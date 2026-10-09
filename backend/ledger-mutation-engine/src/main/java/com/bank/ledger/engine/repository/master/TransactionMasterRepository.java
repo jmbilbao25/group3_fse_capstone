@@ -10,4 +10,5 @@ import java.util.List;
 public interface TransactionMasterRepository extends JpaRepository<TransactionMaster, String> {
     List<TransactionMaster> findByStatus(String status);
     List<TransactionMaster> findAllByOrderByCreatedAtDesc();
+    java.util.Optional<TransactionMaster> findTopByFromAccountIdAndLatitudeIsNotNullOrderByCreatedAtDesc(String fromAccountId);
 }

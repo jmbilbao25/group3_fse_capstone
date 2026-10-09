@@ -118,7 +118,6 @@ class AccountControllerWebTest {
                 .accountNumber("100100001234")
                 .accountType(AccountType.SAVINGS)
                 .status(AccountStatus.LOCKED)
-                .creditLimit(BigDecimal.ZERO)
                 .createdAt(Instant.now())
                 .build();
 

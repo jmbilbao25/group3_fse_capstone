@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/user_persona.dart';
 import '../../services/auth_api_service.dart';
 import '../../services/notification_stream_service.dart';
-import '../../widgets/brand_logo.dart';
+import '../../widgets/aura_logo.dart';
 import '../../widgets/security_dialog.dart';
 
 class PendingApprovalScreen extends StatefulWidget {
@@ -214,7 +214,7 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const BrandLockup(markSize: 44),
+                  const AuraWordmark(size: 44),
                   const SizedBox(height: 28),
 
                   // Animated Pending Icon

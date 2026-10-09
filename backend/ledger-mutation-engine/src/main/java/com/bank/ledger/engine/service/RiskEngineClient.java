@@ -56,10 +56,15 @@ public class RiskEngineClient {
      * Enforces a 1500ms timeout for local neural model evaluation with safe fallback.
      */
     public RiskEvaluationResult evaluateRisk(MutationRequest request) {
+        return evaluateRisk(request, Map.of());
+    }
+
+    /** {@code extras} carries ledger-side context such as the previous transfer's location. */
+    public RiskEvaluationResult evaluateRisk(MutationRequest request, Map<String, Object> extras) {
         String url = riskServiceBaseUrl + "/api/v1/risk/analyze";
 
         try {
-            Map<String, Object> payload = new HashMap<>();
+            Map<String, Object> payload = new HashMap<>(extras);
             payload.put("transaction_id", request.getTransactionId());
             payload.put("user_id", request.getInitiatorUserId());
             payload.put("account_id", request.getAccountId());

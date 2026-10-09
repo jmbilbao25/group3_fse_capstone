@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { MapPinned, Plane, Navigation } from 'lucide-react';
 import { api, errorMessage } from '../lib/api';
-import { haversineKm } from '../lib/format';
+import { greatCircle, haversineKm } from '../lib/format';
 import { Badge, Button, ErrorNote, PageHeader, SkeletonRows, cn, useLoad, useToast } from '../components/ui';
 
 /** Demo destinations, with an IP that geolocates to each city. */
@@ -15,15 +17,19 @@ const PLACES = [
   { name: 'New York, United States', lat: 40.7128, lon: -74.006, ip: '23.80.5.10' },
 ];
 
-// Equirectangular projection over the region the demo uses.
-const W = 760;
-const H = 360;
-const project = (lat, lon) => [((lon + 100) / 260) * W, ((62 - lat) / 72) * H];
-
 export default function Geo() {
   const toast = useToast();
   const customers = useLoad(
-    () => api.get('/accounts').then((r) => [...new Map(r.data.map((a) => [a.user_id, a])).values()].filter((a) => a.user_id?.includes('cst'))),
+    () => api.get('/accounts').then((r) => {
+      const byOwner = new Map();
+      for (const a of r.data) {
+        if (a.owner_role !== 'CUSTOMER') continue;
+        const c = byOwner.get(a.user_id) || { user_id: a.user_id, name: a.owner_name || a.user_id, accounts: 0 };
+        c.accounts += 1;
+        byOwner.set(a.user_id, c);
+      }
+      return [...byOwner.values()].sort((x, y) => x.name.localeCompare(y.name));
+    }),
     [],
   );
   const [userId, setUserId] = useState(null);
@@ -31,7 +37,8 @@ export default function Geo() {
   const [target, setTarget] = useState(PLACES[5]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
-  const [flight, setFlight] = useState(0);
+  // The hop just flown, so the map keeps showing it after the customer lands.
+  const [hop, setHop] = useState(null);
 
   useEffect(() => {
     if (!userId && customers.data?.length) setUserId(customers.data[0].user_id);
@@ -40,8 +47,12 @@ export default function Geo() {
   useEffect(() => {
     if (!userId) return;
     setErr('');
+    setHop(null);
     api.get(`/users/${userId}/location`)
-      .then(({ data }) => setCurrent({ name: data.location_name, lat: Number(data.latitude), lon: Number(data.longitude), ip: data.ip_address }))
+      .then(({ data }) => setCurrent({
+        name: data.location_name, lat: Number(data.latitude), lon: Number(data.longitude), ip: data.ip_address,
+        who: [data.first_name, data.last_name].filter(Boolean).join(' '),
+      }))
       .catch((e) => setErr(errorMessage(e)));
   }, [userId]);
 
@@ -49,12 +60,17 @@ export default function Geo() {
   const impliedKmh = km / (5 / 60);
   const flagged = km >= 100 && impliedKmh > 800;
 
+  function pick(p) {
+    setTarget(p);
+    setHop(null);
+  }
+
   async function move() {
     setBusy(true);
     try {
       await api.patch(`/users/${userId}/location`, { latitude: target.lat, longitude: target.lon, location_name: target.name, ip_address: target.ip });
-      setFlight((f) => f + 1);
-      setCurrent(target);
+      setHop({ from: current, to: target });
+      setCurrent({ ...target, who: current?.who });
       toast(`Customer now appears in ${target.name}. Their next transfer will be checked against the last one.`);
     } catch (e) {
       toast(errorMessage(e), 'error');
@@ -70,33 +86,47 @@ export default function Geo() {
         description="For demos. Move a customer's reported location, then have them send money. If the jump is faster than a plane, the ledger holds the transfer for review."
         actions={<Badge tone="ember">Demo tool</Badge>}
       />
-      <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+      <div className="grid items-start gap-6 lg:grid-cols-[320px_1fr]">
         <div className="panel overflow-hidden animate-rise">
-          <p className="label px-5 pt-5">Customer</p>
+          <p className="label px-5 pt-5">Customers{customers.data?.length ? ` · ${customers.data.length}` : ''}</p>
           {customers.loading ? (
             <SkeletonRows rows={4} />
           ) : customers.error ? (
             <div className="p-5"><ErrorNote message={errorMessage(customers.error)} onRetry={customers.reload} /></div>
+          ) : !customers.data.length ? (
+            <p className="px-5 py-6 text-sm text-ink-400">No customer accounts yet.</p>
           ) : (
             <ul className="p-2">
-              {customers.data.map((c, i) => (
-                <li key={c.user_id} className="row-enter" style={{ '--i': i }}>
-                  <button
-                    onClick={() => setUserId(c.user_id)}
-                    className={cn('w-full rounded-xl px-3 py-2.5 text-left text-sm transition-colors', userId === c.user_id ? 'bg-ink text-white' : 'hover:bg-paper')}
-                  >
-                    <p className="font-semibold">{c.user_id}</p>
-                    <p className={cn('text-xs', userId === c.user_id ? 'text-white/60' : 'text-ink-400')}>{c.account_number}</p>
-                  </button>
-                </li>
-              ))}
+              {customers.data.map((c, i) => {
+                const on = userId === c.user_id;
+                const initials = c.name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+                return (
+                  <li key={c.user_id} className="row-enter" style={{ '--i': i }}>
+                    <button
+                      onClick={() => setUserId(c.user_id)}
+                      aria-pressed={on}
+                      className={cn('flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors', on ? 'bg-ink text-white' : 'hover:bg-paper')}
+                    >
+                      <span aria-hidden className={cn('grid size-9 shrink-0 place-items-center rounded-full text-xs font-semibold', on ? 'bg-white/10 text-mint' : 'bg-mint-wash text-mint-deep')}>
+                        {initials}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-semibold">{c.name}</span>
+                        <span className={cn('block truncate font-mono text-xs', on ? 'text-white/60' : 'text-ink-400')}>
+                          {c.user_id} · {c.accounts} {c.accounts === 1 ? 'account' : 'accounts'}
+                        </span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
 
         <div className="space-y-6">
           {err && <ErrorNote message={err} />}
-          <RouteMap from={current} to={target} flight={flight} />
+          <RouteMap from={hop?.from || current} to={hop?.to || target} who={current?.who} />
 
           <div className="panel p-5 animate-rise" style={{ animationDelay: '120ms' }}>
             <p className="label mb-3">Move to</p>
@@ -104,7 +134,7 @@ export default function Geo() {
               {PLACES.map((p) => (
                 <button
                   key={p.name}
-                  onClick={() => setTarget(p)}
+                  onClick={() => pick(p)}
                   className={cn('rounded-full px-3.5 py-1.5 text-sm font-medium ring-1 ring-inset transition-colors',
                     target.name === p.name ? 'bg-ink text-white ring-ink' : 'ring-ink-100 hover:ring-ink-200')}
                 >
@@ -129,58 +159,83 @@ export default function Geo() {
   );
 }
 
-/** Graticule, both cities and the great-circle hop drawn as an arc. The arc
- *  draws itself and a plane runs along it each time the customer is moved. */
-function RouteMap({ from, to, flight }) {
-  const arc = useMemo(() => {
-    if (!from || !to) return null;
-    const [x1, y1] = project(from.lat, from.lon);
-    const [x2, y2] = project(to.lat, to.lon);
-    const lift = Math.min(140, Math.hypot(x2 - x1, y2 - y1) * 0.35);
-    const cx = (x1 + x2) / 2;
-    const cy = Math.min(y1, y2) - lift;
-    return { x1, y1, x2, y2, d: `M${x1},${y1} Q${cx},${cy} ${x2},${y2}` };
+const INK = '#10171C';
+
+/** OpenStreetMap with both cities and the great-circle hop between them.
+ *  The route draws itself and a marker flies along it whenever it changes. */
+function RouteMap({ from, to, who }) {
+  const el = useRef(null);
+  const map = useRef(null);
+  const layer = useRef(null);
+
+  useEffect(() => {
+    // maxBounds keeps the view off the grey band past the poles; longitudes stay wide for unwrapped routes.
+    const m = L.map(el.current, { scrollWheelZoom: false, worldCopyJump: true, maxBounds: [[-85, -720], [85, 720]], maxBoundsViscosity: 1 })
+      .setView([25, 60], 2);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(m);
+    layer.current = L.layerGroup().addTo(m);
+    map.current = m;
+    return () => m.remove();
+  }, []);
+
+  useEffect(() => {
+    const g = layer.current;
+    g.clearLayers();
+    if (!from || !to) return undefined;
+
+    const pts = greatCircle(from, to);
+    const end = pts[pts.length - 1];
+    const label = (direction) => ({ permanent: true, direction, offset: direction === 'top' ? [0, -10] : [0, 10], className: 'route-label' });
+
+    if (pts.length > 1) {
+      L.polyline(pts, { color: '#fff', weight: 7, opacity: 0.85, interactive: false }).addTo(g);
+      const line = L.polyline(pts, { color: INK, weight: 3, lineCap: 'round', interactive: false, className: 'route-line' }).addTo(g);
+      line.getElement()?.setAttribute('pathLength', '1');
+      L.circleMarker(pts[0], { radius: 6, color: '#fff', weight: 2, fillColor: '#97CFF3', fillOpacity: 1 })
+        .bindTooltip(from.name.split(',')[0], label('bottom')).addTo(g);
+    }
+    L.marker(end, { icon: L.divIcon({ className: 'route-pin', iconSize: [16, 16] }), keyboard: false })
+      .bindTooltip(to.name.split(',')[0], label('top')).addTo(g);
+
+    if (pts.length > 1) map.current.fitBounds(L.latLngBounds(pts), { padding: [56, 56], maxZoom: 6 });
+    else map.current.setView(end, 5);
+
+    if (pts.length < 2 || matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
+    const plane = L.circleMarker(pts[0], { radius: 5, color: INK, weight: 2, fillColor: '#fff', fillOpacity: 1, interactive: false }).addTo(g);
+    const t0 = performance.now();
+    let raf = 0;
+    const step = (t) => {
+      const f = Math.min(1, (t - t0) / 1800);
+      const e = f < 0.5 ? 2 * f * f : 1 - (-2 * f + 2) ** 2 / 2;
+      plane.setLatLng(pts[Math.round(e * (pts.length - 1))]);
+      if (f < 1) raf = requestAnimationFrame(step);
+      else g.removeLayer(plane);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
   }, [from, to]);
 
   return (
-    <div className="panel relative overflow-hidden animate-rise" style={{ animationDelay: '60ms' }}>
-      <div className="absolute inset-0 bg-ink" />
-      <svg viewBox={`0 0 ${W} ${H}`} className="relative block w-full" role="img" aria-label={from && to ? `Route from ${from.name} to ${to.name}` : 'Route map'}>
-        <defs>
-          <linearGradient id="route" x1="0" x2="1"><stop offset="0" stopColor="#97CFF3" /><stop offset="1" stopColor="#A7E8D1" /></linearGradient>
-          <radialGradient id="ping"><stop offset="0" stopColor="#A7E8D1" stopOpacity=".6" /><stop offset="1" stopColor="#A7E8D1" stopOpacity="0" /></radialGradient>
-        </defs>
-        {Array.from({ length: 9 }, (_, i) => <line key={`v${i}`} x1={(i * W) / 8} x2={(i * W) / 8} y1="0" y2={H} stroke="#fff" strokeOpacity=".05" />)}
-        {Array.from({ length: 5 }, (_, i) => <line key={`h${i}`} y1={(i * H) / 4} y2={(i * H) / 4} x1="0" x2={W} stroke="#fff" strokeOpacity=".05" />)}
-        {PLACES.map((p) => {
-          const [x, y] = project(p.lat, p.lon);
-          return <circle key={p.name} cx={x} cy={y} r="2.5" fill="#fff" fillOpacity=".3" />;
-        })}
-        {arc && (
-          <g key={`${from.name}-${to.name}-${flight}`}>
-            <path d={arc.d} fill="none" stroke="url(#route)" strokeWidth="2.5" strokeLinecap="round" pathLength="1" strokeDasharray="1" className="route-draw" />
-            <circle cx={arc.x2} cy={arc.y2} r="22" fill="url(#ping)" className="route-ping" />
-            <circle cx={arc.x1} cy={arc.y1} r="5" fill="#97CFF3" />
-            <circle cx={arc.x2} cy={arc.y2} r="5" fill="#A7E8D1" />
-            <g className="route-plane" style={{ offsetPath: `path('${arc.d}')` }}>
-              <circle r="4" fill="#fff" />
-            </g>
-            <text x={arc.x1 + 10} y={arc.y1 + 18} fill="#fff" fillOpacity=".75" fontSize="13">{from.name.split(',')[0]}</text>
-            <text x={arc.x2 + 10} y={arc.y2 - 10} fill="#fff" fontSize="13" fontWeight="600">{to.name.split(',')[0]}</text>
-          </g>
-        )}
-      </svg>
-      <div className="relative flex items-center gap-2 border-t border-white/10 px-5 py-3 text-sm text-white/70">
-        <MapPinned className="size-4 text-mint" /> Now in <b className="text-white">{from?.name || '...'}</b>
+    <div className="panel relative isolate overflow-hidden animate-rise" style={{ animationDelay: '60ms' }}>
+      <div ref={el} className="h-[380px] w-full bg-ink-100" role="region" aria-label={from && to ? `Map of the route from ${from.name} to ${to.name}` : 'Route map'} />
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 bg-ink px-5 py-3 text-sm text-white/70">
+        <MapPinned className="size-4 text-mint" /> {who ? <b className="text-white">{who}</b> : 'Now'} in <b className="text-white">{from?.name || '...'}</b>
         <Plane className="ml-3 size-4 text-sky" /> Target <b className="text-white">{to?.name}</b>
       </div>
       <style>{`
-        .route-draw { stroke-dashoffset: 1; animation: route-draw 1.2s cubic-bezier(0.16,1,0.3,1) forwards; }
-        .route-ping { transform-box: fill-box; transform-origin: center; animation: route-ping 2.4s ease-out 1s infinite; opacity: 0; }
-        .route-plane { offset-rotate: auto; offset-distance: 0%; animation: route-fly 1.6s cubic-bezier(0.65,0,0.35,1) .2s forwards; opacity: 0; }
+        .leaflet-container { font: inherit; }
+        .route-label { background: ${INK}; color: #fff; border: 0; border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 600; box-shadow: 0 4px 12px rgb(16 23 28 / .18); }
+        .route-label::before { display: none; }
+        .route-pin { border-radius: 999px; background: #A7E8D1; box-shadow: 0 0 0 2px ${INK}, 0 0 0 4px #fff; }
+        @media (prefers-reduced-motion: no-preference) {
+          .route-line { stroke-dasharray: 1; stroke-dashoffset: 1; animation: route-draw 1.4s cubic-bezier(0.16,1,0.3,1) forwards; }
+          .route-pin::after { content: ''; position: absolute; inset: -6px; border-radius: 999px; border: 2px solid #A7E8D1; animation: route-ping 2.4s ease-out 1s infinite; opacity: 0; }
+        }
         @keyframes route-draw { to { stroke-dashoffset: 0; } }
-        @keyframes route-ping { 0% { opacity: .9; transform: scale(.4); } 100% { opacity: 0; transform: scale(1.6); } }
-        @keyframes route-fly { 0% { opacity: 1; offset-distance: 0%; } 90% { opacity: 1; } 100% { opacity: 0; offset-distance: 100%; } }
+        @keyframes route-ping { 0% { opacity: .9; transform: scale(.6); } 100% { opacity: 0; transform: scale(2.2); } }
       `}</style>
     </div>
   );

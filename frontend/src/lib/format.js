@@ -30,5 +30,27 @@ export function haversineKm(a, b) {
   return 6371 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
 }
 
+/** [lat, lon] points along the great circle from a to b. Longitudes are
+ *  unwrapped so a Pacific crossing draws as one line, not two. */
+export function greatCircle(a, b, n = 64) {
+  const r = Math.PI / 180;
+  const [p1, l1, p2, l2] = [a.lat * r, a.lon * r, b.lat * r, b.lon * r];
+  const d = (haversineKm(a, b) / 6371) || 0;
+  if (d < 1e-9) return [[a.lat, a.lon]];
+  const pts = [];
+  for (let i = 0; i <= n; i += 1) {
+    const f = i / n;
+    const A = Math.sin((1 - f) * d) / Math.sin(d);
+    const B = Math.sin(f * d) / Math.sin(d);
+    const x = A * Math.cos(p1) * Math.cos(l1) + B * Math.cos(p2) * Math.cos(l2);
+    const y = A * Math.cos(p1) * Math.sin(l1) + B * Math.cos(p2) * Math.sin(l2);
+    const z = A * Math.sin(p1) + B * Math.sin(p2);
+    let lon = Math.atan2(y, x) / r;
+    if (i) lon += 360 * Math.round((pts[i - 1][1] - lon) / 360);
+    pts.push([Math.atan2(z, Math.hypot(x, y)) / r, lon]);
+  }
+  return pts;
+}
+
 const ID_TYPES = { PHILID: 'PhilSys National ID', DRIVERS_LICENSE: "Driver's license", PASSPORT: 'Philippine passport', UMID: 'UMID', POSTAL_ID: 'Postal ID', PRC: 'PRC ID' };
 export const idTypeLabel = (t) => ID_TYPES[String(t || '').toUpperCase()] || titleCase(t);

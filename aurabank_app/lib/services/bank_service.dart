@@ -116,39 +116,50 @@ class BankService extends ChangeNotifier {
   final String savingsAccountNumber = '123456789123';
   String activeAccountId = '1000-2000-3001';
 
-  // Bank Cards
+  // Debit cards on the savings account
   final List<BankCard> cards = [
     BankCard(
       id: 'CARD-01',
-      title: 'Savings',
-      cardNumber: '1235 5267 8795 0809',
+      title: 'Aura Debit',
+      cardNumber: '4123 5267 8795 0809',
       expiry: '08/29',
       cvv: '158',
-      holderName: 'Elijah Montefalco',
-      gradientStart: 0xFF2A085C,
-      gradientEnd: 0xFF5E17EB,
+      holderName: 'Elijah R. Montefalco',
+      network: CardNetwork.visa,
     ),
     BankCard(
       id: 'CARD-02',
-      title: 'Current',
-      cardNumber: '1235 5267 8795 1016',
-      expiry: '09/32',
+      title: 'Aura Virtual',
+      cardNumber: '5235 5267 8795 1016',
+      expiry: '09/30',
       cvv: '143',
-      holderName: 'Juan S. Dela Cruz',
-      gradientStart: 0xFF2A085C,
-      gradientEnd: 0xFF5E17EB,
-    ),
-    BankCard(
-      id: 'CARD-03',
-      title: 'Credit',
-      cardNumber: '1235 5267 8795 8776',
-      expiry: '10/56',
-      cvv: '155',
-      holderName: 'Juan S. Dela Cruz',
-      gradientStart: 0xFF190634,
-      gradientEnd: 0xFF4A154B,
+      holderName: 'Elijah R. Montefalco',
+      network: CardNetwork.mastercard,
+      isVirtual: true,
     ),
   ];
+
+  /// Issues a new debit card on the savings account. Local until the card
+  /// service exists; the number is a display placeholder, not a real PAN.
+  BankCard issueCard({required CardNetwork network, required bool isVirtual}) {
+    final seed = DateTime.now().millisecondsSinceEpoch.toString();
+    final tail = seed.substring(seed.length - 4);
+    final bin = network == CardNetwork.visa ? '4123' : '5235';
+    final now = DateTime.now();
+    final card = BankCard(
+      id: 'CARD-$seed',
+      title: isVirtual ? 'Aura Virtual' : 'Aura Debit',
+      cardNumber: '$bin 5267 ${seed.substring(seed.length - 8, seed.length - 4)} $tail',
+      expiry: '${now.month.toString().padLeft(2, '0')}/${(now.year + 4) % 100}',
+      cvv: seed.substring(seed.length - 3),
+      holderName: user.name,
+      network: network,
+      isVirtual: isVirtual,
+    );
+    cards.add(card);
+    notifyListeners();
+    return card;
+  }
 
   // Statements mapped by monthKey (All 12 Months: Jan - Dec 2026)
   final Map<String, MonthlyStatement> statements = {
@@ -169,7 +180,7 @@ class BankService extends ChangeNotifier {
           displayTime: 'Dec 15, 10:00 AM',
           status: TransactionStatus.settled,
           initial: 'A',
-          avatarColorValue: 0xFF059669,
+          avatarColorValue: 0xFF17805F,
         ),
         BankTransaction(
           id: 'TXN-DEC-02',
@@ -181,7 +192,7 @@ class BankService extends ChangeNotifier {
           displayTime: 'Dec 18, 2:30 PM',
           status: TransactionStatus.settled,
           initial: 'E',
-          avatarColorValue: 0xFF059669,
+          avatarColorValue: 0xFF17805F,
         ),
         BankTransaction(
           id: 'TXN-DEC-03',
@@ -193,7 +204,7 @@ class BankService extends ChangeNotifier {
           displayTime: 'Dec 22, 4:45 PM',
           status: TransactionStatus.settled,
           initial: 'H',
-          avatarColorValue: 0xFF7928CA,
+          avatarColorValue: 0xFF2F78A8,
         ),
         BankTransaction(
           id: 'TXN-DEC-04',
@@ -205,7 +216,7 @@ class BankService extends ChangeNotifier {
           displayTime: 'Dec 28, 11:15 AM',
           status: TransactionStatus.settled,
           initial: 'B',
-          avatarColorValue: 0xFF7928CA,
+          avatarColorValue: 0xFF2F78A8,
         ),
       ],
     ),
@@ -226,7 +237,7 @@ class BankService extends ChangeNotifier {
           displayTime: 'Nov 08, 9:30 AM',
           status: TransactionStatus.settled,
           initial: 'C',
-          avatarColorValue: 0xFF059669,
+          avatarColorValue: 0xFF17805F,
         ),
         BankTransaction(
           id: 'TXN-NOV-02',
@@ -238,7 +249,7 @@ class BankService extends ChangeNotifier {
           displayTime: 'Nov 19, 3:20 PM',
           status: TransactionStatus.settled,
           initial: 'O',
-          avatarColorValue: 0xFF7928CA,
+          avatarColorValue: 0xFF2F78A8,
         ),
         BankTransaction(
           id: 'TXN-NOV-03',
@@ -250,7 +261,7 @@ class BankService extends ChangeNotifier {
           displayTime: 'Nov 26, 5:00 PM',
           status: TransactionStatus.settled,
           initial: 'O',
-          avatarColorValue: 0xFF7928CA,
+          avatarColorValue: 0xFF2F78A8,
         ),
       ],
     ),
@@ -332,7 +343,7 @@ class BankService extends ChangeNotifier {
           displayTime: 'Sep 15, 10:30 AM',
           status: TransactionStatus.settled,
           initial: 'D',
-          avatarColorValue: 0xFF059669,
+          avatarColorValue: 0xFF17805F,
         ),
         BankTransaction(
           id: 'TXN-SEP-02',
@@ -344,7 +355,7 @@ class BankService extends ChangeNotifier {
           displayTime: 'Sep 24, 4:15 PM',
           status: TransactionStatus.settled,
           initial: 'K',
-          avatarColorValue: 0xFF7928CA,
+          avatarColorValue: 0xFF2F78A8,
         ),
       ],
     ),
@@ -365,7 +376,7 @@ class BankService extends ChangeNotifier {
           displayTime: 'Aug 11, 10:15 AM',
           status: TransactionStatus.settled,
           initial: 'A',
-          avatarColorValue: 0xFF059669,
+          avatarColorValue: 0xFF17805F,
         ),
         BankTransaction(
           id: 'TXN-AUG-02',
@@ -377,7 +388,7 @@ class BankService extends ChangeNotifier {
           displayTime: 'Aug 19, 2:00 PM',
           status: TransactionStatus.settled,
           initial: 'E',
-          avatarColorValue: 0xFF7928CA,
+          avatarColorValue: 0xFF2F78A8,
         ),
         BankTransaction(
           id: 'TXN-AUG-03',
@@ -389,7 +400,7 @@ class BankService extends ChangeNotifier {
           displayTime: 'Aug 27, 4:30 PM',
           status: TransactionStatus.settled,
           initial: 'C',
-          avatarColorValue: 0xFF7928CA,
+          avatarColorValue: 0xFF2F78A8,
         ),
       ],
     ),
@@ -410,7 +421,7 @@ class BankService extends ChangeNotifier {
           displayTime: 'Jul 12, 11:00 AM',
           status: TransactionStatus.settled,
           initial: 'B',
-          avatarColorValue: 0xFF059669,
+          avatarColorValue: 0xFF17805F,
         ),
         BankTransaction(
           id: 'TXN-JUL-02',
@@ -422,7 +433,7 @@ class BankService extends ChangeNotifier {
           displayTime: 'Jul 21, 3:45 PM',
           status: TransactionStatus.settled,
           initial: 'E',
-          avatarColorValue: 0xFF7928CA,
+          avatarColorValue: 0xFF2F78A8,
         ),
         BankTransaction(
           id: 'TXN-JUL-03',
@@ -434,7 +445,7 @@ class BankService extends ChangeNotifier {
           displayTime: 'Jul 28, 5:10 PM',
           status: TransactionStatus.settled,
           initial: 'S',
-          avatarColorValue: 0xFF7928CA,
+          avatarColorValue: 0xFF2F78A8,
         ),
       ],
     ),
@@ -455,7 +466,7 @@ class BankService extends ChangeNotifier {
           displayTime: 'Jun 14, 9:30 AM',
           status: TransactionStatus.settled,
           initial: 'C',
-          avatarColorValue: 0xFF059669,
+          avatarColorValue: 0xFF17805F,
         ),
         BankTransaction(
           id: 'TXN-JUN-02',
@@ -467,7 +478,7 @@ class BankService extends ChangeNotifier {
           displayTime: 'Jun 25, 2:20 PM',
           status: TransactionStatus.settled,
           initial: 'H',
-          avatarColorValue: 0xFF7928CA,
+          avatarColorValue: 0xFF2F78A8,
         ),
       ],
     ),
@@ -488,7 +499,7 @@ class BankService extends ChangeNotifier {
           displayTime: 'May 10, 10:00 AM',
           status: TransactionStatus.settled,
           initial: 'C',
-          avatarColorValue: 0xFF059669,
+          avatarColorValue: 0xFF17805F,
         ),
         BankTransaction(
           id: 'TXN-MAY-02',
@@ -500,7 +511,7 @@ class BankService extends ChangeNotifier {
           displayTime: 'May 22, 4:00 PM',
           status: TransactionStatus.settled,
           initial: 'S',
-          avatarColorValue: 0xFF7928CA,
+          avatarColorValue: 0xFF2F78A8,
         ),
       ],
     ),
@@ -521,7 +532,7 @@ class BankService extends ChangeNotifier {
           displayTime: 'Apr 15, 11:30 AM',
           status: TransactionStatus.settled,
           initial: 'E',
-          avatarColorValue: 0xFF059669,
+          avatarColorValue: 0xFF17805F,
         ),
         BankTransaction(
           id: 'TXN-APR-02',
@@ -533,7 +544,7 @@ class BankService extends ChangeNotifier {
           displayTime: 'Apr 28, 3:15 PM',
           status: TransactionStatus.settled,
           initial: 'Q',
-          avatarColorValue: 0xFF7928CA,
+          avatarColorValue: 0xFF2F78A8,
         ),
       ],
     ),
@@ -554,7 +565,7 @@ class BankService extends ChangeNotifier {
           displayTime: 'Mar 10, 9:45 AM',
           status: TransactionStatus.settled,
           initial: 'T',
-          avatarColorValue: 0xFF059669,
+          avatarColorValue: 0xFF17805F,
         ),
         BankTransaction(
           id: 'TXN-MAR-02',
@@ -566,7 +577,7 @@ class BankService extends ChangeNotifier {
           displayTime: 'Mar 26, 2:30 PM',
           status: TransactionStatus.settled,
           initial: 'B',
-          avatarColorValue: 0xFF7928CA,
+          avatarColorValue: 0xFF2F78A8,
         ),
       ],
     ),
@@ -587,7 +598,7 @@ class BankService extends ChangeNotifier {
           displayTime: 'Feb 14, 11:00 AM',
           status: TransactionStatus.settled,
           initial: 'A',
-          avatarColorValue: 0xFF059669,
+          avatarColorValue: 0xFF17805F,
         ),
         BankTransaction(
           id: 'TXN-FEB-02',
@@ -599,7 +610,7 @@ class BankService extends ChangeNotifier {
           displayTime: 'Feb 24, 4:45 PM',
           status: TransactionStatus.settled,
           initial: 'D',
-          avatarColorValue: 0xFF7928CA,
+          avatarColorValue: 0xFF2F78A8,
         ),
       ],
     ),
@@ -620,7 +631,7 @@ class BankService extends ChangeNotifier {
           displayTime: 'Jan 05, 10:00 AM',
           status: TransactionStatus.settled,
           initial: 'F',
-          avatarColorValue: 0xFF059669,
+          avatarColorValue: 0xFF17805F,
         ),
         BankTransaction(
           id: 'TXN-JAN-02',
@@ -632,7 +643,7 @@ class BankService extends ChangeNotifier {
           displayTime: 'Jan 22, 3:30 PM',
           status: TransactionStatus.settled,
           initial: 'I',
-          avatarColorValue: 0xFF7928CA,
+          avatarColorValue: 0xFF2F78A8,
         ),
       ],
     ),
@@ -651,7 +662,7 @@ class BankService extends ChangeNotifier {
           status: TransactionStatus.settled,
           channel: 'Same Bank',
           initial: 'A',
-          avatarColorValue: 0xFF2E0854,
+          avatarColorValue: 0xFF10171C,
         ),
         BankTransaction(
           id: 'TX-REC-02',
@@ -664,7 +675,7 @@ class BankService extends ChangeNotifier {
           status: TransactionStatus.settled,
           channel: 'Other Bank',
           initial: 'M',
-          avatarColorValue: 0xFF7928CA,
+          avatarColorValue: 0xFF2F78A8,
         ),
         BankTransaction(
           id: 'TX-REC-03',
@@ -677,7 +688,7 @@ class BankService extends ChangeNotifier {
           status: TransactionStatus.failed,
           channel: 'Same Bank',
           initial: 'J',
-          avatarColorValue: 0xFF4F46E5,
+          avatarColorValue: 0xFF2F78A8,
         ),
       ];
 
@@ -805,7 +816,7 @@ class BankService extends ChangeNotifier {
                     displayTime: 'Live DB Sync',
                     status: TransactionStatus.settled,
                     initial: 'A',
-                    avatarColorValue: 0xFF4A0E17,
+                    avatarColorValue: 0xFF10171C,
                   ),
                 );
               }

@@ -299,7 +299,7 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
                               size: 18,
                               color: isDark
                                   ? const Color(0xFF6B7FFF)
-                                  : const Color(0xFF3A4CD6),
+                                  : const Color(0xFF2F78A8),
                             ),
                             const SizedBox(width: 8),
                             const Expanded(
@@ -441,7 +441,7 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
                           size: 16,
                           color: isDark
                               ? const Color(0xFF6B7FFF)
-                              : const Color(0xFF3A4CD6),
+                              : const Color(0xFF2F78A8),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -468,7 +468,7 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
                       key: const Key('btn_check_pending_status'),
                       onPressed: _isChecking ? null : _manualCheckStatus,
                       style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFF3A4CD6),
+                        backgroundColor: const Color(0xFF2F78A8),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),

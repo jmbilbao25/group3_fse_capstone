@@ -7,13 +7,13 @@ class WebStatementPreviewScreen extends StatelessWidget {
 
   const WebStatementPreviewScreen({super.key, required this.statement});
 
-  static const Color textDark = Color(0xFF111827);
-  static const Color textGray = Color(0xFF6B7280);
+  static const Color textDark = Color(0xFF10171C);
+  static const Color textGray = Color(0xFF7D8892);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: const Color(0xFFF7F7F7),
       body: Column(
         children: [
           Padding(

@@ -21,15 +21,15 @@ class _StatementScreenState extends State<StatementScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
-  static const Color brandPurple = Color(0xFF4A0E4E);
-  static const Color brandViolet = Color(0xFF6B21A8);
-  static const Color greenCredit = Color(0xFF16A34A);
-  static const Color redDebit = Color(0xFFDC2626);
-  static const Color textDark = Color(0xFF111827);
-  static const Color textGray = Color(0xFF6B7280);
-  static const Color cardBorder = Color(0xFFE5E7EB);
+  static const Color brandPurple = Color(0xFF10171C);
+  static const Color brandViolet = Color(0xFF1C6E5A);
+  static const Color greenCredit = Color(0xFF17805F);
+  static const Color redDebit = Color(0xFFC8423B);
+  static const Color textDark = Color(0xFF10171C);
+  static const Color textGray = Color(0xFF7D8892);
+  static const Color cardBorder = Color(0xFFEAECEE);
   static const Color lavenderBg = Color(0xFFFBF8FD);
-  static const Color lavenderBorder = Color(0xFFF3E8FF);
+  static const Color lavenderBorder = Color(0xFFE6F6EF);
 
   @override
   void initState() {
@@ -101,7 +101,7 @@ class _StatementScreenState extends State<StatementScreen> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
-                            color: Color(0xFF374151),
+                            color: Color(0xFF2E3A43),
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -388,7 +388,7 @@ class _StatementScreenState extends State<StatementScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF3F4F6),
+                  color: const Color(0xFFF1F3F4),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: const Text(
@@ -396,7 +396,7 @@ class _StatementScreenState extends State<StatementScreen> {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF374151),
+                    color: Color(0xFF2E3A43),
                   ),
                 ),
               ),
@@ -415,7 +415,7 @@ class _StatementScreenState extends State<StatementScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFF3F4F6)),
+                    border: Border.all(color: const Color(0xFFF1F3F4)),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.03),
@@ -461,7 +461,7 @@ class _StatementScreenState extends State<StatementScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFF3F4F6)),
+                    border: Border.all(color: const Color(0xFFF1F3F4)),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.03),
@@ -539,7 +539,7 @@ class _StatementScreenState extends State<StatementScreen> {
                 Container(
                   width: 1,
                   height: 32,
-                  color: const Color(0xFFE9D5FF),
+                  color: const Color(0xFFC9EBDD),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -590,7 +590,7 @@ class _StatementScreenState extends State<StatementScreen> {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF374151),
+                          color: Color(0xFF2E3A43),
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -608,7 +608,7 @@ class _StatementScreenState extends State<StatementScreen> {
                 Container(
                   width: 1,
                   height: 30,
-                  color: const Color(0xFFE9D5FF),
+                  color: const Color(0xFFC9EBDD),
                 ),
                 Expanded(
                   child: Column(
@@ -636,7 +636,7 @@ class _StatementScreenState extends State<StatementScreen> {
                 Container(
                   width: 1,
                   height: 30,
-                  color: const Color(0xFFE9D5FF),
+                  color: const Color(0xFFC9EBDD),
                 ),
                 Expanded(
                   child: Column(
@@ -675,7 +675,7 @@ class _StatementScreenState extends State<StatementScreen> {
     return Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F4F6),
+        color: const Color(0xFFF1F3F4),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -723,7 +723,7 @@ class _StatementScreenState extends State<StatementScreen> {
     return Container(
       height: 44,
       decoration: BoxDecoration(
-        color: const Color(0xFFF9FAFB),
+        color: const Color(0xFFF7F7F7),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: cardBorder),
       ),
@@ -733,19 +733,19 @@ class _StatementScreenState extends State<StatementScreen> {
         decoration: InputDecoration(
           prefixIcon: const Icon(
             Icons.search_rounded,
-            color: Color(0xFF9CA3AF),
+            color: Color(0xFF9AA3AB),
             size: 20,
           ),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
-                  icon: const Icon(Icons.clear_rounded, size: 16, color: Color(0xFF9CA3AF)),
+                  icon: const Icon(Icons.clear_rounded, size: 16, color: Color(0xFF9AA3AB)),
                   onPressed: () {
                     _searchController.clear();
                   },
                 )
               : null,
           hintText: 'Search',
-          hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
+          hintStyle: const TextStyle(color: Color(0xFF9AA3AB), fontSize: 13),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(vertical: 12),
         ),

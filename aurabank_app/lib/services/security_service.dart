@@ -447,7 +447,7 @@ class _SecurityWarningDialogState extends State<SecurityWarningDialog> {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF15181E) : const Color(0xFFFFF1F2),
+                color: isDark ? const Color(0xFF15181E) : const Color(0xFFFDF3F2),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: isDark ? Colors.redAccent.withAlpha(70) : Colors.red.withAlpha(80),

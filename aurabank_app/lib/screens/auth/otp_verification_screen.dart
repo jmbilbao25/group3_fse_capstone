@@ -148,12 +148,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         ),
         content: const Text(
           'Please enter the complete 6-digit code.',
-          style: TextStyle(fontSize: 14, color: Color(0xFFD1D5DB)),
+          style: TextStyle(fontSize: 14, color: Color(0xFFD5DADF)),
         ),
         actions: [
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFF3F4F6),
+              backgroundColor: const Color(0xFFF1F3F4),
               foregroundColor: Colors.black,
               elevation: 0,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -378,7 +378,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                             ? AuraColors.primary
                             : hasValue
                                 ? AuraColors.accentLight
-                                : const Color(0xFFD1D5DB),
+                                : const Color(0xFFD5DADF),
                         width: isFocused ? 2.0 : 1.2,
                       ),
                       boxShadow: isFocused
@@ -508,9 +508,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF9FAFB),
+                  color: const Color(0xFFF7F7F7),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFF3F4F6)),
+                  border: Border.all(color: const Color(0xFFF1F3F4)),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,

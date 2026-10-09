@@ -258,7 +258,7 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: const Color(0xFFF7F7F7),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -318,17 +318,17 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
               Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE5E7EB),
+                  color: const Color(0xFFEAECEE),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
                   children: [
                     _buildScenarioTab(
-                        'Allowed', ShowcaseScenario.allowed, const Color(0xFF059669)),
+                        'Allowed', ShowcaseScenario.allowed, const Color(0xFF17805F)),
                     _buildScenarioTab(
                         'Warning', ShowcaseScenario.warning, const Color(0xFFD97706)),
                     _buildScenarioTab(
-                        'Blocked', ShowcaseScenario.blocked, const Color(0xFFDC2626)),
+                        'Blocked', ShowcaseScenario.blocked, const Color(0xFFC8423B)),
                   ],
                 ),
               ),
@@ -359,9 +359,9 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
                   border: Border.all(
                     color: _currentNode == ShowcaseNode.advisoryWarning
                         ? (_threats[_selectedThreatIndex].isCritical
-                            ? const Color(0xFFFDA4AF)
+                            ? const Color(0xFFF2B2AC)
                             : const Color(0xFFFDE68A))
-                        : const Color(0xFFE5E7EB),
+                        : const Color(0xFFEAECEE),
                     width: _currentNode == ShowcaseNode.advisoryWarning ? 2.0 : 1.2,
                   ),
                   boxShadow: [
@@ -379,7 +379,7 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 20, vertical: 10),
-                      color: const Color(0xFFFAF7FF),
+                      color: const Color(0xFFF5F9FB),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: const [
@@ -532,7 +532,7 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
           color: isActive ? AuraColors.primary : Colors.white,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: isActive ? AuraColors.primary : const Color(0xFFE5E7EB),
+            color: isActive ? AuraColors.primary : const Color(0xFFEAECEE),
           ),
         ),
         child: Text(
@@ -551,7 +551,7 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
     return const Padding(
       padding: EdgeInsets.symmetric(horizontal: 4),
       child: Icon(Icons.arrow_forward_ios_rounded,
-          size: 10, color: Color(0xFF9CA3AF)),
+          size: 10, color: Color(0xFF9AA3AB)),
     );
   }
 
@@ -600,9 +600,9 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFFF9FAFB),
+            color: const Color(0xFFF7F7F7),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFF3F4F6)),
+            border: Border.all(color: const Color(0xFFF1F3F4)),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -640,7 +640,7 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFEDE9FE)),
+            border: Border.all(color: const Color(0xFFEFF6FB)),
           ),
           child: Column(
             children: [
@@ -657,7 +657,7 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
                           color: AuraColors.textPrimary)),
                 ],
               ),
-              const Divider(height: 18, color: Color(0xFFF3F4F6)),
+              const Divider(height: 18, color: Color(0xFFF1F3F4)),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: const [
@@ -739,7 +739,7 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
                 decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
-                    colors: [Color(0xFF380084), Color(0xFF6B11D4)],
+                    colors: [Color(0xFF10171C), Color(0xFF2F78A8)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -836,10 +836,10 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
           height: 76,
           decoration: const BoxDecoration(
             shape: BoxShape.circle,
-            color: Color(0xFFD1FAE5),
+            color: Color(0xFFE4F5EE),
           ),
           child: const Icon(Icons.check_rounded,
-              color: Color(0xFF059669), size: 42),
+              color: Color(0xFF17805F), size: 42),
         ),
         const SizedBox(height: 14),
         const Text(
@@ -861,7 +861,7 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
           height: 46,
           child: OutlinedButton(
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Color(0xFFE5E7EB)),
+              side: const BorderSide(color: Color(0xFFEAECEE)),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(23)),
             ),
@@ -894,7 +894,7 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: threat.isCritical
-                  ? const Color(0xFFFFE4E6)
+                  ? const Color(0xFFFBE9E7)
                   : const Color(0xFFFEF3C7),
             ),
           ),
@@ -907,7 +907,7 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFF3F4F6)),
+                  border: Border.all(color: const Color(0xFFF1F3F4)),
                 ),
                 child: Icon(threat.leftIcon,
                     color: AuraColors.textSecondary, size: 22),
@@ -916,7 +916,7 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
                 size: const Size(28, 2),
                 painter: _SimpleDashedPainter(
                   color: threat.isCritical
-                      ? const Color(0xFFFDA4AF)
+                      ? const Color(0xFFF2B2AC)
                       : const Color(0xFFFDE68A),
                 ),
               ),
@@ -928,7 +928,7 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
                     height: 56,
                     decoration: BoxDecoration(
                       color: threat.isCritical
-                          ? const Color(0xFFE11D48)
+                          ? const Color(0xFFC8423B)
                           : const Color(0xFFD97706),
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -959,7 +959,7 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
                 size: const Size(28, 2),
                 painter: _SimpleDashedPainter(
                   color: threat.isCritical
-                      ? const Color(0xFFFDA4AF)
+                      ? const Color(0xFFF2B2AC)
                       : const Color(0xFFFDE68A),
                 ),
               ),
@@ -969,7 +969,7 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFF3F4F6)),
+                  border: Border.all(color: const Color(0xFFF1F3F4)),
                 ),
                 child: Icon(threat.rightIcon,
                     color: AuraColors.textSecondary, size: 22),
@@ -1050,7 +1050,7 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
           height: 44,
           child: OutlinedButton(
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Color(0xFFE5E7EB)),
+              side: const BorderSide(color: Color(0xFFEAECEE)),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(22)),
             ),
@@ -1079,7 +1079,7 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
               fontWeight: FontWeight.w700,
               color: _continueCountdown == 0
                   ? AuraColors.primary
-                  : const Color(0xFF9CA3AF),
+                  : const Color(0xFF9AA3AB),
             ),
           ),
         ),
@@ -1140,7 +1140,7 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
           height: 44,
           child: OutlinedButton(
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Color(0xFFE5E7EB)),
+              side: const BorderSide(color: Color(0xFFEAECEE)),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(22)),
             ),
@@ -1165,10 +1165,10 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
           height: 76,
           decoration: const BoxDecoration(
             shape: BoxShape.circle,
-            color: Color(0xFFE5E7EB),
+            color: Color(0xFFEAECEE),
           ),
           child: const Icon(Icons.shield_rounded,
-              color: Color(0xFF4B5563), size: 38),
+              color: Color(0xFF47525C), size: 38),
         ),
         const SizedBox(height: 14),
         const Text(
@@ -1190,7 +1190,7 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
           height: 44,
           child: OutlinedButton(
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Color(0xFFE5E7EB)),
+              side: const BorderSide(color: Color(0xFFEAECEE)),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(22)),
             ),
@@ -1215,10 +1215,10 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
           height: 80,
           decoration: const BoxDecoration(
             shape: BoxShape.circle,
-            color: Color(0xFFFEE2E2),
+            color: Color(0xFFFBE9E7),
           ),
           child: const Icon(Icons.pan_tool_rounded,
-              color: Color(0xFFDC2626), size: 40),
+              color: Color(0xFFC8423B), size: 40),
         ),
         const SizedBox(height: 14),
         const Text(
@@ -1238,9 +1238,9 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFFFFF1F2),
+            color: const Color(0xFFFDF3F2),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFFFE4E6)),
+            border: Border.all(color: const Color(0xFFFBE9E7)),
           ),
           child: const Text(
             'Velocity above 1,000 km/h or baseline score 0.50+ stops the transfer outright. No SMS OTP and no bypass.',
@@ -1253,7 +1253,7 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
           height: 44,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1E1E2D),
+              backgroundColor: const Color(0xFF10171C),
               foregroundColor: Colors.white,
               elevation: 0,
               shape: RoundedRectangleBorder(
@@ -1311,7 +1311,7 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
                 border: Border.all(
                   color: isFilled
                       ? AuraColors.primary
-                      : const Color(0xFFD1D5DB),
+                      : const Color(0xFFD5DADF),
                   width: 2,
                 ),
               ),
@@ -1359,13 +1359,13 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
               ),
               selected: isSelected,
               selectedColor: threat.isCritical
-                  ? const Color(0xFFE11D48)
+                  ? const Color(0xFFC8423B)
                   : const Color(0xFFD97706),
               backgroundColor: Colors.white,
               side: BorderSide(
                 color: isSelected
                     ? Colors.transparent
-                    : const Color(0xFFE5E7EB),
+                    : const Color(0xFFEAECEE),
               ),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10)),
@@ -1466,7 +1466,7 @@ class _RiskEngineShowcaseScreenState extends State<RiskEngineShowcaseScreen>
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: const Color(0xFFEAECEE)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1509,8 +1509,8 @@ class _SimpleRadarPainter extends CustomPainter {
       ..shader = const SweepGradient(
         colors: [
           Colors.transparent,
-          Color(0xFF8B5CF6),
-          Color(0xFF5E17EB),
+          Color(0xFF5AA9D6),
+          Color(0xFF2F78A8),
         ],
         stops: [0.0, 0.7, 1.0],
       ).createShader(Rect.fromCircle(center: center, radius: radius))
@@ -1534,7 +1534,7 @@ class _SimpleRadarPainter extends CustomPainter {
 class _SimpleDashedPainter extends CustomPainter {
   final Color color;
 
-  _SimpleDashedPainter({this.color = const Color(0xFFFDA4AF)});
+  _SimpleDashedPainter({this.color = const Color(0xFFF2B2AC)});
 
   @override
   void paint(Canvas canvas, Size size) {

@@ -428,7 +428,7 @@ class _KycWizardScreenState extends State<KycWizardScreen>
                         width: 44,
                         height: 44,
                         decoration: BoxDecoration(
-                          color: isSelected ? AuraColors.tintPurple : const Color(0xFFF3F4F6),
+                          color: isSelected ? AuraColors.tintPurple : const Color(0xFFF1F3F4),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
@@ -466,7 +466,7 @@ class _KycWizardScreenState extends State<KycWizardScreen>
                               decoration: BoxDecoration(
                                 color: type.requiresBack
                                     ? const Color(0xFFEEF2F6)
-                                    : const Color(0xFFE6F8F0),
+                                    : const Color(0xFFE4F5EE),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
@@ -485,7 +485,7 @@ class _KycWizardScreenState extends State<KycWizardScreen>
                       ),
                       Icon(
                         isSelected ? Icons.check_circle_rounded : Icons.radio_button_off_rounded,
-                        color: isSelected ? AuraColors.primary : const Color(0xFFD1D5DB),
+                        color: isSelected ? AuraColors.primary : const Color(0xFFD5DADF),
                         size: 22,
                       ),
                     ],
@@ -1088,7 +1088,7 @@ class _KycWizardScreenState extends State<KycWizardScreen>
               borderRadius: BorderRadius.circular(6),
               child: LinearProgressIndicator(
                 value: _processingProgress,
-                backgroundColor: const Color(0xFFE5E7EB),
+                backgroundColor: const Color(0xFFEAECEE),
                 color: AuraColors.primary,
                 minHeight: 6,
               ),

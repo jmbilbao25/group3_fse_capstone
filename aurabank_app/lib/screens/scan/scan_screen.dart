@@ -26,8 +26,8 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   bool _hasScanned = false;
   bool _isProcessingImage = false;
 
-  static const Color brandViolet = Color(0xFF380084);
-  static const Color accentGreen = Color(0xFF16A34A);
+  static const Color brandViolet = Color(0xFF10171C);
+  static const Color accentGreen = Color(0xFF17805F);
 
   @override
   void initState() {
@@ -95,7 +95,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('No QR code detected in the selected image. Please try another.'),
-              backgroundColor: Color(0xFFDC2626),
+              backgroundColor: Color(0xFFC8423B),
             ),
           );
         }
@@ -105,7 +105,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error analyzing photo: $e'),
-            backgroundColor: const Color(0xFFDC2626),
+            backgroundColor: const Color(0xFFC8423B),
           ),
         );
       }
@@ -299,7 +299,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                       onPressed: _isProcessingImage ? null : _pickFromGallery,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
-                        foregroundColor: const Color(0xFF111827),
+                        foregroundColor: const Color(0xFF10171C),
                         elevation: 4,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -462,7 +462,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
 
   Widget _buildCameraFallback() {
     return Container(
-      color: const Color(0xFF111827),
+      color: const Color(0xFF10171C),
       child: Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -540,7 +540,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
               width: 44,
               height: 4,
               decoration: BoxDecoration(
-                color: const Color(0xFFE5E7EB),
+                color: const Color(0xFFEAECEE),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -552,7 +552,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                 width: 46,
                 height: 46,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFDCFCE7),
+                  color: const Color(0xFFE4F5EE),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: const Icon(Icons.check_circle_rounded, color: accentGreen, size: 26),
@@ -564,11 +564,11 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                   children: [
                     const Text(
                       'QR Code Detected',
-                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
+                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF10171C)),
                     ),
                     Text(
                       targetName,
-                      style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+                      style: const TextStyle(fontSize: 13, color: Color(0xFF7D8892)),
                     ),
                   ],
                 ),
@@ -580,18 +580,18 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
             width: double.infinity,
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFFF9FAFB),
+              color: const Color(0xFFF7F7F7),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE5E7EB)),
+              border: Border.all(color: const Color(0xFFEAECEE)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Scanned Details:', style: TextStyle(fontSize: 11, color: Color(0xFF9CA3AF), fontWeight: FontWeight.w600)),
+                const Text('Scanned Details:', style: TextStyle(fontSize: 11, color: Color(0xFF9AA3AB), fontWeight: FontWeight.w600)),
                 const SizedBox(height: 4),
                 SelectableText(
                   targetAccount,
-                  style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
+                  style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Color(0xFF10171C)),
                 ),
                 if (requestedAmount != null) ...[
                   const SizedBox(height: 8),
@@ -670,7 +670,7 @@ class _GenerateQrModalState extends State<_GenerateQrModal> {
   final TextEditingController _amountController = TextEditingController();
   String? _customAmount;
 
-  static const Color brandViolet = Color(0xFF380084);
+  static const Color brandViolet = Color(0xFF10171C);
 
   @override
   void dispose() {
@@ -706,7 +706,7 @@ class _GenerateQrModalState extends State<_GenerateQrModal> {
               width: 44,
               height: 4,
               decoration: BoxDecoration(
-                color: const Color(0xFFE5E7EB),
+                color: const Color(0xFFEAECEE),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -721,11 +721,11 @@ class _GenerateQrModalState extends State<_GenerateQrModal> {
                     children: [
                       const Text(
                         'My Receive QR Code',
-                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
+                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF10171C)),
                       ),
                       Text(
                         user.name,
-                        style: const TextStyle(fontSize: 12.5, color: Color(0xFF6B7280)),
+                        style: const TextStyle(fontSize: 12.5, color: Color(0xFF7D8892)),
                       ),
                     ],
                   ),
@@ -740,7 +740,7 @@ class _GenerateQrModalState extends State<_GenerateQrModal> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: const Color(0xFFEDE9FE), width: 2),
+                border: Border.all(color: const Color(0xFFEFF6FB), width: 2),
                 boxShadow: [
                   BoxShadow(
                     color: brandViolet.withValues(alpha: 0.08),
@@ -764,7 +764,7 @@ class _GenerateQrModalState extends State<_GenerateQrModal> {
                       ),
                       dataModuleStyle: const QrDataModuleStyle(
                         dataModuleShape: QrDataModuleShape.square,
-                        color: Color(0xFF1E1E2D),
+                        color: Color(0xFF10171C),
                       ),
                     ),
                   ),
@@ -782,7 +782,7 @@ class _GenerateQrModalState extends State<_GenerateQrModal> {
                     const SizedBox(height: 4),
                     Text(
                       'Amount: PHP $_customAmount',
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF16A34A)),
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF17805F)),
                     ),
                   ],
                 ],
@@ -800,7 +800,7 @@ class _GenerateQrModalState extends State<_GenerateQrModal> {
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
                       hintText: 'Set Request Amount (PHP)',
-                      hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFF9CA3AF)),
+                      hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFF9AA3AB)),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),

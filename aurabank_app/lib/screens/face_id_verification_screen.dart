@@ -42,14 +42,14 @@ class _FaceIdVerificationScreenState extends State<FaceIdVerificationScreen>
   final BiometricService _biometricService = BiometricService();
 
   // Aura Bank Design System Colors
-  static const Color brandViolet = AuraColors.primary; // 0xFF380084
-  static const Color brandAccent = Color(0xFF7C3AED);
-  static const Color bgCanvas = Color(0xFFF8FAFC);
+  static const Color brandViolet = AuraColors.primary; // 0xFF10171C
+  static const Color brandAccent = Color(0xFF2F78A8);
+  static const Color bgCanvas = Color(0xFFF7F7F7);
   static const Color cardBg = Colors.white;
-  static const Color textDark = Color(0xFF0F172A);
-  static const Color textMuted = Color(0xFF64748B);
-  static const Color cardBorder = Color(0xFFE2E8F0);
-  static const Color greenSuccess = Color(0xFF10B981);
+  static const Color textDark = Color(0xFF10171C);
+  static const Color textMuted = Color(0xFF6E7882);
+  static const Color cardBorder = Color(0xFFE6E8EA);
+  static const Color greenSuccess = Color(0xFF2FA37E);
 
   // Native OS Biometric Prompt State
   bool _canHardwareAuth = false;
@@ -325,7 +325,7 @@ class _FaceIdVerificationScreenState extends State<FaceIdVerificationScreen>
         border: Border.all(color: cardBorder, width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+            color: const Color(0xFF10171C).withValues(alpha: 0.04),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -350,7 +350,7 @@ class _FaceIdVerificationScreenState extends State<FaceIdVerificationScreen>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
+                  color: const Color(0xFFF1F3F4),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Text(
@@ -411,7 +411,7 @@ class _FaceIdVerificationScreenState extends State<FaceIdVerificationScreen>
         border: Border.all(color: cardBorder, width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+            color: const Color(0xFF10171C).withValues(alpha: 0.04),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -441,7 +441,7 @@ class _FaceIdVerificationScreenState extends State<FaceIdVerificationScreen>
 
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
-            child: Divider(color: Color(0xFFF1F5F9), height: 1, thickness: 1),
+            child: Divider(color: Color(0xFFF1F3F4), height: 1, thickness: 1),
           ),
 
           // Source Account Row
@@ -453,7 +453,7 @@ class _FaceIdVerificationScreenState extends State<FaceIdVerificationScreen>
 
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
-            child: Divider(color: Color(0xFFF1F5F9), height: 1, thickness: 1),
+            child: Divider(color: Color(0xFFF1F3F4), height: 1, thickness: 1),
           ),
 
           // Purpose / Remarks
@@ -464,7 +464,7 @@ class _FaceIdVerificationScreenState extends State<FaceIdVerificationScreen>
 
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
-            child: Divider(color: Color(0xFFF1F5F9), height: 1, thickness: 1),
+            child: Divider(color: Color(0xFFF1F3F4), height: 1, thickness: 1),
           ),
 
           // Transfer Fee
@@ -540,9 +540,9 @@ class _FaceIdVerificationScreenState extends State<FaceIdVerificationScreen>
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
+        color: const Color(0xFFF1F3F4),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+        border: Border.all(color: const Color(0xFFE6E8EA), width: 1.0),
       ),
       child: Row(
         children: [
@@ -646,7 +646,7 @@ class _FaceIdVerificationScreenState extends State<FaceIdVerificationScreen>
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+              border: Border.all(color: const Color(0xFFE6E8EA), width: 1.0),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.04),
@@ -720,7 +720,7 @@ class _FaceIdVerificationScreenState extends State<FaceIdVerificationScreen>
                   style: TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF94A3B8),
+                    color: Color(0xFF9AA3AB),
                   ),
                 ),
 
@@ -752,7 +752,7 @@ class _FaceIdVerificationScreenState extends State<FaceIdVerificationScreen>
                         : CustomPaint(
                             size: const Size(54, 54),
                             painter: _AppleFaceIdGlyphPainter(
-                              color: _isVerifying ? const Color(0xFFE9D5FF) : Colors.white70,
+                              color: _isVerifying ? const Color(0xFFC9EBDD) : Colors.white70,
                             ),
                           ),
                   ),
@@ -781,7 +781,7 @@ class _FaceIdVerificationScreenState extends State<FaceIdVerificationScreen>
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF94A3B8),
+                    color: Color(0xFF9AA3AB),
                   ),
                 ),
 

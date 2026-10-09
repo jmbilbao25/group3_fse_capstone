@@ -146,7 +146,7 @@ class StatementDocument extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE6F8F0),
+                      color: const Color(0xFFE4F5EE),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: const Text(
@@ -587,7 +587,7 @@ class _SimulatedQrPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFF1E1E2D)
+      ..color = const Color(0xFF10171C)
       ..style = PaintingStyle.fill;
 
     final cell = size.width / 7.0;

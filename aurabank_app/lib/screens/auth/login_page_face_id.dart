@@ -14,7 +14,7 @@ class FaceIdIcon extends StatelessWidget {
     super.key,
     this.size = 64.0,
     this.color = Colors.white,
-    this.backgroundColor = const Color(0xFF3A0088),
+    this.backgroundColor = const Color(0xFF10171C),
   });
 
 
@@ -173,7 +173,7 @@ class _LoginPageFaceIdState extends State<LoginPageFaceId> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Face ID is not available or not enrolled on this device.'),
-            backgroundColor: Color(0xFFDC2626),
+            backgroundColor: Color(0xFFC8423B),
           ),
         );
       }
@@ -209,7 +209,7 @@ class _LoginPageFaceIdState extends State<LoginPageFaceId> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Face ID verification cancelled or not recognized. Tap to retry.'),
-          backgroundColor: Color(0xFF6B7280),
+          backgroundColor: Color(0xFF7D8892),
         ),
       );
     }
@@ -224,8 +224,8 @@ class _LoginPageFaceIdState extends State<LoginPageFaceId> {
 
   @override
   Widget build(BuildContext context) {
-    const brandViolet = Color(0xFF3A0088);
-    const borderViolet = Color(0xFF5E17EB);
+    const brandViolet = Color(0xFF10171C);
+    const borderViolet = Color(0xFF2F78A8);
     const disabledButtonBg = Color(0xFFF1EEFB);
     const disabledButtonText = Color(0xFFD5CDF2);
 
@@ -295,7 +295,7 @@ class _LoginPageFaceIdState extends State<LoginPageFaceId> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w400,
-                        color: Color(0xFF6B7280),
+                        color: Color(0xFF7D8892),
                       ),
                     ),
 
@@ -312,7 +312,7 @@ class _LoginPageFaceIdState extends State<LoginPageFaceId> {
                       decoration: InputDecoration(
                         hintText: 'Username',
                         hintStyle: const TextStyle(
-                          color: Color(0xFFB0B7C3),
+                          color: Color(0xFFA9B1B8),
                           fontSize: 15,
                           fontWeight: FontWeight.w400,
                         ),
@@ -351,7 +351,7 @@ class _LoginPageFaceIdState extends State<LoginPageFaceId> {
                       decoration: InputDecoration(
                         hintText: 'Password',
                         hintStyle: const TextStyle(
-                          color: Color(0xFFB0B7C3),
+                          color: Color(0xFFA9B1B8),
                           fontSize: 15,
                           fontWeight: FontWeight.w400,
                         ),
@@ -422,7 +422,7 @@ class _LoginPageFaceIdState extends State<LoginPageFaceId> {
                       onTap: widget.onFaceIdTap ?? _handleFaceIdAuth,
                       child: const FaceIdIcon(
                         size: 68,
-                        backgroundColor: Color(0xFF3A0088),
+                        backgroundColor: Color(0xFF10171C),
                         color: Colors.white,
                       ),
                     ),
@@ -441,7 +441,7 @@ class _LoginPageFaceIdState extends State<LoginPageFaceId> {
                           'Forgot Passcode?',
                           style: TextStyle(
                             fontSize: 13,
-                            color: Color(0xFF9CA3AF),
+                            color: Color(0xFF9AA3AB),
                             fontWeight: FontWeight.w500,
                           ),
                         ),

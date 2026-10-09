@@ -18,8 +18,8 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
   static const Color brandViolet = AuraColors.primary;
   static const Color textDark = AuraColors.textPrimary;
   static const Color textGray = AuraColors.textMuted;
-  static const Color bgLavender = Color(0xFFFAF7FF);
-  static const Color borderLavender = Color(0xFFEDE9FE);
+  static const Color bgLavender = Color(0xFFF5F9FB);
+  static const Color borderLavender = Color(0xFFEFF6FB);
 
   @override
   void initState() {
@@ -171,7 +171,7 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
               width: 52,
               height: 52,
               decoration: const BoxDecoration(
-                color: Color(0xFFF3E8FF),
+                color: Color(0xFFE6F6EF),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.phonelink_erase_rounded, color: brandViolet, size: 26),
@@ -196,7 +196,7 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                 Expanded(
                   child: TextButton(
                     style: TextButton.styleFrom(
-                      backgroundColor: const Color(0xFFF3F4F6),
+                      backgroundColor: const Color(0xFFF1F3F4),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
@@ -320,7 +320,7 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                   width: 44,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE5E7EB),
+                    color: const Color(0xFFEAECEE),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -330,7 +330,7 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                 width: 56,
                 height: 56,
                 decoration: const BoxDecoration(
-                  color: Color(0xFFF3E8FF),
+                  color: Color(0xFFE6F6EF),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.logout_rounded, color: brandViolet, size: 28),
@@ -422,7 +422,7 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                 height: 48,
                 child: TextButton(
                   style: TextButton.styleFrom(
-                    backgroundColor: const Color(0xFFF3F4F6),
+                    backgroundColor: const Color(0xFFF1F3F4),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                   ),
                   onPressed: () => Navigator.of(ctx).pop(),
@@ -462,7 +462,7 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                   width: 44,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE5E7EB),
+                    color: const Color(0xFFEAECEE),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -472,7 +472,7 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                 width: 56,
                 height: 56,
                 decoration: const BoxDecoration(
-                  color: Color(0xFFF3E8FF),
+                  color: Color(0xFFE6F6EF),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.devices_other_rounded, color: brandViolet, size: 28),
@@ -529,9 +529,9 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF3E8FF),
+                                color: const Color(0xFFE6F6EF),
                                 borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: const Color(0xFFDDD6FE), width: 0.8),
+                                border: Border.all(color: const Color(0xFFDDEAF3), width: 0.8),
                               ),
                               child: Text(
                                 _trustedDevices[i]['isPrimary'] == true ? 'Primary' : 'Secondary',
@@ -585,7 +585,7 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                 height: 48,
                 child: TextButton(
                   style: TextButton.styleFrom(
-                    backgroundColor: const Color(0xFFF3F4F6),
+                    backgroundColor: const Color(0xFFF1F3F4),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                   ),
                   onPressed: () => Navigator.of(ctx).pop(),
@@ -621,7 +621,7 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
     final hasMatchingSessionId = _webSessions.any((w) => w['id'] == currentId);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFBFBFD),
+      backgroundColor: const Color(0xFFF7F7F7),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
@@ -692,7 +692,7 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF3E8FF),
+                        color: const Color(0xFFE6F6EF),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(Icons.verified_user_rounded, color: brandViolet, size: 22),
@@ -818,9 +818,9 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                               width: 44,
                               height: 44,
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF3E8FF),
+                                color: const Color(0xFFE6F6EF),
                                 borderRadius: BorderRadius.circular(14),
-                                border: Border.all(color: const Color(0xFFDDD6FE)),
+                                border: Border.all(color: const Color(0xFFDDEAF3)),
                               ),
                               child: Icon(
                                 dev['icon'] as IconData,
@@ -850,16 +850,16 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFFECFDF5),
+                                            color: const Color(0xFFE4F5EE),
                                             borderRadius: BorderRadius.circular(6),
-                                            border: Border.all(color: const Color(0xFFA7F3D0), width: 0.8),
+                                            border: Border.all(color: const Color(0xFFA7E8D1), width: 0.8),
                                           ),
                                           child: const Text(
                                             '(Current device)',
                                             style: TextStyle(
                                               fontSize: 10.5,
                                               fontWeight: FontWeight.w700,
-                                              color: Color(0xFF059669),
+                                              color: Color(0xFF17805F),
                                             ),
                                           ),
                                         ),
@@ -900,11 +900,11 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                               decoration: BoxDecoration(
                                 color: dev['isPrimary'] == true
                                     ? brandViolet
-                                    : const Color(0xFFF3E8FF),
+                                    : const Color(0xFFE6F6EF),
                                 borderRadius: BorderRadius.circular(10),
                                 border: dev['isPrimary'] == true
                                     ? null
-                                    : Border.all(color: const Color(0xFFDDD6FE), width: 0.8),
+                                    : Border.all(color: const Color(0xFFDDEAF3), width: 0.8),
                               ),
                               child: Text(
                                 dev['isPrimary'] == true ? 'PRIMARY' : 'SECONDARY',
@@ -919,7 +919,7 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                           ],
                         ),
                         const SizedBox(height: 14),
-                        const Divider(color: Color(0xFFF3F4F6), height: 1),
+                        const Divider(color: Color(0xFFF1F3F4), height: 1),
                         const SizedBox(height: 10),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -930,8 +930,8 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                                   Icons.circle,
                                   size: 8,
                                   color: (isCurrentDevice || dev['isActive'] == true)
-                                      ? const Color(0xFF10B981)
-                                      : const Color(0xFF9CA3AF),
+                                      ? const Color(0xFF2FA37E)
+                                      : const Color(0xFF9AA3AB),
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
@@ -940,8 +940,8 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
                                     color: (isCurrentDevice || dev['isActive'] == true)
-                                        ? const Color(0xFF059669)
-                                        : const Color(0xFF6B7280),
+                                        ? const Color(0xFF17805F)
+                                        : const Color(0xFF7D8892),
                                   ),
                                 ),
                               ],
@@ -1099,9 +1099,9 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                                     width: 40,
                                     height: 40,
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFFF3E8FF),
+                                      color: const Color(0xFFE6F6EF),
                                       borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: const Color(0xFFDDD6FE)),
+                                      border: Border.all(color: const Color(0xFFDDEAF3)),
                                     ),
                                     child: Icon(
                                       s['icon'] as IconData,
@@ -1131,16 +1131,16 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                                               Container(
                                                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                                                 decoration: BoxDecoration(
-                                                  color: const Color(0xFFECFDF5),
+                                                  color: const Color(0xFFE4F5EE),
                                                   borderRadius: BorderRadius.circular(6),
-                                                  border: Border.all(color: const Color(0xFFA7F3D0), width: 0.8),
+                                                  border: Border.all(color: const Color(0xFFA7E8D1), width: 0.8),
                                                 ),
                                                 child: const Text(
                                                   '(This current session)',
                                                   style: TextStyle(
                                                     fontSize: 10.5,
                                                     fontWeight: FontWeight.w700,
-                                                    color: Color(0xFF059669),
+                                                    color: Color(0xFF17805F),
                                                   ),
                                                 ),
                                               ),
@@ -1164,10 +1164,10 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                                   OutlinedButton(
                                     onPressed: () => _endWebSession(idx),
                                     style: OutlinedButton.styleFrom(
-                                      foregroundColor: isCurrentSession ? const Color(0xFFDC2626) : brandViolet,
-                                      backgroundColor: isCurrentSession ? const Color(0xFFFEF2F2) : bgLavender,
+                                      foregroundColor: isCurrentSession ? const Color(0xFFC8423B) : brandViolet,
+                                      backgroundColor: isCurrentSession ? const Color(0xFFFDF3F2) : bgLavender,
                                       side: BorderSide(
-                                        color: isCurrentSession ? const Color(0xFFFECACA) : borderLavender,
+                                        color: isCurrentSession ? const Color(0xFFF6CFCB) : borderLavender,
                                         width: 1.0,
                                       ),
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -1183,7 +1183,7 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                                 ],
                               ),
                             ),
-                            if (!isLast) const Divider(color: Color(0xFFF3F4F6), height: 1),
+                            if (!isLast) const Divider(color: Color(0xFFF1F3F4), height: 1),
                           ],
                         );
                       }),
@@ -1230,7 +1230,7 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                     style: TextStyle(
                       fontSize: 13.5,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF7C3AED),
+                      color: Color(0xFF2F78A8),
                       letterSpacing: 0.2,
                     ),
                   ),

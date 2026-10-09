@@ -20,11 +20,11 @@ class BrandMark extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: const Color(0xFF3A4CD6),
+        color: const Color(0xFF2F78A8),
         borderRadius: effectiveRadius,
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF3A4CD6).withAlpha(70),
+            color: const Color(0xFF2F78A8).withAlpha(70),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -103,7 +103,7 @@ class BrandLockup extends StatelessWidget {
           style: theme.textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.w700,
             letterSpacing: -0.5,
-            color: isDark ? Colors.white : const Color(0xFF1A1D21),
+            color: isDark ? Colors.white : const Color(0xFF10171C),
           ),
         ),
         if (showSubtitle) ...[

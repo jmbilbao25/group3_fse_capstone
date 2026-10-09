@@ -100,7 +100,7 @@ class BankTransaction {
       initial: (json['counterparty'] as String?)?.isNotEmpty == true
           ? (json['counterparty'] as String)[0].toUpperCase()
           : 'A',
-      avatarColorValue: json['avatarColorValue'] ?? 0xFF4A0E17,
+      avatarColorValue: json['avatarColorValue'] ?? 0xFF10171C,
     );
   }
 
@@ -112,6 +112,16 @@ class BankTransaction {
   }
 }
 
+enum CardNetwork {
+  visa('Visa'),
+  mastercard('Mastercard');
+
+  const CardNetwork(this.label);
+  final String label;
+}
+
+/// A debit card drawn on the customer's savings account. Aura issues no
+/// credit products, so every card spends from the same balance.
 class BankCard {
   final String id;
   final String title;
@@ -119,9 +129,9 @@ class BankCard {
   final String expiry;
   final String cvv;
   final String holderName;
+  final CardNetwork network;
+  final bool isVirtual;
   bool isLocked;
-  final int gradientStart;
-  final int gradientEnd;
 
   BankCard({
     required this.id,
@@ -130,17 +140,19 @@ class BankCard {
     required this.expiry,
     required this.cvv,
     required this.holderName,
+    required this.network,
+    this.isVirtual = false,
     this.isLocked = false,
-    required this.gradientStart,
-    required this.gradientEnd,
   });
 
-  String get maskedCardNumber {
+  String get last4 {
     final clean = cardNumber.replaceAll(' ', '');
-    if (clean.length < 4) return '•••• •••• •••• ••••';
-    final last4 = clean.substring(clean.length - 4);
-    return '•••• •••• •••• $last4';
+    return clean.length < 4 ? '••••' : clean.substring(clean.length - 4);
   }
+
+  String get maskedCardNumber => '•••• •••• •••• $last4';
+
+  String get kindLabel => isVirtual ? 'Virtual debit' : 'Debit';
 }
 
 class MonthlyStatement {

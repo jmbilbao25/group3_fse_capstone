@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, ScanFace, ArrowLeftRight, FileWarning } from 'lucide-react';
+import { ArrowUpRight, ScanFace, ArrowLeftRight, FileWarning, Undo2 } from 'lucide-react';
 import { api, errorMessage } from '../lib/api';
 import { ago, money } from '../lib/format';
-import { useAuth } from '../context/Auth';
+import { canOpen, useAuth } from '../context/Auth';
 import { Aurora, Badge, ErrorNote, SkeletonRows, useLoad } from '../components/ui';
 import { holdReason } from './Transfers';
 
@@ -29,12 +29,13 @@ export default function Overview() {
   const { staff } = useAuth();
   const { data, error, loading, reload } = useLoad(async () => {
     // Each source fails on its own, so one service down does not blank the page.
-    const [kyc, held, sar] = await Promise.allSettled([
+    const [kyc, held, sar, rev] = await Promise.allSettled([
       api.get('/kyc/reviews').then((r) => r.data),
       api.get('/transfers/pending').then((r) => r.data),
       api.get('/risk/sar').then((r) => r.data),
+      api.get('/reversals', { params: { status: 'PENDING' } }).then((r) => r.data),
     ]);
-    return { kyc, held, sar };
+    return { kyc, held, sar, rev };
   }, []);
 
   const val = (s) => (s?.status === 'fulfilled' ? s.value : null);
@@ -46,8 +47,9 @@ export default function Overview() {
   const tiles = [
     { to: '/kyc', icon: ScanFace, label: 'Identities to review', n: kyc?.filter((r) => r.status.startsWith('PENDING')).length, src: data?.kyc },
     { to: '/transfers', icon: ArrowLeftRight, label: 'Transfers on hold', n: held?.length, src: data?.held },
+    { to: '/reversals', icon: Undo2, label: 'Reversals awaiting sign-off', n: val(data?.rev)?.length, src: data?.rev },
     { to: '/sar', icon: FileWarning, label: 'Reports awaiting sign-off', n: sar?.filter((r) => ['DRAFT', 'PENDING_CHECKER'].includes(r.review?.status)).length, src: data?.sar },
-  ];
+  ].filter((t) => canOpen(staff?.role, t.to));
 
   return (
     <div className="space-y-8">
@@ -65,7 +67,7 @@ export default function Overview() {
         <ErrorNote message={errorMessage(error)} onRetry={reload} />
       ) : (
         <>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:auto-cols-fr md:grid-flow-col">
             {tiles.map(({ to, icon: Icon, label, n, src }, i) => (
               <Link key={to} to={to} className="panel group p-6 transition-[transform,box-shadow] duration-300 ease-out hover:-translate-y-0.5 hover:shadow-lift animate-rise" style={{ animationDelay: `${80 + i * 60}ms` }}>
                 <div className="flex items-start justify-between">

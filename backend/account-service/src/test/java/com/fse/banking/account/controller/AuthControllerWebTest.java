@@ -10,10 +10,13 @@ import com.fse.banking.account.dto.RegisterResponse;
 import com.fse.banking.account.dto.TokenRefreshResponse;
 import com.fse.banking.account.dto.VerifyLoginOtpRequest;
 import com.fse.banking.account.exception.GlobalExceptionHandler;
+import com.fse.banking.account.exception.TooManyRequestsException;
 import com.fse.banking.account.security.JwtProvider;
 import com.fse.banking.account.service.AuthService;
 import com.fse.banking.account.service.TokenRotationService;
+import com.fse.banking.common.exception.ConflictException;
 import com.fse.banking.common.exception.TokenBreachException;
+import com.fse.banking.common.exception.UnauthorizedException;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -116,7 +119,97 @@ class AuthControllerWebTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.type").value("https://api.banking.capstone/errors/validation-failed"))
-                .andExpect(jsonPath("$.invalid_params", notNullValue()));
+                .andExpect(jsonPath("$.invalid_params", notNullValue()))
+                .andExpect(jsonPath("$.invalid_params[?(@.field == 'password')].reason").isNotEmpty())
+                .andExpect(jsonPath("$.invalid_params[?(@.field == 'password')].rejected_value").isEmpty());
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/auth/register returns 409 with detail when the email is taken")
+    void testRegisterDuplicateEmail() throws Exception {
+        when(authService.register(any(RegisterRequest.class)))
+                .thenThrow(new ConflictException("Email juan.delacruz@example.ph is already registered."));
+
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRegisterRequest())))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value("Email juan.delacruz@example.ph is already registered."));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/auth/register returns the masked email the code was sent to")
+    void testRegisterReturnsMaskedEmail() throws Exception {
+        when(authService.register(any(RegisterRequest.class))).thenReturn(RegisterResponse.builder()
+                .userId("USR-882190").email("juan.delacruz@example.ph").maskedEmail("j***z@example.ph").build());
+
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRegisterRequest())))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.masked_email").value("j***z@example.ph"));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/auth/verify-login-otp returns 401 with detail on a wrong code")
+    void testVerifyLoginOtpWrongCode() throws Exception {
+        when(authService.verifyLoginOtp(any(VerifyLoginOtpRequest.class), anyString(), any()))
+                .thenThrow(new UnauthorizedException("Incorrect verification code. 4 attempts left."));
+
+        mockMvc.perform(post("/api/v1/auth/verify-login-otp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"user_id\":\"USR-882190\",\"otp\":\"000000\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.detail").value("Incorrect verification code. 4 attempts left."));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/auth/resend-otp returns 200 with the masked email")
+    void testResendOtp() throws Exception {
+        when(authService.resendLoginOtp("USR-882190")).thenReturn("j***z@example.ph");
+
+        mockMvc.perform(post("/api/v1/auth/resend-otp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"user_id\":\"USR-882190\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("OTP_SENT"))
+                .andExpect(jsonPath("$.masked_email").value("j***z@example.ph"));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/auth/resend-otp returns 429 inside the cooldown")
+    void testResendOtpCooldown() throws Exception {
+        when(authService.resendLoginOtp("USR-882190"))
+                .thenThrow(new TooManyRequestsException("Please wait 42 seconds before requesting a new code."));
+
+        mockMvc.perform(post("/api/v1/auth/resend-otp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"user_id\":\"USR-882190\"}"))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.detail").value("Please wait 42 seconds before requesting a new code."));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/auth/resend-otp returns 400 without a user_id")
+    void testResendOtpRequiresUserId() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/resend-otp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    private RegisterRequest validRegisterRequest() {
+        return RegisterRequest.builder()
+                .email("juan.delacruz@example.ph")
+                .password("Password123!")
+                .firstName("Juan")
+                .lastName("Dela Cruz")
+                .dateOfBirth(LocalDate.of(1992, 5, 14))
+                .phoneNumber("+639171234567")
+                .addressLine("123 Ayala Ave, Makati City")
+                .governmentIdType("PASSPORT")
+                .governmentIdNumber("P9921840A")
+                .build();
     }
 
     @Test

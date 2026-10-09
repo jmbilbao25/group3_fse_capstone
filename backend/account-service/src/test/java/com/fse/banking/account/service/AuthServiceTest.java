@@ -4,6 +4,7 @@ import com.fse.banking.account.dto.LoginRequest;
 import com.fse.banking.account.dto.RegisterRequest;
 import com.fse.banking.account.dto.RegisterResponse;
 import com.fse.banking.account.dto.VerifyLoginOtpRequest;
+import com.fse.banking.account.exception.TooManyRequestsException;
 import com.fse.banking.account.model.UserEntity;
 import com.fse.banking.account.repository.UserRepository;
 import com.fse.banking.account.security.JwtProvider;
@@ -23,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.fse.banking.account.dto.DeviceInfoDto;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -107,6 +109,120 @@ class AuthServiceTest {
         assertThat(response.getKycStatus()).isEqualTo("PENDING");
         assertThat(response.getUserId()).startsWith("USR-");
         verify(userRepository).save(any(UserEntity.class));
+    }
+
+    @Test
+    @DisplayName("Register leaves the user unverified and emails a 6-digit code with a 5-minute TTL")
+    void testRegisterSendsEmailOtp() {
+        when(userRepository.existsByEmail(anyString())).thenReturn(false);
+        when(userRepository.existsByPhoneNumber(anyString())).thenReturn(false);
+        when(userRepository.existsByGovernmentId(anyString())).thenReturn(false);
+        when(passwordEncoder.encode(anyString())).thenReturn("$2a$10$encodedPassword");
+        when(userRepository.save(any(UserEntity.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        RegisterResponse response = authService.register(registerRequest);
+
+        assertThat(response.getMaskedEmail()).isEqualTo("j***z@example.ph");
+        verify(userRepository).save(argThat(u -> u.getLastLoginAt() == null));
+        verify(redisSessionStore).storeLoginOtp(eq(response.getUserId()), argThat(otp -> otp.matches("\\d{6}")), eq(Duration.ofMinutes(5)));
+    }
+
+    @Test
+    @DisplayName("An unverified user's login is challenged for the email code and gets no tokens")
+    void testUnverifiedUserLoginIsBlocked() {
+        activeUser.setLastLoginAt(null);
+        LoginRequest loginRequest = LoginRequest.builder()
+                .email("juan.delacruz@example.ph")
+                .password("Password123!")
+                .build();
+        when(userRepository.findByEmail("juan.delacruz@example.ph")).thenReturn(Optional.of(activeUser));
+        when(passwordEncoder.matches("Password123!", activeUser.getPasswordHash())).thenReturn(true);
+        when(redisSessionStore.getLoginOtp("USR-100001")).thenReturn("123456");
+
+        AuthService.LoginResult result = authService.login(loginRequest, "127.0.0.1", "Mozilla/5.0");
+
+        assertThat(result.getResponse().getStatus()).isEqualTo("MFA_REQUIRED");
+        assertThat(result.getResponse().getAccessToken()).isNull();
+        assertThat(result.getRefreshTokenId()).isNull();
+        verify(jwtProvider, never()).generateAccessToken(any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("A wrong code is rejected with the attempts left and counted")
+    void testVerifyOtpWrongCode() {
+        when(userRepository.findById("USR-100001")).thenReturn(Optional.of(activeUser));
+        when(redisSessionStore.getLoginOtp("USR-100001")).thenReturn("123456");
+        when(redisSessionStore.incrementLoginOtpAttempts(eq("USR-100001"), any())).thenReturn(1L);
+
+        assertThatThrownBy(() -> authService.verifyLoginOtp(otpRequest("654321"), "127.0.0.1", "Mozilla/5.0"))
+                .isInstanceOf(UnauthorizedException.class)
+                .hasMessageContaining("Incorrect verification code. 4 attempts left.");
+        verify(redisSessionStore, never()).clearLoginOtp(anyString());
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("The fifth wrong code burns the OTP and returns 429")
+    void testVerifyOtpAttemptLimit() {
+        when(userRepository.findById("USR-100001")).thenReturn(Optional.of(activeUser));
+        when(redisSessionStore.getLoginOtp("USR-100001")).thenReturn("123456");
+        when(redisSessionStore.incrementLoginOtpAttempts(eq("USR-100001"), any())).thenReturn(5L);
+
+        assertThatThrownBy(() -> authService.verifyLoginOtp(otpRequest("654321"), "127.0.0.1", "Mozilla/5.0"))
+                .isInstanceOf(TooManyRequestsException.class)
+                .hasMessageContaining("Too many incorrect codes");
+        verify(redisSessionStore).clearLoginOtp("USR-100001");
+    }
+
+    @Test
+    @DisplayName("An expired code (gone from Redis) gets an explicit expiry error")
+    void testVerifyOtpExpired() {
+        when(userRepository.findById("USR-100001")).thenReturn(Optional.of(activeUser));
+        when(redisSessionStore.getLoginOtp("USR-100001")).thenReturn(null);
+
+        assertThatThrownBy(() -> authService.verifyLoginOtp(otpRequest("123456"), "127.0.0.1", "Mozilla/5.0"))
+                .isInstanceOf(UnauthorizedException.class)
+                .hasMessageContaining("Verification code has expired");
+        verify(redisSessionStore, never()).incrementLoginOtpAttempts(anyString(), any());
+    }
+
+    @Test
+    @DisplayName("Resend emails a fresh code to an unverified user")
+    void testResendOtp() {
+        when(userRepository.findById("USR-100001")).thenReturn(Optional.of(activeUser));
+        when(redisSessionStore.startLoginOtpCooldown(eq("USR-100001"), any())).thenReturn(0L);
+
+        String masked = authService.resendLoginOtp("USR-100001");
+
+        assertThat(masked).isEqualTo("j***z@example.ph");
+        verify(redisSessionStore).storeLoginOtp(eq("USR-100001"), argThat(otp -> otp.matches("\\d{6}")), eq(Duration.ofMinutes(5)));
+    }
+
+    @Test
+    @DisplayName("Resend inside the cooldown is refused with 429 and the wait")
+    void testResendOtpCooldown() {
+        when(userRepository.findById("USR-100001")).thenReturn(Optional.of(activeUser));
+        when(redisSessionStore.startLoginOtpCooldown(eq("USR-100001"), any())).thenReturn(42L);
+
+        assertThatThrownBy(() -> authService.resendLoginOtp("USR-100001"))
+                .isInstanceOf(TooManyRequestsException.class)
+                .hasMessageContaining("42 seconds");
+        verify(redisSessionStore, never()).storeLoginOtp(anyString(), anyString(), any());
+    }
+
+    @Test
+    @DisplayName("Resend for an already verified user is a 409")
+    void testResendOtpAlreadyVerified() {
+        activeUser.setLastLoginAt(Instant.now());
+        when(userRepository.findById("USR-100001")).thenReturn(Optional.of(activeUser));
+
+        assertThatThrownBy(() -> authService.resendLoginOtp("USR-100001"))
+                .isInstanceOf(ConflictException.class);
+        verify(redisSessionStore, never()).storeLoginOtp(anyString(), anyString(), any());
+    }
+
+    private VerifyLoginOtpRequest otpRequest(String otp) {
+        return VerifyLoginOtpRequest.builder().userId("USR-100001").otp(otp).build();
     }
 
     @Test

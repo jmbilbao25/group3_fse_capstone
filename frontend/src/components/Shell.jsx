@@ -1,12 +1,14 @@
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { LayoutGrid, ScanFace, ArrowLeftRight, MapPinned, FileWarning, ScrollText, LogOut } from 'lucide-react';
-import { useAuth } from '../context/Auth';
+import { Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { LayoutGrid, ScanFace, ArrowLeftRight, MapPinned, FileWarning, ScrollText, LogOut, Users, Undo2 } from 'lucide-react';
+import { canOpen, useAuth } from '../context/Auth';
 import { Aurora, Logo, cn } from './ui';
 
 const NAV = [
   { to: '/', label: 'Overview', icon: LayoutGrid, end: true },
+  { to: '/customers', label: 'Customers', icon: Users },
   { to: '/kyc', label: 'Identity review', icon: ScanFace },
   { to: '/transfers', label: 'Held transfers', icon: ArrowLeftRight },
+  { to: '/reversals', label: 'Reversals', icon: Undo2 },
   { to: '/sar', label: 'SAR / STR', icon: FileWarning },
   { to: '/geo', label: 'Location simulator', icon: MapPinned },
   { to: '/audit', label: 'Audit trail', icon: ScrollText },
@@ -29,7 +31,7 @@ export default function Shell() {
           </div>
         </div>
         <nav className="-mt-10 relative z-10 flex-1 space-y-1 px-3">
-          {NAV.map(({ to, label, icon: Icon, end }) => (
+          {NAV.filter((n) => canOpen(staff?.role, n.to)).map(({ to, label, icon: Icon, end }) => (
             <NavLink
               key={to}
               to={to}
@@ -64,7 +66,7 @@ export default function Shell() {
       <main className="min-w-0 flex-1">
         {/* Keyed by path so each view gets its own entrance. */}
         <div key={pathname} className="mx-auto max-w-[1280px] px-10 py-10">
-          <Outlet />
+          {canOpen(staff?.role, pathname) ? <Outlet /> : <Navigate to="/" replace />}
         </div>
       </main>
     </div>

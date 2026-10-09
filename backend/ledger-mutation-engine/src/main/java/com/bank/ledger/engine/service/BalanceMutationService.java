@@ -641,6 +641,12 @@ public class BalanceMutationService {
         BalanceMaster sender = sourceId.equals(firstLockId) ? firstAccount : secondAccount;
         BalanceMaster receiver = targetId.equals(firstLockId) ? firstAccount : secondAccount;
 
+        // A held transfer must still have its reservation; fail before the Postgres audit and Kafka writes below.
+        if (sender.getHoldAmount().compareTo(tx.getAmount()) < 0) {
+            throw new IllegalStateException("Hold for " + transactionId + " is missing on " + sourceId
+                    + " (held " + sender.getHoldAmount() + ", needs " + tx.getAmount() + "). Reconcile the ledger before releasing.");
+        }
+
         BigDecimal amount = tx.getAmount();
         BigDecimal amlaThreshold = new BigDecimal("500000.0000");
 
@@ -892,8 +898,10 @@ public class BalanceMutationService {
         BigDecimal amount = tx.getAmount();
 
         // Release soft hold and restore available balance
-        sender.setHoldAmount(sender.getHoldAmount().subtract(amount));
-        sender.setAvailableBalance(sender.getAvailableBalance().add(amount));
+        // shortcut: holds are per account, not per transfer; release at most what is still held. Upgrade with per-transfer holds.
+        BigDecimal release = sender.getHoldAmount().min(amount);
+        sender.setHoldAmount(sender.getHoldAmount().subtract(release));
+        sender.setAvailableBalance(sender.getAvailableBalance().add(release));
         sender.setUpdatedAt(Instant.now());
         balanceRepository.save(sender);
 

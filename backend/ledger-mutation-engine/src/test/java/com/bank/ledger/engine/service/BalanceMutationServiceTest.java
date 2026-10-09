@@ -612,4 +612,55 @@ class BalanceMutationServiceTest {
         assertTrue(saved.getValue().getRiskReason().startsWith("IMPOSSIBLE_TRAVEL"));
         assertEquals("London, United Kingdom", saved.getValue().getLocationName());
     }
+
+    @Test
+    @DisplayName("Approve with a missing hold fails with a clear 409 message before any audit or Kafka write")
+    void testApproveWithMissingHoldFailsBeforeSideEffects() {
+        TransactionMaster pendingTx = TransactionMaster.builder()
+                .transactionId("TX-STALE-001")
+                .fromAccountId(SENDER_ACCOUNT)
+                .toAccountId(RECEIVER_ACCOUNT)
+                .type("TRANSFER")
+                .amount(new BigDecimal("60000.0000"))
+                .status("PENDING_APPROVAL")
+                .build();
+        // senderBalance from setUp has hold 0: the reservation was wiped out of band.
+        when(transactionRepository.findById("TX-STALE-001")).thenReturn(Optional.of(pendingTx));
+        when(accountRepository.findById(SENDER_ACCOUNT)).thenReturn(Optional.of(senderAccountMaster));
+        when(balanceRepository.findByAccountIdWithLock(SENDER_ACCOUNT)).thenReturn(Optional.of(senderBalance));
+        when(balanceRepository.findByAccountIdWithLock(RECEIVER_ACCOUNT)).thenReturn(Optional.of(receiverBalance));
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () ->
+                mutationService.approveTransfer("TX-STALE-001",
+                        CheckerActionRequest.builder().checkerUserId(CHECKER_USER).build()));
+
+        assertTrue(ex.getMessage().contains("Hold for TX-STALE-001 is missing on " + SENDER_ACCOUNT), ex.getMessage());
+        verify(balanceRepository, never()).save(any());
+        verifyNoInteractions(auditRepository, kafkaPublisher, outboxRepository);
+        assertEquals("PENDING_APPROVAL", pendingTx.getStatus());
+    }
+
+    @Test
+    @DisplayName("Reject with a stale hold succeeds and never drives hold negative or over-credits available")
+    void testRejectWithStaleHoldReleasesOnlyWhatIsHeld() {
+        TransactionMaster pendingTx = TransactionMaster.builder()
+                .transactionId("TX-STALE-REJ")
+                .fromAccountId(SENDER_ACCOUNT)
+                .toAccountId(RECEIVER_ACCOUNT)
+                .type("TRANSFER")
+                .amount(new BigDecimal("60000.0000"))
+                .status("PENDING_APPROVAL")
+                .build();
+        when(transactionRepository.findById("TX-STALE-REJ")).thenReturn(Optional.of(pendingTx));
+        when(accountRepository.findById(SENDER_ACCOUNT)).thenReturn(Optional.of(senderAccountMaster));
+        when(balanceRepository.findByAccountIdWithLock(SENDER_ACCOUNT)).thenReturn(Optional.of(senderBalance));
+
+        MutationResponse response = mutationService.rejectTransfer("TX-STALE-REJ",
+                CheckerActionRequest.builder().checkerUserId(CHECKER_USER).build());
+
+        assertEquals("FAILED", response.getStatus());
+        assertEquals(0, BigDecimal.ZERO.compareTo(senderBalance.getHoldAmount()));
+        assertEquals(0, new BigDecimal("100000.0000").compareTo(senderBalance.getAvailableBalance()));
+        assertEquals(0, new BigDecimal("100000.0000").compareTo(senderBalance.getBalanceAmount()));
+    }
 }

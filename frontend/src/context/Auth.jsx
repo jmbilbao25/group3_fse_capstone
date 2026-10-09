@@ -9,6 +9,12 @@ const AuthContext = createContext(null);
 const STAFF_KEY = 'aura.console.staff';
 const STAFF_ROLES = ['ADMIN', 'TELLER', 'MANAGER'];
 
+/** Zel's Segregation of Duties on the live roles: ADMIN is his compliance and fraud desk, TELLER and MANAGER his branch operations desk. */
+export const BRANCH_ROLES = ['TELLER', 'MANAGER'];
+export const REVERSAL_CHECKERS = ['ADMIN', 'MANAGER'];
+const ACCESS = { '/customers': BRANCH_ROLES, '/sar': ['ADMIN'], '/geo': ['ADMIN'], '/audit': ['ADMIN'] };
+export const canOpen = (role, path) => (ACCESS[path] || STAFF_ROLES).includes(role);
+
 /** Display details for seeded staff; unknown staff fall back to their email. */
 const DIRECTORY = {
   'usr-1004-adm-001': { name: 'Diana Vance', title: 'Chief Compliance Officer' },

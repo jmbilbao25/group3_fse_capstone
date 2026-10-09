@@ -6,6 +6,7 @@ import com.fse.banking.account.dto.LoginResponse;
 import com.fse.banking.account.dto.LogoutResponse;
 import com.fse.banking.account.dto.RegisterRequest;
 import com.fse.banking.account.dto.RegisterResponse;
+import com.fse.banking.account.dto.ResendOtpRequest;
 import com.fse.banking.account.dto.TokenRefreshResponse;
 import com.fse.banking.account.dto.VerifyLoginOtpRequest;
 import com.fse.banking.account.security.JwtProvider;
@@ -93,6 +94,18 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
                 .body(result.getResponse());
+    }
+
+    /** Re-sends the email code for registration or first sign-in; verify it with /verify-login-otp. */
+    @PostMapping("/resend-otp")
+    public ResponseEntity<Map<String, Object>> resendOtp(@Valid @RequestBody ResendOtpRequest request) {
+        String maskedEmail = authService.resendLoginOtp(request.getUserId());
+        return ResponseEntity.ok(Map.of(
+                "status", "OTP_SENT",
+                "user_id", request.getUserId(),
+                "masked_email", maskedEmail,
+                "expires_in_seconds", 300
+        ));
     }
 
     @PostMapping("/refresh")

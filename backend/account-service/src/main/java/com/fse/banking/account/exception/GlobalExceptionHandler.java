@@ -76,7 +76,8 @@ public class GlobalExceptionHandler {
         for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
             invalidParams.add(InvalidParam.builder()
                     .field(fieldError.getField())
-                    .rejectedValue(fieldError.getRejectedValue())
+                    // Never echo a rejected password back to the client.
+                    .rejectedValue("password".equals(fieldError.getField()) ? null : fieldError.getRejectedValue())
                     .reason(fieldError.getDefaultMessage())
                     .build());
         }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../models/user_persona.dart';
@@ -32,9 +33,13 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
 
-  int _secondsRemaining = 45;
+  /// Matches the backend's 5-minute OTP TTL.
+  static const int _codeLifetimeSeconds = 300;
+
+  int _secondsRemaining = _codeLifetimeSeconds;
   Timer? _timer;
   bool _isVerifying = false;
+  bool _isResending = false;
 
   @override
   void initState() {
@@ -86,7 +91,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   void _startCountdown() {
     _timer?.cancel();
-    setState(() => _secondsRemaining = 45);
+    setState(() => _secondsRemaining = _codeLifetimeSeconds);
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_secondsRemaining > 0) {
         setState(() => _secondsRemaining--);
@@ -253,32 +258,46 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   }
 
   void _resendCode() async {
+    if (_isResending) return;
+    setState(() => _isResending = true);
+    final result = await AuthApiService().resendOtp(userId: widget.userId ?? 'USR-0001');
+    if (!mounted) return;
+    setState(() => _isResending = false);
+    if (!result.success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.errorMessage ?? 'Could not send a new code.'),
+          backgroundColor: AuraColors.debitRed,
+        ),
+      );
+      return;
+    }
     for (final c in _controllers) {
       c.clear();
     }
     _startCountdown();
     _focusNodes[0].requestFocus();
-    await _fetchMailHogEmail();
-    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('New 6-digit code dispatched to ${widget.email}'),
         backgroundColor: AuraColors.primary,
       ),
     );
+    await _fetchMailHogEmail();
   }
 
   @override
   Widget build(BuildContext context) {
     final isExpired = _secondsRemaining <= 0;
-    final formattedTime =
-        '00:${_secondsRemaining.toString().padLeft(2, '0')}';
+    final formattedTime = '${(_secondsRemaining ~/ 60).toString().padLeft(2, '0')}:'
+        '${(_secondsRemaining % 60).toString().padLeft(2, '0')}';
 
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+        child: LayoutBuilder(builder: (context, box) => SingleChildScrollView(
+          // Phone width on every screen, so the six boxes stay one group on desktop.
+          padding: EdgeInsets.symmetric(horizontal: math.max(24.0, (box.maxWidth - 440) / 2), vertical: 16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -475,7 +494,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
               // Resend Code Button
               GestureDetector(
-                onTap: _resendCode,
+                onTap: _isResending ? null : _resendCode,
                 child: RichText(
                   text: const TextSpan(
                     style: TextStyle(fontSize: 13, color: AuraColors.textSecondary),
@@ -589,7 +608,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               const SizedBox(height: 20),
             ],
           ),
-        ),
+        )),
       ),
     );
   }

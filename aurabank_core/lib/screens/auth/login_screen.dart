@@ -12,6 +12,33 @@ import '../../services/security_service.dart';
 import '../../widgets/aura_logo.dart';
 import 'otp_verification_screen.dart';
 import 'pending_approval_screen.dart';
+import 'register_screen.dart';
+
+/// Paper well, 56 px, label kept inside so a prefilled field stays named.
+/// Shared with the register form so both sheets read as one family.
+InputDecoration auraFieldDecoration(String label, {Widget? suffixIcon, String? hintText}) {
+  final radius = BorderRadius.circular(16);
+  return InputDecoration(
+    labelText: label,
+    hintText: hintText,
+    labelStyle: const TextStyle(color: AuraColors.textSecondary),
+    filled: true,
+    fillColor: AuraColors.canvas,
+    contentPadding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
+    suffixIcon: suffixIcon,
+    enabledBorder: UnderlineInputBorder(
+        borderRadius: radius, borderSide: BorderSide.none),
+    focusedBorder: UnderlineInputBorder(
+        borderRadius: radius,
+        borderSide: const BorderSide(color: AuraColors.ink, width: 2)),
+    errorBorder: UnderlineInputBorder(
+        borderRadius: radius,
+        borderSide: const BorderSide(color: AuraColors.debitRed, width: 1.2)),
+    focusedErrorBorder: UnderlineInputBorder(
+        borderRadius: radius,
+        borderSide: const BorderSide(color: AuraColors.debitRed, width: 2)),
+  );
+}
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -277,6 +304,23 @@ class _LoginScreenState extends State<LoginScreen>
         ],
       );
 
+  /// Wordmark with the account-opening entry opposite it, as on the landing
+  /// header. The 48 px button sets the row height on both layouts.
+  Widget _buildHeader({required bool onDark}) => Row(
+        children: [
+          AuraWordmark(size: 30, onDark: onDark),
+          const Spacer(),
+          TextButton(
+            key: const ValueKey('createAccountLink'),
+            style: TextButton.styleFrom(
+                foregroundColor: onDark ? Colors.white : AuraColors.ink),
+            onPressed: () => Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const RegisterScreen())),
+            child: const Text('Create account'),
+          ),
+        ],
+      );
+
   @override
   Widget build(BuildContext context) {
     if (MediaQuery.sizeOf(context).width >= 600) return _buildWideLayout();
@@ -332,11 +376,12 @@ class _LoginScreenState extends State<LoginScreen>
                         SafeArea(
                           bottom: false,
                           child: Padding(
-                            padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
+                            // 12 + the 48 px header row keeps the wordmark where it sat at 20.
+                            padding: const EdgeInsets.fromLTRB(24, 12, 12, 40),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const AuraWordmark(size: 30, onDark: true),
+                                _buildHeader(onDark: true),
                                 const Spacer(),
                                 const SizedBox(height: 48),
                                 _buildGreeting(onDark: true),
@@ -380,7 +425,8 @@ class _LoginScreenState extends State<LoginScreen>
               child: Container(
                 key: const ValueKey('loginSheet'),
                 width: 440,
-                padding: const EdgeInsets.fromLTRB(36, 36, 36, 16),
+                // 27 + the 48 px header row keeps the wordmark where it sat at 36.
+                padding: const EdgeInsets.fromLTRB(36, 27, 36, 16),
                 decoration: BoxDecoration(
                   color: AuraColors.surface,
                   borderRadius: BorderRadius.circular(28),
@@ -396,11 +442,8 @@ class _LoginScreenState extends State<LoginScreen>
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Align(
-                      alignment: Alignment.centerLeft,
-                      child: AuraWordmark(size: 30),
-                    ),
-                    const SizedBox(height: 32),
+                    _buildHeader(onDark: false),
+                    const SizedBox(height: 23),
                     _buildGreeting(onDark: false),
                     const SizedBox(height: 28),
                     _buildSheetContents(),
@@ -469,24 +512,6 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  /// Paper well, 56 px, label kept inside so a prefilled field stays named.
-  InputDecoration _fieldDecoration(String label, {Widget? suffixIcon}) {
-    final radius = BorderRadius.circular(16);
-    return InputDecoration(
-      labelText: label,
-      labelStyle: const TextStyle(color: AuraColors.textSecondary),
-      filled: true,
-      fillColor: AuraColors.canvas,
-      contentPadding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
-      suffixIcon: suffixIcon,
-      enabledBorder: UnderlineInputBorder(
-          borderRadius: radius, borderSide: BorderSide.none),
-      focusedBorder: UnderlineInputBorder(
-          borderRadius: radius,
-          borderSide: const BorderSide(color: AuraColors.ink, width: 2)),
-    );
-  }
-
   /// 1. Standard Login View (matches Top row of mockup: fields + Sign In + Biometrics below)
   Widget _buildStandardLoginView() {
     return Column(
@@ -495,7 +520,7 @@ class _LoginScreenState extends State<LoginScreen>
         TextField(
           controller: _usernameController,
           style: const TextStyle(fontSize: 15),
-          decoration: _fieldDecoration("Username"),
+          decoration: auraFieldDecoration("Username"),
         ),
 
         const SizedBox(height: 12),
@@ -505,7 +530,7 @@ class _LoginScreenState extends State<LoginScreen>
           controller: _passwordController,
           obscureText: _obscurePassword,
           style: const TextStyle(fontSize: 15),
-          decoration: _fieldDecoration(
+          decoration: auraFieldDecoration(
             "Password",
             suffixIcon: IconButton(
               key: const ValueKey('passwordVisibilityToggle'),

@@ -236,7 +236,7 @@ const Fact = ({ k, v }) => (
   </div>
 );
 
-const Step = ({ who, when, text }) => (
+export const Step = ({ who, when, text }) => (
   <li className="flex gap-3">
     <span className="mt-1.5 size-2 shrink-0 rounded-full bg-mint-deep" />
     <div>

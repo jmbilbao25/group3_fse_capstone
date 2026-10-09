@@ -33,6 +33,7 @@ from app.models import RiskAnalysisRequest
 from app.threat_builder import has_threat_context, build_threat_narrative, detect_threat_category
 from app.warning_catalog import get_warning_dialog
 from hybrid_bench.sar_generator import trigger_sar_async
+from app import sar_registry
 from app.reviewer import (
     NanoJevSecondLookEngine,
     AsyncReviewWorkerPool,
@@ -240,6 +241,22 @@ class RiskRequestHandler(BaseHTTPRequestHandler):
             self._send_json(200, profile)
             return
 
+        if path == "/api/v1/risk/sar":
+            self._send_json(200, sar_registry.list_reports())
+            return
+
+        if path.startswith("/api/v1/risk/sar/"):
+            try:
+                report = sar_registry.get_report(path[len("/api/v1/risk/sar/"):])
+            except ValueError as exc:  # traversal-safe id check in sar_registry._path
+                self._send_json(400, {"detail": str(exc)})
+                return
+            if report is None:
+                self._send_json(404, {"detail": "SAR draft not found"})
+            else:
+                self._send_json(200, report)
+            return
+
         self._send_json(404, {"error": "Not Found", "path": self.path})
 
     def do_POST(self):
@@ -309,6 +326,23 @@ class RiskRequestHandler(BaseHTTPRequestHandler):
             except Exception as e:
                 logging.error(f"[KYC EVALUATION ERROR] {e}", exc_info=True)
                 self._send_json(500, {"error": "KYC Evaluation Failed", "detail": str(e)})
+            return
+
+        if path.startswith("/api/v1/risk/sar/") and path.endswith("/review"):
+            tx_id = path[len("/api/v1/risk/sar/"):-len("/review")]
+            try:
+                report = sar_registry.review_report(tx_id, payload.get("reviewer_id", ""),
+                                                    payload.get("action", ""), payload.get("note", ""))
+            except KeyError:
+                self._send_json(404, {"detail": "SAR draft not found"})
+                return
+            except sar_registry.SarReviewError as exc:  # subclass of ValueError, so catch it first
+                self._send_json(409, {"detail": str(exc)})
+                return
+            except ValueError as exc:
+                self._send_json(400, {"detail": str(exc)})
+                return
+            self._send_json(200, report)
             return
 
         self._send_json(404, {"error": "Endpoint Not Found", "path": self.path})

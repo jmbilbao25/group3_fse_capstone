@@ -159,9 +159,13 @@ public class RedisSessionStore {
 
     // --- Login MFA OTP Cache ---
     private static final String LOGIN_OTP_PREFIX = "otp:login:";
+    private static final String LOGIN_OTP_ATTEMPTS_PREFIX = "otp:login-attempts:";
+    private static final String LOGIN_OTP_COOLDOWN_PREFIX = "otp:login-cooldown:";
 
+    /** Stores a fresh code; a new code starts with a clean wrong-attempt count. */
     public void storeLoginOtp(String userId, String otp, Duration ttl) {
         stringRedisTemplate.opsForValue().set(LOGIN_OTP_PREFIX + userId, otp, ttl);
+        stringRedisTemplate.delete(LOGIN_OTP_ATTEMPTS_PREFIX + userId);
     }
 
     public String getLoginOtp(String userId) {
@@ -169,7 +173,27 @@ public class RedisSessionStore {
     }
 
     public void clearLoginOtp(String userId) {
-        stringRedisTemplate.delete(LOGIN_OTP_PREFIX + userId);
+        stringRedisTemplate.delete(List.of(LOGIN_OTP_PREFIX + userId, LOGIN_OTP_ATTEMPTS_PREFIX + userId));
+    }
+
+    /** Counts a wrong code; the counter lives no longer than the code it guards. */
+    public long incrementLoginOtpAttempts(String userId, Duration ttl) {
+        String key = LOGIN_OTP_ATTEMPTS_PREFIX + userId;
+        Long attempts = stringRedisTemplate.opsForValue().increment(key);
+        if (attempts != null && attempts == 1) {
+            stringRedisTemplate.expire(key, ttl);
+        }
+        return attempts == null ? 0 : attempts;
+    }
+
+    /** Starts the resend cooldown. Returns 0 when it started, else the seconds still to wait. */
+    public long startLoginOtpCooldown(String userId, Duration cooldown) {
+        String key = LOGIN_OTP_COOLDOWN_PREFIX + userId;
+        if (Boolean.TRUE.equals(stringRedisTemplate.opsForValue().setIfAbsent(key, "1", cooldown))) {
+            return 0;
+        }
+        Long remaining = stringRedisTemplate.getExpire(key);
+        return remaining == null || remaining < 1 ? 1 : remaining;
     }
 
     // --- Device Registry Operations ---

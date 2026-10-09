@@ -20,6 +20,9 @@ public class RegisterResponse {
     @JsonProperty("email")
     private String email;
 
+    @JsonProperty("masked_email")
+    private String maskedEmail;
+
     @JsonProperty("kyc_status")
     private String kycStatus;
 

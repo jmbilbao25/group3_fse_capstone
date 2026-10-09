@@ -8,8 +8,9 @@ import '../transfer/web_transfer_screen.dart';
 
 class WebDashboardScreen extends StatefulWidget {
   final Function(int)? onNavigateTab;
+  final void Function(QuickTransferDraft draft)? onQuickTransfer;
 
-  const WebDashboardScreen({super.key, this.onNavigateTab});
+  const WebDashboardScreen({super.key, this.onNavigateTab, this.onQuickTransfer});
 
   @override
   State<WebDashboardScreen> createState() => _WebDashboardScreenState();
@@ -573,10 +574,10 @@ class _WebDashboardScreenState extends State<WebDashboardScreen> {
                 value: _selectedBank,
                 isExpanded: true,
                 items: const [
-                  DropdownMenuItem(value: 'Aura Bank', child: Text('Aura Bank (Instant • Free)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
-                  DropdownMenuItem(value: 'BDO Unibank', child: Text('BDO Unibank', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
-                  DropdownMenuItem(value: 'BPI', child: Text('Bank of the Philippine Islands', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
-                  DropdownMenuItem(value: 'GCash', child: Text('GCash Wallet', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
+                  DropdownMenuItem(value: 'Aura Bank', child: Text('Aura Bank', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
+                  DropdownMenuItem(value: 'MeyBank', child: Text('MeyBank (Group 2 Partner)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
+                  DropdownMenuItem(value: 'Apex Digital Bank', child: Text('Apex Digital Bank (Group 1 Partner)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
+                  DropdownMenuItem(value: 'Nexus Core Bank', child: Text('Nexus Core Bank (Group 4 Partner)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
                 ],
                 onChanged: (val) {
                   if (val != null) setState(() => _selectedBank = val);
@@ -637,12 +638,19 @@ class _WebDashboardScreenState extends State<WebDashboardScreen> {
             height: 44,
             child: ElevatedButton(
               onPressed: () {
-                if (widget.onNavigateTab != null) {
+                final draft = QuickTransferDraft(
+                  accountNumber: _recipientController.text,
+                  amount: _amountController.text,
+                  bank: _selectedBank,
+                );
+                if (widget.onQuickTransfer != null) {
+                  widget.onQuickTransfer!(draft);
+                } else if (widget.onNavigateTab != null) {
                   widget.onNavigateTab!(1);
                 } else {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const WebTransferScreen()),
+                    MaterialPageRoute(builder: (_) => WebTransferScreen(draft: draft)),
                   );
                 }
               },

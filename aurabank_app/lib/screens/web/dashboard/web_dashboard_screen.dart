@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../services/bank_service.dart';
 import '../../../models/bank_models.dart';
 import '../../../theme/aura_theme.dart';
-import '../../transfer/send_money_screen.dart';
+import '../transfer/web_transfer_screen.dart';
 
 class WebDashboardScreen extends StatefulWidget {
   final Function(int)? onNavigateTab;
@@ -572,7 +572,7 @@ class _WebDashboardScreenState extends State<WebDashboardScreen> {
                   } else {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const SendMoneyScreen()),
+                      MaterialPageRoute(builder: (_) => const WebTransferScreen()),
                     );
                   }
                 },
@@ -691,7 +691,7 @@ class _WebDashboardScreenState extends State<WebDashboardScreen> {
                 } else {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const SendMoneyScreen()),
+                    MaterialPageRoute(builder: (_) => const WebTransferScreen()),
                   );
                 }
               },

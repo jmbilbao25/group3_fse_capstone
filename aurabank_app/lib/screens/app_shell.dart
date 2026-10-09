@@ -69,7 +69,10 @@ class _AppShellState extends State<AppShell> {
       WebDashboardScreen(onNavigateTab: _onNavigateTab),
       const WebTransferScreen(),
       const WebCardsScreen(),
-      WebScanScreen(onBack: () => _onNavigateTab(0)),
+      WebScanScreen(
+        onBack: () => _onNavigateTab(0),
+        onTransfer: () => _onNavigateTab(1),
+      ),
       const WebAnalyticsScreen(),
       const WebProfileScreen(),
     ];

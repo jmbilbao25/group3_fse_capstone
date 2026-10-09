@@ -27,6 +27,9 @@ class RiskAnalysisRequest(BaseModel):
     ip_address: Optional[str] = Field(default=None, description="Client connection IP address")
     ip_latitude: Optional[float] = Field(default=None, description="Resolved IP geolocation latitude")
     ip_longitude: Optional[float] = Field(default=None, description="Resolved IP geolocation longitude")
+    previous_latitude: Optional[float] = Field(default=None, description="Latitude of the account's previous located transfer (from the ledger)")
+    previous_longitude: Optional[float] = Field(default=None, description="Longitude of the account's previous located transfer")
+    previous_timestamp: Optional[str] = Field(default=None, description="ISO-8601 time of the previous located transfer")
 
     # Optional advanced telemetry overrides (for tests and benchmarks)
     rooted: Optional[bool] = Field(default=False)

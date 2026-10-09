@@ -12,7 +12,7 @@ class BackendConfig {
   BackendConfig._internal();
 
   /// Laptop's local Wi-Fi IP address for cross-device connectivity through the laptop
-  static const String defaultLanIp = '192.168.254.159';
+  static const String defaultLanIp = '192.168.18.110';
 
   static String _resolveInitialHost() {
     if (kIsWeb) {
@@ -23,7 +23,7 @@ class BackendConfig {
       return envHost;
     }
     if (defaultTargetPlatform == TargetPlatform.android) {
-      return '10.0.2.2';
+      return '127.0.0.1';
     }
     return defaultLanIp;
   }
@@ -39,15 +39,13 @@ class BackendConfig {
   /// Ordered list of candidate hostnames/IPs to discover working backend
   static List<String> get candidateHosts {
     return <String>{
+      '127.0.0.1',
+      'localhost',
       BackendConfig().host,
+      defaultLanIp,
       if (defaultTargetPlatform == TargetPlatform.android) ...[
         '10.0.2.2',
-        '127.0.0.1',
-        'localhost',
       ],
-      defaultLanIp,
-      'localhost',
-      '127.0.0.1',
     }.toList();
   }
 

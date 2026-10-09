@@ -40,6 +40,9 @@ from app.reviewer import (
     AnalystDecisionStore,
     ReviewerMetrics
 )
+from app.kyc import KycEvaluator, KycEvaluationRequest
+
+kyc_evaluator = KycEvaluator()
 
 # Datadog APM Tracing initialization
 DD_AGENT_HOST = os.environ.get("DD_AGENT_HOST", "dd-agent")
@@ -241,13 +244,35 @@ class RiskRequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = self.path.split("?")[0].rstrip("/")
-        content_length = int(self.headers.get("Content-Length", 0))
-        body = self.rfile.read(content_length) if content_length > 0 else b"{}"
+        content_length_hdr = self.headers.get("Content-Length")
+        transfer_encoding = self.headers.get("Transfer-Encoding", "")
+
+        if content_length_hdr is not None:
+            content_length = int(content_length_hdr)
+            body = self.rfile.read(content_length) if content_length > 0 else b"{}"
+        elif "chunked" in transfer_encoding.lower():
+            chunks = []
+            while True:
+                line = self.rfile.readline().strip()
+                if not line:
+                    break
+                try:
+                    chunk_len = int(line, 16)
+                except ValueError:
+                    break
+                if chunk_len == 0:
+                    self.rfile.readline()
+                    break
+                chunks.append(self.rfile.read(chunk_len))
+                self.rfile.readline()
+            body = b"".join(chunks)
+        else:
+            body = b"{}"
 
         try:
             payload = json.loads(body.decode("utf-8-sig")) if body else {}
-        except Exception:
-            self._send_json(400, {"error": "Invalid JSON payload"})
+        except Exception as e:
+            self._send_json(400, {"error": "Invalid JSON payload", "detail": str(e)})
             return
 
         if path in ("/api/v1/risk/analyze", "/api/v1/risk/transfer"):
@@ -273,6 +298,17 @@ class RiskRequestHandler(BaseHTTPRequestHandler):
                 self._send_json(400, result)
             else:
                 self._send_json(200, result)
+            return
+
+        if path == "/api/v1/kyc/evaluate":
+            try:
+                req_obj = KycEvaluationRequest(**payload)
+                eval_res = kyc_evaluator.evaluate(req_obj)
+                res_dict = eval_res.model_dump() if hasattr(eval_res, "model_dump") else eval_res.dict()
+                self._send_json(200, res_dict)
+            except Exception as e:
+                logging.error(f"[KYC EVALUATION ERROR] {e}", exc_info=True)
+                self._send_json(500, {"error": "KYC Evaluation Failed", "detail": str(e)})
             return
 
         self._send_json(404, {"error": "Endpoint Not Found", "path": self.path})

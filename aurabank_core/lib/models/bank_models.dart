@@ -176,6 +176,8 @@ class UserProfile {
   bool faceIdEnabled;
   bool fingerprintEnabled;
   bool pushAlertsEnabled;
+  String kycStatus;
+  String? kycReviewReason;
 
   UserProfile({
     required this.name,
@@ -188,5 +190,9 @@ class UserProfile {
     this.faceIdEnabled = true,
     this.fingerprintEnabled = true,
     this.pushAlertsEnabled = true,
+    this.kycStatus = 'UNVERIFIED',
+    this.kycReviewReason,
   });
+
+  bool get isKycVerified => kycStatus.toUpperCase() == 'VERIFIED' || kycStatus.toUpperCase() == 'ACTIVE';
 }

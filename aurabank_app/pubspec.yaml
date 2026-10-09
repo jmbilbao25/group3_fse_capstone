@@ -42,6 +42,8 @@ dependencies:
   local_auth: ^2.3.0
   aurabank_core:
     path: ../aurabank_core
+  camera: ^0.12.1
+  image: ^4.10.1
 
 dev_dependencies:
   flutter_test:

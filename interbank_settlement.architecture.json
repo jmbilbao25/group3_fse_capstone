@@ -2,7 +2,7 @@
   "schema_version": 1,
   "diagram_type": "architecture",
   "meta": {
-    "title": "Inter-Bank Funds Transfer & Nostro-Vostro Settlement Architecture",
+    "title": "Inter-Bank Funds Transfer: Aura Bank & CooBS Settlement Architecture",
     "output": "interbank_settlement.html",
     "quality_profile": "showcase"
   },
@@ -95,8 +95,8 @@
     {
       "id": "partner_gateway",
       "type": "security",
-      "label": "Partner API Gateway",
-      "sublabel": "Group B Ingress :8080",
+      "label": "CooBS Inbound Gateway",
+      "sublabel": "CooBS Wire Ingress",
       "pos": [1260, 140],
       "size": [160, 64],
       "tag": "Inbound Wire Auth"
@@ -104,8 +104,8 @@
     {
       "id": "partner_orchestrator",
       "type": "backend",
-      "label": "Partner Orchestrator",
-      "sublabel": "Group B Core Service",
+      "label": "CooBS Orchestrator",
+      "sublabel": "CooBS Core Engine",
       "brand": "spring",
       "pos": [1530, 140],
       "size": [170, 72],
@@ -114,20 +114,20 @@
     {
       "id": "partner_t24",
       "type": "backend",
-      "label": "Partner T24 CBS",
-      "sublabel": "Group B Core Ledger",
+      "label": "CooBS CBS Ledger",
+      "sublabel": "CooBS Core Ledger",
       "pos": [1530, 310],
       "size": [170, 72],
-      "tag": "Debit Vostro | Credit Recipient"
+      "tag": "Debit Settlement | Credit Bob"
     },
     {
       "id": "partner_db",
       "type": "database",
-      "label": "Partner Master DB",
-      "sublabel": "Group B Ledger Storage",
+      "label": "CooBS Master DB",
+      "sublabel": "CooBS Ledger Storage",
       "pos": [1260, 310],
       "size": [150, 72],
-      "tag": "Vostro Buffer & Accounts"
+      "tag": "ACC-SETTLEMENT-AURABANK"
     }
   ],
   "boundaries": [
@@ -154,7 +154,7 @@
     },
     {
       "kind": "region",
-      "label": "Partner Bank Perimeter (Other Group's Capstone Bank)",
+      "label": "CooBS Platform Perimeter (Coo Banking System)",
       "wraps": [
         "partner_gateway",
         "partner_orchestrator",
@@ -280,21 +280,21 @@
   "cards": [
     {
       "dot": "emerald",
-      "title": "Bilateral Nostro & Vostro Settlement Principle",
+      "title": "Bilateral Settlement Model: Aura Bank & CooBS",
       "items": [
-        "Nostro Account (Our money at Partner Bank): AuraBank defines a pre-funded GL account (e.g. ACC-NOSTRO-BANK-B) in its T24 Master DB. When Alice sends money to Bank B, AuraBank debits Alice and credits its Nostro clearing buffer.",
-        "Vostro Account (Partner Bank money with AuraBank): Partner Bank maintains a corresponding Vostro account (ACC-VOSTRO-AURABANK). Partner Bank debits the Vostro buffer and credits Bob's personal account.",
-        "Zero Third-Party Dependency: No centralized clearing switch needed. Both capstone groups simply agree on a pre-seeded balance (e.g. 10,000,000 PHP) and an authenticated JSON wire contract."
+        "Pre-Funded Settlement Buffers: Aura Bank maintains ACC-SETTLEMENT-COOBS in its CBS. CooBS maintains ACC-SETTLEMENT-AURABANK in its CBS (each seeded with a 5,000,000 PHP buffer).",
+        "Direct Ledger Postings: Debiting Alice credits the CooBS buffer in Aura Bank. Debiting the Aura Bank buffer credits Bob in CooBS. Money is never created or destroyed.",
+        "Zero Third-Party Dependency: No centralized clearing switch needed. Both institutions agree on an authenticated JSON HTTP contract for instant bilateral settlement."
       ]
     },
     {
       "dot": "amber",
-      "title": "Outbound & Inbound Inter-Bank Transaction Lifecycle",
+      "title": "Outbound & Inbound Inter-Bank Wire Lifecycle",
       "items": [
-        "Leg 1 (Domestic Debit): AuraBank Transfer Orchestrator invokes internal T24 CBS POST /api/v1/cbs/funds-transfer (Debit: Alice, Credit: ACC-NOSTRO-BANK-B).",
-        "Leg 2 (Inter-Bank Wire Dispatch): Orchestrator sends authenticated HTTP REST payload with API Key header and idempotency token to Partner Bank POST /api/v1/transfers/interbank/inward.",
-        "Leg 3 (Beneficiary Credit): Partner Bank CBS executes internal funds transfer (Debit: ACC-VOSTRO-AURABANK, Credit: Bob) and returns 200 OK with partner transaction reference.",
-        "Saga Compensation (Rollback on Failure): If Partner Bank returns 404/500 or times out, AuraBank Orchestrator calls T24 POST /api/v1/cbs/reversal to immediately restore Alice's funds."
+        "Leg 1 (Domestic Debit): Aura Bank Orchestrator executes internal CBS transfer (Debit: Alice 1,000 PHP, Credit: ACC-SETTLEMENT-COOBS).",
+        "Leg 2 (Wire Dispatch): Orchestrator sends standard HTTP POST to CooBS endpoint POST /api/v1/interbank/transfers/inbound with reference number.",
+        "Leg 3 (Beneficiary Credit): CooBS CBS executes internal transfer (Debit: ACC-SETTLEMENT-AURABANK, Credit: Bob) and returns 200 OK with status SUCCESS.",
+        "Saga Compensation (Rollback): If CooBS returns an error or times out, Aura Bank Orchestrator calls CBS reversal to immediately refund Alice."
       ]
     }
   ]

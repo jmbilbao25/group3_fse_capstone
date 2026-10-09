@@ -20,7 +20,7 @@ class BankService extends ChangeNotifier {
     const envUrl = String.fromEnvironment('LOCAL_API_URL');
     if (envUrl.isNotEmpty) return envUrl;
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2:8080';
+      return 'http://127.0.0.1:8080';
     }
     return 'http://localhost:8080';
   }
@@ -56,12 +56,12 @@ class BankService extends ChangeNotifier {
   Future<bool> testConnection() async {
     final candidateTargets = <String>{
       baseUrl,
+      'http://127.0.0.1:8080',
+      'http://localhost:8080',
+      'http://192.168.18.110:8080',
       if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) ...[
         'http://10.0.2.2:8080',
-        'http://127.0.0.1:8080',
-        'http://192.168.254.159:8080',
       ],
-      'http://localhost:8080',
     }.toList();
 
     for (final target in candidateTargets) {
@@ -1074,6 +1074,12 @@ class BankService extends ChangeNotifier {
       );
       octStatement.transactions.insert(0, newTxn);
     }
+    notifyListeners();
+  }
+
+  void setKycStatus(String status, {String? reason}) {
+    user.kycStatus = status;
+    user.kycReviewReason = reason;
     notifyListeners();
   }
 }

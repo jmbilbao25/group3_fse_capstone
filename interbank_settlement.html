@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="generator" content="Interactive Architecture Diagram">
   <meta name="diagram-reader-contract" content="declared-wide-v1">
-  <title>Inter-Bank Funds Transfer &amp; Nostro-Vostro Settlement Architecture Diagram</title>
+  <title>Inter-Bank Funds Transfer: Aura Bank &amp; CooBS Settlement Architecture Diagram</title>
   <script>
     // Resolve the theme before first paint so light-preference users don't
     // see a dark flash. The toolbar script below re-applies with UI state.
@@ -5043,7 +5043,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
            data-preset-badge-blueprint="BLUEPRINT / REV 01"
            data-preset-badge-editorial="EDITORIAL / FIELD NOTE">
         <div class="pulse-dot"></div>
-        <h1>Inter-Bank Funds Transfer &amp; Nostro-Vostro Settlement Architecture</h1>
+        <h1>Inter-Bank Funds Transfer: Aura Bank &amp; CooBS Settlement Architecture</h1>
       </div>
     </div>
 
@@ -5052,7 +5052,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     <!-- Main Diagram -->
     <div class="diagram-container" data-detail-level="read"
          data-preset-badge-editorial-plate="PLATE 04">
-      <svg viewBox="0 0 1770 528" role="img" aria-label="Inter-Bank Funds Transfer &amp; Nostro-Vostro Settlement Architecture" lang="en" data-preset="classic" data-quality-profile="showcase" data-reader-fit="intrinsic-height" data-reader-min-text="7.5" data-reader-primary-text="14">
+      <svg viewBox="0 0 1770 528" role="img" aria-label="Inter-Bank Funds Transfer: Aura Bank &amp; CooBS Settlement Architecture" lang="en" data-preset="classic" data-quality-profile="standard" data-reader-fit="intrinsic-height" data-reader-min-text="7.5" data-reader-primary-text="14">
         <desc id="diagram-description">An architecture diagram.</desc>
         <!-- Definitions -->
         <defs>
@@ -5081,7 +5081,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 
         <rect data-graph-role="structural-frame" data-composition-frame-kind="security-group" data-composition-frame-id="1" data-composition-frame-label="Inter-Bank Clearing &amp; Bilateral Settlement Corridor" x="806.283855667742" y="110" width="367.432288664516" height="292" rx="8" class="c-security-group" stroke-width="1"/>
 
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="2" data-composition-frame-label="Partner Bank Perimeter (Other Group&#39;s Capstone Bank)" x="1230" y="110" width="500" height="292" rx="12" class="c-region" stroke-width="1"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="2" data-composition-frame-label="CooBS Platform Perimeter (Coo Banking System)" x="1230" y="110" width="500" height="292" rx="12" class="c-region" stroke-width="1"/>
 
         <!-- Connection paths (before components for correct z-order) -->
         <g data-graph-role="automatic-crossover" style="--step:0">
@@ -5276,7 +5276,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <text data-detail="fine" x="990" y="374" class="t-external" font-size="7" text-anchor="middle">Net Balance Buffer</text>
         </g>
 
-        <g id="node-partner_gateway" data-node-id="partner_gateway" data-node-label="Partner API Gateway" tabindex="0" role="button" aria-label="Focus Partner API Gateway, Group B Ingress :8080, Partner Bank Perimeter (Other Group&#39;s Capstone Bank)" aria-pressed="false" data-node-kind="security" data-node-sublabel="Group B Ingress :8080" data-node-tag="Inbound Wire Auth" data-node-context="Partner Bank Perimeter (Other Group&#39;s Capstone Bank)">
+        <g id="node-partner_gateway" data-node-id="partner_gateway" data-node-label="CooBS Inbound Gateway" tabindex="0" role="button" aria-label="Focus CooBS Inbound Gateway, CooBS Wire Ingress, CooBS Platform Perimeter (Coo Banking System)" aria-pressed="false" data-node-kind="security" data-node-sublabel="CooBS Wire Ingress" data-node-tag="Inbound Wire Auth" data-node-context="CooBS Platform Perimeter (Coo Banking System)">
           
           <rect x="1260" y="140" width="160" height="64" rx="6" class="c-mask"/>
           <rect x="1260" y="140" width="160" height="64" rx="6" class="c-security" stroke-width="1.5"/>
@@ -5284,12 +5284,12 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
             <path d="m5.8 8 1.5 1.5 3-3"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="1340" y="170" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Partner API Gateway</text>
-        <text data-detail="context" x="1340" y="186" class="t-muted" font-size="9" text-anchor="middle">Group B Ingress :8080</text>
+          <text data-node-label="" data-detail-anchor="" x="1340" y="170" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">CooBS Inbound Gateway</text>
+        <text data-detail="context" x="1340" y="186" class="t-muted" font-size="9" text-anchor="middle">CooBS Wire Ingress</text>
         <text data-detail="fine" x="1340" y="196" class="t-security" font-size="7" text-anchor="middle">Inbound Wire Auth</text>
         </g>
 
-        <g id="node-partner_orchestrator" data-node-id="partner_orchestrator" data-node-label="Partner Orchestrator" tabindex="0" role="button" aria-label="Focus Partner Orchestrator, Group B Core Service, Partner Bank Perimeter (Other Group&#39;s Capstone Bank), Spring" aria-pressed="false" data-node-kind="backend" data-node-sublabel="Group B Core Service" data-node-tag="Beneficiary Verifier" data-node-context="Partner Bank Perimeter (Other Group&#39;s Capstone Bank)" data-node-brand="Spring" data-node-brand-id="spring" data-node-brand-status="preset" data-node-brand-source="https://spring.io/trademarks">
+        <g id="node-partner_orchestrator" data-node-id="partner_orchestrator" data-node-label="CooBS Orchestrator" tabindex="0" role="button" aria-label="Focus CooBS Orchestrator, CooBS Core Engine, CooBS Platform Perimeter (Coo Banking System), Spring" aria-pressed="false" data-node-kind="backend" data-node-sublabel="CooBS Core Engine" data-node-tag="Beneficiary Verifier" data-node-context="CooBS Platform Perimeter (Coo Banking System)" data-node-brand="Spring" data-node-brand-id="spring" data-node-brand-status="preset" data-node-brand-source="https://spring.io/trademarks">
           
           <rect x="1530" y="140" width="170" height="72" rx="6" class="c-mask"/>
           <rect x="1530" y="140" width="170" height="72" rx="6" class="c-backend" stroke-width="1.5"/>
@@ -5301,24 +5301,24 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             <path d="M21.8537 1.4158a10.4504 10.4504 0 0 1-1.284 2.2471A11.9666 11.9666 0 1 0 3.8518 20.7757l.4445.3951a11.9543 11.9543 0 0 0 19.6316-8.2971c.3457-3.0126-.568-6.8649-2.0743-11.458zM5.5805 20.8745a1.0174 1.0174 0 1 1-.1482-1.4323 1.0396 1.0396 0 0 1 .1482 1.4323zm16.1991-3.5806c-2.9385 3.9263-9.2601 2.5928-13.2852 2.7904 0 0-.7161.0494-1.4323.1481 0 0 .2717-.1234.6174-.2469 2.8398-.9877 4.1732-1.1853 5.9018-2.0743 3.2349-1.6545 6.4698-5.2844 7.1118-9.0379-1.2347 3.6053-4.9881 6.7167-8.3959 7.9761-2.3459.8643-6.5685 1.7039-6.5685 1.7039l-.1729-.0988c-2.8645-1.4076-2.9632-7.6304 2.2718-9.6306 2.2966-.889 4.4696-.395 6.9637-.9877 2.6422-.6174 5.7043-2.5929 6.939-5.1857 1.3828 4.1732 3.062 10.643.0493 14.6434z" transform="translate(3 3) scale(0.4166666666666667)" fill="#6DB33F"/>
             <rect width="16" height="16" rx="4" class="brand-mark-frame"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="1615" y="174" class="t-primary" font-size="9.5" font-weight="600" text-anchor="middle">Partner Orchestrator</text>
-        <text data-detail="context" x="1615" y="190" class="t-muted" font-size="9" text-anchor="middle">Group B Core Service</text>
+          <text data-node-label="" data-detail-anchor="" x="1615" y="174" class="t-primary" font-size="10.5" font-weight="600" text-anchor="middle">CooBS Orchestrator</text>
+        <text data-detail="context" x="1615" y="190" class="t-muted" font-size="9" text-anchor="middle">CooBS Core Engine</text>
         <text data-detail="fine" x="1615" y="204" class="t-backend" font-size="7" text-anchor="middle">Beneficiary Verifier</text>
         </g>
 
-        <g id="node-partner_t24" data-node-id="partner_t24" data-node-label="Partner T24 CBS" tabindex="0" role="button" aria-label="Focus Partner T24 CBS, Group B Core Ledger, Partner Bank Perimeter (Other Group&#39;s Capstone Bank)" aria-pressed="false" data-node-kind="backend" data-node-sublabel="Group B Core Ledger" data-node-tag="Debit Vostro | Credit Recipient" data-node-context="Partner Bank Perimeter (Other Group&#39;s Capstone Bank)">
+        <g id="node-partner_t24" data-node-id="partner_t24" data-node-label="CooBS CBS Ledger" tabindex="0" role="button" aria-label="Focus CooBS CBS Ledger, CooBS Core Ledger, CooBS Platform Perimeter (Coo Banking System)" aria-pressed="false" data-node-kind="backend" data-node-sublabel="CooBS Core Ledger" data-node-tag="Debit Settlement | Credit Bob" data-node-context="CooBS Platform Perimeter (Coo Banking System)">
           
           <rect x="1530" y="310" width="170" height="72" rx="6" class="c-mask"/>
           <rect x="1530" y="310" width="170" height="72" rx="6" class="c-backend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(1536 316) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="1615" y="344" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Partner T24 CBS</text>
-        <text data-detail="context" x="1615" y="360" class="t-muted" font-size="9" text-anchor="middle">Group B Core Ledger</text>
-        <text data-detail="fine" x="1615" y="374" class="t-backend" font-size="7" text-anchor="middle">Debit Vostro | Credit Recipient</text>
+          <text data-node-label="" data-detail-anchor="" x="1615" y="344" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">CooBS CBS Ledger</text>
+        <text data-detail="context" x="1615" y="360" class="t-muted" font-size="9" text-anchor="middle">CooBS Core Ledger</text>
+        <text data-detail="fine" x="1615" y="374" class="t-backend" font-size="7" text-anchor="middle">Debit Settlement | Credit Bob</text>
         </g>
 
-        <g id="node-partner_db" data-node-id="partner_db" data-node-label="Partner Master DB" tabindex="0" role="button" aria-label="Focus Partner Master DB, Group B Ledger Storage, Partner Bank Perimeter (Other Group&#39;s Capstone Bank)" aria-pressed="false" data-node-kind="database" data-node-sublabel="Group B Ledger Storage" data-node-tag="Vostro Buffer &amp; Accounts" data-node-context="Partner Bank Perimeter (Other Group&#39;s Capstone Bank)">
+        <g id="node-partner_db" data-node-id="partner_db" data-node-label="CooBS Master DB" tabindex="0" role="button" aria-label="Focus CooBS Master DB, CooBS Ledger Storage, CooBS Platform Perimeter (Coo Banking System)" aria-pressed="false" data-node-kind="database" data-node-sublabel="CooBS Ledger Storage" data-node-tag="ACC-SETTLEMENT-AURABANK" data-node-context="CooBS Platform Perimeter (Coo Banking System)">
           
           <rect x="1260" y="310" width="150" height="72" rx="6" class="c-mask"/>
           <rect x="1260" y="310" width="150" height="72" rx="6" class="c-database" stroke-width="1.5"/>
@@ -5326,9 +5326,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             <ellipse cx="8" cy="4" rx="5" ry="2"/>
             <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="1335" y="344" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Partner Master DB</text>
-        <text data-detail="context" x="1335" y="360" class="t-muted" font-size="9" text-anchor="middle">Group B Ledger Storage</text>
-        <text data-detail="fine" x="1335" y="374" class="t-database" font-size="7" text-anchor="middle">Vostro Buffer &amp; Accounts</text>
+          <text data-node-label="" data-detail-anchor="" x="1335" y="344" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">CooBS Master DB</text>
+        <text data-detail="context" x="1335" y="360" class="t-muted" font-size="9" text-anchor="middle">CooBS Ledger Storage</text>
+        <text data-detail="fine" x="1335" y="374" class="t-database" font-size="7" text-anchor="middle">ACC-SETTLEMENT-AURABANK</text>
         </g>
 
         <!-- Connection labels -->
@@ -5396,9 +5396,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           <text data-boundary-label="" x="814.283855667742" y="132.41935583870966" class="t-security" font-size="11.419355838709675" font-weight="600">Inter-Bank Clearing &amp; Bilateral Settlement Corridor</text>
         </g>
 
-        <g data-graph-role="structural-frame-label" data-composition-frame-id="2" data-composition-frame-kind="region" data-composition-frame-label="Partner Bank Perimeter (Other Group&#39;s Capstone Bank)">
-          <rect data-graph-role="structural-frame-label-mask" x="1234" y="117" width="366.28390216774187" height="19" rx="3" class="c-mask"/>
-          <text data-boundary-label="" x="1238" y="132.41935583870966" class="t-cloud" font-size="11.419355838709675" font-weight="600">Partner Bank Perimeter (Other Group&#39;s Capstone Bank)</text>
+        <g data-graph-role="structural-frame-label" data-composition-frame-id="2" data-composition-frame-kind="region" data-composition-frame-label="CooBS Platform Perimeter (Coo Banking System)">
+          <rect data-graph-role="structural-frame-label-mask" x="1234" y="117" width="318.3226076451612" height="19" rx="3" class="c-mask"/>
+          <text data-boundary-label="" x="1238" y="132.41935583870966" class="t-cloud" font-size="11.419355838709675" font-weight="600">CooBS Platform Perimeter (Coo Banking System)</text>
         </g>
 
         <!-- Legend -->
@@ -5618,25 +5618,25 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       <div class="card">
         <div class="card-header">
           <div class="card-dot emerald"></div>
-          <h3>Bilateral Nostro &amp; Vostro Settlement Principle</h3>
+          <h3>Bilateral Settlement Model: Aura Bank &amp; CooBS</h3>
         </div>
         <ul>
-          <li>Nostro Account (Our money at Partner Bank): AuraBank defines a pre-funded GL account (e.g. ACC-NOSTRO-BANK-B) in its T24 Master DB. When Alice sends money to Bank B, AuraBank debits Alice and credits its Nostro clearing buffer.</li>
-          <li>Vostro Account (Partner Bank money with AuraBank): Partner Bank maintains a corresponding Vostro account (ACC-VOSTRO-AURABANK). Partner Bank debits the Vostro buffer and credits Bob&#39;s personal account.</li>
-          <li>Zero Third-Party Dependency: No centralized clearing switch needed. Both capstone groups simply agree on a pre-seeded balance (e.g. 10,000,000 PHP) and an authenticated JSON wire contract.</li>
+          <li>Pre-Funded Settlement Buffers: Aura Bank maintains ACC-SETTLEMENT-COOBS in its CBS. CooBS maintains ACC-SETTLEMENT-AURABANK in its CBS (each seeded with a 5,000,000 PHP buffer).</li>
+          <li>Direct Ledger Postings: Debiting Alice credits the CooBS buffer in Aura Bank. Debiting the Aura Bank buffer credits Bob in CooBS. Money is never created or destroyed.</li>
+          <li>Zero Third-Party Dependency: No centralized clearing switch needed. Both institutions agree on an authenticated JSON HTTP contract for instant bilateral settlement.</li>
         </ul>
       </div>
 
       <div class="card">
         <div class="card-header">
           <div class="card-dot amber"></div>
-          <h3>Outbound &amp; Inbound Inter-Bank Transaction Lifecycle</h3>
+          <h3>Outbound &amp; Inbound Inter-Bank Wire Lifecycle</h3>
         </div>
         <ul>
-          <li>Leg 1 (Domestic Debit): AuraBank Transfer Orchestrator invokes internal T24 CBS POST /api/v1/cbs/funds-transfer (Debit: Alice, Credit: ACC-NOSTRO-BANK-B).</li>
-          <li>Leg 2 (Inter-Bank Wire Dispatch): Orchestrator sends authenticated HTTP REST payload with API Key header and idempotency token to Partner Bank POST /api/v1/transfers/interbank/inward.</li>
-          <li>Leg 3 (Beneficiary Credit): Partner Bank CBS executes internal funds transfer (Debit: ACC-VOSTRO-AURABANK, Credit: Bob) and returns 200 OK with partner transaction reference.</li>
-          <li>Saga Compensation (Rollback on Failure): If Partner Bank returns 404/500 or times out, AuraBank Orchestrator calls T24 POST /api/v1/cbs/reversal to immediately restore Alice&#39;s funds.</li>
+          <li>Leg 1 (Domestic Debit): Aura Bank Orchestrator executes internal CBS transfer (Debit: Alice 1,000 PHP, Credit: ACC-SETTLEMENT-COOBS).</li>
+          <li>Leg 2 (Wire Dispatch): Orchestrator sends standard HTTP POST to CooBS endpoint POST /api/v1/interbank/transfers/inbound with reference number.</li>
+          <li>Leg 3 (Beneficiary Credit): CooBS CBS executes internal transfer (Debit: ACC-SETTLEMENT-AURABANK, Credit: Bob) and returns 200 OK with status SUCCESS.</li>
+          <li>Saga Compensation (Rollback): If CooBS returns an error or times out, Aura Bank Orchestrator calls CBS reversal to immediately refund Alice.</li>
         </ul>
       </div>
     </div>

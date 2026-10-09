@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/biometric_service.dart';
 import '../app_shell.dart';
 
 /// Custom Face ID Icon Widget matching the Aura Bank biometric design
@@ -153,6 +154,57 @@ class _LoginPageFaceIdState extends State<LoginPageFaceId> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _handleFaceIdAuth();
+    });
+  }
+
+  Future<void> _handleFaceIdAuth() async {
+    final biometric = BiometricService();
+    final bool canAuth = await biometric.canAuthenticate();
+    if (!canAuth) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Face ID is not available or not enrolled on this device.'),
+            backgroundColor: Color(0xFFDC2626),
+          ),
+        );
+      }
+      return;
+    }
+
+    final bool success = await biometric.authenticate(
+      reason: 'Glance at camera for Face ID to sign in to Aura Bank',
+      biometricOnly: false,
+    );
+
+    if (!mounted) return;
+
+    if (success) {
+      if (widget.onLoginSuccess != null) {
+        widget.onLoginSuccess!();
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const AppShell(),
+          ),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Face ID verification cancelled or not recognized. Tap to retry.'),
+          backgroundColor: Color(0xFF6B7280),
+        ),
+      );
+    }
+  }
 
   @override
   void dispose() {
@@ -358,14 +410,7 @@ class _LoginPageFaceIdState extends State<LoginPageFaceId> {
 
                     // Face ID Biometric Action Icon
                     GestureDetector(
-                      onTap: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const AppShell(),
-                          ),
-                        );
-                      },
+                      onTap: widget.onFaceIdTap ?? _handleFaceIdAuth,
                       child: const FaceIdIcon(
                         size: 68,
                         backgroundColor: Color(0xFF3A0088),

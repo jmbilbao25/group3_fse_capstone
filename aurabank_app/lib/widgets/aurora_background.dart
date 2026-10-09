@@ -1,4 +1,6 @@
 import 'dart:math' as math;
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
@@ -134,6 +136,14 @@ class AuroraPainter extends CustomPainter {
 
   static const int _samples = 28;
 
+  /// Fixed star positions (unit square) from a seeded generator, so the sky
+  /// is the same on every launch and no allocation happens per frame.
+  static final List<Offset> _stars = () {
+    final r = math.Random(7);
+    return List.generate(46, (_) => Offset(r.nextDouble(), r.nextDouble() * 0.62));
+  }();
+  Float32List? _starBuf;
+
   @override
   void paint(Canvas canvas, Size size) {
     final rect = Offset.zero & size;
@@ -143,6 +153,26 @@ class AuroraPainter extends CustomPainter {
     final unit = math.min(w, h * 1.4);
 
     canvas.drawRect(rect, Paint()..color = AuraColors.ink);
+
+    // Stars: three brightness groups twinkle out of phase. Three batched
+    // drawRawPoints calls in total, whatever the screen size.
+    final buf = _starBuf ??= Float32List(_stars.length * 2);
+    for (var g = 0; g < 3; g++) {
+      var n = 0;
+      for (var i = g; i < _stars.length; i += 3) {
+        buf[n++] = _stars[i].dx * w;
+        buf[n++] = _stars[i].dy * h;
+      }
+      final twinkle = 0.35 + 0.35 * (0.5 + 0.5 * math.sin(t * 3 + g * 2.1));
+      canvas.drawRawPoints(
+        ui.PointMode.points,
+        Float32List.sublistView(buf, 0, n),
+        Paint()
+          ..strokeCap = StrokeCap.round
+          ..strokeWidth = 1.2 + g * 0.5
+          ..color = Colors.white.withValues(alpha: twinkle * intensity),
+      );
+    }
 
     for (final c in _curtains) {
       final path = Path();

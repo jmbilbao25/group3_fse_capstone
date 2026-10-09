@@ -65,6 +65,7 @@ class _LandingScreenState extends State<LandingScreen> with SingleTickerProvider
   void _next() {
     final i = _page.value.round();
     if (i >= _pages.length - 1) return _toLogin();
+    if (AuraMotion.reduced(context)) return _pager.jumpToPage(i + 1);
     _pager.animateToPage(i + 1, duration: AuraMotion.resolve(context, AuraMotion.medium), curve: AuraMotion.emphasized);
   }
 
@@ -98,7 +99,19 @@ class _LandingScreenState extends State<LandingScreen> with SingleTickerProvider
                     child: PageView.builder(
                       controller: _pager,
                       itemCount: _pages.length,
-                      itemBuilder: (context, i) => Padding(
+                      itemBuilder: (context, i) => ValueListenableBuilder<double>(
+                        valueListenable: _page,
+                        builder: (context, p, child) {
+                          // Layered parallax: the body trails the headline, so
+                          // the copy reads as two planes sliding past each other.
+                          final d = (p - i).clamp(-1.0, 1.0);
+                          final w = MediaQuery.sizeOf(context).width;
+                          return Opacity(
+                            opacity: (1 - d.abs() * 1.2).clamp(0.0, 1.0),
+                            child: Transform.translate(offset: Offset(d * w * 0.18, 0), child: child),
+                          );
+                        },
+                        child: Padding(
                         padding: const EdgeInsets.fromLTRB(24, 28, 24, 0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -123,6 +136,7 @@ class _LandingScreenState extends State<LandingScreen> with SingleTickerProvider
                             ),
                           ],
                         ),
+                      ),
                       ),
                     ),
                   ),

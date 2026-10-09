@@ -4,7 +4,7 @@ SAR/STR register for the compliance console.
 Laya drafts reports as text files (hybrid_bench/sar_generator.py). This module
 reads them back and parses the fields compliance needs to triage. The human
 maker/checker sign-off is owned by the admin service and stored in the admin
-schema, so this module stays read-only.
+schema; until then it is kept in a sidecar next to each draft.
 """
 
 import os
@@ -59,6 +59,7 @@ def _summary(tx_id: str, text: str, mtime: float) -> Dict:
         **{k: v for k, v in fields.items() if k not in ("narrative", "red_flags")},
         "transaction_id": fields.get("transaction_id", tx_id),
         "created_at": datetime.fromtimestamp(mtime, timezone.utc).isoformat(),
+        "review": review_state(tx_id),
     }
 
 
@@ -88,3 +89,60 @@ def get_report(tx_id: str) -> Optional[Dict]:
         **{k: v for k, v in _parse(text).items() if k in ("narrative", "red_flags")},
         "document": text,
     }
+
+
+# -----------------------------------------------------------------------------
+# Human sign-off. DRAFT -> maker recommends FILE/DISMISS -> PENDING_CHECKER ->
+# a different checker CONFIRMs (FILED/DISMISSED) or RETURNs (DRAFT).
+# shortcut: JSON sidecar per draft; moves to AURA_ADMIN.review_cases with the
+# schema split (ADR-001).
+# -----------------------------------------------------------------------------
+import json
+import threading
+
+_LOCK = threading.Lock()
+
+
+class SarReviewError(ValueError):
+    pass
+
+
+def review_state(tx_id: str) -> Dict:
+    p = _path(tx_id, ".review.json")
+    if not os.path.exists(p):
+        return {"status": "DRAFT", "history": []}
+    with open(p, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def review_report(tx_id: str, reviewer_id: str, action: str, note: str = "") -> Dict:
+    if not reviewer_id:
+        raise SarReviewError("reviewer_id is required")
+    if not os.path.exists(_path(tx_id, ".txt")):
+        raise KeyError(tx_id)
+    with _LOCK:
+        state = review_state(tx_id)
+        now = datetime.now(timezone.utc).isoformat()
+        if action in ("RECOMMEND_FILE", "RECOMMEND_DISMISS"):
+            if state["status"] != "DRAFT":
+                raise SarReviewError(f"Report is {state['status']}; only drafts take a recommendation")
+            if action == "RECOMMEND_DISMISS" and not note.strip():
+                raise SarReviewError("A reason is required to dismiss a report")
+            state.update(status="PENDING_CHECKER",
+                         maker={"id": reviewer_id, "recommendation": action.split("_")[1], "note": note, "at": now})
+        elif action in ("CONFIRM", "RETURN"):
+            if state["status"] != "PENDING_CHECKER":
+                raise SarReviewError(f"Report is {state['status']}; nothing to check")
+            if state["maker"]["id"] == reviewer_id:
+                raise SarReviewError("Four-eyes rule: a different reviewer must check this recommendation")
+            state["checker"] = {"id": reviewer_id, "action": action, "note": note, "at": now}
+            if action == "CONFIRM":
+                state["status"] = "FILED" if state["maker"]["recommendation"] == "FILE" else "DISMISSED"
+            else:
+                state["status"] = "DRAFT"
+        else:
+            raise SarReviewError(f"Unknown action {action}")
+        state.setdefault("history", []).append({"by": reviewer_id, "action": action, "note": note, "at": now})
+        with open(_path(tx_id, ".review.json"), "w", encoding="utf-8") as f:
+            json.dump(state, f, indent=2)
+    return get_report(tx_id)

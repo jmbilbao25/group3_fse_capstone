@@ -1,3 +1,4 @@
+import 'package:aurabank_core/navigation/root_navigator.dart';
 import 'services/bank_service.dart';
 import 'services/device_storage.dart';
 import 'package:flutter/material.dart';
@@ -15,8 +16,6 @@ import 'screens/profile/devices_sessions_screen.dart';
 import 'screens/auth/security_gate_screen.dart';
 import 'screens/profile/risk_showcase_screen.dart';
 import 'theme/aura_theme.dart';
-
-final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -275,7 +275,7 @@ class RiskRequestHandler(BaseHTTPRequestHandler):
             self._send_json(400, {"error": "Invalid JSON payload", "detail": str(e)})
             return
 
-        if path in ("/api/v1/risk/analyze", "/api/v1/risk/transfer"):
+        if path in ("/api/v1/risk/analyze", "/api/v1/risk/transfer", "/api/v1/risk/evaluate"):
             result = self._handle_analyze(payload)
             self._send_json(200, result)
             return
@@ -317,9 +317,9 @@ class RiskRequestHandler(BaseHTTPRequestHandler):
         start_time = time.perf_counter()
         tx_id = req.get("transaction_id") or f"TX-RISK-{uuid.uuid4().hex[:8].upper()}"
 
-        account_id = req.get("account_id") or req.get("accountId") or "acc-2001-sav-001"
+        account_id = req.get("account_id") or req.get("accountId") or "1000-2000-3001"
         user_id = req.get("user_id") or req.get("userId") or "usr-1001-cst-001"
-        target_account_id = req.get("target_account_id") or req.get("targetAccountId") or "acc-2002-chk-001"
+        target_account_id = req.get("target_account_id") or req.get("targetAccountId") or "1000-2000-3002"
         customer = get_customer_profile(account_id) if account_id else get_customer_profile(user_id)
 
         home_coords = customer.get("home_coordinates", {"latitude": 14.5995, "longitude": 120.9842})

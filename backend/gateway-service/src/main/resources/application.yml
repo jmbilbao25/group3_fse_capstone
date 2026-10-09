@@ -48,12 +48,35 @@ spring:
                 redis-rate-limiter.burstCapacity: 20
                 key-resolver: "#{@userKeyResolver}"
 
+        # Console maker-checker queue lives on the ledger controller, not the transfer orchestrator.
+        - id: ledger-transfer-reviews
+          uri: ${LEDGER_ENGINE_URI:http://localhost:8082}
+          predicates:
+            - Path=/api/v1/transfers/pending, /api/v1/transfers/*/approve, /api/v1/transfers/*/reject
+          filters:
+            - RewritePath=/api/v1/transfers(?<segment>/?.*), /api/v1/ledger/transfers$1
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+                key-resolver: "#{@userKeyResolver}"
+
         - id: ledger-transfers
           uri: ${LEDGER_ENGINE_URI:http://localhost:8082}
           predicates:
-            - Path=/api/v1/transfers/**
+            - Path=/api/v1/transfers, /api/v1/transfers/**
           filters:
-            - RewritePath=/api/v1/transfers(?<segment>/?.*), /api/v1/ledger/transfers$1
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+                key-resolver: "#{@userKeyResolver}"
+
+        - id: ledger-reversals
+          uri: ${LEDGER_ENGINE_URI:http://localhost:8082}
+          predicates:
+            - Path=/api/v1/reversals, /api/v1/reversals/**
+          filters:
             - name: RequestRateLimiter
               args:
                 redis-rate-limiter.replenishRate: 10

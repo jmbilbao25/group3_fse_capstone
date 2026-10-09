@@ -426,15 +426,15 @@ class _StatementScreenState extends State<StatementScreen> {
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
+                    children: [
+                      const Text(
                         'Account Holder',
                         style: TextStyle(fontSize: 10, color: textGray),
                       ),
-                      SizedBox(height: 2),
+                      const SizedBox(height: 2),
                       Text(
-                        'Elijah Riley Montefalco',
-                        style: TextStyle(
+                        _bankService.user.name.isNotEmpty ? _bankService.user.name : 'Juan Dela Cruz',
+                        style: const TextStyle(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w700,
                           color: textDark,
@@ -442,10 +442,10 @@ class _StatementScreenState extends State<StatementScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      SizedBox(height: 2),
+                      const SizedBox(height: 2),
                       Text(
-                        '1584 4447 3697 1327 (Savings)',
-                        style: TextStyle(fontSize: 9.5, color: textGray),
+                        '${_bankService.savingsAccountNumber} (Savings)',
+                        style: const TextStyle(fontSize: 9.5, color: textGray),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),

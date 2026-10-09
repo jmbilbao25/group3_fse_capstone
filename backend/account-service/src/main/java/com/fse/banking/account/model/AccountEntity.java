@@ -46,6 +46,10 @@ public class AccountEntity {
     @Builder.Default
     private AccountStatus status = AccountStatus.ACTIVE;
 
+    @Column(name = "currency", length = 3, nullable = false)
+    @Builder.Default
+    private String currency = "PHP";
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

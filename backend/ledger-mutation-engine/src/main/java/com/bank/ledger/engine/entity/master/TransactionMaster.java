@@ -31,6 +31,13 @@ public class TransactionMaster {
     @Column(name = "type", nullable = false, length = 30)
     private String type; // TRANSFER
 
+    @Column(name = "currency", length = 3)
+    @Builder.Default
+    private String currency = "PHP";
+
+    @Column(name = "memo", length = 255)
+    private String memo;
+
     @Column(name = "amount", nullable = false, precision = 18, scale = 4)
     private BigDecimal amount;
 

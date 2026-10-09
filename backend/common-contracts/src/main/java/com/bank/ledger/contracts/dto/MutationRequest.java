@@ -126,4 +126,28 @@ public class MutationRequest {
     @JsonProperty("device_context")
     @JsonAlias({"device_context", "deviceContext"})
     private java.util.Map<String, Object> deviceContext;
+
+    @JsonProperty("is_on_call")
+    @JsonAlias({"is_on_call", "isOnCall"})
+    private Boolean isOnCall;
+
+    @JsonProperty("is_screen_sharing")
+    @JsonAlias({"is_screen_sharing", "isScreenSharing"})
+    private Boolean isScreenSharing;
+
+    @JsonProperty("is_pasted")
+    @JsonAlias({"is_pasted", "isPasted"})
+    private Boolean isPasted;
+
+    @JsonProperty("biometric_signature")
+    @JsonAlias({"biometric_signature", "biometricSignature"})
+    private String biometricSignature;
+
+    @JsonProperty("scam_advisory_acknowledged")
+    @JsonAlias({"scam_advisory_acknowledged", "scamAdvisoryAcknowledged"})
+    private Boolean scamAdvisoryAcknowledged;
+
+    @JsonProperty("idempotency_key")
+    @JsonAlias({"idempotency_key", "idempotencyKey"})
+    private String idempotencyKey;
 }

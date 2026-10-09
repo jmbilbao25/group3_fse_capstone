@@ -75,6 +75,7 @@ CREATE TABLE accounts (
     user_id        VARCHAR2(64) NOT NULL,
     account_number VARCHAR2(32) NOT NULL UNIQUE,
     account_type   VARCHAR2(20) NOT NULL,
+    currency       VARCHAR2(3) DEFAULT 'PHP' NOT NULL,
     status         VARCHAR2(20) DEFAULT 'ACTIVE' NOT NULL,
     created_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -86,9 +87,11 @@ CREATE TABLE accounts (
 -- ==============================================================================
 -- 3. Table: balance_master
 -- Strict numeric parameters: NUMBER(18, 4) with mathematical sanity checks
+-- Surrogate balance_id PK eliminates shared-key anti-pattern
 -- ==============================================================================
 CREATE TABLE balance_master (
-    account_id        VARCHAR2(64) PRIMARY KEY,
+    balance_id        VARCHAR2(64) PRIMARY KEY,
+    account_id        VARCHAR2(64) NOT NULL UNIQUE,
     balance_amount    NUMBER(18, 4) DEFAULT 0.0000 NOT NULL,
     hold_amount       NUMBER(18, 4) DEFAULT 0.0000 NOT NULL,
     available_balance NUMBER(18, 4) DEFAULT 0.0000 NOT NULL,
@@ -109,12 +112,14 @@ CREATE TABLE transactions (
     from_account_id        VARCHAR2(64) NOT NULL,
     to_account_id          VARCHAR2(64),
     type                   VARCHAR2(30) NOT NULL,
+    currency               VARCHAR2(3) DEFAULT 'PHP' NOT NULL,
     amount                 NUMBER(18, 4) NOT NULL,
     before_balance         NUMBER(18, 4) NOT NULL,
     after_balance          NUMBER(18, 4) NOT NULL,
     status                 VARCHAR2(30) NOT NULL,
     requires_2fa_otp       NUMBER(1) DEFAULT 0 NOT NULL,
     approved_by_user_id    VARCHAR2(64),
+    memo                   VARCHAR2(255),
     latitude               NUMBER(10, 6),
     longitude              NUMBER(10, 6),
     location_name          VARCHAR2(100),
@@ -129,6 +134,7 @@ CREATE TABLE transactions (
     CONSTRAINT fk_tx_from_account FOREIGN KEY (from_account_id) REFERENCES accounts(account_id),
     CONSTRAINT fk_tx_to_account FOREIGN KEY (to_account_id) REFERENCES accounts(account_id),
     CONSTRAINT fk_tx_approved_by FOREIGN KEY (approved_by_user_id) REFERENCES users(user_id),
+    CONSTRAINT fk_tx_reversed_by FOREIGN KEY (reversed_by_user_id) REFERENCES users(user_id),
     CONSTRAINT chk_tx_type CHECK (type IN ('DEPOSIT', 'WITHDRAWAL', 'TRANSFER', 'REVERSAL')),
     CONSTRAINT chk_tx_status CHECK (status IN ('PENDING_APPROVAL', 'COMMITTED', 'FAILED', 'REJECTED_FRAUD', 'REVERSED', 'CANCELLED', 'POSTED', 'INITIATED', 'PROCESSING')),
     CONSTRAINT chk_tx_2fa_otp CHECK (requires_2fa_otp IN (0, 1)),
@@ -373,21 +379,12 @@ INSERT INTO users (
     13.7565, 121.0583, 'Batangas City, Philippines', '112.198.54.33'
 );
 
--- 2. Accounts (Savings Only)
+-- 2. Accounts (Savings Only: Exactly 1 per Customer)
 INSERT INTO accounts (account_id, user_id, account_number, account_type, status)
 VALUES ('1000-2000-3001', 'usr-1001-cst-001', '1000-2000-3001', 'SAVINGS', 'ACTIVE');
 
 INSERT INTO accounts (account_id, user_id, account_number, account_type, status)
 VALUES ('1000-2000-3002', 'usr-1002-cst-002', '1000-2000-3002', 'SAVINGS', 'ACTIVE');
-
-INSERT INTO accounts (account_id, user_id, account_number, account_type, status)
-VALUES ('acc-2001-sav-001', 'usr-1001-cst-001', '100100001234', 'SAVINGS', 'ACTIVE');
-
-INSERT INTO accounts (account_id, user_id, account_number, account_type, status)
-VALUES ('acc-2002-sav-001', 'usr-1001-cst-001', '100100005678', 'SAVINGS', 'ACTIVE');
-
-INSERT INTO accounts (account_id, user_id, account_number, account_type, status)
-VALUES ('acc-2003-sav-002', 'usr-1002-cst-002', '100200009999', 'SAVINGS', 'ACTIVE');
 
 INSERT INTO accounts (account_id, user_id, account_number, account_type, status)
 VALUES ('1000-2000-3004', 'usr-2003-cst-003', '1000-2000-3004', 'SAVINGS', 'ACTIVE');
@@ -407,30 +404,30 @@ VALUES ('1000-2000-3008', 'usr-2007-cst-007', '1000-2000-3008', 'SAVINGS', 'ACTI
 INSERT INTO accounts (account_id, user_id, account_number, account_type, status)
 VALUES ('1000-2000-3009', 'usr-2008-cst-008', '1000-2000-3009', 'SAVINGS', 'ACTIVE');
 
--- 3. Balance Master (Exact 4-decimal precision)
-INSERT INTO balance_master (account_id, balance_amount, hold_amount, available_balance)
-VALUES ('1000-2000-3001', 25000000.0000, 0.0000, 25000000.0000);
+-- 3. Balance Master (Exact 4-decimal precision with Surrogate balance_id PK)
+INSERT INTO balance_master (balance_id, account_id, balance_amount, hold_amount, available_balance)
+VALUES ('bal-1000-2000-3001', '1000-2000-3001', 25000000.0000, 0.0000, 25000000.0000);
 
-INSERT INTO balance_master (account_id, balance_amount, hold_amount, available_balance)
-VALUES ('1000-2000-3002', 5000000.0000, 0.0000, 5000000.0000);
+INSERT INTO balance_master (balance_id, account_id, balance_amount, hold_amount, available_balance)
+VALUES ('bal-1000-2000-3002', '1000-2000-3002', 5000000.0000, 0.0000, 5000000.0000);
 
-INSERT INTO balance_master (account_id, balance_amount, hold_amount, available_balance)
-VALUES ('1000-2000-3004', 5200000.0000, 0.0000, 5200000.0000);
+INSERT INTO balance_master (balance_id, account_id, balance_amount, hold_amount, available_balance)
+VALUES ('bal-1000-2000-3004', '1000-2000-3004', 5200000.0000, 0.0000, 5200000.0000);
 
-INSERT INTO balance_master (account_id, balance_amount, hold_amount, available_balance)
-VALUES ('1000-2000-3005', 3750000.0000, 0.0000, 3750000.0000);
+INSERT INTO balance_master (balance_id, account_id, balance_amount, hold_amount, available_balance)
+VALUES ('bal-1000-2000-3005', '1000-2000-3005', 3750000.0000, 0.0000, 3750000.0000);
 
-INSERT INTO balance_master (account_id, balance_amount, hold_amount, available_balance)
-VALUES ('1000-2000-3006', 4200000.0000, 0.0000, 4200000.0000);
+INSERT INTO balance_master (balance_id, account_id, balance_amount, hold_amount, available_balance)
+VALUES ('bal-1000-2000-3006', '1000-2000-3006', 4200000.0000, 0.0000, 4200000.0000);
 
-INSERT INTO balance_master (account_id, balance_amount, hold_amount, available_balance)
-VALUES ('1000-2000-3007', 6800000.0000, 0.0000, 6800000.0000);
+INSERT INTO balance_master (balance_id, account_id, balance_amount, hold_amount, available_balance)
+VALUES ('bal-1000-2000-3007', '1000-2000-3007', 6800000.0000, 0.0000, 6800000.0000);
 
-INSERT INTO balance_master (account_id, balance_amount, hold_amount, available_balance)
-VALUES ('1000-2000-3008', 2950000.0000, 0.0000, 2950000.0000);
+INSERT INTO balance_master (balance_id, account_id, balance_amount, hold_amount, available_balance)
+VALUES ('bal-1000-2000-3008', '1000-2000-3008', 2950000.0000, 0.0000, 2950000.0000);
 
-INSERT INTO balance_master (account_id, balance_amount, hold_amount, available_balance)
-VALUES ('1000-2000-3009', 9100000.0000, 0.0000, 9100000.0000);
+INSERT INTO balance_master (balance_id, account_id, balance_amount, hold_amount, available_balance)
+VALUES ('bal-1000-2000-3009', '1000-2000-3009', 9100000.0000, 0.0000, 9100000.0000);
 
 -- 4. Transactions
 -- Tx 1: High-value transfer pending Customer Email Verification (> 50k PHP hold applied)
@@ -438,7 +435,7 @@ INSERT INTO transactions (
     transaction_id, from_account_id, to_account_id, type, amount,
     before_balance, after_balance, status, requires_2fa_otp, approved_by_user_id
 ) VALUES (
-    'tx-4001-hld-001', 'acc-2001-sav-001', 'acc-2003-sav-002', 'TRANSFER', 5000000.0000,
+    'tx-4001-hld-001', '1000-2000-3001', '1000-2000-3002', 'TRANSFER', 5000000.0000,
     25000000.0000, 20000000.0000, 'PENDING_APPROVAL', 1, NULL
 );
 
@@ -447,8 +444,8 @@ INSERT INTO transactions (
     transaction_id, from_account_id, to_account_id, type, amount,
     before_balance, after_balance, status, requires_2fa_otp, approved_by_user_id
 ) VALUES (
-    'tx-4002-cmt-002', 'acc-2002-sav-001', 'acc-2003-sav-002', 'TRANSFER', 150000.0000,
-    8650000.0000, 8500000.0000, 'COMMITTED', 0, 'usr-1003-tel-001'
+    'tx-4002-cmt-002', '1000-2000-3001', '1000-2000-3002', 'TRANSFER', 150000.0000,
+    25150000.0000, 25000000.0000, 'COMMITTED', 0, 'usr-1003-tel-001'
 );
 
 -- Tx 3: OTC Cash withdrawal
@@ -456,7 +453,7 @@ INSERT INTO transactions (
     transaction_id, from_account_id, to_account_id, type, amount,
     before_balance, after_balance, status, requires_2fa_otp, approved_by_user_id
 ) VALUES (
-    'tx-4003-otc-003', 'acc-2001-sav-001', NULL, 'WITHDRAWAL', 50000.0000,
+    'tx-4003-otc-003', '1000-2000-3001', NULL, 'WITHDRAWAL', 50000.0000,
     25050000.0000, 25000000.0000, 'COMMITTED', 0, 'usr-1003-tel-001'
 );
 
@@ -466,7 +463,7 @@ INSERT INTO outbox_events (
 ) VALUES (
     'evt-5001-mk-001', 'CUSTOMER_VERIFICATION', 'tx-4001-hld-001', 'TRANSFER_PENDING_APPROVAL',
     'banking.customer.otp',
-    '{"transactionId":"tx-4001-hld-001","fromAccount":"acc-2001-sav-001","toAccount":"acc-2003-sav-002","amount":5000000.0000,"currency":"PHP","makerId":"usr-1001-cst-001"}',
+    '{"transactionId":"tx-4001-hld-001","fromAccount":"1000-2000-3001","toAccount":"1000-2000-3002","amount":5000000.0000,"currency":"PHP","makerId":"usr-1001-cst-001"}',
     'PENDING', 0
 );
 
@@ -475,7 +472,7 @@ INSERT INTO outbox_events (
 ) VALUES (
     'evt-5002-tx-002', 'TRANSACTION', 'tx-4002-cmt-002', 'MUTATION_COMMITTED',
     'banking.transfers.events',
-    '{"transactionId":"tx-4002-cmt-002","fromAccount":"acc-2002-sav-001","toAccount":"acc-2003-sav-002","amount":150000.0000,"status":"COMMITTED"}',
+    '{"transactionId":"tx-4002-cmt-002","fromAccount":"1000-2000-3001","toAccount":"1000-2000-3002","amount":150000.0000,"status":"COMMITTED"}',
     'PUBLISHED', 0, CURRENT_TIMESTAMP
 );
 

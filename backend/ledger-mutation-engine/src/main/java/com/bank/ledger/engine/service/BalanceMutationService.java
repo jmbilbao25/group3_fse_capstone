@@ -257,6 +257,40 @@ public class BalanceMutationService {
                     .build();
         }
 
+        // Check ADVISORY_WARNING
+        boolean isAdvisoryWarning = "ADVISORY_WARNING".equalsIgnoreCase(riskResult.getDecision());
+        boolean advisoryAcknowledged = Boolean.TRUE.equals(request.getScamAdvisoryAcknowledged());
+
+        if (isAdvisoryWarning && !advisoryAcknowledged) {
+            log.info("[ADVISORY_WARNING TRIGGERED] Transfer of PHP {} triggered {} warning ({}). Returning cooling-off requirement.",
+                    amount, riskResult.getThreatCategory(), riskResult.getWarningTitle());
+
+            return MutationResponse.builder()
+                    .transactionId(request.getTransactionId())
+                    .accountId(sourceId)
+                    .status("ADVISORY_WARNING")
+                    .mutationAmount(amount)
+                    .balanceBefore(senderBefore)
+                    .balanceAfter(senderBefore)
+                    .availableBalance(sender.getAvailableBalance())
+                    .timestamp(Instant.now())
+                    .processedAt(Instant.now())
+                    .traceId(UUID.randomUUID().toString())
+                    .riskDecision("ADVISORY_WARNING")
+                    .riskScore(riskResult.getFraudScore())
+                    .warningTitle(riskResult.getWarningTitle())
+                    .warningMessage(riskResult.getWarningMessage())
+                    .threatCategory(riskResult.getThreatCategory())
+                    .causeOfSuspicion(riskResult.getCauseOfSuspicion())
+                    .sarDraftCreated(riskResult.isSarDraftCreated())
+                    .sarReportId(riskResult.getSarReportId())
+                    .coolingOffRequired(true)
+                    .coolingOffExpiresInSeconds(600)
+                    .biometricRequired(true)
+                    .message(riskResult.getWarningMessage() != null ? riskResult.getWarningMessage() : "Advisory warning triggered. 10-minute hold or acknowledgment required.")
+                    .build();
+        }
+
         boolean isHighValue = amount.compareTo(makerCheckerThreshold) > 0;
         boolean requires2Fa = isHighValue || "REQUIRE_2FA".equalsIgnoreCase(riskResult.getDecision());
 

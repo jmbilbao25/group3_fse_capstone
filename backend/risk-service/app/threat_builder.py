@@ -50,7 +50,14 @@ def has_threat_context(request: RiskAnalysisRequest) -> bool:
     Allows clean routine transfers to bypass the neural model and stay on the sub-20ms path.
     """
     # Top-level direct indicators
-    if request.remote_app_active or request.active_call or request.hooking:
+    if (
+        request.remote_app_active
+        or request.active_call
+        or request.hooking
+        or request.is_on_call
+        or request.is_screen_sharing
+        or request.is_pasted
+    ):
         return True
 
     # 1. Check Device Context
@@ -147,6 +154,7 @@ def detect_threat_category(request: RiskAnalysisRequest) -> str:
     # Priority 3: Remote-Access / Screen Sharing (AnyDesk / TeamViewer)
     if (
         request.remote_app_active
+        or request.is_screen_sharing
         or (dev and dev.remote_app_active)
         or (dev and dev.media_projection and dev.media_projection.is_screen_sharing)
         or any(kw in packages_str for kw in REMOTE_KEYWORDS)
@@ -157,6 +165,7 @@ def detect_threat_category(request: RiskAnalysisRequest) -> str:
     # Priority 4: Live Phone Call Coercion
     if (
         request.active_call
+        or request.is_on_call
         or (dev and dev.active_call)
         or (
             dev and dev.telephony and (
@@ -179,7 +188,10 @@ def detect_threat_category(request: RiskAnalysisRequest) -> str:
         return "PURPOSE_ACCOUNT_MISMATCH"
 
     # Priority 6: External Clipboard Paste
-    if dev and dev.interaction and dev.interaction.account_input_mode in ["PASTED_FROM_EXTERNAL_APP", "PASTED_FROM_CLIPBOARD", "PASTED"]:
+    if (
+        request.is_pasted
+        or (dev and dev.interaction and dev.interaction.account_input_mode in ["PASTED_FROM_EXTERNAL_APP", "PASTED_FROM_CLIPBOARD", "PASTED"])
+    ):
         return "EXTERNAL_CLIPBOARD_PASTE"
 
     # Priority 7: Memo Typology Patterns

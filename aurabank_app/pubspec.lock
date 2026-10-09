@@ -17,6 +17,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.13.1"
+  aurabank_core:
+    dependency: "direct main"
+    description:
+      path: "../aurabank_core"
+      relative: true
+    source: path
+    version: "1.0.0"
   boolean_selector:
     dependency: transitive
     description:

@@ -9,15 +9,6 @@ import '../services/bank_service.dart';
 import '../services/notification_stream_service.dart';
 import '../theme/aura_theme.dart';
 
-import 'web/dashboard/web_sidebar.dart';
-import 'web/dashboard/web_header.dart';
-import 'web/dashboard/web_dashboard_screen.dart';
-import 'web/transfer/web_transfer_screen.dart';
-import 'web/cards/web_cards_screen.dart';
-import 'web/scan/web_scan_screen.dart';
-import 'web/analytics/web_analytics_screen.dart';
-import 'web/profile/web_profile_screen.dart';
-
 class AppShell extends StatefulWidget {
   final int initialIndex;
 
@@ -67,66 +58,7 @@ class _AppShellState extends State<AppShell>
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth >= 960) {
-          return _buildWebDesktopShell();
-        }
-        return _buildMobileShell();
-      },
-    );
-  }
-
-  Widget _buildWebDesktopShell() {
-    final webScreens = [
-      WebDashboardScreen(onNavigateTab: _onNavigateTab),
-      const WebTransferScreen(),
-      const WebCardsScreen(),
-      WebScanScreen(
-        onBack: () => _onNavigateTab(0),
-        onTransfer: () => _onNavigateTab(1),
-      ),
-      const WebAnalyticsScreen(),
-      const WebProfileScreen(),
-    ];
-
-    return Scaffold(
-      backgroundColor: AuraColors.canvas,
-      body: Row(
-        children: [
-          // 1. Persistent 260px Left Sidebar
-          WebSidebar(
-            selectedIndex: _currentIndex,
-            onDestinationSelected: _onNavigateTab,
-            onLogout: () {
-              Navigator.of(context).pushReplacementNamed('/login');
-            },
-          ),
-
-          const VerticalDivider(width: 1),
-          Expanded(
-            child: Column(
-              children: [
-                // Top Header Bar
-                WebHeader(
-                  onQuickTransfer: () => _onNavigateTab(1),
-                  onRefresh: () {
-                    BankService().syncWithBackend();
-                  },
-                ),
-                // Body View
-                Expanded(
-                  child: _fade(IndexedStack(
-                    index: _currentIndex,
-                    children: webScreens,
-                  )),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+    return _buildMobileShell();
   }
 
   Widget _buildMobileShell() {

@@ -46,6 +46,12 @@ class AuthServiceTest {
     private UserRepository userRepository;
 
     @Mock
+    private com.fse.banking.account.repository.AccountRepository accountRepository;
+
+    @Mock
+    private com.fse.banking.account.repository.BalanceMasterRepository balanceMasterRepository;
+
+    @Mock
     private PasswordEncoder passwordEncoder;
 
     @Mock

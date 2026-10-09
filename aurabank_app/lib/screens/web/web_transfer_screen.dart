@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../services/bank_service.dart';
 
@@ -536,92 +537,31 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
             builder: (context, constraints) {
               final isWide = constraints.maxWidth >= 920;
 
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Page Title & Back Button
-                  Row(
-                    children: [
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: borderLight),
-                        ),
-                        child: IconButton(
-                          padding: EdgeInsets.zero,
-                          icon: const Icon(Icons.arrow_back_rounded, size: 18, color: Color(0xFF374151)),
-                          onPressed: () {
-                            if (widget.onBack != null) {
-                              widget.onBack!();
-                            }
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
-                            'Send Money',
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF111827),
-                              letterSpacing: -0.4,
-                            ),
-                          ),
-                          SizedBox(height: 2),
-                          Text(
-                            'Fast and secure local and inter-bank transfers',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFF6B7280),
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  if (isWide)
-                    Row(
+              return isWide
+                  ? Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Left Column (Form)
                         Expanded(
-                          flex: 62,
+                          flex: 60,
                           child: _buildMainTransferForm(),
                         ),
                         const SizedBox(width: 24),
-                        // Right Column (Summary & Frequent Payees)
+                        // Right Column (Transfer Summary)
                         Expanded(
-                          flex: 38,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildTransferSummaryCard(),
-                            ],
-                          ),
+                          flex: 40,
+                          child: _buildTransferSummaryCard(),
                         ),
                       ],
                     )
-                  else
-                    Column(
+                  : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildMainTransferForm(),
                         const SizedBox(height: 24),
                         _buildTransferSummaryCard(),
                       ],
-                    ),
-                ],
-              );
+                    );
             },
           ),
         ),
@@ -978,12 +918,19 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
                       color: Color(0xFF374151),
                     ),
                   ),
-                  Text(
-                    _isAuraToAura ? 'Transfer Fee: PHP 0.00' : 'Transfer Fee: PHP 10.00',
-                    style: const TextStyle(
-                      fontSize: 11.5,
-                      color: Color(0xFF9CA3AF),
-                      fontWeight: FontWeight.w500,
+                  RichText(
+                    text: TextSpan(
+                      style: const TextStyle(fontSize: 11.5, color: Color(0xFF6B7280)),
+                      children: [
+                        const TextSpan(text: 'Transfer Fee: '),
+                        TextSpan(
+                          text: _isAuraToAura ? 'FREE' : 'PHP 10.00',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: _isAuraToAura ? const Color(0xFF10B981) : const Color(0xFF111827),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -1291,67 +1238,133 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
           ),
           const SizedBox(height: 16),
 
-          // Recipient Preview Capsule
+          // Recipient & Route Preview Capsule (From -> To with vertical connecting line)
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFFFAF5FF),
+              color: const Color(0xFFF9FAFB),
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: borderLight),
             ),
-            child: Row(
+            child: Column(
               children: [
-                CircleAvatar(
-                  radius: 18,
-                  backgroundColor: brandViolet,
-                  child: Text(
-                    recipientName.isNotEmpty ? recipientName[0] : 'J',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
+                // Sender (DEBIT ACCOUNT)
+                Row(
+                  children: [
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFEDE9FE),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.arrow_upward_rounded,
+                        size: 15,
+                        color: Color(0xFF6B21A8),
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Flexible(
-                            child: Text(
-                              recipientName,
-                              style: const TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w800,
-                                color: Color(0xFF111827),
-                              ),
-                              overflow: TextOverflow.ellipsis,
+                          const Text(
+                            'DEBIT ACCOUNT',
+                            style: TextStyle(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF6B7280),
+                              letterSpacing: 0.5,
                             ),
                           ),
-                          const SizedBox(width: 4),
-                          const Icon(
-                            Icons.check_circle,
-                            size: 14,
-                            color: Color(0xFF10B981),
+                          const SizedBox(height: 1),
+                          Text(
+                            'Savings (AUR-SAV-9821)',
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF111827),
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        _isAuraToAura
-                            ? 'Aura Bank Direct ••••• $last5'
-                            : '$_selectedPartnerBank ••••• $last5',
-                        style: const TextStyle(
-                          fontSize: 11.5,
-                          color: Color(0xFF6B7280),
-                          fontWeight: FontWeight.w500,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                    ),
+                  ],
+                ),
+
+                // Connecting Line
+                Padding(
+                  padding: const EdgeInsets.only(left: 13),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      width: 2,
+                      height: 16,
+                      color: const Color(0xFFE9D5FF),
+                    ),
                   ),
+                ),
+
+                // Recipient (CREDIT ACCOUNT)
+                Row(
+                  children: [
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFD1FAE5),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.arrow_downward_rounded,
+                        size: 15,
+                        color: Color(0xFF059669),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  recipientName,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF111827),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(
+                                Icons.check_circle,
+                                size: 13,
+                                color: Color(0xFF10B981),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 1),
+                          Text(
+                            _isAuraToAura
+                                ? 'Aura Bank Direct ••••• $last5'
+                                : '$_selectedPartnerBank ••••• $last5',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF6B7280),
+                              fontWeight: FontWeight.w500,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -1366,7 +1379,7 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
               const Text(
                 'Transfer Amount',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 12.5,
                   color: Color(0xFF6B7280),
                   fontWeight: FontWeight.w500,
                 ),
@@ -1374,15 +1387,15 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
               Text(
                 'PHP ${_formatCurrency(_parsedAmount)}',
                 style: const TextStyle(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
                   color: Color(0xFF111827),
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
           // Transfer Fee Breakdown
           Row(
@@ -1391,7 +1404,7 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
               const Text(
                 'Transfer Fee',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 12.5,
                   color: Color(0xFF6B7280),
                   fontWeight: FontWeight.w500,
                 ),
@@ -1407,38 +1420,111 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
             ],
           ),
 
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Divider(color: borderLight, height: 1),
-          ),
+          const SizedBox(height: 10),
 
-          // Total Deduction
+          // Settlement Speed
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
             children: [
               const Text(
-                'Total Deduction',
+                'Settlement Speed',
                 style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF111827),
+                  fontSize: 12.5,
+                  color: Color(0xFF6B7280),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Icon(Icons.bolt_rounded, size: 14, color: Color(0xFF10B981)),
+                  SizedBox(width: 2),
+                  Text(
+                    'Real-Time (Instant)',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF10B981),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 10),
+
+          // Balance After Transfer
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Balance After Transfer',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  color: Color(0xFF6B7280),
+                  fontWeight: FontWeight.w500,
                 ),
               ),
               Text(
-                'PHP ${_formatCurrency(_totalDebit)}',
+                '₱${_formatCurrency(math.max(0.0, _currentSourceBalance - _totalDebit))}',
                 style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
                   color: Color(0xFF111827),
-                  letterSpacing: -0.3,
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
+
+          // Total Deduction Card (Lavender Tint)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3E8FF).withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text(
+                      'Total Deduction',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF111827),
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Debited immediately',
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        color: Color(0xFF6B7280),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  'PHP ${_formatCurrency(_totalDebit)}',
+                  style: const TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w900,
+                    color: brandViolet,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
 
           // CTA: Send Money Now ->
           SizedBox(
@@ -1467,25 +1553,6 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
                 ],
               ),
             ),
-          ),
-
-          const SizedBox(height: 14),
-
-          // Protected by 256-bit Bank Encryption
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              Icon(Icons.shield_outlined, size: 13, color: Color(0xFF10B981)),
-              SizedBox(width: 6),
-              Text(
-                'Protected by 256-bit Bank Encryption',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Color(0xFF6B7280),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
           ),
         ],
       ),

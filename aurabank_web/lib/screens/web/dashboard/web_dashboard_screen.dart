@@ -6,8 +6,9 @@ import '../transfer/web_transfer_screen.dart';
 
 class WebDashboardScreen extends StatefulWidget {
   final Function(int)? onNavigateTab;
+  final void Function(QuickTransferDraft draft)? onQuickTransfer;
 
-  const WebDashboardScreen({super.key, this.onNavigateTab});
+  const WebDashboardScreen({super.key, this.onNavigateTab, this.onQuickTransfer});
 
   @override
   State<WebDashboardScreen> createState() => _WebDashboardScreenState();
@@ -20,7 +21,7 @@ class _WebDashboardScreenState extends State<WebDashboardScreen> {
   String _selectedTxnFilter = 'All';
 
   // Quick Send Form Controllers
-  final TextEditingController _recipientController = TextEditingController(text: 'Angel Lou F. Yabut');
+  final TextEditingController _accountController = TextEditingController();
   final TextEditingController _amountController = TextEditingController(text: '1500');
   String _selectedBank = 'Aura Bank';
 
@@ -33,7 +34,7 @@ class _WebDashboardScreenState extends State<WebDashboardScreen> {
   @override
   void dispose() {
     _bankService.removeListener(_onServiceUpdate);
-    _recipientController.dispose();
+    _accountController.dispose();
     _amountController.dispose();
     super.dispose();
   }
@@ -96,120 +97,237 @@ class _WebDashboardScreenState extends State<WebDashboardScreen> {
   // --- 1. HERO BALANCE CARD ---
   Widget _buildBalanceHeroCard() {
     final balance = _bankService.availableBalance;
-    final accountNum = _bankService.savingsAccountNumber;
+    final savingsCards = _bankService.cards.where((item) => item.title.toLowerCase() == 'savings');
+    final card = savingsCards.isNotEmpty
+        ? savingsCards.first
+        : (_bankService.cards.isNotEmpty ? _bankService.cards.first : null);
+    final rawNumber = (card?.cardNumber ?? '').replaceAll(' ', '');
+    final ending = rawNumber.length >= 4 ? rawNumber.substring(rawNumber.length - 4) : '0809';
 
     return Container(
-      padding: const EdgeInsets.all(26),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF2E0854), Color(0xFF5B1DA8), Color(0xFF380084)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          colors: [Color(0xFF2E1065), Color(0xFF5B21B6), Color(0xFF7C3AED)],
+          stops: [0.0, 0.52, 1.0],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF380084).withValues(alpha: 0.22),
-            blurRadius: 22,
-            offset: const Offset(0, 8),
+            color: const Color(0xFF4C1D95).withValues(alpha: 0.38),
+            blurRadius: 28,
+            offset: const Offset(0, 14),
           ),
         ],
       ),
-      child: Column(
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(26, 22, 26, 22),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(26),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white.withValues(alpha: 0.22),
+              Colors.white.withValues(alpha: 0.06),
+              Colors.transparent,
+            ],
+            stops: const [0.0, 0.28, 0.62],
+          ),
+        ),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(20),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3B0764).withValues(alpha: 0.55),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
                     ),
-                    child: const Text(
-                      'PRIMARY CHECKING ACCOUNT',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.8,
+                  ],
+                ),
+                child: const Row(
+                  children: [
+                    SizedBox(
+                      width: 26,
+                      height: 26,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Color(0xFF2E1065),
+                          borderRadius: BorderRadius.all(Radius.circular(7)),
+                        ),
+                        child: Center(
+                          child: Text('A', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: Icon(
-                      _isBalanceVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                      color: Colors.white70,
-                      size: 18,
+                    SizedBox(width: 8),
+                    Text(
+                      'Aura Bank',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        decoration: TextDecoration.underline,
+                        decorationColor: Colors.white70,
+                      ),
                     ),
-                    onPressed: () => setState(() => _isBalanceVisible = !_isBalanceVisible),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              const Row(
-                children: [
-                  Icon(Icons.wifi_rounded, color: Colors.white70, size: 20),
-                  SizedBox(width: 8),
-                  Text(
-                    'AURA PLATINUM',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.2,
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.22),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Row(
+                  children: [
+                    DecoratedBox(
+                      decoration: BoxDecoration(color: Color(0xFF86EFAC), shape: BoxShape.circle),
+                      child: SizedBox(width: 8, height: 8),
                     ),
-                  ),
-                ],
+                    SizedBox(width: 6),
+                    Text('Savings', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                  ],
+                ),
               ),
             ],
           ),
-
-          const SizedBox(height: 14),
-
-          // Balance Display
-          Text(
-            _isBalanceVisible ? _formatCurrency(balance) : '₱ ••••••••',
-            style: const TextStyle(
-              fontSize: 34,
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
-              letterSpacing: -0.5,
-            ),
-          ),
-
-          const SizedBox(height: 16),
-          const Divider(color: Colors.white24, height: 1),
-          const SizedBox(height: 14),
-
+          const SizedBox(height: 18),
           Row(
             children: [
-              Text(
-                _isAccountNumVisible ? accountNum : '•••• •••• ••••',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.0,
-                ),
-              ),
+              const Text('Available balance', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500)),
               const SizedBox(width: 6),
-              IconButton(
-                tooltip: 'Toggle visibility',
-                icon: Icon(
-                  _isAccountNumVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                  color: Colors.white70,
+              InkWell(
+                onTap: () => setState(() => _isBalanceVisible = !_isBalanceVisible),
+                child: Icon(
+                  _isBalanceVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                  color: Colors.white,
                   size: 16,
                 ),
-                onPressed: () => setState(() => _isAccountNumVisible = !_isAccountNumVisible),
               ),
             ],
           ),
+          const SizedBox(height: 4),
+          Text(
+            _isBalanceVisible ? _formatCurrency(balance) : '₱ ••••••••',
+            style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: -0.6),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              const Text('Card Number', style: TextStyle(color: Colors.white70, fontSize: 12.5, fontWeight: FontWeight.w500)),
+              const SizedBox(width: 6),
+              InkWell(
+                onTap: () => setState(() => _isAccountNumVisible = !_isAccountNumVisible),
+                child: Icon(
+                  _isAccountNumVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                  color: Colors.white,
+                  size: 16,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (_isAccountNumVisible && card != null)
+            Text(
+              card.cardNumber,
+              style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: 1.3),
+            )
+          else
+            Row(
+              children: [
+                _buildHeroDots(),
+                const SizedBox(width: 12),
+                _buildHeroDots(),
+                const SizedBox(width: 12),
+                _buildHeroDots(),
+                const SizedBox(width: 14),
+                Text(ending, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 1.1)),
+              ],
+            ),
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Expires', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                  const SizedBox(height: 2),
+                  Text(card?.expiry ?? '08/29', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800)),
+                ],
+              ),
+              const SizedBox(width: 48),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('CVV', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                  const SizedBox(height: 6),
+                  _isAccountNumVisible && card != null
+                      ? Text(card.cvv, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 1))
+                      : _buildHeroDots(count: 3, size: 7),
+                ],
+              ),
+              const Spacer(),
+              SizedBox(
+                width: 46,
+                height: 28,
+                child: Stack(
+                  children: [
+                    Positioned(
+                      left: 0,
+                      child: Container(width: 28, height: 28, decoration: const BoxDecoration(color: Color(0xFFEB001B), shape: BoxShape.circle)),
+                    ),
+                    Positioned(
+                      left: 16,
+                      child: Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(color: const Color(0xFFF79E1B).withValues(alpha: 0.95), shape: BoxShape.circle),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          const Text('Cardholder', style: TextStyle(color: Colors.white70, fontSize: 11)),
+          const SizedBox(height: 2),
+          Text(
+            card?.holderName ?? _bankService.user.name,
+            style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
+          ),
         ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildHeroDots({int count = 4, double size = 7}) {
+    return Row(
+      children: [
+        for (var i = 0; i < count; i++) ...[
+          if (i > 0) const SizedBox(width: 4),
+          Container(
+            width: size,
+            height: size,
+            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+          ),
+        ],
+      ],
     );
   }
 
@@ -221,8 +339,6 @@ class _WebDashboardScreenState extends State<WebDashboardScreen> {
           child: _buildMetricTile(
             title: 'Monthly Inflow',
             value: '+ ₱125,000.00',
-            trend: '+ 12.4% vs last mo',
-            trendColor: const Color(0xFF059669),
             icon: Icons.arrow_downward_rounded,
             iconBg: const Color(0xFFECFDF5),
             iconColor: const Color(0xFF059669),
@@ -233,8 +349,6 @@ class _WebDashboardScreenState extends State<WebDashboardScreen> {
           child: _buildMetricTile(
             title: 'Monthly Outflow',
             value: '- ₱45,820.00',
-            trend: 'Within budget',
-            trendColor: const Color(0xFF6B7280),
             icon: Icons.arrow_upward_rounded,
             iconBg: const Color(0xFFFEF2F2),
             iconColor: const Color(0xFFDC2626),
@@ -247,8 +361,6 @@ class _WebDashboardScreenState extends State<WebDashboardScreen> {
   Widget _buildMetricTile({
     required String title,
     required String value,
-    required String trend,
-    required Color trendColor,
     required IconData icon,
     required Color iconBg,
     required Color iconColor,
@@ -290,15 +402,6 @@ class _WebDashboardScreenState extends State<WebDashboardScreen> {
                     color: Color(0xFF111827),
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  trend,
-                  style: TextStyle(
-                    color: trendColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
@@ -567,10 +670,10 @@ class _WebDashboardScreenState extends State<WebDashboardScreen> {
                 value: _selectedBank,
                 isExpanded: true,
                 items: const [
-                  DropdownMenuItem(value: 'Aura Bank', child: Text('Aura Bank (Instant • Free)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
-                  DropdownMenuItem(value: 'BDO Unibank', child: Text('BDO Unibank', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
-                  DropdownMenuItem(value: 'BPI', child: Text('Bank of the Philippine Islands', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
-                  DropdownMenuItem(value: 'GCash', child: Text('GCash Wallet', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
+                  DropdownMenuItem(value: 'Aura Bank', child: Text('Aura Bank', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
+                  DropdownMenuItem(value: 'MeyBank', child: Text('MeyBank (Group 2 Partner)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
+                  DropdownMenuItem(value: 'Apex Digital Bank', child: Text('Apex Digital Bank (Group 1 Partner)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
+                  DropdownMenuItem(value: 'Nexus Core Bank', child: Text('Nexus Core Bank (Group 4 Partner)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
                 ],
                 onChanged: (val) {
                   if (val != null) setState(() => _selectedBank = val);
@@ -578,17 +681,22 @@ class _WebDashboardScreenState extends State<WebDashboardScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 6),
+          const Text(
+            'No transfer fee',
+            style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF059669)),
+          ),
 
           const SizedBox(height: 14),
 
           // Recipient Input
           const Text(
-            'ACCOUNT OR MOBILE NUMBER',
+            'ACCOUNT NUMBER',
             style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF6B7280)),
           ),
           const SizedBox(height: 6),
           TextField(
-            controller: _recipientController,
+            controller: _accountController,
             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
             decoration: InputDecoration(
               filled: true,
@@ -596,7 +704,7 @@ class _WebDashboardScreenState extends State<WebDashboardScreen> {
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
               enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-              prefixIcon: const Icon(Icons.person_outline_rounded, size: 18, color: Color(0xFF9CA3AF)),
+              prefixIcon: const Icon(Icons.account_balance_outlined, size: 18, color: Color(0xFF9CA3AF)),
             ),
           ),
 
@@ -631,12 +739,19 @@ class _WebDashboardScreenState extends State<WebDashboardScreen> {
             height: 44,
             child: ElevatedButton(
               onPressed: () {
-                if (widget.onNavigateTab != null) {
+                final draft = QuickTransferDraft(
+                  accountNumber: _accountController.text,
+                  amount: _amountController.text,
+                  bank: _selectedBank,
+                );
+                if (widget.onQuickTransfer != null) {
+                  widget.onQuickTransfer!(draft);
+                } else if (widget.onNavigateTab != null) {
                   widget.onNavigateTab!(1);
                 } else {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const WebTransferScreen()),
+                    MaterialPageRoute(builder: (_) => WebTransferScreen(draft: draft)),
                   );
                 }
               },

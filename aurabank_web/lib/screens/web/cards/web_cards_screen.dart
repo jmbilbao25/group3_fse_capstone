@@ -38,9 +38,17 @@ class _WebCardsScreenState extends State<WebCardsScreen> {
     if (mounted) setState(() {});
   }
 
+  List<BankCard> get _savingsCards => _bankService.cards
+      .where((card) => card.title.toLowerCase() == 'savings')
+      .toList();
+
   void _toggleLock() {
-    _bankService.toggleCardLock(_activeCardIndex);
-    final card = _bankService.cards[_activeCardIndex];
+    final cards = _savingsCards;
+    if (cards.isEmpty) return;
+    final card = cards[_activeCardIndex.clamp(0, cards.length - 1)];
+    final realIndex = _bankService.cards.indexWhere((item) => item.id == card.id);
+    if (realIndex < 0) return;
+    _bankService.toggleCardLock(realIndex);
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -100,7 +108,7 @@ class _WebCardsScreenState extends State<WebCardsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final cards = _bankService.cards;
+    final cards = _savingsCards;
     final activeCard = cards.isNotEmpty ? cards[_activeCardIndex.clamp(0, cards.length - 1)] : null;
 
     return Container(
@@ -201,27 +209,28 @@ class _WebCardsScreenState extends State<WebCardsScreen> {
   }
 
   Widget _buildDesktopCardPreview(BankCard card, int index, bool isSelected) {
+    final last4 = card.cardNumber.replaceAll(' ', '');
+    final ending = last4.length >= 4 ? last4.substring(last4.length - 4) : card.cardNumber;
     return GestureDetector(
       onTap: () => setState(() => _activeCardIndex = index),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(22, 20, 22, 18),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: index == 0
-                ? [const Color(0xFF2E0854), const Color(0xFF5B1DA8)]
-                : [const Color(0xFF6B21A8), const Color(0xFF9333EA)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+          gradient: const LinearGradient(
+            colors: [Color(0xFF2E1065), Color(0xFF5B21B6), Color(0xFF7C3AED)],
+            stops: [0.0, 0.52, 1.0],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
           ),
-          borderRadius: BorderRadius.circular(18),
-          border: isSelected ? Border.all(color: Colors.white, width: 2.5) : null,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: Colors.white.withValues(alpha: isSelected ? 0.55 : 0.18)),
           boxShadow: [
             BoxShadow(
-              color: isSelected ? brandViolet.withValues(alpha: 0.35) : Colors.black.withValues(alpha: 0.06),
-              blurRadius: isSelected ? 16 : 8,
-              offset: const Offset(0, 4),
+              color: const Color(0xFF6D28D9).withValues(alpha: 0.28),
+              blurRadius: 22,
+              offset: const Offset(0, 12),
             ),
           ],
         ),
@@ -229,41 +238,173 @@ class _WebCardsScreenState extends State<WebCardsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  card.title.toUpperCase(),
-                  style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 0.5),
-                ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  width: 28,
+                  height: 28,
+                  alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: card.isLocked ? const Color(0xFFEF4444) : const Color(0xFF10B981),
-                    borderRadius: BorderRadius.circular(6),
+                    color: Colors.white.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(
-                    card.isLocked ? 'LOCKED' : 'ACTIVE',
-                    style: const TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w800),
+                  child: const Text('A', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Aura Bank',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    decoration: TextDecoration.underline,
+                    decorationColor: Colors.white70,
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: card.isLocked ? const Color(0xFFFCA5A5) : const Color(0xFF86EFAC),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        card.isLocked ? 'Locked' : card.title,
+                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 18),
-            Text(
-              card.cardNumber,
-              style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700, letterSpacing: 2.0),
-            ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 22),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('EXP: ${card.expiry}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
-                Text(card.holderName, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                const Text(
+                  'Card Number',
+                  style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(width: 6),
+                InkWell(
+                  onTap: () => setState(() => _revealCardDetails = !_revealCardDetails),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Icon(
+                    _revealCardDetails ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                    color: Colors.white,
+                    size: 16,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            if (_revealCardDetails)
+              Text(
+                card.cardNumber,
+                style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: 1.4),
+              )
+            else
+              Row(
+                children: [
+                  _buildDotGroup(),
+                  const SizedBox(width: 14),
+                  _buildDotGroup(),
+                  const SizedBox(width: 14),
+                  _buildDotGroup(),
+                  const SizedBox(width: 14),
+                  Text(ending, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 1.2)),
+                ],
+              ),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Expires', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                    const SizedBox(height: 2),
+                    Text(card.expiry, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
+                  ],
+                ),
+                const SizedBox(width: 36),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('CVV', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                    const SizedBox(height: 4),
+                    _revealCardDetails
+                        ? Text(card.cvv, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: 1))
+                        : _buildDotGroup(count: 3, size: 6),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Cardholder', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                    const SizedBox(height: 2),
+                    Text(card.holderName, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+                const Spacer(),
+                SizedBox(
+                  width: 42,
+                  height: 26,
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        left: 0,
+                        child: Container(
+                          width: 26,
+                          height: 26,
+                          decoration: const BoxDecoration(color: Color(0xFFEB001B), shape: BoxShape.circle),
+                        ),
+                      ),
+                      Positioned(
+                        left: 14,
+                        child: Container(
+                          width: 26,
+                          height: 26,
+                          decoration: BoxDecoration(color: const Color(0xFFF79E1B).withValues(alpha: 0.92), shape: BoxShape.circle),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildDotGroup({int count = 4, double size = 7}) {
+    return Row(
+      children: [
+        for (var i = 0; i < count; i++) ...[
+          if (i > 0) const SizedBox(width: 4),
+          Container(
+            width: size,
+            height: size,
+            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+          ),
+        ],
+      ],
     );
   }
 
@@ -317,10 +458,10 @@ class _WebCardsScreenState extends State<WebCardsScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildCredentialColumn('CARD NUMBER', _revealCardDetails ? '5412 7512 3412 8891' : card.cardNumber),
+                _buildCredentialColumn('CARD NUMBER', _revealCardDetails ? card.cardNumber : card.maskedCardNumber),
                 _buildCredentialColumn('EXPIRATION', card.expiry),
-                _buildCredentialColumn('SECURITY CVV', _revealCardDetails ? '482' : '•••'),
-                _buildCredentialColumn('CARD TYPE', 'Corporate Mastercard'),
+                _buildCredentialColumn('SECURITY CVV', _revealCardDetails ? card.cvv : '•••'),
+                _buildCredentialColumn('CARD TYPE', 'Savings'),
               ],
             ),
           ),

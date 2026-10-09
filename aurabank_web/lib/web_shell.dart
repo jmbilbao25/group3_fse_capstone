@@ -23,6 +23,7 @@ class WebShell extends StatefulWidget {
 
 class _WebShellState extends State<WebShell> {
   late int _currentIndex;
+  QuickTransferDraft? _quickTransferDraft;
 
   @override
   void initState() {
@@ -46,8 +47,16 @@ class _WebShellState extends State<WebShell> {
   @override
   Widget build(BuildContext context) {
     final webScreens = [
-      WebDashboardScreen(onNavigateTab: _onNavigateTab),
-      const WebTransferScreen(),
+      WebDashboardScreen(
+        onNavigateTab: _onNavigateTab,
+        onQuickTransfer: (draft) {
+          setState(() {
+            _quickTransferDraft = draft;
+            _currentIndex = 1;
+          });
+        },
+      ),
+      WebTransferScreen(draft: _quickTransferDraft),
       const WebCardsScreen(),
       WebScanScreen(
         onBack: () => _onNavigateTab(0),

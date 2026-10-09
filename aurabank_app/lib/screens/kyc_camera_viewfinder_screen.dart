@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -256,7 +255,7 @@ class _KycCameraViewfinderScreenState extends State<KycCameraViewfinderScreen>
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.black.withOpacity(0.85),
+              Colors.black.withValues(alpha: 0.85),
               Colors.transparent,
             ],
           ),
@@ -287,7 +286,7 @@ class _KycCameraViewfinderScreenState extends State<KycCameraViewfinderScreen>
                         ? 'Ensure your face is centered inside the oval'
                         : 'Align all 4 card corners inside the guide box',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.75),
+                      color: Colors.white.withValues(alpha: 0.75),
                       fontSize: 12,
                     ),
                   ),
@@ -365,10 +364,10 @@ class _KycCameraViewfinderScreenState extends State<KycCameraViewfinderScreen>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.7),
+                color: Colors.black.withValues(alpha: 0.7),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: const Color(0xFF10B981).withOpacity(0.5),
+                  color: const Color(0xFF10B981).withValues(alpha: 0.5),
                   width: 1,
                 ),
               ),
@@ -598,7 +597,7 @@ class _ViewfinderOverlayPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final backgroundPaint = Paint()
-      ..color = Colors.black.withOpacity(0.68)
+      ..color = Colors.black.withValues(alpha: 0.68)
       ..style = PaintingStyle.fill;
 
     final screenPath = Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
@@ -618,7 +617,7 @@ class _ViewfinderOverlayPainter extends CustomPainter {
     // Glowing border outline
     final glowAlpha = 0.5 + (0.4 * pulseProgress);
     final borderPaint = Paint()
-      ..color = const Color(0xFF10B981).withOpacity(glowAlpha)
+      ..color = const Color(0xFF10B981).withValues(alpha: glowAlpha)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
 

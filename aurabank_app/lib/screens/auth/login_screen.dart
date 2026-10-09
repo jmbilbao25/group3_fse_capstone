@@ -316,52 +316,55 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       // Footer: Forgot Passcode? • Switch Account
                       Padding(
                         padding: const EdgeInsets.only(top: 16, bottom: 20),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            GestureDetector(
-                              onTap: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Password recovery link sent to your registered email.'),
-                                    backgroundColor: brandViolet,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              GestureDetector(
+                                onTap: () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Password recovery link sent to your registered email.'),
+                                      backgroundColor: brandViolet,
+                                    ),
+                                  );
+                                },
+                                child: const Text(
+                                  "Forgot Passcode?",
+                                  style: TextStyle(
+                                    color: Color(0xFF9CA3AF),
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w500,
                                   ),
-                                );
-                              },
-                              child: const Text(
-                                "Forgot Passcode?",
-                                style: TextStyle(
-                                  color: Color(0xFF9CA3AF),
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
-                            ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 10),
-                              child: Icon(Icons.circle, size: 5, color: brandViolet),
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                _usernameController.clear();
-                                _passwordController.clear();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Account switched. Enter your credentials.'),
-                                    backgroundColor: brandViolet,
+                              const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 10),
+                                child: Icon(Icons.circle, size: 5, color: brandViolet),
+                              ),
+                              GestureDetector(
+                                onTap: () {
+                                  _usernameController.clear();
+                                  _passwordController.clear();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Account switched. Enter your credentials.'),
+                                      backgroundColor: brandViolet,
+                                    ),
+                                  );
+                                },
+                                child: const Text(
+                                  "Switch Account",
+                                  style: TextStyle(
+                                    color: brandViolet,
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.bold,
                                   ),
-                                );
-                              },
-                              child: const Text(
-                                "Switch Account",
-                                style: TextStyle(
-                                  color: brandViolet,
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ],

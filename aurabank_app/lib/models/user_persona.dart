@@ -34,23 +34,23 @@ class UserPersona {
       email: 'juan.dc@email.com',
       password: 'password123',
       accountId: '1000-2000-3001',
-      balance: 15000000.00,
+      balance: 25000000.00,
     ),
     UserPersona(
       name: 'Maria Clara Reyes',
       role: 'Customer',
-      email: 'maria.reyes@email.com',
+      email: 'maria.reyes@eastwestbanker.com',
       password: 'password123',
       accountId: '1000-2000-3002',
       balance: 5000000.00,
     ),
     UserPersona(
       name: 'Diana Vance',
-      role: 'Admin / Teller',
+      role: 'Admin',
       email: 'diana.admin@bank.com',
       password: 'password123',
       accountId: '1000-8800-9902',
-      balance: 450000.00,
+      balance: 0.00,
     ),
   ];
 }

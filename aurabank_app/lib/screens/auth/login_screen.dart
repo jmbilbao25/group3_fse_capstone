@@ -108,12 +108,24 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     if (!mounted) return;
     setState(() => _isLoading = false);
 
+    // Safeguard: Restrict Administrative and staff accounts from mobile app
+    if (authResult.role != null && !authResult.role!.toUpperCase().contains('CUSTOMER')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Administrative accounts are restricted from mobile access. Please use the Web Admin Portal.'),
+          backgroundColor: Color(0xFFC53030),
+          duration: Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
     final displayName = authResult.fullName ??
-        (authResult.persona != null ? authResult.persona!.name : 'Juan Dela Cruz');
+        (authResult.persona != null ? authResult.persona!.name : 'Aura Customer');
     final activeAccNum = authResult.accountNumber ??
         (authResult.persona != null ? authResult.persona!.accountId : '1000-2000-3001');
     final liveBal = authResult.availableBalance ??
-        (authResult.persona != null ? authResult.persona!.balance : 22891002.0);
+        (authResult.persona != null ? authResult.persona!.balance : 0.0);
 
     if (authResult.status == AuthStatus.mfaRequired) {
       Navigator.of(context).push(
@@ -125,28 +137,18 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             persona: authResult.persona,
             onVerified: () {
               Navigator.of(ctx).pop();
-              _bankService.updateUserProfile(
-                name: displayName,
-                email: authResult.email ?? email,
-                phoneNumber: authResult.phoneNumber,
-              );
-              _bankService.availableBalance = liveBal;
-              _bankService.savingsAccountNumber = activeAccNum;
-              if (authResult.primaryAccountId != null) {
-                _bankService.activeAccountId = authResult.primaryAccountId!;
-              }
 
               if (AuthApiService().isDeviceApproved == false) {
                 Navigator.of(context).pushReplacement(
                   MaterialPageRoute(
                     builder: (pCtx) => PendingApprovalScreen(
                       user: UserPersona(
-                        name: displayName,
+                        name: _bankService.user.name.isNotEmpty ? _bankService.user.name : displayName,
                         role: authResult.role ?? 'Customer',
-                        email: authResult.email ?? email,
+                        email: _bankService.user.email.isNotEmpty ? _bankService.user.email : email,
                         password: password,
-                        accountId: activeAccNum,
-                        balance: liveBal,
+                        accountId: _bankService.savingsAccountNumber.isNotEmpty ? _bankService.savingsAccountNumber : activeAccNum,
+                        balance: _bankService.availableBalance > 0 ? _bankService.availableBalance : liveBal,
                       ),
                       onApproved: () {
                         Navigator.of(pCtx).pushReplacement(

@@ -196,6 +196,16 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       setState(() => _isVerifying = false);
 
       if (result.success) {
+        if (result.role != null && !result.role!.toUpperCase().contains('CUSTOMER')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Administrative accounts are restricted from mobile access. Please use the Web Admin Portal.'),
+              backgroundColor: AuraColors.debitRed,
+            ),
+          );
+          return;
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Identity verified securely with Aura Core Engine.'),

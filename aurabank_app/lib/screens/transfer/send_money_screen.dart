@@ -111,7 +111,12 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
     },
   ];
 
-  static const List<Map<String, String>> _seededCustomers = [
+  static const List<Map<String, String>> _allOracleCustomers = [
+    {
+      'name': 'Juan Dela Cruz',
+      'accountNo': '1000-2000-3001',
+      'tag': 'Verified Customer',
+    },
     {
       'name': 'Maria Clara Reyes',
       'accountNo': '1000-2000-3002',
@@ -128,7 +133,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
       'tag': 'Verified Customer',
     },
     {
-      'name': 'Gabriela Carlo Silang',
+      'name': 'Gabriela Cario Silang',
       'accountNo': '1000-2000-3006',
       'tag': 'Verified Customer',
     },
@@ -149,7 +154,16 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
     },
   ];
 
-  String? _selectedCustomerName = 'Maria Clara Reyes';
+  List<Map<String, String>> get _availableRecipients {
+    final currentAcc = _bankService.savingsAccountNumber;
+    final currentId = _bankService.activeAccountId;
+    final filtered = _allOracleCustomers.where((c) =>
+      c['accountNo'] != currentAcc && c['accountNo'] != currentId
+    ).toList();
+    return filtered.isNotEmpty ? filtered : _allOracleCustomers;
+  }
+
+  String? _selectedCustomerName;
 
   @override
   void initState() {
@@ -157,11 +171,16 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
     _isAuraToAura = widget.initialIsAuraToAura;
     _selectedPartnerBankIndex = widget.initialPartnerBankIndex;
     _bankService.addListener(_onServiceUpdate);
+
+    final recipients = _availableRecipients;
+    final initialRecipient = recipients.isNotEmpty ? recipients.first : _allOracleCustomers[1];
+
+    _selectedCustomerName = widget.initialRecipientName ?? initialRecipient['name'];
     _accountController = TextEditingController(
-      text: widget.initialAccountNo ?? '1000-2000-3002',
+      text: widget.initialAccountNo ?? initialRecipient['accountNo'],
     );
     _recipientController = TextEditingController(
-      text: widget.initialRecipientName ?? 'Maria Clara Reyes',
+      text: widget.initialRecipientName ?? initialRecipient['name'],
     );
     _amountController = TextEditingController(
       text: widget.initialAmount ?? '',
@@ -677,12 +696,14 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
-                  value: _selectedCustomerName,
+                  value: (_availableRecipients.any((c) => c['name'] == _selectedCustomerName) || _selectedCustomerName == 'CUSTOM')
+                      ? _selectedCustomerName
+                      : (_availableRecipients.isNotEmpty ? _availableRecipients.first['name'] : 'CUSTOM'),
                   isExpanded: true,
                   hint: const Text('Choose customer...', style: TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
                   icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF38008A)),
                   items: [
-                    ..._seededCustomers.map((cust) => DropdownMenuItem<String>(
+                    ..._availableRecipients.map((cust) => DropdownMenuItem<String>(
                       value: cust['name'],
                       child: Row(
                         children: [
@@ -714,7 +735,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                     setState(() {
                       _selectedCustomerName = val;
                       if (val != 'CUSTOM') {
-                        final found = _seededCustomers.firstWhere((c) => c['name'] == val);
+                        final found = _availableRecipients.firstWhere((c) => c['name'] == val);
                         _recipientController.text = found['name']!;
                         _accountController.text = found['accountNo']!;
                       }

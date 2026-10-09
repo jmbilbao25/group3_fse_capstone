@@ -125,7 +125,7 @@ class BankService extends ChangeNotifier {
       cardNumber: '1235 5267 8795 0809',
       expiry: '08/29',
       cvv: '158',
-      holderName: 'Elijah Montefalco',
+      holderName: 'Juan Dela Cruz',
       gradientStart: 0xFF2A085C,
       gradientEnd: 0xFF5E17EB,
     ),
@@ -135,7 +135,7 @@ class BankService extends ChangeNotifier {
       cardNumber: '1235 5267 8795 1016',
       expiry: '09/32',
       cvv: '143',
-      holderName: 'Juan S. Dela Cruz',
+      holderName: 'Juan Dela Cruz',
       gradientStart: 0xFF2A085C,
       gradientEnd: 0xFF5E17EB,
     ),
@@ -145,7 +145,7 @@ class BankService extends ChangeNotifier {
       cardNumber: '1235 5267 8795 8776',
       expiry: '10/56',
       cvv: '155',
-      holderName: 'Juan S. Dela Cruz',
+      holderName: 'Juan Dela Cruz',
       gradientStart: 0xFF190634,
       gradientEnd: 0xFF4A154B,
     ),
@@ -736,8 +736,8 @@ class BankService extends ChangeNotifier {
   }) {
     if (name != null && name.isNotEmpty) {
       user.name = name;
-      if (cards.isNotEmpty) {
-        cards[0].holderName = name;
+      for (final card in cards) {
+        card.holderName = name;
       }
     }
     if (phoneNumber != null && phoneNumber.isNotEmpty) user.phoneNumber = phoneNumber;

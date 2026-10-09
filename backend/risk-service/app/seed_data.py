@@ -109,9 +109,9 @@ CUSTOMER_PROFILES: Dict[str, Dict[str, Any]] = {
         },
         "typical_counterparties": ["ACC-100003"]
     },
-    "acc-2001-sav-001": {
+    "1000-2000-3001": {
         "user_id": "usr-1001-cst-001",
-        "account_id": "acc-2001-sav-001",
+        "account_id": "1000-2000-3001",
         "full_name": "Juan Dela Cruz",
         "kyc_status": "VERIFIED",
         "account_age_days": 420,
@@ -132,7 +132,57 @@ CUSTOMER_PROFILES: Dict[str, Dict[str, Any]] = {
                 "label": "Makati CBD"
             }
         },
-        "typical_counterparties": ["acc-2002-chk-001", "acc-2003-sav-002"]
+        "typical_counterparties": ["1000-2000-3002", "1000-2000-3004"]
+    },
+    "1000-2000-3002": {
+        "user_id": "usr-1002-cst-002",
+        "account_id": "1000-2000-3002",
+        "full_name": "Maria Clara Reyes",
+        "kyc_status": "VERIFIED",
+        "account_age_days": 180,
+        "average_transfer_amount": 4000.00,
+        "daily_transfer_limit": 250000.00,
+        "home_coordinates": {
+            "latitude": 14.6760,
+            "longitude": 121.0437,
+            "label": "Diliman, Quezon City"
+        },
+        "last_transaction": {
+            "transaction_id": "TX-PREV-02",
+            "amount": 3500.00,
+            "timestamp": (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat(),
+            "coordinates": {
+                "latitude": 14.6500,
+                "longitude": 121.0300,
+                "label": "Quezon City"
+            }
+        },
+        "typical_counterparties": ["1000-2000-3001"]
+    },
+    "acc-2001-sav-001": {
+        "user_id": "usr-1001-cst-001",
+        "account_id": "1000-2000-3001",
+        "full_name": "Juan Dela Cruz",
+        "kyc_status": "VERIFIED",
+        "account_age_days": 420,
+        "average_transfer_amount": 2500.00,
+        "daily_transfer_limit": 500000.00,
+        "home_coordinates": {
+            "latitude": 14.5547,
+            "longitude": 121.0244,
+            "label": "Bonifacio Global City, Taguig"
+        },
+        "last_transaction": {
+            "transaction_id": "TX-PREV-01",
+            "amount": 1800.00,
+            "timestamp": (datetime.now(timezone.utc) - timedelta(minutes=15)).isoformat(),
+            "coordinates": {
+                "latitude": 14.5547,
+                "longitude": 121.0180,
+                "label": "Makati CBD"
+            }
+        },
+        "typical_counterparties": ["1000-2000-3002", "1000-2000-3004"]
     },
     "acc-2002-chk-001": {
         "user_id": "usr-1002-cst-002",

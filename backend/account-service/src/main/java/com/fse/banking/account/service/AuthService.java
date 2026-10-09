@@ -147,6 +147,15 @@ public class AuthService {
             userRepository.save(user);
         }
 
+        // Restrict mobile app access to CUSTOMER role only; Administrative & staff must use Web Admin Portal
+        String resolvedDeviceType = resolveDeviceType(request.getDeviceType(), request.getDeviceId(), request.getDeviceName(), userAgent);
+        boolean isWeb = "WEB".equalsIgnoreCase(resolvedDeviceType);
+        if (!isWeb && user.getRole() != UserRole.CUSTOMER) {
+            log.warn("Blocked mobile login attempt for non-customer user {} (role={}, deviceType={})",
+                    user.getUserId(), user.getRole(), resolvedDeviceType);
+            throw new ForbiddenException("Administrative accounts are restricted from mobile access. Please use the Web Admin Portal.");
+        }
+
         // Enforce First-Time Login MFA Verification
         if (user.getLastLoginAt() == null) {
             String otp = redisSessionStore.getLoginOtp(user.getUserId());
@@ -156,10 +165,16 @@ public class AuthService {
                 dispatchOtpEmail(user.getEmail(), user.getFirstName() + " " + user.getLastName(), otp);
             }
 
+            String fullName = (user.getFirstName() + " " + (user.getLastName() != null ? user.getLastName() : "")).trim();
             LoginResponse mfaChallenge = LoginResponse.builder()
                     .status("MFA_REQUIRED")
                     .userId(user.getUserId())
                     .maskedEmail(maskEmail(user.getEmail()))
+                    .role(user.getRole().name())
+                    .fullName(fullName)
+                    .email(user.getEmail())
+                    .phoneNumber(user.getPhoneNumber())
+                    .deviceType(resolvedDeviceType)
                     .build();
 
             return LoginResult.builder()
@@ -180,6 +195,15 @@ public class AuthService {
 
         if (user.getStatus() == UserStatus.LOCKED || user.getStatus() == UserStatus.SUSPENDED) {
             throw new UnauthorizedException("Account is inactive.");
+        }
+
+        // Restrict mobile app access to CUSTOMER role only
+        String resolvedDeviceType = resolveDeviceType(request.getDeviceType(), request.getDeviceId(), request.getDeviceName(), userAgent);
+        boolean isWeb = "WEB".equalsIgnoreCase(resolvedDeviceType);
+        if (!isWeb && user.getRole() != UserRole.CUSTOMER) {
+            log.warn("Blocked mobile OTP verification for non-customer user {} (role={}, deviceType={})",
+                    user.getUserId(), user.getRole(), resolvedDeviceType);
+            throw new ForbiddenException("Administrative accounts are restricted from mobile access. Please use the Web Admin Portal.");
         }
 
         String cachedOtp = redisSessionStore.getLoginOtp(user.getUserId());

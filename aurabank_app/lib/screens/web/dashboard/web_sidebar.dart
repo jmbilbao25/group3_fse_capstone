@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../theme/aura_theme.dart';
-import '../../services/bank_service.dart';
+import '../../../theme/aura_theme.dart';
+import '../../../services/bank_service.dart';
 
 class WebSidebar extends StatelessWidget {
   final int selectedIndex;

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../models/bank_models.dart';
-import '../../services/bank_service.dart';
-import '../../theme/aura_theme.dart';
+import '../../../models/bank_models.dart';
+import '../../../services/bank_service.dart';
+import '../../../theme/aura_theme.dart';
 
 class WebCardsScreen extends StatefulWidget {
   final VoidCallback? onBack;

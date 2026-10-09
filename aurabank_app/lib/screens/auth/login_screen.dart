@@ -255,12 +255,21 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 28),
+            final isWide = constraints.maxWidth >= 600;
+
+            return Center(
               child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: IntrinsicHeight(
-                  child: Column(
+                constraints: BoxConstraints(
+                  maxWidth: isWide ? 460 : double.infinity,
+                  minHeight: constraints.maxHeight,
+                ),
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isWide ? 36 : 28,
+                    vertical: isWide ? 24 : 0,
+                  ),
+                  child: IntrinsicHeight(
+                    child: Column(
                     children: [
                       const SizedBox(height: 38),
 
@@ -359,12 +368,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   ),
                 ),
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
-    );
-  }
+    ),
+  );
+}
 
   /// 1. Standard Login View (matches Top row of mockup: fields + Sign In + Biometrics below)
   Widget _buildStandardLoginView() {

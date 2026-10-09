@@ -1,8 +1,8 @@
-import '../../widgets/aura_logo.dart';
+import '../../../widgets/aura_logo.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../analytics/statement_screen.dart';
-import '../analytics/annual_report_screen.dart';
+import 'web_statement_screen.dart';
+import 'web_annual_report_screen.dart';
 
 /// Data point model for transfer flow points
 class FlowPointData {
@@ -1962,7 +1962,7 @@ class _WebAnalyticsScreenState extends State<WebAnalyticsScreen>
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (context) => const StatementScreen(),
+                      builder: (context) => const WebStatementScreen(),
                     ),
                   );
                 },
@@ -2123,7 +2123,7 @@ class _WebAnalyticsScreenState extends State<WebAnalyticsScreen>
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (context) => const AnnualReportScreen(),
+                      builder: (context) => const WebAnnualReportScreen(),
                     ),
                   );
                 },

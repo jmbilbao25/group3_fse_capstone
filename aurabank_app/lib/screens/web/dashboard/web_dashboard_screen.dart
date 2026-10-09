@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../services/bank_service.dart';
-import '../../models/bank_models.dart';
-import '../../theme/aura_theme.dart';
-import '../transfer/send_money_screen.dart';
+import '../../../services/bank_service.dart';
+import '../../../models/bank_models.dart';
+import '../../../theme/aura_theme.dart';
+import '../../transfer/send_money_screen.dart';
 
 class WebDashboardScreen extends StatefulWidget {
   final Function(int)? onNavigateTab;

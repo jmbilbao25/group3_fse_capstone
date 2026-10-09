@@ -32,7 +32,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSFaceIDUsageDescription</key>
-	<string>Aura Bank requires Face ID to authorize secure funds transfers and confirm payments.</string>
+	<string>Aura Bank requires Face ID to securely authenticate and sign into your account, and authorize payments.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

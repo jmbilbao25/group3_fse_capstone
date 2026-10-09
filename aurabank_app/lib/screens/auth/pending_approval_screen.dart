@@ -62,10 +62,10 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
     _approvalSubscription =
         NotificationStreamService().deviceApprovalStream.listen((event) {
       if (!mounted) return;
-      final targetDevId = event['device_id'] as String? ?? '';
-      final isForThisDevice = targetDevId == currentDevId ||
-          targetDevId == currentDevName ||
-          targetDevId.isEmpty;
+      final targetDevId = (event['device_id'] as String? ?? '').toLowerCase().trim();
+      final isForThisDevice = targetDevId.isNotEmpty &&
+          (targetDevId == currentDevId.toLowerCase() ||
+           targetDevId == currentDevName.toLowerCase());
 
       if (isForThisDevice) {
         if (event['type'] == 'DEVICE_APPROVED') {

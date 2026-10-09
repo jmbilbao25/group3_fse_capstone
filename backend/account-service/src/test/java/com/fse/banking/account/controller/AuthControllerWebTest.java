@@ -270,4 +270,30 @@ class AuthControllerWebTest {
                 .andExpect(jsonPath("$.status").value("SUCCESS"))
                 .andExpect(jsonPath("$.primary_device_id").value("dev-2"));
     }
+
+    @Test
+    @DisplayName("POST /api/v1/auth/logout-all should invoke logoutAll and return 200")
+    void testLogoutAllEndpoint() throws Exception {
+        when(jwtProvider.validateToken("mock.jwt.token")).thenReturn(true);
+        when(jwtProvider.getUserId("mock.jwt.token")).thenReturn("USR-882190");
+
+        mockMvc.perform(post("/api/v1/auth/logout-all")
+                        .header("Authorization", "Bearer mock.jwt.token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.message").value("All secondary and web sessions have been terminated."));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/auth/logout-sessions should invoke logoutAllWebSessions and return 200")
+    void testLogoutSessionsEndpoint() throws Exception {
+        when(jwtProvider.validateToken("mock.jwt.token")).thenReturn(true);
+        when(jwtProvider.getUserId("mock.jwt.token")).thenReturn("USR-882190");
+
+        mockMvc.perform(post("/api/v1/auth/logout-sessions")
+                        .header("Authorization", "Bearer mock.jwt.token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.message").value("All web sessions have been terminated."));
+    }
 }

@@ -93,6 +93,7 @@ class NotificationStreamService {
   Timer? _pollFallbackTimer;
   String? _activeUserId;
   bool _isConnected = false;
+  bool _isRevoking = false;
   final Set<String> _seenNotificationIds = {};
 
   bool enablePollingFallback = true;
@@ -110,6 +111,7 @@ class NotificationStreamService {
   void connect(String userId) {
     if (_activeUserId == userId && _isConnected) return;
     disconnect();
+    _isRevoking = false;
     _activeUserId = userId;
     _sessionConnectedAt = DateTime.now();
     _seedExistingHistory(userId);
@@ -259,14 +261,30 @@ class NotificationStreamService {
                   isAfterSession &&
                   _seenNotificationIds.add(id)) {
                 final message = item['message'] as String? ?? '';
-                final parts = message.split(': ');
-                final targetDevId = parts.length > 1 ? parts[1].trim() : '';
-                _onDeviceApprovalEventReceived({
-                  'type': type,
-                  'user_id': userId,
-                  'device_id': targetDevId,
-                  'timestamp': sentAtStr ?? DateTime.now().toIso8601String(),
-                });
+                String targetDevId = '';
+                if (item['device_id'] != null && item['device_id'].toString().isNotEmpty) {
+                  targetDevId = item['device_id'].toString().trim();
+                } else if (item['deviceId'] != null && item['deviceId'].toString().isNotEmpty) {
+                  targetDevId = item['deviceId'].toString().trim();
+                } else {
+                  final parenMatch = RegExp(r'\((.*?)\)').firstMatch(message);
+                  if (parenMatch != null && parenMatch.group(1) != null) {
+                    targetDevId = parenMatch.group(1)!.trim();
+                  } else {
+                    final parts = message.split(': ');
+                    if (parts.length > 1) {
+                      targetDevId = parts[1].trim();
+                    }
+                  }
+                }
+                if (targetDevId.isNotEmpty) {
+                  _onDeviceApprovalEventReceived({
+                    'type': type,
+                    'user_id': userId,
+                    'device_id': targetDevId,
+                    'timestamp': sentAtStr ?? DateTime.now().toIso8601String(),
+                  });
+                }
               }
             }
           }
@@ -295,18 +313,28 @@ class NotificationStreamService {
     _deviceApprovalController.add(data);
     debugPrint('[NotificationStream] Dispatched ${data['type']} for device: ${data['device_id']}');
 
-    final targetDevId = (data['device_id'] as String? ?? '').toLowerCase();
-    final currentDevId = AuthApiService().currentDeviceId.toLowerCase();
-    final currentDevName = AuthApiService().currentDeviceName.toLowerCase();
-    final isForThisDevice = targetDevId.isEmpty ||
-        targetDevId == currentDevId ||
-        targetDevId == currentDevName ||
-        (currentDevId.isNotEmpty && targetDevId.contains(currentDevId)) ||
-        (currentDevName.isNotEmpty && targetDevId.contains(currentDevName)) ||
-        (currentDevId.isNotEmpty && currentDevId.contains(targetDevId));
+    final type = data['type'] as String? ?? '';
+
+    // If this client is not logged in, ignore session revocation events completely.
+    // An unauthenticated user or login screen session cannot be revoked.
+    if (!AuthApiService().isAuthenticated) {
+      debugPrint('[NotificationStream] Ignored $type because client is not currently authenticated.');
+      return;
+    }
+
+    final targetDevId = (data['device_id'] as String? ?? '').toLowerCase().trim();
+    final currentDevId = AuthApiService().currentDeviceId.toLowerCase().trim();
+    final currentDevName = AuthApiService().currentDeviceName.toLowerCase().trim();
+
+    // Must have a non-empty target device id; empty never matches all devices
+    if (targetDevId.isEmpty) {
+      return;
+    }
+
+    final isForThisDevice = targetDevId == currentDevId ||
+        targetDevId == currentDevName;
 
     if (isForThisDevice) {
-      final type = data['type'] as String? ?? '';
       final context = rootNavigatorKey.currentContext;
       if (type == 'DEVICE_APPROVED') {
         AuthApiService().currentIsApproved = true;
@@ -320,15 +348,21 @@ class NotificationStreamService {
           );
         }
       } else if (type == 'DEVICE_REVOKED') {
+        if (_isRevoking) {
+          debugPrint('[NotificationStream] Ignoring duplicate DEVICE_REVOKED event.');
+          return;
+        }
+        _isRevoking = true;
         AuthApiService().currentIsApproved = false;
         AuthApiService().logout();
         disconnect();
         if (context != null) {
+          ScaffoldMessenger.of(context).clearSnackBars();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Access revoked. You have been logged out of this session.'),
               backgroundColor: Colors.redAccent,
-              duration: Duration(seconds: 5),
+              duration: Duration(seconds: 4),
             ),
           );
           Navigator.of(context).pushAndRemoveUntil(
@@ -352,6 +386,7 @@ class NotificationStreamService {
 
   void disconnect() {
     _isConnected = false;
+    _isRevoking = false;
     _activeUserId = null;
     _reconnectTimer?.cancel();
     _reconnectTimer = null;

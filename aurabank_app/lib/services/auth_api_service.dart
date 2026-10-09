@@ -1,7 +1,8 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:http/http.dart' as http;
 import '../models/user_persona.dart';
+import 'bank_service.dart';
 import 'device_storage.dart';
 import 'security_service.dart';
 
@@ -11,11 +12,18 @@ class BackendConfig {
   BackendConfig._internal();
 
   /// Laptop's local Wi-Fi IP address for cross-device connectivity through the laptop
-  static const String defaultLanIp = '192.168.18.110';
+  static const String defaultLanIp = '192.168.254.159';
 
   static String _resolveInitialHost() {
     if (kIsWeb) {
       return 'localhost';
+    }
+    const envHost = String.fromEnvironment('BACKEND_HOST');
+    if (envHost.isNotEmpty) {
+      return envHost;
+    }
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return '10.0.2.2';
     }
     return defaultLanIp;
   }
@@ -28,16 +36,35 @@ class BackendConfig {
     }
   }
 
+  /// Ordered list of candidate hostnames/IPs to discover working backend
+  static List<String> get candidateHosts {
+    return <String>{
+      BackendConfig().host,
+      if (defaultTargetPlatform == TargetPlatform.android) ...[
+        '10.0.2.2',
+        '127.0.0.1',
+        'localhost',
+      ],
+      defaultLanIp,
+      'localhost',
+      '127.0.0.1',
+    }.toList();
+  }
+
   Future<bool> testConnection() async {
-    try {
-      final client = http.Client();
-      final uri = Uri.parse('http://$_host:8081/actuator/health');
-      final res = await client.get(uri).timeout(const Duration(seconds: 3));
-      client.close();
-      return res.statusCode == 200;
-    } catch (_) {
-      return false;
+    for (final h in candidateHosts) {
+      try {
+        final client = http.Client();
+        final uri = Uri.parse('http://$h:8081/actuator/health');
+        final res = await client.get(uri).timeout(const Duration(seconds: 2));
+        client.close();
+        if (res.statusCode == 200) {
+          _host = h;
+          return true;
+        }
+      } catch (_) {}
     }
+    return false;
   }
 }
 
@@ -120,6 +147,29 @@ class AuthApiService {
   /// Direct Account Service endpoint (:8081)
   String get accountServiceUrl => 'http://$defaultBackendHost:8081';
 
+  List<String> get _endpoints {
+    final candidateHosts = BackendConfig.candidateHosts;
+    final List<String> list = [];
+    for (final h in candidateHosts) {
+      if (kIsWeb) {
+        list.add('http://$h:8081');
+        list.add('http://$h:8080');
+      } else {
+        list.add('http://$h:8080');
+        list.add('http://$h:8081');
+      }
+    }
+    return list;
+  }
+
+  void _recordWorkingEndpoint(String baseUrl) {
+    final successfulHost = Uri.tryParse(baseUrl)?.host;
+    if (successfulHost != null && successfulHost.isNotEmpty) {
+      BackendConfig().host = successfulHost;
+      BankService().setLocalUrl('http://$successfulHost:8080');
+    }
+  }
+
   /// Injected HTTP client for testing
   http.Client? httpClient;
 
@@ -137,6 +187,9 @@ class AuthApiService {
 
   bool get isDeviceApproved => currentIsApproved ?? (currentIsPrimaryDevice == true);
   bool get isPrimaryDevice => currentIsPrimaryDevice ?? true;
+  bool get isAuthenticated =>
+      (currentAccessToken != null && currentAccessToken!.isNotEmpty) ||
+      (DeviceStorage.getAccessToken() != null && DeviceStorage.getAccessToken()!.isNotEmpty);
 
   void switchDevice(DevicePreset preset) {
     currentDeviceId = preset.id;
@@ -177,6 +230,8 @@ class AuthApiService {
     final endpoints = kIsWeb
         ? [accountServiceUrl, gatewayUrl]
         : [gatewayUrl, accountServiceUrl];
+    final endpoints = _endpoints;
+    String lastError = 'No backend service available';
 
     for (final baseUrl in endpoints) {
       try {
@@ -199,6 +254,7 @@ class AuthApiService {
             .timeout(const Duration(seconds: 4));
 
         if (response.statusCode == 200) {
+          _recordWorkingEndpoint(baseUrl);
           final data = jsonDecode(response.body) as Map<String, dynamic>;
           final statusStr = data['status'] as String? ?? 'AUTHENTICATED';
           currentIsPrimaryDevice = data['is_primary_device'] as bool?;
@@ -270,6 +326,7 @@ class AuthApiService {
             );
           }
         } else if (response.statusCode == 401 || response.statusCode == 403) {
+          _recordWorkingEndpoint(baseUrl);
           final data = _tryDecodeJson(response.body);
           return AuthLoginResult(
             status: AuthStatus.failed,
@@ -322,9 +379,7 @@ class AuthApiService {
     if (deviceName != null) currentDeviceName = deviceName;
     if (deviceType != null) currentDeviceType = deviceType;
 
-    final endpoints = kIsWeb
-        ? [accountServiceUrl, gatewayUrl]
-        : [gatewayUrl, accountServiceUrl];
+    final endpoints = _endpoints;
     String lastError = 'No backend service available';
 
     for (final baseUrl in endpoints) {
@@ -345,6 +400,7 @@ class AuthApiService {
             .timeout(const Duration(seconds: 4));
 
         if (response.statusCode == 200) {
+          _recordWorkingEndpoint(baseUrl);
           final data = jsonDecode(response.body) as Map<String, dynamic>;
           final statusStr = data['status'] as String? ?? 'AUTHENTICATED';
           currentIsPrimaryDevice = data['is_primary_device'] as bool?;
@@ -395,18 +451,20 @@ class AuthApiService {
   }
 
   Future<List<Map<String, dynamic>>> getRegisteredDevices({String? userId}) async {
-    final uid = userId ?? currentUserId;
+    final uid = userId ?? currentUserId ?? DeviceStorage.getUserId();
     if (uid == null) return [];
-    final endpoints = kIsWeb ? [accountServiceUrl, gatewayUrl] : [gatewayUrl, accountServiceUrl];
+    final token = currentAccessToken ?? DeviceStorage.getAccessToken();
+    final endpoints = _endpoints;
     for (final baseUrl in endpoints) {
       try {
         final headers = <String, String>{'Content-Type': 'application/json'};
-        if (currentAccessToken != null) {
-          headers['Authorization'] = 'Bearer $currentAccessToken';
+        if (token != null) {
+          headers['Authorization'] = 'Bearer $token';
         }
         final url = Uri.parse('$baseUrl/api/v1/auth/devices?userId=$uid');
         final response = await _client.get(url, headers: headers).timeout(const Duration(seconds: 3));
         if (response.statusCode == 200) {
+          _recordWorkingEndpoint(baseUrl);
           final list = jsonDecode(response.body) as List<dynamic>;
           return list.cast<Map<String, dynamic>>();
         }
@@ -416,14 +474,15 @@ class AuthApiService {
   }
 
   Future<bool> setPrimaryDevice({required String deviceId, String? userId}) async {
-    final uid = userId ?? currentUserId;
+    final uid = userId ?? currentUserId ?? DeviceStorage.getUserId();
     if (uid == null) return false;
+    final token = currentAccessToken ?? DeviceStorage.getAccessToken();
     final endpoints = kIsWeb ? [accountServiceUrl, gatewayUrl] : [gatewayUrl, accountServiceUrl];
     for (final baseUrl in endpoints) {
       try {
         final headers = <String, String>{'Content-Type': 'application/json'};
-        if (currentAccessToken != null) {
-          headers['Authorization'] = 'Bearer $currentAccessToken';
+        if (token != null) {
+          headers['Authorization'] = 'Bearer $token';
         }
         final url = Uri.parse('$baseUrl/api/v1/auth/devices/primary');
         final response = await _client
@@ -444,14 +503,15 @@ class AuthApiService {
   }
 
   Future<bool> approveDevice({required String deviceId, String? userId}) async {
-    final uid = userId ?? currentUserId;
+    final uid = userId ?? currentUserId ?? DeviceStorage.getUserId();
     if (uid == null) return false;
+    final token = currentAccessToken ?? DeviceStorage.getAccessToken();
     final endpoints = kIsWeb ? [accountServiceUrl, gatewayUrl] : [gatewayUrl, accountServiceUrl];
     for (final baseUrl in endpoints) {
       try {
         final headers = <String, String>{'Content-Type': 'application/json'};
-        if (currentAccessToken != null) {
-          headers['Authorization'] = 'Bearer $currentAccessToken';
+        if (token != null) {
+          headers['Authorization'] = 'Bearer $token';
         }
         final url = Uri.parse('$baseUrl/api/v1/auth/devices/approve');
         final response = await _client
@@ -470,14 +530,15 @@ class AuthApiService {
   }
 
   Future<bool> revokeDevice({required String deviceId, String? userId}) async {
-    final uid = userId ?? currentUserId;
+    final uid = userId ?? currentUserId ?? DeviceStorage.getUserId();
     if (uid == null) return false;
+    final token = currentAccessToken ?? DeviceStorage.getAccessToken();
     final endpoints = kIsWeb ? [accountServiceUrl, gatewayUrl] : [gatewayUrl, accountServiceUrl];
     for (final baseUrl in endpoints) {
       try {
         final headers = <String, String>{'Content-Type': 'application/json'};
-        if (currentAccessToken != null) {
-          headers['Authorization'] = 'Bearer $currentAccessToken';
+        if (token != null) {
+          headers['Authorization'] = 'Bearer $token';
         }
         final url = Uri.parse('$baseUrl/api/v1/auth/devices/revoke');
         final response = await _client
@@ -496,7 +557,7 @@ class AuthApiService {
   }
 
   Future<void> logout() async {
-    final token = currentAccessToken;
+    final token = currentAccessToken ?? DeviceStorage.getAccessToken();
     if (token != null) {
       final endpoints = kIsWeb ? [accountServiceUrl, gatewayUrl] : [gatewayUrl, accountServiceUrl];
       for (final baseUrl in endpoints) {
@@ -520,27 +581,53 @@ class AuthApiService {
     await DeviceStorage.clearSession();
   }
 
-  Future<bool> logoutAll() async {
-    final token = currentAccessToken;
-    if (token != null) {
-      final endpoints = kIsWeb ? [accountServiceUrl, gatewayUrl] : [gatewayUrl, accountServiceUrl];
-      for (final baseUrl in endpoints) {
-        try {
-          final url = Uri.parse('$baseUrl/api/v1/auth/logout-all');
-          final response = await _client.post(
-            url,
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
-            },
-          ).timeout(const Duration(seconds: 3));
-          if (response.statusCode == 200) {
-            return true;
-          }
-        } catch (_) {}
-      }
+  Future<bool> logoutAll({String? userId}) async {
+    final uid = userId ?? currentUserId ?? DeviceStorage.getUserId();
+    final token = currentAccessToken ?? DeviceStorage.getAccessToken();
+    final endpoints = kIsWeb ? [accountServiceUrl, gatewayUrl] : [gatewayUrl, accountServiceUrl];
+    for (final baseUrl in endpoints) {
+      try {
+        final headers = <String, String>{'Content-Type': 'application/json'};
+        if (token != null) {
+          headers['Authorization'] = 'Bearer $token';
+        }
+        final query = uid != null ? '?userId=$uid' : '';
+        final url = Uri.parse('$baseUrl/api/v1/auth/logout-all$query');
+        final response = await _client.post(
+          url,
+          headers: headers,
+        ).timeout(const Duration(seconds: 3));
+        if (response.statusCode == 200) {
+          return true;
+        }
+      } catch (_) {}
     }
     return false;
+  }
+
+  Future<bool> logoutAllSessions({String? userId}) async {
+    final uid = userId ?? currentUserId ?? DeviceStorage.getUserId();
+    final token = currentAccessToken ?? DeviceStorage.getAccessToken();
+    final endpoints = kIsWeb ? [accountServiceUrl, gatewayUrl] : [gatewayUrl, accountServiceUrl];
+    for (final baseUrl in endpoints) {
+      try {
+        final headers = <String, String>{'Content-Type': 'application/json'};
+        if (token != null) {
+          headers['Authorization'] = 'Bearer $token';
+        }
+        final query = uid != null ? '?userId=$uid' : '';
+        final url = Uri.parse('$baseUrl/api/v1/auth/logout-sessions$query');
+        final response = await _client.post(
+          url,
+          headers: headers,
+        ).timeout(const Duration(seconds: 3));
+        if (response.statusCode == 200) {
+          return true;
+        }
+      } catch (_) {}
+    }
+    // Fallback: also try logout-all if logout-sessions is not reachable
+    return await logoutAll(userId: uid);
   }
 
   Map<String, dynamic> _tryDecodeJson(String body) {

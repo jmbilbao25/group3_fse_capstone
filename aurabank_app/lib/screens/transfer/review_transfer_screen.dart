@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../services/bank_service.dart';
+import '../../services/biometric_service.dart';
 import '../../services/security_service.dart';
 import '../../theme/aura_theme.dart';
 import '../../widgets/require_device_approval.dart';
@@ -963,8 +964,31 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
                   elevation: 0,
                 ),
                 onPressed: () async {
-                  Navigator.of(ctx).pop();
-                  await _executeTransferAndNavigate();
+                  final biometric = BiometricService();
+                  final bool canAuth = await biometric.canAuthenticate();
+                  if (canAuth) {
+                    final bool verified = await biometric.authenticate(
+                      reason: 'Authorize transfer of PHP ${widget.amount.toStringAsFixed(2)} to ${widget.recipientName}',
+                      biometricOnly: false,
+                    );
+                    if (!verified) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Biometric authorization was cancelled or unverified.'),
+                            backgroundColor: Color(0xFF6B7280),
+                          ),
+                        );
+                      }
+                      return;
+                    }
+                  }
+                  if (ctx.mounted) {
+                    Navigator.of(ctx).pop();
+                  }
+                  if (mounted) {
+                    await _executeTransferAndNavigate();
+                  }
                 },
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -1456,8 +1480,31 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
                     elevation: 0,
                   ),
                   onPressed: () async {
-                    Navigator.of(ctx).pop();
-                    await _executeTransferAndNavigate();
+                    final biometric = BiometricService();
+                    final bool canAuth = await biometric.canAuthenticate();
+                    if (canAuth) {
+                      final bool verified = await biometric.authenticate(
+                        reason: 'Authorize transfer of PHP ${widget.amount.toStringAsFixed(2)} to ${widget.recipientName}',
+                        biometricOnly: false,
+                      );
+                      if (!verified) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Biometric authorization was cancelled or unverified.'),
+                              backgroundColor: Color(0xFF6B7280),
+                            ),
+                          );
+                        }
+                        return;
+                      }
+                    }
+                    if (ctx.mounted) {
+                      Navigator.of(ctx).pop();
+                    }
+                    if (mounted) {
+                      await _executeTransferAndNavigate();
+                    }
                   },
                   child: const Text('Authorize with Biometrics', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
                 ),

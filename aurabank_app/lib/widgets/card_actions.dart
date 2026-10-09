@@ -42,7 +42,9 @@ class _IssueCardSheetState extends State<_IssueCardSheet> {
     final preview = BankCard(
       id: 'preview-${_network.name}',
       title: _virtual ? 'Aura Virtual' : 'Aura Debit',
-      cardNumber: _network == CardNetwork.visa ? '4123 0000 0000 0000' : '5235 0000 0000 0000',
+      cardNumber: _network == CardNetwork.visa
+          ? '4123 0000 0000 0000'
+          : '5235 0000 0000 0000',
       expiry: '--/--',
       cvv: '---',
       holderName: BankService().user.name,
@@ -52,16 +54,22 @@ class _IssueCardSheetState extends State<_IssueCardSheet> {
 
     return SafeArea(
       child: Padding(
-        padding: EdgeInsets.fromLTRB(24, 0, 24, 24 + MediaQuery.viewInsetsOf(context).bottom),
+        padding: EdgeInsets.fromLTRB(
+            24, 0, 24, 24 + MediaQuery.viewInsetsOf(context).bottom),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('New debit card', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, letterSpacing: -0.4)),
+            const Text('New debit card',
+                style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.4)),
             const SizedBox(height: 6),
             const Text(
               'Spends from your savings account. Virtual cards are ready right away.',
-              style: TextStyle(fontSize: 14, color: AuraColors.textSecondary, height: 1.4),
+              style: TextStyle(
+                  fontSize: 14, color: AuraColors.textSecondary, height: 1.4),
             ),
             const SizedBox(height: 20),
             Center(
@@ -72,7 +80,10 @@ class _IssueCardSheetState extends State<_IssueCardSheet> {
                   child: AnimatedSwitcher(
                     duration: AuraMotion.resolve(context, AuraMotion.medium),
                     switchInCurve: AuraMotion.emphasized,
-                    child: AuraCardFace(key: ValueKey(preview.id + _virtual.toString()), card: preview, lift: 0.6),
+                    child: AuraCardFace(
+                        key: ValueKey(preview.id + _virtual.toString()),
+                        card: preview,
+                        lift: 0.6),
                   ),
                 ),
               ),
@@ -85,7 +96,12 @@ class _IssueCardSheetState extends State<_IssueCardSheet> {
               style: _segmentStyle,
               segments: [
                 for (final n in CardNetwork.values)
-                  ButtonSegment(value: n, label: Text(n.label), icon: SizedBox(width: 26, child: NetworkMark(network: n, width: 26))),
+                  ButtonSegment(
+                      value: n,
+                      label: Text(n.label),
+                      icon: SizedBox(
+                          width: 26,
+                          child: NetworkMark(network: n, width: 26))),
               ],
               selected: {_network},
               onSelectionChanged: (s) => setState(() => _network = s.first),
@@ -97,8 +113,14 @@ class _IssueCardSheetState extends State<_IssueCardSheet> {
               showSelectedIcon: false,
               style: _segmentStyle,
               segments: const [
-                ButtonSegment(value: true, label: Text('Virtual'), icon: Icon(Icons.phone_iphone_rounded, size: 18)),
-                ButtonSegment(value: false, label: Text('Physical'), icon: Icon(Icons.credit_card_rounded, size: 18)),
+                ButtonSegment(
+                    value: true,
+                    label: Text('Virtual'),
+                    icon: Icon(Icons.phone_iphone_rounded, size: 18)),
+                ButtonSegment(
+                    value: false,
+                    label: Text('Physical'),
+                    icon: Icon(Icons.credit_card_rounded, size: 18)),
               ],
               selected: {_virtual},
               onSelectionChanged: (s) => setState(() => _virtual = s.first),
@@ -108,10 +130,12 @@ class _IssueCardSheetState extends State<_IssueCardSheet> {
               width: double.infinity,
               child: FilledButton(
                 onPressed: () {
-                  final card = BankService().issueCard(network: _network, isVirtual: _virtual);
+                  final card = BankService()
+                      .issueCard(network: _network, isVirtual: _virtual);
                   Navigator.of(context).pop(card);
                 },
-                child: Text(_virtual ? 'Issue virtual card' : 'Order physical card'),
+                child: Text(
+                    _virtual ? 'Issue virtual card' : 'Order physical card'),
               ),
             ),
           ],
@@ -126,7 +150,8 @@ class _IssueCardSheetState extends State<_IssueCardSheet> {
     foregroundColor: AuraColors.textSecondary,
     side: const BorderSide(color: AuraColors.cardBorder),
     minimumSize: const Size(0, 48),
-    textStyle: const TextStyle(fontFamily: AuraTheme.fontFamily, fontWeight: FontWeight.w600),
+    textStyle: const TextStyle(
+        fontFamily: AuraTheme.fontFamily, fontWeight: FontWeight.w600),
   );
 }
 
@@ -135,8 +160,11 @@ class _SheetLabel extends StatelessWidget {
   final String text;
 
   @override
-  Widget build(BuildContext context) =>
-      Text(text, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AuraColors.textMuted));
+  Widget build(BuildContext context) => Text(text,
+      style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: AuraColors.textMuted));
 }
 
 /// Deck state shared by the phone and desktop cards screens: which card is in
@@ -150,7 +178,8 @@ mixin CardDeckState<T extends StatefulWidget> on State<T> {
   /// How long details stay visible before the card turns back by itself.
   static const Duration revealWindow = Duration(seconds: 20);
 
-  BankCard get activeCard => bank.cards[activeIndex.clamp(0, bank.cards.length - 1)];
+  BankCard get activeCard =>
+      bank.cards[activeIndex.clamp(0, bank.cards.length - 1)];
 
   void _onBank() {
     if (mounted) setState(() {});
@@ -183,7 +212,9 @@ mixin CardDeckState<T extends StatefulWidget> on State<T> {
     final token = ++_revealToken;
     setState(() => revealedId = card.id);
     Future.delayed(revealWindow, () {
-      if (mounted && token == _revealToken && revealedId == card.id) setState(() => revealedId = null);
+      if (mounted && token == _revealToken && revealedId == card.id) {
+        setState(() => revealedId = null);
+      }
     });
   }
 
@@ -204,7 +235,9 @@ mixin CardDeckState<T extends StatefulWidget> on State<T> {
     if (card == null || !mounted) return;
     setState(() => activeIndex = bank.cards.indexOf(card));
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${card.network.label} ${card.kindLabel.toLowerCase()} card ending ${card.last4} is ready.')),
+      SnackBar(
+          content: Text(
+              '${card.network.label} ${card.kindLabel.toLowerCase()} card ending ${card.last4} is ready.')),
     );
   }
 }

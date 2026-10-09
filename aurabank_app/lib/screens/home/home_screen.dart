@@ -4,6 +4,7 @@ import '../../models/bank_models.dart';
 import '../../services/bank_service.dart';
 import '../../theme/aura_theme.dart';
 import '../../widgets/aura_card.dart';
+import '../../widgets/motion.dart';
 import '../../widgets/transaction_tile.dart';
 import '../cards/cards_screen.dart' show CardActionButton;
 import '../transfer/send_money_screen.dart';
@@ -76,7 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
           children: [
-            _buildHeader(),
+            Reveal(child: _buildHeader()),
             const SizedBox(height: 24),
             Row(
               children: [
@@ -125,20 +126,27 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 12),
             if (card != null)
-              Semantics(
-                label:
-                    'Available balance ${_isBalanceVisible ? _formatBalance(_bankService.availableBalance) : 'hidden'}',
-                child: AspectRatio(
-                  aspectRatio: kCardAspect,
-                  child: CardTilt(
-                    maxTilt: 0.08,
-                    builder: (context, sheen) => AuraCardFace(
-                      card: card,
-                      sheen: sheen,
-                      balance: _formatBalance(_bankService.availableBalance),
-                      balanceVisible: _isBalanceVisible,
-                      onToggleBalance: () => setState(
-                          () => _isBalanceVisible = !_isBalanceVisible),
+              Reveal(
+                delay: const Duration(milliseconds: 80),
+                offset: 28,
+                duration: const Duration(milliseconds: 720),
+                child: Semantics(
+                  label:
+                      'Available balance ${_isBalanceVisible ? _formatBalance(_bankService.availableBalance) : 'hidden'}',
+                  child: AspectRatio(
+                    aspectRatio: kCardAspect,
+                    child: CardTilt(
+                      maxTilt: 0.08,
+                      builder: (context, sheen) => AuraCardFace(
+                        card: card,
+                        sheen: sheen,
+                        balance: _formatBalance(_bankService.availableBalance),
+                        balanceValue: _bankService.availableBalance,
+                        formatBalance: _formatBalance,
+                        balanceVisible: _isBalanceVisible,
+                        onToggleBalance: () => setState(
+                            () => _isBalanceVisible = !_isBalanceVisible),
+                      ),
                     ),
                   ),
                 ),
@@ -160,30 +168,33 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 6),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                CardActionButton(
-                    icon: Icons.north_east_rounded,
-                    label: 'Send',
-                    highlighted: true,
-                    onTap: _openTransfer),
-                CardActionButton(
-                    icon: Icons.qr_code_scanner_rounded,
-                    label: 'Scan',
-                    onTap: () => widget.onNavigateTab?.call(2)),
-                CardActionButton(
-                  icon: card?.isLocked == true
-                      ? Icons.lock_open_rounded
-                      : Icons.ac_unit_rounded,
-                  label: card?.isLocked == true ? 'Unfreeze' : 'Freeze',
-                  onTap: _toggleFreeze,
-                ),
-                CardActionButton(
-                    icon: Icons.insights_rounded,
-                    label: 'Insights',
-                    onTap: () => widget.onNavigateTab?.call(3)),
-              ],
+            Reveal(
+              delay: const Duration(milliseconds: 200),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  CardActionButton(
+                      icon: Icons.north_east_rounded,
+                      label: 'Send',
+                      highlighted: true,
+                      onTap: _openTransfer),
+                  CardActionButton(
+                      icon: Icons.qr_code_scanner_rounded,
+                      label: 'Scan',
+                      onTap: () => widget.onNavigateTab?.call(2)),
+                  CardActionButton(
+                    icon: card?.isLocked == true
+                        ? Icons.lock_open_rounded
+                        : Icons.ac_unit_rounded,
+                    label: card?.isLocked == true ? 'Unfreeze' : 'Freeze',
+                    onTap: _toggleFreeze,
+                  ),
+                  CardActionButton(
+                      icon: Icons.insights_rounded,
+                      label: 'Insights',
+                      onTap: () => widget.onNavigateTab?.call(3)),
+                ],
+              ),
             ),
             const SizedBox(height: 30),
             const Text('Activities',
@@ -193,7 +204,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     letterSpacing: -0.3)),
             const SizedBox(height: 12),
             if (payees.isNotEmpty)
-              _RecentPayees(payees: payees, onTap: _openTransfer),
+              Reveal(
+                  delay: const Duration(milliseconds: 280),
+                  child: _RecentPayees(payees: payees, onTap: _openTransfer)),
             const SizedBox(height: 22),
             Row(
               children: [
@@ -210,10 +223,13 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             const SizedBox(height: 4),
-            for (final txn in recent)
-              Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: TransactionTile(txn: txn)),
+            for (final (i, txn) in recent.indexed)
+              Reveal(
+                delay: Reveal.stagger(i, base: 340),
+                child: Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: TransactionTile(txn: txn)),
+              ),
           ],
         ),
       ),

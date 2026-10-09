@@ -4,6 +4,7 @@ import '../../models/bank_models.dart';
 import '../../theme/aura_theme.dart';
 import '../../widgets/aura_card.dart';
 import '../../widgets/card_actions.dart';
+import '../../widgets/motion.dart';
 import '../../widgets/transaction_tile.dart';
 
 class CardsScreen extends StatefulWidget {
@@ -15,7 +16,8 @@ class CardsScreen extends StatefulWidget {
   State<CardsScreen> createState() => _CardsScreenState();
 }
 
-class _CardsScreenState extends State<CardsScreen> with CardDeckState<CardsScreen> {
+class _CardsScreenState extends State<CardsScreen>
+    with CardDeckState<CardsScreen> {
   @override
   Widget build(BuildContext context) {
     final card = activeCard;
@@ -36,24 +38,36 @@ class _CardsScreenState extends State<CardsScreen> with CardDeckState<CardsScree
                     _CircleButton(
                       icon: Icons.arrow_back_rounded,
                       tooltip: 'Back',
-                      onTap: widget.onBack ?? () => Navigator.of(context).maybePop(),
+                      onTap: widget.onBack ??
+                          () => Navigator.of(context).maybePop(),
                     ),
                     const SizedBox(width: 12),
                   ],
                   const Expanded(
-                    child: Text('Cards', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w600, letterSpacing: -0.6)),
+                    child: Text('Cards',
+                        style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.6)),
                   ),
-                  _CircleButton(icon: Icons.add_rounded, tooltip: 'New card', onTap: issueCard),
+                  _CircleButton(
+                      icon: Icons.add_rounded,
+                      tooltip: 'New card',
+                      onTap: issueCard),
                 ],
               ),
             ),
             const SizedBox(height: 20),
-            AuraCardCarousel(
-              cards: bank.cards,
-              initialIndex: activeIndex,
-              revealedCardId: revealedId,
-              onPageChanged: selectCard,
-              onCardTap: (_) => toggleReveal(),
+            Reveal(
+              offset: 28,
+              duration: const Duration(milliseconds: 680),
+              child: AuraCardCarousel(
+                cards: bank.cards,
+                initialIndex: activeIndex,
+                revealedCardId: revealedId,
+                onPageChanged: selectCard,
+                onCardTap: (_) => toggleReveal(),
+              ),
             ),
             const SizedBox(height: 22),
             Padding(
@@ -62,18 +76,25 @@ class _CardsScreenState extends State<CardsScreen> with CardDeckState<CardsScree
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   CardActionButton(
-                    icon: card.isLocked ? Icons.lock_open_rounded : Icons.ac_unit_rounded,
+                    icon: card.isLocked
+                        ? Icons.lock_open_rounded
+                        : Icons.ac_unit_rounded,
                     label: card.isLocked ? 'Unfreeze' : 'Freeze',
                     highlighted: card.isLocked,
                     onTap: toggleFreeze,
                   ),
                   CardActionButton(
-                    icon: revealed ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    icon: revealed
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
                     label: revealed ? 'Hide' : 'Details',
                     highlighted: revealed,
                     onTap: toggleReveal,
                   ),
-                  CardActionButton(icon: Icons.add_card_rounded, label: 'New card', onTap: issueCard),
+                  CardActionButton(
+                      icon: Icons.add_card_rounded,
+                      label: 'New card',
+                      onTap: issueCard),
                 ],
               ),
             ),
@@ -85,13 +106,20 @@ class _CardsScreenState extends State<CardsScreen> with CardDeckState<CardsScree
             const SizedBox(height: 28),
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 20),
-              child: Text('Recent card activity', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, letterSpacing: -0.3)),
+              child: Text('Recent card activity',
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.3)),
             ),
             const SizedBox(height: 12),
-            for (final txn in bank.recentTransactions)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-                child: TransactionTile(txn: txn),
+            for (final (i, txn) in bank.recentTransactions.indexed)
+              Reveal(
+                delay: Reveal.stagger(i, base: 260),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                  child: TransactionTile(txn: txn),
+                ),
               ),
           ],
         ),
@@ -113,7 +141,8 @@ class _CardFacts extends StatelessWidget {
     ];
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(
+          color: Colors.white, borderRadius: BorderRadius.circular(20)),
       child: Column(
         children: [
           for (var i = 0; i < rows.length; i++) ...[
@@ -122,7 +151,9 @@ class _CardFacts extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 13),
               child: Row(
                 children: [
-                  Text(rows[i].$1, style: const TextStyle(fontSize: 14, color: AuraColors.textMuted)),
+                  Text(rows[i].$1,
+                      style: const TextStyle(
+                          fontSize: 14, color: AuraColors.textMuted)),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Text(
@@ -130,7 +161,8 @@ class _CardFacts extends StatelessWidget {
                       textAlign: TextAlign.end,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
@@ -163,9 +195,9 @@ class CardActionButton extends StatelessWidget {
     return Semantics(
       button: true,
       label: label,
-      child: InkResponse(
+      child: Pressable(
         onTap: onTap,
-        radius: 36,
+        scale: 0.92,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -176,13 +208,19 @@ class CardActionButton extends StatelessWidget {
               decoration: BoxDecoration(
                 color: highlighted ? AuraColors.mint : Colors.white,
                 shape: BoxShape.circle,
-                border: Border.all(color: highlighted ? AuraColors.mint : AuraColors.cardBorder),
+                border: Border.all(
+                    color:
+                        highlighted ? AuraColors.mint : AuraColors.cardBorder),
               ),
               child: Icon(icon, size: 22, color: AuraColors.ink),
             ),
             const SizedBox(height: 8),
             ExcludeSemantics(
-              child: Text(label, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500, color: AuraColors.textSecondary)),
+              child: Text(label,
+                  style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w500,
+                      color: AuraColors.textSecondary)),
             ),
           ],
         ),
@@ -192,7 +230,8 @@ class CardActionButton extends StatelessWidget {
 }
 
 class _CircleButton extends StatelessWidget {
-  const _CircleButton({required this.icon, required this.onTap, required this.tooltip});
+  const _CircleButton(
+      {required this.icon, required this.onTap, required this.tooltip});
   final IconData icon;
   final VoidCallback onTap;
   final String tooltip;

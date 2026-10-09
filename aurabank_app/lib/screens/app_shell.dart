@@ -27,7 +27,12 @@ class AppShell extends StatefulWidget {
   State<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
+class _AppShellState extends State<AppShell>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _tabFade = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 300), value: 1);
+  late final Animation<double> _tabCurve =
+      CurvedAnimation(parent: _tabFade, curve: AuraMotion.emphasized);
   late int _currentIndex;
 
   @override
@@ -42,12 +47,23 @@ class _AppShellState extends State<AppShell> {
   @override
   void dispose() {
     NotificationStreamService().disconnect();
+    _tabFade.dispose();
     super.dispose();
   }
 
   void _onNavigateTab(int index) {
+    if (index == _currentIndex) return;
     setState(() => _currentIndex = index);
+    if (!AuraMotion.reduced(context)) _tabFade.forward(from: 0);
   }
+
+  /// Fade-through on the whole stack, so tab state is kept but the switch reads.
+  Widget _fade(Widget child) => FadeTransition(
+        opacity: _tabCurve,
+        child: ScaleTransition(
+            scale: Tween(begin: 0.985, end: 1.0).animate(_tabCurve),
+            child: child),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -100,10 +116,10 @@ class _AppShellState extends State<AppShell> {
                 ),
                 // Body View
                 Expanded(
-                  child: IndexedStack(
+                  child: _fade(IndexedStack(
                     index: _currentIndex,
                     children: webScreens,
-                  ),
+                  )),
                 ),
               ],
             ),
@@ -127,10 +143,10 @@ class _AppShellState extends State<AppShell> {
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 540),
-          child: IndexedStack(
+          child: _fade(IndexedStack(
             index: _currentIndex.clamp(0, screens.length - 1),
             children: screens,
-          ),
+          )),
         ),
       ),
       bottomNavigationBar: Center(
@@ -164,7 +180,14 @@ class _AppShellState extends State<AppShell> {
           child: Row(
             children: [
               for (final t in _tabs)
-                Expanded(child: t.$1 == 2 ? _buildScanTab() : _buildNavItem(index: t.$1, icon: t.$2, unselectedIcon: t.$3, label: t.$4)),
+                Expanded(
+                    child: t.$1 == 2
+                        ? _buildScanTab()
+                        : _buildNavItem(
+                            index: t.$1,
+                            icon: t.$2,
+                            unselectedIcon: t.$3,
+                            label: t.$4)),
             ],
           ),
         ),
@@ -184,10 +207,11 @@ class _AppShellState extends State<AppShell> {
           shape: const CircleBorder(),
           child: InkWell(
             customBorder: const CircleBorder(),
-            onTap: () => setState(() => _currentIndex = 2),
+            onTap: () => _onNavigateTab(2),
             child: SizedBox.square(
               dimension: 50,
-              child: Icon(Icons.qr_code_scanner_rounded, size: 22, color: selected ? AuraColors.ink : Colors.white),
+              child: Icon(Icons.qr_code_scanner_rounded,
+                  size: 22, color: selected ? AuraColors.ink : Colors.white),
             ),
           ),
         ),
@@ -207,7 +231,7 @@ class _AppShellState extends State<AppShell> {
       selected: isSelected,
       label: label,
       child: InkResponse(
-        onTap: () => setState(() => _currentIndex = index),
+        onTap: () => _onNavigateTab(index),
         radius: 32,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -215,12 +239,15 @@ class _AppShellState extends State<AppShell> {
             AnimatedContainer(
               duration: AuraMotion.resolve(context, AuraMotion.fast),
               curve: AuraMotion.standard,
-              padding: EdgeInsets.symmetric(horizontal: isSelected ? 16 : 8, vertical: 5),
+              padding: EdgeInsets.symmetric(
+                  horizontal: isSelected ? 16 : 8, vertical: 5),
               decoration: BoxDecoration(
                 color: isSelected ? AuraColors.tintPurple : Colors.transparent,
                 borderRadius: BorderRadius.circular(99),
               ),
-              child: Icon(isSelected ? icon : unselectedIcon, size: 22, color: isSelected ? AuraColors.ink : AuraColors.textMuted),
+              child: Icon(isSelected ? icon : unselectedIcon,
+                  size: 22,
+                  color: isSelected ? AuraColors.ink : AuraColors.textMuted),
             ),
             const SizedBox(height: 3),
             ExcludeSemantics(

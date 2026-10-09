@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../theme/aura_theme.dart';
+import '../../widgets/motion.dart';
+import '../../widgets/aurora_background.dart';
 import '../../models/user_persona.dart';
 import '../../services/auth_api_service.dart';
 import '../../services/bank_service.dart';
@@ -18,7 +21,8 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
   final BankService _bankService = BankService();
   final TextEditingController _usernameController =
       TextEditingController(text: 'elijahriley.montefalco@gmail.com');
@@ -153,7 +157,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         ),
       );
     } else if (authResult.status == AuthStatus.pendingApproval ||
-        (authResult.status == AuthStatus.authenticated && authResult.isApproved == false)) {
+        (authResult.status == AuthStatus.authenticated &&
+            authResult.isApproved == false)) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (pCtx) => PendingApprovalScreen(
@@ -185,7 +190,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(authResult.errorMessage ?? 'Authentication failed. Please check credentials.'),
+          content: Text(authResult.errorMessage ??
+              'Authentication failed. Please check credentials.'),
           backgroundColor: const Color(0xFFC53030),
         ),
       );
@@ -232,11 +238,16 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         icon: icon,
         authType: authType,
         onSuccess: () {
-          if (AuthApiService().currentAccessToken == null || AuthApiService().currentAccessToken!.isEmpty) {
-            AuthApiService().currentAccessToken = DeviceStorage.getAccessToken() ?? 'bio-session-${DateTime.now().millisecondsSinceEpoch}';
+          if (AuthApiService().currentAccessToken == null ||
+              AuthApiService().currentAccessToken!.isEmpty) {
+            AuthApiService().currentAccessToken =
+                DeviceStorage.getAccessToken() ??
+                    'bio-session-${DateTime.now().millisecondsSinceEpoch}';
           }
-          if (AuthApiService().currentUserId == null || AuthApiService().currentUserId!.isEmpty) {
-            AuthApiService().currentUserId = DeviceStorage.getUserId() ?? 'USR-100001';
+          if (AuthApiService().currentUserId == null ||
+              AuthApiService().currentUserId!.isEmpty) {
+            AuthApiService().currentUserId =
+                DeviceStorage.getUserId() ?? 'USR-100001';
           }
           AuthApiService().currentIsApproved = true;
           Navigator.of(context).pop();
@@ -251,133 +262,113 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isWide = constraints.maxWidth >= 600;
+      backgroundColor: AuraColors.canvas,
+      body: Column(children: [
+        const _AuroraLoginHeader(),
+        Expanded(
+            child: SafeArea(
+          top: false,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth >= 600;
 
-            return Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: isWide ? 460 : double.infinity,
-                  minHeight: constraints.maxHeight,
-                ),
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isWide ? 36 : 28,
-                    vertical: isWide ? 24 : 0,
+              return Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: isWide ? 460 : double.infinity,
+                    minHeight: constraints.maxHeight,
                   ),
-                  child: IntrinsicHeight(
-                    child: Column(
-                    children: [
-                      const SizedBox(height: 38),
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isWide ? 36 : 28,
+                      vertical: isWide ? 24 : 0,
+                    ),
+                    child: IntrinsicHeight(
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 28),
 
-                      // Aura Bank Signature Monogram Logo
-                      const AuraLogo(
-                        size: 84,
-                        style: AuraLogoStyle.violet,
-                        borderRadius: 22,
-                      ),
+                          // Form Body: either standard credentials OR biometric-first view
+                          if (_hasAnyBiometric && !_showPasswordFields) ...[
+                            _buildBiometricFirstView(),
+                          ] else ...[
+                            _buildStandardLoginView(),
+                          ],
 
-                      const SizedBox(height: 20),
+                          const Spacer(),
 
-                      const Text(
-                        "Welcome Back!",
-                        style: TextStyle(
-                          fontSize: 27,
-                          fontWeight: FontWeight.w900,
-                          color: Color(0xFF10171C),
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      const Text(
-                        "Please enter your email and password",
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF7D8892),
-                        ),
-                      ),
-
-                      const SizedBox(height: 28),
-
-                      // Form Body: either standard credentials OR biometric-first view
-                      if (_hasAnyBiometric && !_showPasswordFields) ...[
-                        _buildBiometricFirstView(),
-                      ] else ...[
-                        _buildStandardLoginView(),
-                      ],
-
-                      const Spacer(),
-
-                      // Footer: Forgot Passcode? • Switch Account
-                      Padding(
-                        padding: const EdgeInsets.only(top: 16, bottom: 20),
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              GestureDetector(
-                                onTap: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Password recovery link sent to your registered email.'),
-                                      backgroundColor: brandViolet,
+                          // Footer: Forgot Passcode? • Switch Account
+                          Padding(
+                            padding: const EdgeInsets.only(top: 16, bottom: 20),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  GestureDetector(
+                                    onTap: () {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                              'Password recovery link sent to your registered email.'),
+                                          backgroundColor: brandViolet,
+                                        ),
+                                      );
+                                    },
+                                    child: const Text(
+                                      "Forgot Passcode?",
+                                      style: TextStyle(
+                                        color: Color(0xFF9AA3AB),
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
-                                  );
-                                },
-                                child: const Text(
-                                  "Forgot Passcode?",
-                                  style: TextStyle(
-                                    color: Color(0xFF9AA3AB),
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w500,
                                   ),
-                                ),
-                              ),
-                              const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 10),
-                                child: Icon(Icons.circle, size: 5, color: brandViolet),
-                              ),
-                              GestureDetector(
-                                onTap: () {
-                                  _usernameController.clear();
-                                  _passwordController.clear();
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Account switched. Enter your credentials.'),
-                                      backgroundColor: brandViolet,
+                                  const Padding(
+                                    padding:
+                                        EdgeInsets.symmetric(horizontal: 10),
+                                    child: Icon(Icons.circle,
+                                        size: 5, color: brandViolet),
+                                  ),
+                                  GestureDetector(
+                                    onTap: () {
+                                      _usernameController.clear();
+                                      _passwordController.clear();
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                              'Account switched. Enter your credentials.'),
+                                          backgroundColor: brandViolet,
+                                        ),
+                                      );
+                                    },
+                                    child: const Text(
+                                      "Switch Account",
+                                      style: TextStyle(
+                                        color: brandViolet,
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                  );
-                                },
-                                child: const Text(
-                                  "Switch Account",
-                                  style: TextStyle(
-                                    color: brandViolet,
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.bold,
                                   ),
-                                ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
-            ),
-          );
-        },
-      ),
-    ),
-  );
-}
+              );
+            },
+          ),
+        )),
+      ]),
+    );
+  }
 
   /// 1. Standard Login View (matches Top row of mockup: fields + Sign In + Biometrics below)
   Widget _buildStandardLoginView() {
@@ -389,11 +380,14 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           style: const TextStyle(fontSize: 14.5),
           decoration: InputDecoration(
             hintText: "Username",
-            hintStyle: const TextStyle(color: Color(0xFF9AA3AB), fontSize: 13.5),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
+            hintStyle:
+                const TextStyle(color: Color(0xFF9AA3AB), fontSize: 13.5),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: borderViolet.withValues(alpha: 0.6), width: 1.4),
+              borderSide: BorderSide(
+                  color: borderViolet.withValues(alpha: 0.6), width: 1.4),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
@@ -411,12 +405,16 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           style: const TextStyle(fontSize: 14.5),
           decoration: InputDecoration(
             hintText: "Password",
-            hintStyle: const TextStyle(color: Color(0xFF9AA3AB), fontSize: 13.5),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
+            hintStyle:
+                const TextStyle(color: Color(0xFF9AA3AB), fontSize: 13.5),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
             suffixIcon: IconButton(
               key: const ValueKey('passwordVisibilityToggle'),
               icon: Icon(
-                _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                _obscurePassword
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
                 color: brandViolet,
                 size: 20,
               ),
@@ -426,7 +424,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: borderViolet.withValues(alpha: 0.6), width: 1.4),
+              borderSide: BorderSide(
+                  color: borderViolet.withValues(alpha: 0.6), width: 1.4),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
@@ -444,7 +443,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           child: ElevatedButton(
             onPressed: _isLoading ? null : _onSignIn,
             style: ElevatedButton.styleFrom(
-              backgroundColor: _hasAnyBiometric ? disabledButtonBg : brandViolet,
+              backgroundColor:
+                  _hasAnyBiometric ? disabledButtonBg : brandViolet,
               foregroundColor: _hasAnyBiometric ? brandViolet : Colors.white,
               elevation: 0,
               shape: RoundedRectangleBorder(
@@ -462,7 +462,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: _hasAnyBiometric ? disabledButtonText : Colors.white,
+                      color:
+                          _hasAnyBiometric ? disabledButtonText : Colors.white,
                     ),
                   ),
           ),
@@ -504,7 +505,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               onPressed: _authenticateWithFingerprint,
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: borderViolet, width: 1.5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
               ),
               child: const Text(
                 'Use Fingerprints',
@@ -531,7 +533,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               backgroundColor: brandViolet,
               foregroundColor: Colors.white,
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
             ),
             child: const Text(
               'Use password instead',
@@ -563,7 +566,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           const SizedBox(height: 10),
           const Text(
             'Tap Fingerprint or Face ID to sign in',
-            style: TextStyle(fontSize: 11.5, color: Color(0xFF9AA3AB), fontWeight: FontWeight.w500),
+            style: TextStyle(
+                fontSize: 11.5,
+                color: Color(0xFF9AA3AB),
+                fontWeight: FontWeight.w500),
           ),
         ],
       );
@@ -575,7 +581,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           const SizedBox(height: 10),
           const Text(
             'Tap fingerprint sensor to sign in',
-            style: TextStyle(fontSize: 11.5, color: Color(0xFF9AA3AB), fontWeight: FontWeight.w500),
+            style: TextStyle(
+                fontSize: 11.5,
+                color: Color(0xFF9AA3AB),
+                fontWeight: FontWeight.w500),
           ),
         ],
       );
@@ -587,7 +596,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           const SizedBox(height: 10),
           const Text(
             'Tap Face ID to glance and sign in',
-            style: TextStyle(fontSize: 11.5, color: Color(0xFF9AA3AB), fontWeight: FontWeight.w500),
+            style: TextStyle(
+                fontSize: 11.5,
+                color: Color(0xFF9AA3AB),
+                fontWeight: FontWeight.w500),
           ),
         ],
       );
@@ -796,7 +808,8 @@ class _FaceIdIconPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _FaceIdIconPainter oldDelegate) => oldDelegate.color != color;
+  bool shouldRepaint(covariant _FaceIdIconPainter oldDelegate) =>
+      oldDelegate.color != color;
 }
 
 /// Interactive Biometric Verification Modal connected to real device hardware
@@ -854,7 +867,8 @@ class _BiometricAuthModalState extends State<_BiometricAuthModal> {
 
     try {
       final bool authenticated = await _biometricService.authenticate(
-        reason: 'Please scan your ${widget.authType} to verify and sign in to Aura Bank',
+        reason:
+            'Please scan your ${widget.authType} to verify and sign in to Aura Bank',
         biometricOnly: false,
       );
 
@@ -872,8 +886,7 @@ class _BiometricAuthModalState extends State<_BiometricAuthModal> {
       } else {
         setState(() {
           _hasError = true;
-          _errorMessage =
-              '${widget.authType} was cancelled or not recognized.';
+          _errorMessage = '${widget.authType} was cancelled or not recognized.';
         });
       }
     } catch (e) {
@@ -920,9 +933,11 @@ class _BiometricAuthModalState extends State<_BiometricAuthModal> {
             ),
             child: Center(
               child: _verified
-                  ? const Icon(Icons.check_circle_rounded, color: Color(0xFF17805F), size: 54)
+                  ? const Icon(Icons.check_circle_rounded,
+                      color: Color(0xFF17805F), size: 54)
                   : (_hasError
-                      ? const Icon(Icons.error_outline_rounded, color: Color(0xFFC8423B), size: 50)
+                      ? const Icon(Icons.error_outline_rounded,
+                          color: Color(0xFFC8423B), size: 50)
                       : widget.icon),
             ),
           ),
@@ -942,12 +957,14 @@ class _BiometricAuthModalState extends State<_BiometricAuthModal> {
             _verified
                 ? 'Logging into Aura Bank...'
                 : (_hasError
-                    ? (_errorMessage ?? 'Biometrics not recognized. Please try again.')
+                    ? (_errorMessage ??
+                        'Biometrics not recognized. Please try again.')
                     : widget.subtitle),
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,
-              color: _hasError ? const Color(0xFFC8423B) : const Color(0xFF7D8892),
+              color:
+                  _hasError ? const Color(0xFFC8423B) : const Color(0xFF7D8892),
             ),
           ),
           const SizedBox(height: 24),
@@ -961,7 +978,8 @@ class _BiometricAuthModalState extends State<_BiometricAuthModal> {
                   backgroundColor: const Color(0xFF10171C),
                   foregroundColor: Colors.white,
                   elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
                 ),
                 child: Text('Try ${widget.authType} Again'),
               ),
@@ -971,7 +989,8 @@ class _BiometricAuthModalState extends State<_BiometricAuthModal> {
               onPressed: () => Navigator.of(context).pop(),
               child: const Text(
                 'Cancel & Use Password',
-                style: TextStyle(color: Color(0xFF7D8892), fontWeight: FontWeight.w600),
+                style: TextStyle(
+                    color: Color(0xFF7D8892), fontWeight: FontWeight.w600),
               ),
             ),
           ] else if (!_verified) ...[
@@ -979,12 +998,63 @@ class _BiometricAuthModalState extends State<_BiometricAuthModal> {
               onPressed: () => Navigator.of(context).pop(),
               child: const Text(
                 'Cancel',
-                style: TextStyle(color: Color(0xFF7D8892), fontWeight: FontWeight.w600),
+                style: TextStyle(
+                    color: Color(0xFF7D8892), fontWeight: FontWeight.w600),
               ),
             ),
           ],
           const SizedBox(height: 8),
         ],
+      ),
+    );
+  }
+}
+
+/// Aurora sky behind the greeting. The form below stays plain paper.
+class _AuroraLoginHeader extends StatelessWidget {
+  const _AuroraLoginHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    final top = MediaQuery.paddingOf(context).top;
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
+      child: SizedBox(
+        height: 220 + top,
+        width: double.infinity,
+        child: AuroraBackground(
+          intensity: 0.9,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(28, top + 20, 28, 26),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const AuraWordmark(size: 30, onDark: true),
+                const Spacer(),
+                const Reveal(
+                  child: Text(
+                    "Welcome Back!",
+                    style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                        letterSpacing: -0.9),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Reveal(
+                  delay: const Duration(milliseconds: 90),
+                  child: Text(
+                    "Please enter your email and password",
+                    style: TextStyle(
+                        fontSize: 14.5,
+                        color: Colors.white.withValues(alpha: 0.72)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

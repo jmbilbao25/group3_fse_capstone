@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../models/bank_models.dart';
 import '../theme/aura_theme.dart';
 import 'aura_logo.dart';
+import 'motion.dart';
 
 /// Card system, ported from the Banking-App-Test deck and restyled for Aura.
 ///
@@ -26,9 +27,12 @@ class CardColourway {
 }
 
 const _colourways = [
-  CardColourway([AuraColors.sky, AuraColors.mint], [AuraColors.sky, AuraColors.mint]),
-  CardColourway([AuraColors.mint, Color(0xFF7FD6C0)], [Color(0xFF6FC7B0), AuraColors.mint]),
-  CardColourway([AuraColors.periwinkle, AuraColors.sky], [AuraColors.periwinkle, AuraColors.sky]),
+  CardColourway(
+      [AuraColors.sky, AuraColors.mint], [AuraColors.sky, AuraColors.mint]),
+  CardColourway([AuraColors.mint, Color(0xFF7FD6C0)],
+      [Color(0xFF6FC7B0), AuraColors.mint]),
+  CardColourway([AuraColors.periwinkle, AuraColors.sky],
+      [AuraColors.periwinkle, AuraColors.sky]),
 ];
 
 CardColourway colourwayFor(String id) {
@@ -58,12 +62,17 @@ class NetworkMark extends StatelessWidget {
           width: width,
           height: width / _aspect,
           child: switch (network) {
-            CardNetwork.mastercard => const CustomPaint(painter: _MastercardPainter()),
+            CardNetwork.mastercard =>
+              const CustomPaint(painter: _MastercardPainter()),
             CardNetwork.visa => DecoratedBox(
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(width * 0.1)),
+                decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(width * 0.1)),
                 child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: width * 0.12, vertical: width * 0.1),
-                  child: Image.asset('assets/brand/visa.webp', fit: BoxFit.contain, filterQuality: FilterQuality.medium),
+                  padding: EdgeInsets.symmetric(
+                      horizontal: width * 0.12, vertical: width * 0.1),
+                  child: Image.asset('assets/brand/visa.webp',
+                      fit: BoxFit.contain, filterQuality: FilterQuality.medium),
                 ),
               ),
           },
@@ -89,7 +98,8 @@ class _MastercardPainter extends CustomPainter {
     final right = Rect.fromCircle(center: Offset(size.width - r, r), radius: r);
     if (_cachedSize != size) {
       _cachedSize = size;
-      _cachedOverlap = Path.combine(PathOperation.intersect, Path()..addOval(left), Path()..addOval(right));
+      _cachedOverlap = Path.combine(PathOperation.intersect,
+          Path()..addOval(left), Path()..addOval(right));
     }
     canvas
       ..drawOval(left, _red)
@@ -104,7 +114,11 @@ class _MastercardPainter extends CustomPainter {
 /// The stock: ink, a horizon bloom and the aurora ribbon. [sheen] runs -1..1
 /// and moves the highlight across the face.
 class _CardStockPainter extends CustomPainter {
-  const _CardStockPainter({required this.colourway, this.sheen = 0, this.ribbon = true, this.frozen = false});
+  const _CardStockPainter(
+      {required this.colourway,
+      this.sheen = 0,
+      this.ribbon = true,
+      this.frozen = false});
 
   final CardColourway colourway;
   final double sheen;
@@ -172,7 +186,8 @@ class _CardStockPainter extends CustomPainter {
     );
 
     if (frozen) {
-      canvas.drawRect(rect, Paint()..color = const Color(0xFFDDEAF3).withValues(alpha: 0.38));
+      canvas.drawRect(rect,
+          Paint()..color = const Color(0xFFDDEAF3).withValues(alpha: 0.38));
     }
 
     // Milled edge.
@@ -187,7 +202,10 @@ class _CardStockPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _CardStockPainter old) =>
-      old.sheen != sheen || old.colourway != colourway || old.ribbon != ribbon || old.frozen != frozen;
+      old.sheen != sheen ||
+      old.colourway != colourway ||
+      old.ribbon != ribbon ||
+      old.frozen != frozen;
 }
 
 BoxDecoration _cardShadow(double lift) => BoxDecoration(
@@ -209,6 +227,8 @@ class AuraCardFace extends StatelessWidget {
     this.sheen = 0,
     this.lift = 1,
     this.balance,
+    this.balanceValue,
+    this.formatBalance,
     this.balanceVisible = true,
     this.onToggleBalance,
   });
@@ -217,6 +237,10 @@ class AuraCardFace extends StatelessWidget {
   final double sheen;
   final double lift;
   final String? balance;
+
+  /// When set with [formatBalance], the balance counts up on first show.
+  final double? balanceValue;
+  final String Function(double)? formatBalance;
   final bool balanceVisible;
   final VoidCallback? onToggleBalance;
 
@@ -233,7 +257,10 @@ class AuraCardFace extends StatelessWidget {
         child: ClipRRect(
           borderRadius: radius,
           child: CustomPaint(
-            painter: _CardStockPainter(colourway: colourwayFor(card.id), sheen: sheen, frozen: card.isLocked),
+            painter: _CardStockPainter(
+                colourway: colourwayFor(card.id),
+                sheen: sheen,
+                frozen: card.isLocked),
             child: Padding(
               padding: EdgeInsets.all(pad),
               child: Column(
@@ -242,14 +269,24 @@ class AuraCardFace extends StatelessWidget {
                   Row(
                     children: [
                       if (balance != null)
-                        Text('Balance', style: TextStyle(color: onInk, fontSize: w * 0.04, fontWeight: FontWeight.w500))
+                        Text('Balance',
+                            style: TextStyle(
+                                color: onInk,
+                                fontSize: w * 0.04,
+                                fontWeight: FontWeight.w500))
                       else
-                        AuraLogo(size: w * 0.085, borderRadius: w * 0.022, style: AuraLogoStyle.white, showBadgeContainer: false),
+                        AuraLogo(
+                            size: w * 0.085,
+                            borderRadius: w * 0.022,
+                            style: AuraLogoStyle.white,
+                            showBadgeContainer: false),
                       const Spacer(),
                       if (card.isLocked)
                         _Chip(label: 'Frozen', fontSize: w * 0.034)
                       else
-                        Icon(Icons.contactless_outlined, color: Colors.white.withValues(alpha: 0.85), size: w * 0.07),
+                        Icon(Icons.contactless_outlined,
+                            color: Colors.white.withValues(alpha: 0.85),
+                            size: w * 0.07),
                     ],
                   ),
                   if (balance != null) ...[
@@ -263,16 +300,15 @@ class AuraCardFace extends StatelessWidget {
                           key: ValueKey(balanceVisible),
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerLeft,
-                          child: Text(
-                            balanceVisible ? balance! : '₱ ••••••',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: w * 0.092,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: -0.6,
-                              fontFeatures: const [FontFeature.tabularFigures()],
-                            ),
-                          ),
+                          child: balanceVisible &&
+                                  balanceValue != null &&
+                                  formatBalance != null
+                              ? CountUpText(
+                                  value: balanceValue!,
+                                  format: formatBalance!,
+                                  style: _balanceStyle(w))
+                              : Text(balanceVisible ? balance! : '₱ ••••••',
+                                  style: _balanceStyle(w)),
                         ),
                       ),
                     ),
@@ -296,7 +332,10 @@ class AuraCardFace extends StatelessWidget {
                           card.holderName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: onInk, fontSize: w * 0.04, fontWeight: FontWeight.w500),
+                          style: TextStyle(
+                              color: onInk,
+                              fontSize: w * 0.04,
+                              fontWeight: FontWeight.w500),
                         ),
                       ),
                       NetworkMark(network: card.network, width: w * 0.15),
@@ -312,6 +351,14 @@ class AuraCardFace extends StatelessWidget {
   }
 }
 
+TextStyle _balanceStyle(double w) => TextStyle(
+      color: Colors.white,
+      fontSize: w * 0.092,
+      fontWeight: FontWeight.w600,
+      letterSpacing: -0.6,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+
 class _Chip extends StatelessWidget {
   const _Chip({required this.label, required this.fontSize});
   final String label;
@@ -319,12 +366,19 @@ class _Chip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: EdgeInsets.symmetric(horizontal: fontSize * 0.8, vertical: fontSize * 0.3),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(99)),
+        padding: EdgeInsets.symmetric(
+            horizontal: fontSize * 0.8, vertical: fontSize * 0.3),
+        decoration: BoxDecoration(
+            color: Colors.white, borderRadius: BorderRadius.circular(99)),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.ac_unit_rounded, size: fontSize * 1.1, color: AuraColors.ink),
+          Icon(Icons.ac_unit_rounded,
+              size: fontSize * 1.1, color: AuraColors.ink),
           SizedBox(width: fontSize * 0.3),
-          Text(label, style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w600, color: AuraColors.ink)),
+          Text(label,
+              style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.w600,
+                  color: AuraColors.ink)),
         ]),
       );
 }
@@ -342,7 +396,10 @@ class AuraCardBack extends StatelessWidget {
       final w = c.maxWidth;
       final radius = BorderRadius.circular(w * 0.055);
       final pad = w * 0.065;
-      final label = TextStyle(color: Colors.white.withValues(alpha: 0.56), fontSize: w * 0.032, letterSpacing: 1);
+      final label = TextStyle(
+          color: Colors.white.withValues(alpha: 0.56),
+          fontSize: w * 0.032,
+          letterSpacing: 1);
       final value = TextStyle(
         color: Colors.white,
         fontSize: w * 0.055,
@@ -355,12 +412,17 @@ class AuraCardBack extends StatelessWidget {
         child: ClipRRect(
           borderRadius: radius,
           child: CustomPaint(
-            painter: _CardStockPainter(colourway: colourwayFor(card.id), ribbon: false, frozen: card.isLocked),
+            painter: _CardStockPainter(
+                colourway: colourwayFor(card.id),
+                ribbon: false,
+                frozen: card.isLocked),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(height: pad * 0.8),
-                Container(height: w * 0.13, color: Colors.black.withValues(alpha: 0.55)),
+                Container(
+                    height: w * 0.13,
+                    color: Colors.black.withValues(alpha: 0.55)),
                 Expanded(
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(pad, pad * 0.8, pad, pad),
@@ -369,20 +431,27 @@ class AuraCardBack extends StatelessWidget {
                       children: [
                         Text('CARD NUMBER', style: label),
                         SizedBox(height: w * 0.01),
-                        FittedBox(fit: BoxFit.scaleDown, child: Text(card.cardNumber, style: value.copyWith(letterSpacing: 1.4))),
+                        FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(card.cardNumber,
+                                style: value.copyWith(letterSpacing: 1.4))),
                         const Spacer(),
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              Text('EXPIRES', style: label),
-                              Text(card.expiry, style: value),
-                            ]),
+                            Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('EXPIRES', style: label),
+                                  Text(card.expiry, style: value),
+                                ]),
                             SizedBox(width: w * 0.08),
-                            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              Text('CVV', style: label),
-                              Text(card.cvv, style: value),
-                            ]),
+                            Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('CVV', style: label),
+                                  Text(card.cvv, style: value),
+                                ]),
                             const Spacer(),
                             NetworkMark(network: card.network, width: w * 0.15),
                           ],
@@ -403,7 +472,11 @@ class AuraCardBack extends StatelessWidget {
 /// Turns a card over. Linear, so the face swap lands exactly mid-turn, and the
 /// incoming face is counter-rotated so its type is never mirrored.
 class FlipCard extends StatelessWidget {
-  const FlipCard({super.key, required this.showBack, required this.front, required this.back});
+  const FlipCard(
+      {super.key,
+      required this.showBack,
+      required this.front,
+      required this.back});
 
   final bool showBack;
   final Widget front;
@@ -444,10 +517,13 @@ class CardTilt extends StatefulWidget {
   State<CardTilt> createState() => _CardTiltState();
 }
 
-class _CardTiltState extends State<CardTilt> with SingleTickerProviderStateMixin {
+class _CardTiltState extends State<CardTilt>
+    with SingleTickerProviderStateMixin {
   final ValueNotifier<Offset> _tilt = ValueNotifier(Offset.zero);
-  late final AnimationController _settle = AnimationController(vsync: this, duration: AuraMotion.medium)
-    ..addListener(() => _tilt.value = Offset.lerp(_from, Offset.zero, AuraMotion.emphasized.transform(_settle.value))!);
+  late final AnimationController _settle = AnimationController(
+      vsync: this, duration: AuraMotion.medium)
+    ..addListener(() => _tilt.value = Offset.lerp(
+        _from, Offset.zero, AuraMotion.emphasized.transform(_settle.value))!);
   Offset _from = Offset.zero;
 
   void _track(Offset local, Size size) {
@@ -528,14 +604,18 @@ class AuraCardCarousel extends StatefulWidget {
 }
 
 class _AuraCardCarouselState extends State<AuraCardCarousel> {
-  late final PageController _controller =
-      PageController(initialPage: widget.initialIndex, viewportFraction: widget.viewportFraction)
-        ..addListener(_onScroll);
-  late final ValueNotifier<double> _page = ValueNotifier(widget.initialIndex.toDouble());
+  late final PageController _controller = PageController(
+      initialPage: widget.initialIndex,
+      viewportFraction: widget.viewportFraction)
+    ..addListener(_onScroll);
+  late final ValueNotifier<double> _page =
+      ValueNotifier(widget.initialIndex.toDouble());
   late int _settled = widget.initialIndex;
 
   void _onScroll() {
-    final value = _controller.hasClients && _controller.position.haveDimensions ? _controller.page : null;
+    final value = _controller.hasClients && _controller.position.haveDimensions
+        ? _controller.page
+        : null;
     if (value == null) return;
     _page.value = value;
     final settled = value.round().clamp(0, widget.cards.length - 1);
@@ -548,7 +628,10 @@ class _AuraCardCarouselState extends State<AuraCardCarousel> {
 
   void _tap(int index) {
     if (index != _page.value.round()) {
-      _controller.animateToPage(index, duration: AuraMotion.resolve(context, AuraMotion.medium), curve: AuraMotion.emphasized);
+      if (AuraMotion.reduced(context)) return _controller.jumpToPage(index);
+      _controller.animateToPage(index,
+          duration: AuraMotion.resolve(context, AuraMotion.medium),
+          curve: AuraMotion.emphasized);
       return;
     }
     widget.onCardTap?.call(widget.cards[index]);
@@ -567,7 +650,8 @@ class _AuraCardCarouselState extends State<AuraCardCarousel> {
   Widget build(BuildContext context) {
     final reduced = AuraMotion.reduced(context);
     return LayoutBuilder(builder: (context, c) {
-      final cardWidth = math.min(c.maxWidth * widget.viewportFraction - 16, widget.maxCardWidth);
+      final cardWidth = math.min(
+          c.maxWidth * widget.viewportFraction - 16, widget.maxCardWidth);
       final cardHeight = cardWidth / kCardAspect;
       return Column(
         children: [
@@ -591,12 +675,16 @@ class _AuraCardCarouselState extends State<AuraCardCarousel> {
                         height: cardHeight,
                         child: Semantics(
                           button: true,
-                          label: '${card.title}, ${card.network.label} ending ${card.last4}${card.isLocked ? ', frozen' : ''}',
+                          label:
+                              '${card.title}, ${card.network.label} ending ${card.last4}${card.isLocked ? ', frozen' : ''}',
                           child: GestureDetector(
                             onTap: () => _tap(index),
                             child: FlipCard(
                               showBack: card.id == widget.revealedCardId,
-                              front: AuraCardFace(card: card, sheen: reduced ? 0 : d.clamp(-1.0, 1.0), lift: lift),
+                              front: AuraCardFace(
+                                  card: card,
+                                  sheen: reduced ? 0 : d.clamp(-1.0, 1.0),
+                                  lift: lift),
                               back: AuraCardBack(card: card, lift: lift),
                             ),
                           ),
@@ -630,7 +718,8 @@ class _AuraCardCarouselState extends State<AuraCardCarousel> {
           if (widget.cards.length > 1)
             ValueListenableBuilder<double>(
               valueListenable: _page,
-              builder: (context, page, _) => PageDots(count: widget.cards.length, page: page),
+              builder: (context, page, _) =>
+                  PageDots(count: widget.cards.length, page: page),
             ),
         ],
       );
@@ -640,7 +729,12 @@ class _AuraCardCarouselState extends State<AuraCardCarousel> {
 
 /// Dots that stretch continuously with the page offset.
 class PageDots extends StatelessWidget {
-  const PageDots({super.key, required this.count, required this.page, this.color = AuraColors.ink, this.track});
+  const PageDots(
+      {super.key,
+      required this.count,
+      required this.page,
+      this.color = AuraColors.ink,
+      this.track});
 
   final int count;
   final double page;

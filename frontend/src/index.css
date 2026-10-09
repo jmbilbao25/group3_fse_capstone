@@ -1,332 +1,40 @@
-/* Self-hosted variable fonts. No external stylesheet request, so first paint
-   is not blocked on a third party and there is no layout shift on swap. */
-@import '@fontsource-variable/geist/index.css';
+@import '@fontsource-variable/onest/index.css';
 @import '@fontsource-variable/geist-mono/index.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ===========================================================================
-   THEME TOKENS
-
-   One theme is active for the entire document at a time. Sections never
-   invert: a light page has no dark panel dropped into the middle of it.
-   Values are space-separated RGB channels so Tailwind can apply its own
-   alpha channel through `rgb(var(--token) / <alpha-value>)`.
-   =========================================================================== */
-
-:root,
-[data-theme='light'] {
-  /* Surfaces, in elevation order. Crisp white and serene soft canvas */
-  --canvas: 248 249 252;
-  --surface: 255 255 255;
-  --raised: 255 255 255;
-  --sunken: 243 244 249;
-
-  /* Hairlines. Clean, subtle borders */
-  --line: 226 232 240;
-  --line-strong: 203 213 225;
-
-  /* Text. Deep readable slate for high contrast and visual calm */
-  --fg: 15 23 42;
-  --fg-muted: 71 85 105;
-  --fg-subtle: 148 163 184;
-  --fg-inverse: 255 255 255;
-
-  /* Aura Bank Signature Royal Violet */
-  --accent: 49 16 117;          /* #311075 */
-  --accent-hover: 38 12 92;      /* #260C5C */
-  --accent-soft: 245 243 255;    /* #F5F3FF */
-  --accent-line: 221 214 254;    /* #DDD6FE */
-  --accent-text: 49 16 117;      /* #311075 */
-
-  --shadow: 30 20 60;
-  color-scheme: light;
-}
-
-.dark,
-[data-theme='dark'] {
-  /* Deep Midnight Violet Palette */
-  --canvas: 15 13 25;
-  --surface: 24 21 41;
-  --raised: 34 30 56;
-  --sunken: 11 9 19;
-
-  --line: 45 40 71;
-  --line-strong: 65 59 99;
-
-  /* Contrast on dark surface */
-  --fg: 245 244 250;
-  --fg-muted: 165 160 185;
-  --fg-subtle: 118 112 138;
-  --fg-inverse: 15 13 25;
-
-  /* Royal Violet / Lavender Accent */
-  --accent: 147 98 255;
-  --accent-hover: 168 125 255;
-  --accent-soft: 38 31 66;
-  --accent-line: 76 60 125;
-  --accent-text: 168 125 255;
-
-  --shadow: 0 0 0;
-  color-scheme: dark;
-}
-
-/* ===========================================================================
-   BASE
-   =========================================================================== */
-
 @layer base {
-  * {
-    @apply border-line;
-  }
-
-  html {
-    -webkit-text-size-adjust: 100%;
-    /* No smooth-scroll: this is a task surface, and hijacked scrolling makes
-       keyboard paging feel broken. */
-  }
-
-  body {
-    @apply bg-canvas text-fg antialiased;
-    @apply font-sans text-base;
-    font-synthesis-weight: none;
-    text-rendering: optimizeLegibility;
-  }
-
-  /* Figures are compared vertically all over this product, so digits are
-     fixed-width and lining everywhere by default. */
-  :where(input, table, .tnum) {
-    font-variant-numeric: tabular-nums lining-nums;
-  }
-
-  .font-mono {
-    font-variant-numeric: tabular-nums lining-nums;
-    font-feature-settings: 'ss01';
-  }
-
-  /* One focus treatment for the whole product. Visible on any surface,
-     including inside the accent-filled buttons. */
-  :focus-visible {
-    @apply outline-none ring-2 ring-accent ring-offset-2;
-    ring-offset-color: rgb(var(--surface));
-  }
-
-  /* Only suppress the ring for pointer users who never needed it. */
-  :focus:not(:focus-visible) {
-    @apply outline-none;
-  }
-
-  ::selection {
-    background-color: rgb(var(--accent) / 0.18);
-    color: rgb(var(--fg));
-  }
-
-  /* Placeholders sit at 4.6:1 against the field, so they stay readable
-     instead of dissolving the way a default placeholder does. */
-  ::placeholder {
-    @apply text-fg-subtle;
-    opacity: 1;
-  }
-}
-
-/* Scrollbars are themed, not hidden. Hiding them removes the only cue that a
-   dense table has more rows below the fold. */
-@layer base {
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: rgb(var(--line-strong)) transparent;
-  }
-}
-
-@layer base {
-  ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-}
-
-@layer base {
-  ::-webkit-scrollbar-thumb {
-    background: rgb(var(--line-strong));
-    border: 3px solid transparent;
-    background-clip: content-box;
-    border-radius: 9999px;
-  }
-}
-
-@layer base {
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgb(var(--fg-subtle));
-    border: 3px solid transparent;
-    background-clip: content-box;
-  }
-}
-
-/* ===========================================================================
-   REDUCED MOTION
-   Non-negotiable. Everything collapses to an instant state change: nothing
-   in this product depends on motion to convey meaning.
-   =========================================================================== */
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-
-/* ===========================================================================
-   COMPONENT CLASSES
-   Only patterns repeated across many files live here. Anything used once
-   stays inline in its component.
-   =========================================================================== */
-
-@layer components {
-  /* A panel is the primary container: hairline, flat, no pillow radius.
-     Elevation is reserved for things that genuinely float. */
-  .panel {
-    @apply bg-surface border border-line rounded-lg;
-  }
-
-  /* Section label. Rationed deliberately, see the eyebrow budget in the
-     redesign notes: these are for table headers and field groups, not for
-     decorating every heading. */
-  .label {
-    @apply text-2xs font-medium uppercase tracking-wider text-fg-subtle;
-  }
-
-  /* Monetary figure. Tabular, tight, never wrapped mid-number. */
-  .figure {
-    @apply font-mono tabular-nums whitespace-nowrap;
-  }
+  html { -webkit-font-smoothing: antialiased; }
+  body { @apply bg-paper text-ink font-sans; font-feature-settings: 'tnum' 1; }
+  ::selection { background: #A7E8D1; color: #10171C; }
+  :focus-visible { outline: 2px solid #2F78A8; outline-offset: 2px; border-radius: 6px; }
+  * { scrollbar-width: thin; scrollbar-color: #D5DADF transparent; }
+  input, textarea, select { caret-color: #1C6E5A; }
 }
 
 @layer components {
-  /* Skeleton placeholder. Shaped like the content it stands in for, so the
-     layout does not jump when data lands. */
-  .skeleton {
-    @apply relative overflow-hidden rounded bg-sunken;
-  }
-
-  .skeleton::after {
-    content: '';
-    @apply absolute inset-0 -translate-x-full animate-shimmer;
-    background-image: linear-gradient(
-      90deg,
-      transparent,
-      rgb(var(--fg) / 0.045),
-      transparent
-    );
-  }
-
-  /* Production-grade precision card highlight & subtle depth gradients */
-  .card-highlight {
-    position: relative;
-  }
-  .card-highlight::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, rgba(var(--accent) / 0.45) 0%, rgba(var(--line) / 0.8) 45%, rgba(var(--line) / 0.15) 100%);
-    pointer-events: none;
-    z-index: 1;
-  }
-
-  .surface-gradient {
-    background: linear-gradient(180deg, rgb(var(--surface)) 0%, rgb(var(--sunken) / 0.5) 100%);
-  }
-
-  .hairline-gradient {
-    background: linear-gradient(90deg, rgba(var(--accent) / 0.5) 0%, rgba(var(--accent) / 0.15) 60%, transparent 100%);
-  }
+  .panel { @apply bg-white rounded-2xl shadow-card; }
+  .label { @apply text-2xs font-semibold uppercase tracking-[.08em] text-ink-400; }
+  .skeleton { @apply rounded-lg bg-[linear-gradient(90deg,#EAECEE_25%,#F4F5F6_50%,#EAECEE_75%)] bg-[length:200%_100%] animate-shimmer; }
+  .row-enter { animation: rise .5s cubic-bezier(0.16,1,0.3,1) both; animation-delay: calc(var(--i, 0) * 35ms); }
 }
 
-@keyframes enterUp {
-  0% {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-enter {
-  animation: enterUp 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.stagger-1 { animation-delay: 40ms; }
-.stagger-2 { animation-delay: 80ms; }
-.stagger-3 { animation-delay: 120ms; }
-.stagger-4 { animation-delay: 160ms; }
+/* Aurora: three blurred curtains. Blur is applied once to static layers; only
+   transform animates, so the compositor moves them without repainting. */
+.aurora { position: absolute; inset: 0; overflow: hidden; background: #10171C; isolation: isolate; }
+.aurora::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 45%, rgba(16,23,28,.55) 85%, rgba(16,23,28,.85)); }
+.aurora span { position: absolute; border-radius: 50%; filter: blur(48px); opacity: .8; will-change: transform; }
+.aurora span:nth-child(1) { width: 70%; height: 46%; left: -10%; top: 6%; background: linear-gradient(90deg, #97CFF3, #A7E8D1); animation: drift-a 22s ease-in-out infinite alternate; }
+.aurora span:nth-child(2) { width: 60%; height: 34%; right: -12%; top: 24%; background: linear-gradient(90deg, #A7E8D1, #7FD6C0); animation: drift-b 26s ease-in-out infinite alternate; }
+.aurora span:nth-child(3) { width: 46%; height: 24%; left: 26%; top: -4%; background: linear-gradient(90deg, #BEC6F7, #97CFF3); opacity: .55; animation: drift-c 19s ease-in-out infinite alternate; }
+.aurora i { position: absolute; inset: 0; background-image: radial-gradient(1px 1px at 12% 18%, #fff8, transparent), radial-gradient(1px 1px at 38% 9%, #fff6, transparent), radial-gradient(1.4px 1.4px at 66% 22%, #fff9, transparent), radial-gradient(1px 1px at 84% 12%, #fff5, transparent), radial-gradient(1px 1px at 22% 36%, #fff5, transparent), radial-gradient(1.2px 1.2px at 74% 40%, #fff7, transparent), radial-gradient(1px 1px at 52% 30%, #fff4, transparent); animation: twinkle 5s ease-in-out infinite alternate; }
+@keyframes drift-a { to { transform: translate3d(14%, 8%, 0) rotate(8deg) scale(1.1); } }
+@keyframes drift-b { to { transform: translate3d(-16%, -6%, 0) rotate(-10deg) scale(1.05); } }
+@keyframes drift-c { to { transform: translate3d(10%, 12%, 0) scale(1.2); } }
+@keyframes twinkle { to { opacity: .45; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-enter {
-    animation: none !important;
-  }
-}
-
-/* ===========================================================================
-   PRINT
-   A printed transaction receipt is a real banking artefact, so it gets a real
-   stylesheet: forced light, no chrome, no interactive affordances.
-   =========================================================================== */
-
-@media print {
-  body * {
-    visibility: hidden !important;
-  }
-
-  #printable-receipt,
-  #printable-receipt * {
-    visibility: visible !important;
-  }
-
-  #printable-receipt .no-print {
-    display: none !important;
-  }
-}
-
-@media print {
-  #printable-receipt {
-    position: fixed !important;
-    inset: 0 auto auto 0 !important;
-    width: 100% !important;
-    max-width: 480px !important;
-    margin: 0 auto !important;
-    padding: 24px !important;
-    border: none !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-    background: #ffffff !important;
-    color: #101215 !important;
-  }
-}
-
-@media print {
-  /* Flatten every themed token to ink on paper. Tinted backgrounds cost
-     toner and carry no meaning once the receipt is physical. */
-  #printable-receipt * {
-    color: #101215 !important;
-    background: transparent !important;
-    border-color: #cdd1d7 !important;
-    box-shadow: none !important;
-  }
-
-  #printable-receipt .print-text-muted {
-    color: #545a63 !important;
-  }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }

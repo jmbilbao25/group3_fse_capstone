@@ -1,7 +1,6 @@
 package com.fse.banking.account.controller;
 
 import com.fse.banking.account.dto.KycProfileResponse;
-import com.fse.banking.account.dto.KycRejectRequest;
 import com.fse.banking.account.dto.KycUploadIntentRequest;
 import com.fse.banking.account.dto.KycUploadIntentResponse;
 import com.fse.banking.account.dto.KycVerifyRequest;
@@ -23,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -73,25 +73,52 @@ public class KycController {
         return ResponseEntity.ok(profile);
     }
 
-    @PostMapping("/{userId}/approve")
-    public ResponseEntity<KycProfileResponse> approveKyc(
-            @PathVariable("userId") String userId,
-            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
-
-        String reviewerId = extractCallerId(authHeader, "SYSTEM_ADMIN");
-        KycProfileResponse response = kycService.approveKyc(userId, reviewerId);
-        return ResponseEntity.ok(response);
+    /** Review queue: Laya result, summary, confidence and maker/checker state. */
+    @GetMapping("/reviews")
+    public ResponseEntity<?> listReviews(@RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
+        if (staffId(authHeader) == null) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        return ResponseEntity.ok(kycService.listReviews());
     }
 
-    @PostMapping("/{userId}/reject")
-    public ResponseEntity<KycProfileResponse> rejectKyc(
-            @PathVariable("userId") String userId,
-            @Valid @RequestBody KycRejectRequest request,
-            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
+    /** One application with short-lived links to the ID front, back and selfie. */
+    @GetMapping("/{userId}/review")
+    public ResponseEntity<?> getReview(@PathVariable("userId") String userId,
+                                       @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
+        if (staffId(authHeader) == null) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        return ResponseEntity.ok(kycService.reviewWithImages(userId));
+    }
 
-        String reviewerId = extractCallerId(authHeader, "SYSTEM_ADMIN");
-        KycProfileResponse response = kycService.rejectKyc(userId, reviewerId, request.getReason());
-        return ResponseEntity.ok(response);
+    /** Maker: recommend APPROVE or REJECT. */
+    @PostMapping("/{userId}/recommend")
+    public ResponseEntity<?> recommend(@PathVariable("userId") String userId,
+                                       @RequestBody Map<String, String> body,
+                                       @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
+        String maker = staffId(authHeader);
+        if (maker == null) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        return ResponseEntity.ok(kycService.recommend(userId, maker, body.get("decision"), body.get("note")));
+    }
+
+    /** Checker: CONFIRM applies the maker's decision, RETURN sends it back. */
+    @PostMapping("/{userId}/check")
+    public ResponseEntity<?> check(@PathVariable("userId") String userId,
+                                   @RequestBody Map<String, String> body,
+                                   @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
+        String checker = staffId(authHeader);
+        if (checker == null) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        String action = body.getOrDefault("action", "");
+        if (!"CONFIRM".equals(action) && !"RETURN".equals(action)) {
+            throw new IllegalArgumentException("action must be CONFIRM or RETURN");
+        }
+        return ResponseEntity.ok(kycService.check(userId, checker, "CONFIRM".equals(action), body.get("note")));
+    }
+
+    /** Staff id from a valid bearer token, or null for customers and anonymous callers. */
+    private String staffId(String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) return null;
+        String token = authHeader.substring(7);
+        if (!jwtProvider.validateToken(token)) return null;
+        String role = String.valueOf(jwtProvider.getRole(token)).replace("ROLE_", "");
+        return "ADMIN".equals(role) || "TELLER".equals(role) || "MANAGER".equals(role) ? jwtProvider.getUserId(token) : null;
     }
 
     private String extractCallerId(String authHeader, String defaultId) {

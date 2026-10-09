@@ -203,9 +203,7 @@ class _HomeScreenState extends State<HomeScreen> {
           // Middle: Balance Amount
           Text(
             _isBalanceVisible
-                ? (_bankService.availableBalance > 0
                 ? _formatBalance(_bankService.availableBalance)
-                : '₱ 50,000,000')
                 : '₱ ••••••••',
             style: const TextStyle(
               fontSize: 32,

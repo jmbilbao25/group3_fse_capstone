@@ -108,29 +108,46 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     if (!mounted) return;
     setState(() => _isLoading = false);
 
+    final displayName = authResult.fullName ??
+        (authResult.persona != null ? authResult.persona!.name : 'Juan Dela Cruz');
+    final activeAccNum = authResult.accountNumber ??
+        (authResult.persona != null ? authResult.persona!.accountId : '1000-2000-3001');
+    final liveBal = authResult.availableBalance ??
+        (authResult.persona != null ? authResult.persona!.balance : 22891002.0);
+
     if (authResult.status == AuthStatus.mfaRequired) {
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (ctx) => OtpVerificationScreen(
             email: authResult.maskedEmail ?? email,
             rawEmail: email,
-            userId: authResult.userId ?? 'USR-0001',
+            userId: authResult.userId ?? 'usr-1001-cst-001',
             persona: authResult.persona,
             onVerified: () {
               Navigator.of(ctx).pop();
+              _bankService.updateUserProfile(
+                name: displayName,
+                email: authResult.email ?? email,
+                phoneNumber: authResult.phoneNumber,
+              );
+              _bankService.availableBalance = liveBal;
+              _bankService.savingsAccountNumber = activeAccNum;
+              if (authResult.primaryAccountId != null) {
+                _bankService.activeAccountId = authResult.primaryAccountId!;
+              }
+
               if (AuthApiService().isDeviceApproved == false) {
                 Navigator.of(context).pushReplacement(
                   MaterialPageRoute(
                     builder: (pCtx) => PendingApprovalScreen(
-                      user: authResult.persona ??
-                          UserPersona(
-                            name: 'Aura User',
-                            role: 'Customer',
-                            email: email,
-                            password: password,
-                            accountId: '1000-4491-0023',
-                            balance: 250000.0,
-                          ),
+                      user: UserPersona(
+                        name: displayName,
+                        role: authResult.role ?? 'Customer',
+                        email: authResult.email ?? email,
+                        password: password,
+                        accountId: activeAccNum,
+                        balance: liveBal,
+                      ),
                       onApproved: () {
                         Navigator.of(pCtx).pushReplacement(
                           MaterialPageRoute(builder: (_) => const AppShell()),
@@ -154,18 +171,28 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       );
     } else if (authResult.status == AuthStatus.pendingApproval ||
         (authResult.status == AuthStatus.authenticated && authResult.isApproved == false)) {
+      _bankService.updateUserProfile(
+        name: displayName,
+        email: authResult.email ?? email,
+        phoneNumber: authResult.phoneNumber,
+      );
+      _bankService.availableBalance = liveBal;
+      _bankService.savingsAccountNumber = activeAccNum;
+      if (authResult.primaryAccountId != null) {
+        _bankService.activeAccountId = authResult.primaryAccountId!;
+      }
+
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (pCtx) => PendingApprovalScreen(
-            user: authResult.persona ??
-                UserPersona(
-                  name: 'Aura User',
-                  role: 'Customer',
-                  email: email,
-                  password: password,
-                  accountId: '1000-4491-0023',
-                  balance: 250000.0,
-                ),
+            user: UserPersona(
+              name: displayName,
+              role: authResult.role ?? 'Customer',
+              email: authResult.email ?? email,
+              password: password,
+              accountId: activeAccNum,
+              balance: liveBal,
+            ),
             onApproved: () {
               Navigator.of(pCtx).pushReplacement(
                 MaterialPageRoute(builder: (_) => const AppShell()),
@@ -179,14 +206,17 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         ),
       );
     } else if (authResult.status == AuthStatus.authenticated) {
-      if (authResult.persona != null) {
-        _bankService.updateUserProfile(
-          name: authResult.persona!.name,
-          email: authResult.persona!.email,
-        );
-        _bankService.availableBalance = authResult.persona!.balance;
-        _bankService.activeAccountId = authResult.persona!.accountId;
+      _bankService.updateUserProfile(
+        name: displayName,
+        email: authResult.email ?? email,
+        phoneNumber: authResult.phoneNumber,
+      );
+      _bankService.availableBalance = liveBal;
+      _bankService.savingsAccountNumber = activeAccNum;
+      if (authResult.primaryAccountId != null) {
+        _bankService.activeAccountId = authResult.primaryAccountId!;
       }
+
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const AppShell()),
       );

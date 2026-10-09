@@ -162,18 +162,18 @@ class WebSidebar extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'PHP Savings •••• 9081',
-                  style: TextStyle(
+                Text(
+                  'PHP Savings •••• ${BankService().savingsAccountNumber.length >= 4 ? BankService().savingsAccountNumber.substring(BankService().savingsAccountNumber.length - 4) : "3001"}',
+                  style: const TextStyle(
                     fontSize: 11,
                     color: Color(0xFF6B7280),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  'PHP 1,248,930.50',
-                  style: TextStyle(
+                Text(
+                  'PHP ${BankService().availableBalance.toStringAsFixed(2).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}',
+                  style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
                     color: Color(0xFF1E103F),

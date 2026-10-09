@@ -53,4 +53,31 @@ public class LoginResponse {
 
     @JsonProperty("device_type")
     private String deviceType;
+
+    @JsonProperty("full_name")
+    private String fullName;
+
+    @JsonProperty("first_name")
+    private String firstName;
+
+    @JsonProperty("last_name")
+    private String lastName;
+
+    @JsonProperty("email")
+    private String email;
+
+    @JsonProperty("phone_number")
+    private String phoneNumber;
+
+    @JsonProperty("primary_account_id")
+    private String primaryAccountId;
+
+    @JsonProperty("account_number")
+    private String accountNumber;
+
+    @JsonProperty("available_balance")
+    private java.math.BigDecimal availableBalance;
+
+    @JsonProperty("currency")
+    private String currency;
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../models/user_persona.dart';
 import '../../services/auth_api_service.dart';
+import '../../services/bank_service.dart';
 import '../../services/otp_service.dart';
 import '../../theme/aura_theme.dart';
 import '../app_shell.dart';
@@ -210,15 +211,14 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
                 builder: (ctx) => PendingApprovalScreen(
-                  user: widget.persona ??
-                      UserPersona(
-                        name: 'Aura User',
-                        role: 'Customer',
-                        email: widget.email,
-                        password: '',
-                        accountId: '1000-4491-0023',
-                        balance: 250000.0,
-                      ),
+                  user: UserPersona(
+                    name: BankService().user.name.isNotEmpty ? BankService().user.name : (widget.persona?.name ?? 'Juan Dela Cruz'),
+                    role: widget.persona?.role ?? 'Customer',
+                    email: BankService().user.email.isNotEmpty ? BankService().user.email : widget.email,
+                    password: '',
+                    accountId: BankService().savingsAccountNumber,
+                    balance: BankService().availableBalance,
+                  ),
                   onApproved: () {
                     Navigator.of(ctx).pushReplacement(
                       MaterialPageRoute(

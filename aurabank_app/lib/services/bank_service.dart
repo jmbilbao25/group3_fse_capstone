@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/bank_models.dart';
+import 'device_storage.dart';
 
 enum AppEnvironment { local, prod }
 
@@ -99,21 +100,21 @@ class BankService extends ChangeNotifier {
 
   // Active User Profile
   final UserProfile user = UserProfile(
-    name: 'Elijah Riley Montefalco',
-    phoneNumber: '+63 967 830 4637',
-    email: 'elijahriley.montefalco@gmail.com',
-    address: 'Alegria, Bukidnon',
-    dob: 'July 10, 1999',
+    name: 'Juan Dela Cruz',
+    phoneNumber: '+63 917 123 4567',
+    email: 'juan.dc@email.com',
+    address: 'Aura Financial Tower, BGC, Taguig City',
+    dob: 'May 12, 1990',
     gender: 'Male',
-    civilStatus: 'Married',
+    civilStatus: 'Single',
     faceIdEnabled: false,
     fingerprintEnabled: false,
     pushAlertsEnabled: true,
   );
 
-  // Available Balance (defaults to ₱50,000,000 as seen in UI, or real backend balance)
-  double availableBalance = 50000000.0;
-  final String savingsAccountNumber = '123456789123';
+  // Available Balance (dynamically updated from Oracle XE balance_master)
+  double availableBalance = 22891002.0;
+  String savingsAccountNumber = '1000-2000-3001';
   String activeAccountId = '1000-2000-3001';
 
   // Bank Cards
@@ -733,31 +734,47 @@ class BankService extends ChangeNotifier {
     String? gender,
     String? civilStatus,
   }) {
-    if (name != null) user.name = name;
-    if (phoneNumber != null) user.phoneNumber = phoneNumber;
-    if (email != null) user.email = email;
-    if (address != null) user.address = address;
-    if (dob != null) user.dob = dob;
-    if (gender != null) user.gender = gender;
-    if (civilStatus != null) user.civilStatus = civilStatus;
+    if (name != null && name.isNotEmpty) {
+      user.name = name;
+      if (cards.isNotEmpty) {
+        cards[0].holderName = name;
+      }
+    }
+    if (phoneNumber != null && phoneNumber.isNotEmpty) user.phoneNumber = phoneNumber;
+    if (email != null && email.isNotEmpty) user.email = email;
+    if (address != null && address.isNotEmpty) user.address = address;
+    if (dob != null && dob.isNotEmpty) user.dob = dob;
+    if (gender != null && gender.isNotEmpty) user.gender = gender;
+    if (civilStatus != null && civilStatus.isNotEmpty) user.civilStatus = civilStatus;
     notifyListeners();
   }
 
   // Fetch live accounts & transactions from backend database if running
   Future<void> syncWithBackend() async {
     try {
-      // 1. Fetch Accounts for U1001 from Oracle / Account Service
+      final token = DeviceStorage.getAccessToken() ?? 'active_token';
+      final userId = DeviceStorage.getUserId() ?? 'usr-1001-cst-001';
+      final headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      };
+
+      // 1. Fetch Accounts for active user from Oracle / Account Service
       final accRes = await http
-          .get(Uri.parse('$baseUrl/api/v1/accounts?userId=U1001'))
-          .timeout(const Duration(seconds: 2));
+          .get(Uri.parse('$baseUrl/api/v1/accounts?userId=$userId'), headers: headers)
+          .timeout(const Duration(seconds: 3));
 
       if (accRes.statusCode == 200) {
         final List<dynamic> accList = jsonDecode(accRes.body);
         if (accList.isNotEmpty) {
           final firstAcc = accList.first;
           final accId = firstAcc['account_id'] ?? firstAcc['accountId'];
+          final accNum = firstAcc['account_number'] ?? firstAcc['accountNumber'];
           if (accId != null) {
             activeAccountId = accId.toString();
+          }
+          if (accNum != null) {
+            savingsAccountNumber = accNum.toString();
           }
           if (firstAcc['availableBalance'] != null) {
             availableBalance = (firstAcc['availableBalance'] as num).toDouble();
@@ -766,8 +783,8 @@ class BankService extends ChangeNotifier {
           } else if (accId != null) {
             try {
               final balRes = await http
-                  .get(Uri.parse('$baseUrl/api/v1/accounts/$accId/balance'))
-                  .timeout(const Duration(seconds: 2));
+                  .get(Uri.parse('$baseUrl/api/v1/accounts/$accId/balance'), headers: headers)
+                  .timeout(const Duration(seconds: 3));
               if (balRes.statusCode == 200) {
                 final balData = jsonDecode(balRes.body);
                 if (balData['available_balance'] != null) {
@@ -781,8 +798,8 @@ class BankService extends ChangeNotifier {
 
       // 2. Fetch Immutable Audit Records from PostgreSQL Ledger Engine
       final auditRes = await http
-          .get(Uri.parse('$baseUrl/api/v1/ledger/audit'))
-          .timeout(const Duration(seconds: 2));
+          .get(Uri.parse('$baseUrl/api/v1/ledger/audit'), headers: headers)
+          .timeout(const Duration(seconds: 3));
 
       if (auditRes.statusCode == 200) {
         final List<dynamic> auditList = jsonDecode(auditRes.body);

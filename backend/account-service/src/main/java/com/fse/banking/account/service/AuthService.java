@@ -8,6 +8,8 @@ import com.fse.banking.account.dto.RegisterResponse;
 import com.fse.banking.account.dto.VerifyLoginOtpRequest;
 import com.fse.banking.account.model.UserEntity;
 import com.fse.banking.account.repository.UserRepository;
+import com.fse.banking.account.repository.AccountRepository;
+import com.fse.banking.account.repository.BalanceMasterRepository;
 import com.fse.banking.account.security.JwtProvider;
 import com.fse.banking.account.security.RedisSessionStore;
 import com.fse.banking.account.security.model.RefreshTokenMetadata;
@@ -41,6 +43,8 @@ import java.util.concurrent.ThreadLocalRandom;
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final AccountRepository accountRepository;
+    private final BalanceMasterRepository balanceMasterRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
     private final RedisSessionStore redisSessionStore;
@@ -342,6 +346,28 @@ public class AuthService {
         redisSessionStore.saveRefreshToken(tokenMetadata, REFRESH_TOKEN_TTL);
         redisSessionStore.addToTokenFamily(sessionId, refreshTokenId);
 
+        String fullName = (user.getFirstName() + " " + (user.getLastName() != null ? user.getLastName() : "")).trim();
+        String primaryAccId = null;
+        String primaryAccNum = null;
+        java.math.BigDecimal availBalance = java.math.BigDecimal.ZERO;
+        String currency = "PHP";
+
+        try {
+            List<com.fse.banking.account.model.AccountEntity> userAccounts = accountRepository.findByUserId(user.getUserId());
+            if (userAccounts != null && !userAccounts.isEmpty()) {
+                com.fse.banking.account.model.AccountEntity acc = userAccounts.get(0);
+                primaryAccId = acc.getAccountId();
+                primaryAccNum = acc.getAccountNumber();
+                currency = acc.getCurrency() != null ? acc.getCurrency() : "PHP";
+                Optional<com.fse.banking.account.model.BalanceMasterEntity> bm = balanceMasterRepository.findByAccountId(primaryAccId);
+                if (bm.isPresent()) {
+                    availBalance = bm.get().getAvailableBalance();
+                }
+            }
+        } catch (Exception ex) {
+            log.warn("Could not query account/balance for user {}: {}", user.getUserId(), ex.getMessage());
+        }
+
         LoginResponse loginResponse = LoginResponse.builder()
                 .status(isApproved ? "AUTHENTICATED" : (isThirdDevice ? "PENDING_CONFIRMATION" : "PENDING_APPROVAL"))
                 .accessToken(accessToken)
@@ -349,6 +375,15 @@ public class AuthService {
                 .expiresInSeconds(jwtProvider.getAccessTokenExpirationSeconds())
                 .role(roleAuthority)
                 .userId(user.getUserId())
+                .fullName(fullName)
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .email(user.getEmail())
+                .phoneNumber(user.getPhoneNumber())
+                .primaryAccountId(primaryAccId)
+                .accountNumber(primaryAccNum)
+                .availableBalance(availBalance)
+                .currency(currency)
                 .deviceId(resolvedDeviceId)
                 .deviceName(resolvedDeviceName)
                 .deviceType(resolvedDeviceType)

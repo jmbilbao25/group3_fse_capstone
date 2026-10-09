@@ -72,7 +72,7 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
         {
           'type': 'Savings',
           'title': 'Savings Account',
-          'accountNo': 'AUR-SAV-9821(1000-2000-3001)',
+          'accountNo': 'AUR-SAV-9821 (${_bankService.savingsAccountNumber})',
           'balance': _bankService.availableBalance,
         },
         {

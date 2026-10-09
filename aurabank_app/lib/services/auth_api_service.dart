@@ -87,6 +87,13 @@ class AuthLoginResult {
   final bool? isPrimaryDevice;
   final bool? isApproved;
   final String? primaryDeviceId;
+  final String? fullName;
+  final String? email;
+  final String? phoneNumber;
+  final String? primaryAccountId;
+  final String? accountNumber;
+  final double? availableBalance;
+  final String? currency;
 
   AuthLoginResult({
     required this.status,
@@ -102,6 +109,13 @@ class AuthLoginResult {
     this.isPrimaryDevice,
     this.isApproved,
     this.primaryDeviceId,
+    this.fullName,
+    this.email,
+    this.phoneNumber,
+    this.primaryAccountId,
+    this.accountNumber,
+    this.availableBalance,
+    this.currency,
   });
 }
 
@@ -116,6 +130,13 @@ class AuthVerifyResult {
   final bool? isPrimaryDevice;
   final bool? isApproved;
   final String? primaryDeviceId;
+  final String? fullName;
+  final String? email;
+  final String? phoneNumber;
+  final String? primaryAccountId;
+  final String? accountNumber;
+  final double? availableBalance;
+  final String? currency;
 
   AuthVerifyResult({
     required this.success,
@@ -128,6 +149,13 @@ class AuthVerifyResult {
     this.isPrimaryDevice,
     this.isApproved,
     this.primaryDeviceId,
+    this.fullName,
+    this.email,
+    this.phoneNumber,
+    this.primaryAccountId,
+    this.accountNumber,
+    this.availableBalance,
+    this.currency,
   });
 }
 
@@ -266,6 +294,29 @@ class AuthApiService {
           currentUserId = data['user_id'] as String?;
           final resolvedType = data['device_type'] as String? ?? currentDeviceType;
 
+          final fullName = data['full_name'] as String?;
+          final userEmail = data['email'] as String? ?? email;
+          final phone = data['phone_number'] as String?;
+          final primaryAccId = data['primary_account_id'] as String?;
+          final accNumber = data['account_number'] as String?;
+          final balance = (data['available_balance'] as num?)?.toDouble();
+          final curr = data['currency'] as String? ?? 'PHP';
+
+          BankService().updateUserProfile(
+            name: fullName,
+            email: userEmail,
+            phoneNumber: phone,
+          );
+          if (balance != null) {
+            BankService().availableBalance = balance;
+          }
+          if (primaryAccId != null) {
+            BankService().activeAccountId = primaryAccId;
+          }
+          if (accNumber != null) {
+            BankService().savingsAccountNumber = accNumber;
+          }
+
           if (statusStr == 'MFA_REQUIRED') {
             final masked = data['masked_email'] as String? ?? email;
 
@@ -280,6 +331,13 @@ class AuthApiService {
               isPrimaryDevice: currentIsPrimaryDevice,
               isApproved: currentIsApproved,
               primaryDeviceId: currentPrimaryDeviceId,
+              fullName: fullName,
+              email: userEmail,
+              phoneNumber: phone,
+              primaryAccountId: primaryAccId,
+              accountNumber: accNumber,
+              availableBalance: balance,
+              currency: curr,
             );
           } else if (isPendingStatus) {
             if (currentAccessToken != null) {
@@ -300,6 +358,13 @@ class AuthApiService {
               isPrimaryDevice: currentIsPrimaryDevice,
               isApproved: false,
               primaryDeviceId: currentPrimaryDeviceId,
+              fullName: fullName,
+              email: userEmail,
+              phoneNumber: phone,
+              primaryAccountId: primaryAccId,
+              accountNumber: accNumber,
+              availableBalance: balance,
+              currency: curr,
             );
           } else {
             if (currentAccessToken != null) {
@@ -320,6 +385,13 @@ class AuthApiService {
               isPrimaryDevice: currentIsPrimaryDevice,
               isApproved: currentIsApproved,
               primaryDeviceId: currentPrimaryDeviceId,
+              fullName: fullName,
+              email: userEmail,
+              phoneNumber: phone,
+              primaryAccountId: primaryAccId,
+              accountNumber: accNumber,
+              availableBalance: balance,
+              currency: curr,
             );
           }
         } else if (response.statusCode == 401 || response.statusCode == 403) {
@@ -420,6 +492,31 @@ class AuthApiService {
           currentPrimaryDeviceId = data['primary_device_id'] as String?;
           currentAccessToken = data['access_token'] as String?;
           final resolvedType = data['device_type'] as String? ?? currentDeviceType;
+          final fullName = data['full_name'] as String?;
+          final userEmail = data['email'] as String? ?? currentEmail;
+          final phone = data['phone_number'] as String?;
+          final primaryAccId = data['primary_account_id'] as String?;
+          final accNumber = data['account_number'] as String?;
+          final balance = (data['available_balance'] as num?)?.toDouble();
+          final curr = data['currency'] as String? ?? 'PHP';
+
+          if (fullName != null || userEmail != null || phone != null) {
+            BankService().updateUserProfile(
+              name: fullName,
+              email: userEmail,
+              phoneNumber: phone,
+            );
+          }
+          if (balance != null) {
+            BankService().availableBalance = balance;
+          }
+          if (primaryAccId != null) {
+            BankService().activeAccountId = primaryAccId;
+          }
+          if (accNumber != null) {
+            BankService().savingsAccountNumber = accNumber;
+          }
+
           if (currentAccessToken != null) {
             DeviceStorage.saveAccessToken(currentAccessToken!);
           }
@@ -436,6 +533,13 @@ class AuthApiService {
             isPrimaryDevice: currentIsPrimaryDevice,
             isApproved: currentIsApproved,
             primaryDeviceId: currentPrimaryDeviceId,
+            fullName: fullName,
+            email: userEmail,
+            phoneNumber: phone,
+            primaryAccountId: primaryAccId,
+            accountNumber: accNumber,
+            availableBalance: balance,
+            currency: curr,
           );
         } else {
           final data = _tryDecodeJson(response.body);

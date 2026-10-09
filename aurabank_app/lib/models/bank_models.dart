@@ -118,7 +118,7 @@ class BankCard {
   final String cardNumber;
   final String expiry;
   final String cvv;
-  final String holderName;
+  String holderName;
   bool isLocked;
   final int gradientStart;
   final int gradientEnd;

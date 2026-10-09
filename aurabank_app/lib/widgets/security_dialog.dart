@@ -23,7 +23,7 @@ class SecurityApprovalDialog extends StatelessWidget {
   Widget _buildDetailRow(String label, String value, IconData icon, bool isDark) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: isDark ? const Color(0xFF6B7FFF) : const Color(0xFF3A4CD6)),
+        Icon(icon, size: 16, color: isDark ? const Color(0xFF6B7FFF) : const Color(0xFF2F78A8)),
         const SizedBox(width: 8),
         Text(
           '$label: ',
@@ -56,7 +56,7 @@ class SecurityApprovalDialog extends StatelessWidget {
     String headerTitle;
 
     if (isDesktop) {
-      badgeColor = const Color(0xFF3A4CD6);
+      badgeColor = const Color(0xFF2F78A8);
       headerIcon = Icons.laptop_mac_rounded;
       headerTitle = 'Desktop Session Alert';
     } else if (isThird) {
@@ -103,13 +103,13 @@ class SecurityApprovalDialog extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFF3A4CD6).withAlpha(20),
+                color: const Color(0xFF2F78A8).withAlpha(20),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF3A4CD6).withAlpha(70)),
+                border: Border.all(color: const Color(0xFF2F78A8).withAlpha(70)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.info_outline_rounded, color: Color(0xFF3A4CD6), size: 20),
+                  const Icon(Icons.info_outline_rounded, color: Color(0xFF2F78A8), size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -224,7 +224,7 @@ class SecurityApprovalDialog extends StatelessWidget {
                     : 'Banking transactions are currently locked on this secondary device until you approve it.'),
             style: TextStyle(
               fontSize: 12,
-              color: isDesktop ? const Color(0xFF3A4CD6) : const Color(0xFFD97706),
+              color: isDesktop ? const Color(0xFF2F78A8) : const Color(0xFFD97706),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -259,7 +259,7 @@ class SecurityApprovalDialog extends StatelessWidget {
           FilledButton.icon(
             icon: Icon(isDesktop ? Icons.thumb_up_rounded : Icons.check_circle_rounded, size: 16),
             style: FilledButton.styleFrom(
-              backgroundColor: isDesktop ? const Color(0xFF3A4CD6) : const Color(0xFF107C41),
+              backgroundColor: isDesktop ? const Color(0xFF2F78A8) : const Color(0xFF107C41),
             ),
             onPressed: () async {
               Navigator.of(context).pop();
@@ -274,7 +274,7 @@ class SecurityApprovalDialog extends StatelessWidget {
                     content: Text(isDesktop
                         ? 'Desktop session acknowledged.'
                         : 'Approved! ${alert.deviceName} authorized for transactions.'),
-                    backgroundColor: isDesktop ? const Color(0xFF3A4CD6) : const Color(0xFF107C41),
+                    backgroundColor: isDesktop ? const Color(0xFF2F78A8) : const Color(0xFF107C41),
                   ),
                 );
               }
@@ -404,7 +404,7 @@ class DeviceRevokedWarningDialog extends StatelessWidget {
             style: TextStyle(
               fontSize: 13.5,
               height: 1.4,
-              color: isDark ? Colors.grey[300] : const Color(0xFF374151),
+              color: isDark ? Colors.grey[300] : const Color(0xFF2E3A43),
             ),
           ),
           const SizedBox(height: 14),
@@ -438,7 +438,7 @@ class DeviceRevokedWarningDialog extends StatelessWidget {
                       height: 1.35,
                       color: isDark
                           ? (isRevoked ? const Color(0xFFFFCDD2) : const Color(0xFFFDE68A))
-                          : (isRevoked ? const Color(0xFF991B1B) : const Color(0xFF92400E)),
+                          : (isRevoked ? const Color(0xFF8E2B26) : const Color(0xFF92400E)),
                     ),
                   ),
                 ),
@@ -453,7 +453,7 @@ class DeviceRevokedWarningDialog extends StatelessWidget {
           height: 46,
           child: FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF3A4CD6),
+              backgroundColor: const Color(0xFF2F78A8),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () {

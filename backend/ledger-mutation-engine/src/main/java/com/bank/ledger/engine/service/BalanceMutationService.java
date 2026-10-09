@@ -136,31 +136,125 @@ public class BalanceMutationService {
                         .orElse(null)
                 : null;
 
-        String activeLoc = userGeo != null && userGeo.getLastKnownLocationName() != null 
-                ? userGeo.getLastKnownLocationName() 
-                : "";
+        // Where the customer is now: device GPS when the client sends it, otherwise
+        // the last known location (device telemetry, or the admin geo simulator).
+        double curLat = request.getLatitude() != null ? request.getLatitude()
+                : userGeo != null && userGeo.getLastKnownLatitude() != null ? userGeo.getLastKnownLatitude() : 14.5995;
+        double curLon = request.getLongitude() != null ? request.getLongitude()
+                : userGeo != null && userGeo.getLastKnownLongitude() != null ? userGeo.getLastKnownLongitude() : 120.9842;
+        String curPlace = request.getLatitude() == null && userGeo != null && userGeo.getLastKnownLocationName() != null
+                ? userGeo.getLastKnownLocationName() : null;
+        if (request.getIpAddress() == null && userGeo != null) request.setIpAddress(userGeo.getLastKnownIp());
+        request.setLatitude(curLat);
+        request.setLongitude(curLon);
 
-        boolean isImpossibleTravel = (activeLoc.contains("London") || activeLoc.contains("New York"))
-                || (request.getLatitude() != null && (request.getLatitude() > 30.0 || request.getLatitude() < 0.0));
-
-        if (isImpossibleTravel) {
-            log.warn("[GEO-VELOCITY ALERT] Impossible travel detected for user {} at location {}", checkUserId, activeLoc);
-            throw new SecurityException("Impossible Travel Detected: Active location is " + activeLoc);
+        Optional<TransactionMaster> previous = transactionRepository
+                .findTopByFromAccountIdAndLatitudeIsNotNullOrderByCreatedAtDesc(sourceId);
+        GeoVelocity.Result geo = previous
+                .map(p -> GeoVelocity.assess(p.getLatitude().doubleValue(), p.getLongitude().doubleValue(),
+                        p.getCreatedAt(), curLat, curLon, Instant.now()))
+                .orElse(GeoVelocity.Result.NONE);
+        String geoReason = null;
+        if (geo.impossible()) {
+            String from = previous.get().getLocationName() != null ? previous.get().getLocationName() : "previous location";
+            geoReason = String.format("IMPOSSIBLE_TRAVEL: %s to %s, %,.0f km in %.0f min (%,.0f km/h)",
+                    from, curPlace != null ? curPlace : "current location", geo.distanceKm(), geo.minutes(), geo.speedKmh());
+            log.warn("[GEO-VELOCITY ALERT] {} for user {} on {}", geoReason, checkUserId, request.getTransactionId());
         }
 
         // =========================================================================
         // NANOJEV SYSTEM 1 RISK & ANOMALY EVALUATION
         // =========================================================================
+        Map<String, Object> geoContext = new java.util.HashMap<>();
+        previous.ifPresent(p -> {
+            geoContext.put("previous_latitude", p.getLatitude().doubleValue());
+            geoContext.put("previous_longitude", p.getLongitude().doubleValue());
+            geoContext.put("previous_timestamp", p.getCreatedAt().toString());
+        });
         RiskEngineClient.RiskEvaluationResult riskResult = riskEngineClient != null
-                ? riskEngineClient.evaluateRisk(request)
+                ? riskEngineClient.evaluateRisk(request, geoContext)
                 : RiskEngineClient.RiskEvaluationResult.builder().decision("ALLOW").build();
 
-        if ("BLOCK".equalsIgnoreCase(riskResult.getDecision())) {
+        // A geo-velocity hit is held for a human, not blocked: the customer may
+        // simply be travelling. Other BLOCK verdicts (malware, tampering) still stop here.
+        if (geoReason == null && "BLOCK".equalsIgnoreCase(riskResult.getDecision())) {
             log.error("[MUTATION BLOCKED] NanoJev flagged high risk for TxId: {} (Score: {}, Flag: {}, ThreatCat: {}, Cause: {}, SAR: {})",
                     request.getTransactionId(), riskResult.getFraudScore(), riskResult.getPrimaryFlag(),
                     riskResult.getThreatCategory(), riskResult.getCauseOfSuspicion(), riskResult.getSarReportId());
             throw new SecurityException("Transaction blocked by security risk engine: " + riskResult.getPrimaryFlag()
                     + (riskResult.getCauseOfSuspicion() != null ? " (" + riskResult.getCauseOfSuspicion() + ")" : ""));
+        }
+
+        BigDecimal riskScore = BigDecimal.valueOf(geoReason != null ? Math.max(riskResult.getFraudScore(), 95) : riskResult.getFraudScore());
+        String riskReason = geoReason != null ? geoReason
+                : riskResult.getPrimaryFlag() != null && !"NORMAL_TRANSACTION".equals(riskResult.getPrimaryFlag())
+                        ? riskResult.getPrimaryFlag() : null;
+
+        // =========================================================================
+        // ROUTE 0: IMPOSSIBLE TRAVEL -> SOFT HOLD FOR COMPLIANCE REVIEW (no customer OTP)
+        // =========================================================================
+        if (geoReason != null) {
+            sender.setHoldAmount(sender.getHoldAmount().add(amount));
+            sender.setAvailableBalance(sender.getAvailableBalance().subtract(amount));
+            sender.setUpdatedAt(Instant.now());
+            balanceRepository.save(sender);
+
+            transactionRepository.save(TransactionMaster.builder()
+                    .transactionId(request.getTransactionId())
+                    .fromAccountId(sourceId)
+                    .toAccountId(targetId)
+                    .type("TRANSFER")
+                    .amount(amount)
+                    .beforeBalance(senderBefore)
+                    .afterBalance(senderBefore)
+                    .status("PENDING_APPROVAL")
+                    .requires2FaOtp(0)
+                    .latitude(BigDecimal.valueOf(curLat))
+                    .longitude(BigDecimal.valueOf(curLon))
+                    .locationName(curPlace)
+                    .ipAddress(request.getIpAddress())
+                    .riskScore(riskScore)
+                    .riskReason(geoReason.length() > 255 ? geoReason.substring(0, 255) : geoReason)
+                    .createdAt(Instant.now())
+                    .updatedAt(Instant.now())
+                    .build());
+
+            kafkaPublisher.publishNotificationAlert(NotificationAlertEvent.builder()
+                    .alertId("ALT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                    .transactionId(request.getTransactionId())
+                    .recipientUserId(request.getInitiatorUserId())
+                    .recipientAccountId(sourceId)
+                    .alertType("TRANSFER_HELD_FOR_REVIEW")
+                    .amount(amount)
+                    .balanceAfter(sender.getAvailableBalance())
+                    .title("Transfer held for review")
+                    .message(String.format("Your transfer of PHP %s is on hold because it came from an unusual location. Our team will review it shortly.", amount))
+                    .createdAt(Instant.now())
+                    .build());
+
+            String ref = generateT24Reference(request.getTransactionId());
+            return MutationResponse.builder()
+                    .transactionId(request.getTransactionId())
+                    .accountId(sourceId)
+                    .status("PENDING_REVIEW")
+                    .mutationAmount(amount)
+                    .balanceBefore(senderBefore)
+                    .balanceAfter(senderBefore)
+                    .availableBalance(sender.getAvailableBalance())
+                    .timestamp(Instant.now())
+                    .traceId(UUID.randomUUID().toString())
+                    .t24Reference(ref)
+                    .ofsResponse(String.format("%s//1/PENDING_REVIEW", ref))
+                    .riskDecision("REVIEW")
+                    .riskScore(riskScore.intValue())
+                    .warningTitle("Transfer held for review")
+                    .warningMessage("This transfer came from a location that does not match your recent activity. A compliance officer will review it.")
+                    .threatCategory("IMPOSSIBLE_TRAVEL")
+                    .causeOfSuspicion(geoReason)
+                    .sarDraftCreated(riskResult.isSarDraftCreated())
+                    .sarReportId(riskResult.getSarReportId())
+                    .message("Transfer soft held pending compliance review.")
+                    .build();
         }
 
         boolean isHighValue = amount.compareTo(makerCheckerThreshold) > 0;
@@ -189,6 +283,12 @@ public class BalanceMutationService {
                     .afterBalance(senderBefore)
                     .status("PENDING_APPROVAL")
                     .requires2FaOtp(1)
+                    .latitude(BigDecimal.valueOf(curLat))
+                    .longitude(BigDecimal.valueOf(curLon))
+                    .locationName(curPlace)
+                    .ipAddress(request.getIpAddress())
+                    .riskScore(riskScore)
+                    .riskReason(riskReason)
                     .createdAt(Instant.now())
                     .updatedAt(Instant.now())
                     .build();
@@ -306,6 +406,12 @@ public class BalanceMutationService {
                 .afterBalance(senderAfter)
                 .status("COMMITTED")
                 .requires2FaOtp(0)
+                .latitude(BigDecimal.valueOf(curLat))
+                .longitude(BigDecimal.valueOf(curLon))
+                .locationName(curPlace)
+                .ipAddress(request.getIpAddress())
+                .riskScore(riskScore)
+                .riskReason(riskReason)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
@@ -1618,7 +1724,7 @@ public class BalanceMutationService {
                         .accountId(targetId)
                         .userId("U0001")
                         .accountNumber(targetId)
-                        .accountType("CHECKING")
+                        .accountType("SAVINGS")
                         .status("ACTIVE")
                         .build();
                 accountRepository.save(externalAccount);

@@ -284,7 +284,7 @@ class _KycCameraViewfinderScreenState extends State<KycCameraViewfinderScreen>
 
     setState(() {
       _livenessStep = 3;
-      _livenessColor = const Color(0xFF10B981); // Vivid Emerald
+      _livenessColor = const Color(0xFF2FA37E); // Vivid Emerald
       _livenessStatusText = 'Confirming curvature: Reflecting Emerald...';
       _livenessProgress = 1.0;
     });
@@ -572,7 +572,7 @@ class _KycCameraViewfinderScreenState extends State<KycCameraViewfinderScreen>
                     const SizedBox(width: 8),
                     _buildSpectralDot('Magenta', const Color(0xFFFF007A), _livenessStep == 2),
                     const SizedBox(width: 8),
-                    _buildSpectralDot('Emerald', const Color(0xFF10B981), _livenessStep == 3),
+                    _buildSpectralDot('Emerald', const Color(0xFF2FA37E), _livenessStep == 3),
                   ],
                 ),
               ),
@@ -593,7 +593,7 @@ class _KycCameraViewfinderScreenState extends State<KycCameraViewfinderScreen>
                 border: Border.all(
                   color: _isLivenessActive
                       ? _livenessColor
-                      : const Color(0xFF10B981).withValues(alpha: 0.5),
+                      : const Color(0xFF2FA37E).withValues(alpha: 0.5),
                   width: 1,
                 ),
               ),
@@ -604,7 +604,7 @@ class _KycCameraViewfinderScreenState extends State<KycCameraViewfinderScreen>
                     _isLivenessActive
                         ? Icons.flare_rounded
                         : (isCard ? Icons.center_focus_strong_rounded : Icons.face_rounded),
-                    color: _isLivenessActive ? _livenessColor : const Color(0xFF10B981),
+                    color: _isLivenessActive ? _livenessColor : const Color(0xFF2FA37E),
                     size: 16,
                   ),
                   const SizedBox(width: 8),
@@ -769,7 +769,7 @@ class _KycCameraViewfinderScreenState extends State<KycCameraViewfinderScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
             decoration: BoxDecoration(
-              color: const Color(0xFF0F172A),
+              color: const Color(0xFF10171C),
               borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
               border: Border.all(color: const Color(0xFF1E293B)),
             ),
@@ -781,16 +781,16 @@ class _KycCameraViewfinderScreenState extends State<KycCameraViewfinderScreen>
                     margin: const EdgeInsets.only(bottom: 14),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                      color: const Color(0xFF2FA37E).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: const Color(0xFF10B981).withValues(alpha: 0.4),
+                        color: const Color(0xFF2FA37E).withValues(alpha: 0.4),
                       ),
                     ),
                     child: const Row(
                       children: [
                         Icon(Icons.verified_user_rounded,
-                            color: Color(0xFF10B981), size: 20),
+                            color: Color(0xFF2FA37E), size: 20),
                         SizedBox(width: 10),
                         Expanded(
                           child: Column(
@@ -799,7 +799,7 @@ class _KycCameraViewfinderScreenState extends State<KycCameraViewfinderScreen>
                               Text(
                                 '3D Photometric Liveness Verified',
                                 style: TextStyle(
-                                  color: Color(0xFF10B981),
+                                  color: Color(0xFF2FA37E),
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -822,7 +822,7 @@ class _KycCameraViewfinderScreenState extends State<KycCameraViewfinderScreen>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Icon(Icons.check_circle_outline_rounded,
-                        color: Color(0xFF10B981), size: 18),
+                        color: Color(0xFF2FA37E), size: 18),
                     const SizedBox(width: 8),
                     Text(
                       widget.mode == KycCameraMode.selfie
@@ -859,7 +859,7 @@ class _KycCameraViewfinderScreenState extends State<KycCameraViewfinderScreen>
                     Expanded(
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF10B981),
+                          backgroundColor: const Color(0xFF2FA37E),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           elevation: 0,
@@ -960,7 +960,7 @@ class _ViewfinderOverlayPainter extends CustomPainter {
     final borderPaint = Paint()
       ..color = isLivenessActive
           ? livenessColor
-          : const Color(0xFF10B981).withValues(alpha: glowAlpha)
+          : const Color(0xFF2FA37E).withValues(alpha: glowAlpha)
       ..style = PaintingStyle.stroke
       ..strokeWidth = isLivenessActive ? 3.5 : 1.5;
 
@@ -990,7 +990,7 @@ class _ViewfinderOverlayPainter extends CustomPainter {
     const double radius = 16.0;
 
     final bracketPaint = Paint()
-      ..color = const Color(0xFF10B981)
+      ..color = const Color(0xFF2FA37E)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4.0
       ..strokeCap = StrokeCap.round;

@@ -1,73 +1,216 @@
 import 'package:flutter/material.dart';
 
-/// Design Tokens & Theme for Aura Bank
-/// High-end, anti-slop visual system fusing luxury neobanking with tactile Apple/Linear finish.
+/// Aura Bank design tokens.
+///
+/// Four brand colours carry the whole system: sky, mint, ink and paper. The
+/// aurora is the only place the two light hues blend; everywhere else they are
+/// used flat. Member names predate the palette and are kept so every screen
+/// moved onto the new tokens without a rename.
 class AuraColors {
-  // Primary Brand Violets (from user reference & enhanced)
-  static const Color primary = Color(0xFF30006F);        // Deep Royal Aura Violet (Main button & brand anchor)
-  static const Color primaryDark = Color(0xFF22004F);    // Darkest Void Violet
-  static const Color accent = Color(0xFF5E17EB);         // Electric Aura Violet (Active states & links)
-  static const Color accentVibrant = Color(0xFF7928CA);  // Gradient midtone
-  static const Color accentLight = Color(0xFF8B5CF6);    // Soft Lilac
-  
-  // Tints & Surfaces
-  static const Color tintPurple = Color(0xFFF3E8FF);     // Soft pill/badge background
-  static const Color borderPurple = Color(0xFFDDD6FE);   // Subtle badge border
-  static const Color bgLavender = Color(0xFFFAF7FF);     // Soft card inset background
-  static const Color borderLavender = Color(0xFFEDE9FE); // Divider / Inset border
+  // Brand
+  static const Color sky = Color(0xFF97CFF3);
+  static const Color mint = Color(0xFFA7E8D1);
+  static const Color ink = Color(0xFF10171C);
+  static const Color paper = Color(0xFFF7F7F7);
+  static const Color periwinkle = Color(0xFFBEC6F7);
+  static const Color ember = Color(0xFFF2A25C);
 
-  // Canvas & Surfaces
-  static const Color canvas = Color(0xFFFBFBFD);         // Clean warm porcelain background
-  static const Color surface = Colors.white;             // Pure white card surfaces
-  static const Color cardBorder = Color(0xFFF0F1F6);     // Crisp hairline card border
-  static const Color divider = Color(0xFFEBECEF);        // Clean divider line
+  // Roles. Ink is the action colour; mint and sky stay as fills because
+  // neither holds 4.5:1 as text on white.
+  static const Color primary = ink;
+  static const Color primaryDark = Color(0xFF0A0F13);
+  static const Color accent = Color(0xFF1C6E5A); // mint, deepened for text on white
+  static const Color accentVibrant = Color(0xFF2F78A8); // sky, deepened for text on white
+  static const Color accentLight = mint;
 
-  // Typography
-  static const Color textPrimary = Color(0xFF111827);    // Deep Ink Obsidian
-  static const Color textSecondary = Color(0xFF4B5563);  // Slate Neutral
-  static const Color textMuted = Color(0xFF8E95A5);      // Muted caption gray
+  // Tints
+  static const Color tintPurple = Color(0xFFE6F6EF); // mint wash
+  static const Color borderPurple = Color(0xFFC9EBDD);
+  static const Color bgLavender = Color(0xFFEFF6FB); // sky wash
+  static const Color borderLavender = Color(0xFFDDEAF3);
 
-  // Financial Accents
-  static const Color creditGreen = Color(0xFF059669);    // Lush Emerald for Received/Inward
-  static const Color creditGreenBg = Color(0xFFE6F8F0);  // Soft emerald badge tint
-  static const Color debitRed = Color(0xFFDC2626);       // Refined Crimson for Sent/Debits
-  static const Color debitRedBg = Color(0xFFFEE2E2);     // Soft crimson badge tint
-  static const Color amberWarning = Color(0xFFD97706);   // Regulatory alert amber
+  // Surfaces
+  static const Color canvas = paper;
+  static const Color surface = Colors.white;
+  static const Color cardBorder = Color(0xFFEAECEE);
+  static const Color divider = Color(0xFFE6E8EA);
+  static const Color inkRaised = Color(0xFF1A2329);
+  static const Color inkLine = Color(0xFF26313A);
 
-  // Gradients
+  // Text
+  static const Color textPrimary = ink;
+  static const Color textSecondary = Color(0xFF47525C);
+  static const Color textMuted = Color(0xFF7D8892);
+
+  // Money
+  static const Color creditGreen = Color(0xFF17805F);
+  static const Color creditGreenBg = Color(0xFFE4F5EE);
+  static const Color debitRed = Color(0xFFC8423B);
+  static const Color debitRedBg = Color(0xFFFBE9E7);
+  static const Color amberWarning = Color(0xFFB7681E);
+
   static const LinearGradient balanceHeroGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [
-      Color(0xFF240052),
-      Color(0xFF43008E),
-      Color(0xFF6B11D4),
-    ],
+    colors: [Color(0xFF10171C), Color(0xFF15232A), Color(0xFF173039)],
   );
 
   static const LinearGradient logoGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [
-      Color(0xFF260057),
-      Color(0xFF4B0FAF),
-    ],
+    colors: [sky, mint],
   );
 
-  // Shadows
   static List<BoxShadow> get cardShadow => [
-    BoxShadow(
-      color: const Color(0xFF1E1B4B).withValues(alpha: 0.04),
-      blurRadius: 14,
-      offset: const Offset(0, 4),
-    ),
-  ];
+        BoxShadow(
+          color: ink.withValues(alpha: 0.05),
+          blurRadius: 16,
+          offset: const Offset(0, 6),
+        ),
+      ];
 
   static List<BoxShadow> get buttonShadow => [
-    BoxShadow(
-      color: primary.withValues(alpha: 0.38),
-      blurRadius: 16,
-      offset: const Offset(0, 6),
-    ),
-  ];
+        BoxShadow(
+          color: ink.withValues(alpha: 0.22),
+          blurRadius: 14,
+          offset: const Offset(0, 6),
+        ),
+      ];
+}
+
+/// Durations and curves. One deceleration curve for arrivals, a shorter run
+/// for exits, and nothing that bounces.
+class AuraMotion {
+  static const Duration fast = Duration(milliseconds: 160);
+  static const Duration medium = Duration(milliseconds: 320);
+  static const Duration slow = Duration(milliseconds: 560);
+  static const Curve emphasized = Cubic(0.16, 1, 0.3, 1);
+  static const Curve standard = Curves.easeOutCubic;
+
+  static bool reduced(BuildContext context) =>
+      MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+
+  static Duration resolve(BuildContext context, Duration d) =>
+      reduced(context) ? Duration.zero : d;
+}
+
+class AuraTheme {
+  static const String fontFamily = 'Onest';
+
+  static ThemeData light() {
+    final scheme = ColorScheme.fromSeed(
+      seedColor: AuraColors.mint,
+      primary: AuraColors.ink,
+      onPrimary: Colors.white,
+      secondary: AuraColors.mint,
+      onSecondary: AuraColors.ink,
+      tertiary: AuraColors.sky,
+      surface: Colors.white,
+      onSurface: AuraColors.ink,
+      error: AuraColors.debitRed,
+    );
+
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: scheme,
+      fontFamily: fontFamily,
+      scaffoldBackgroundColor: AuraColors.canvas,
+      splashFactory: InkSparkle.splashFactory,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: AuraColors.canvas,
+        foregroundColor: AuraColors.ink,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        titleTextStyle: TextStyle(
+          fontFamily: fontFamily,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: AuraColors.ink,
+          letterSpacing: -0.2,
+        ),
+      ),
+      textTheme: const TextTheme(
+        displaySmall: TextStyle(fontWeight: FontWeight.w600, letterSpacing: -1.2, color: AuraColors.ink),
+        headlineMedium: TextStyle(fontWeight: FontWeight.w600, letterSpacing: -0.8, color: AuraColors.ink),
+        titleLarge: TextStyle(fontWeight: FontWeight.w600, letterSpacing: -0.3, color: AuraColors.ink),
+        titleMedium: TextStyle(fontWeight: FontWeight.w600, color: AuraColors.ink),
+        bodyMedium: TextStyle(color: AuraColors.ink, height: 1.45),
+        labelLarge: TextStyle(fontWeight: FontWeight.w600),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: AuraColors.ink,
+          foregroundColor: Colors.white,
+          minimumSize: const Size(0, 52),
+          shape: const StadiumBorder(),
+          textStyle: const TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w600),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AuraColors.ink,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          textStyle: const TextStyle(fontFamily: fontFamily, fontWeight: FontWeight.w600),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AuraColors.ink,
+          side: const BorderSide(color: AuraColors.cardBorder),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          textStyle: const TextStyle(fontFamily: fontFamily, fontWeight: FontWeight.w600),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: AuraColors.ink,
+          textStyle: const TextStyle(fontFamily: fontFamily, fontWeight: FontWeight.w600),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AuraColors.cardBorder),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AuraColors.cardBorder),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AuraColors.ink, width: 1.4),
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AuraColors.ink,
+        contentTextStyle: const TextStyle(fontFamily: fontFamily, color: Colors.white, fontSize: 13.5),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: Colors.white,
+        showDragHandle: true,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? Colors.white : AuraColors.textMuted,
+        ),
+        trackColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? AuraColors.ink : AuraColors.divider,
+        ),
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(color: AuraColors.ink),
+      dividerTheme: const DividerThemeData(color: AuraColors.divider, thickness: 1, space: 1),
+    );
+  }
 }

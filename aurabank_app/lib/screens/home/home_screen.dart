@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
+
+import '../../models/bank_models.dart';
 import '../../services/bank_service.dart';
+import '../../theme/aura_theme.dart';
+import '../../widgets/aura_card.dart';
+import '../../widgets/transaction_tile.dart';
+import '../cards/cards_screen.dart' show CardActionButton;
 import '../transfer/send_money_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -14,12 +20,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final BankService _bankService = BankService();
   bool _isBalanceVisible = true;
-  bool _isAccountNumVisible = true;
-
-  static const Color textDark = Color(0xFF111827);
-  static const Color textGray = Color(0xFF6B7280);
-  static const Color cardBorder = Color(0xFFE5E7EB);
-  static const Color greenCredit = Color(0xFF059669);
+  bool _isAccountNumVisible = false;
 
   @override
   void initState() {
@@ -37,435 +38,316 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) setState(() {});
   }
 
+  void _openTransfer() => Navigator.of(context)
+      .push(MaterialPageRoute(builder: (context) => const SendMoneyScreen()));
+
+  void _toggleFreeze() {
+    if (_bankService.cards.isEmpty) return;
+    _bankService.toggleCardLock(0);
+    final card = _bankService.cards.first;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: Text(card.isLocked
+            ? 'Card ending ${card.last4} is frozen.'
+            : 'Card ending ${card.last4} is active again.'),
+      ));
+  }
+
+  String get _greeting {
+    final h = DateTime.now().hour;
+    if (h < 12) return 'Good morning';
+    if (h < 18) return 'Good afternoon';
+    return 'Good evening';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final card =
+        _bankService.cards.isNotEmpty ? _bankService.cards.first : null;
+    final recent = _bankService.recentTransactions;
+    final payees = <String, BankTransaction>{
+      for (final t in recent.where((t) => !t.isIncoming)) t.counterparty: t,
+    }.values.toList();
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AuraColors.canvas,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 12.0),
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+          children: [
+            _buildHeader(),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                const Text('Your wallet',
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.3)),
+                const SizedBox(width: 12),
+                const Spacer(),
+                Flexible(
+                  flex: 3,
+                  child: GestureDetector(
+                    onTap: () => setState(
+                        () => _isAccountNumVisible = !_isAccountNumVisible),
+                    behavior: HitTestBehavior.opaque,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            _isAccountNumVisible
+                                ? 'Savings ${_bankService.savingsAccountNumber}'
+                                : 'Savings •••• ${_bankService.savingsAccountNumber.substring(_bankService.savingsAccountNumber.length - 4)}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                fontSize: 13,
+                                color: AuraColors.textMuted,
+                                fontFeatures: [FontFeature.tabularFigures()]),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Icon(
+                          _isAccountNumVisible
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                          size: 16,
+                          color: AuraColors.textMuted,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (card != null)
+              Semantics(
+                label:
+                    'Available balance ${_isBalanceVisible ? _formatBalance(_bankService.availableBalance) : 'hidden'}',
+                child: AspectRatio(
+                  aspectRatio: kCardAspect,
+                  child: CardTilt(
+                    maxTilt: 0.08,
+                    builder: (context, sheen) => AuraCardFace(
+                      card: card,
+                      sheen: sheen,
+                      balance: _formatBalance(_bankService.availableBalance),
+                      balanceVisible: _isBalanceVisible,
+                      onToggleBalance: () => setState(
+                          () => _isBalanceVisible = !_isBalanceVisible),
+                    ),
+                  ),
+                ),
+              ),
+            const SizedBox(height: 8),
+            Center(
+              child: TextButton.icon(
+                onPressed: () =>
+                    setState(() => _isBalanceVisible = !_isBalanceVisible),
+                icon: Icon(
+                    _isBalanceVisible
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    size: 18),
+                label:
+                    Text(_isBalanceVisible ? 'Hide balance' : 'Show balance'),
+                style: TextButton.styleFrom(
+                    foregroundColor: AuraColors.textSecondary),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                CardActionButton(
+                    icon: Icons.north_east_rounded,
+                    label: 'Send',
+                    highlighted: true,
+                    onTap: _openTransfer),
+                CardActionButton(
+                    icon: Icons.qr_code_scanner_rounded,
+                    label: 'Scan',
+                    onTap: () => widget.onNavigateTab?.call(2)),
+                CardActionButton(
+                  icon: card?.isLocked == true
+                      ? Icons.lock_open_rounded
+                      : Icons.ac_unit_rounded,
+                  label: card?.isLocked == true ? 'Unfreeze' : 'Freeze',
+                  onTap: _toggleFreeze,
+                ),
+                CardActionButton(
+                    icon: Icons.insights_rounded,
+                    label: 'Insights',
+                    onTap: () => widget.onNavigateTab?.call(3)),
+              ],
+            ),
+            const SizedBox(height: 30),
+            const Text('Activities',
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.3)),
+            const SizedBox(height: 12),
+            if (payees.isNotEmpty)
+              _RecentPayees(payees: payees, onTap: _openTransfer),
+            const SizedBox(height: 22),
+            Row(
+              children: [
+                const Text('Transactions',
+                    style:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                const Spacer(),
+                TextButton(
+                  onPressed: () => widget.onNavigateTab?.call(3),
+                  style: TextButton.styleFrom(
+                      foregroundColor: AuraColors.textMuted),
+                  child: const Text('See all'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            for (final txn in recent)
+              Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: TransactionTile(txn: txn)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    final name = _bankService.user.name.isNotEmpty
+        ? _bankService.user.name
+        : 'Elijah Montefalco';
+    final parts = name.trim().split(RegExp(r'\s+'));
+    final short =
+        parts.length > 1 ? '${parts.first} ${parts.last[0]}.' : parts.first;
+    final initials =
+        parts.length > 1 ? '${parts.first[0]}${parts.last[0]}' : parts.first[0];
+
+    return Row(
+      children: [
+        Container(
+          width: 46,
+          height: 46,
+          alignment: Alignment.center,
+          decoration: const BoxDecoration(
+              color: AuraColors.mint, shape: BoxShape.circle),
+          child: Text(initials.toUpperCase(),
+              style: const TextStyle(
+                  fontWeight: FontWeight.w600, color: AuraColors.ink)),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. Top User Profile Header
-              _buildProfileHeader(),
-
-              const SizedBox(height: 16),
-
-              // 2. Available Balance Hero Card (exact 205px height matching CardsScreen)
-              _buildBalanceCard(),
-
-              const SizedBox(height: 20),
-
-              // 3. Quick Action Cards (Transfer, Scan, Cards, Analytics)
-              _buildQuickActions(),
-
-              const SizedBox(height: 22),
-
-              // 4. Recent Transactions (exact sizing from CardsScreen)
-              _buildRecentTransactions(),
-
-              const SizedBox(height: 16),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // --- 1. PROFILE HEADER ---
-  Widget _buildProfileHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: const BoxDecoration(
-                color: Color(0xFF380084),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.person_outline_rounded, color: Colors.white, size: 24),
-            ),
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _bankService.user.name.isNotEmpty ? _bankService.user.name : 'Elijah Montefalco',
+              Text(_greeting,
                   style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: textDark,
-                    letterSpacing: -0.3,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Text(
-                      _isAccountNumVisible
-                          ? 'Acc. No: ${_bankService.savingsAccountNumber}'
-                          : 'Acc. No: ••••••••••••',
-                      style: const TextStyle(fontSize: 11, color: textGray, fontWeight: FontWeight.w500),
-                    ),
-                    const SizedBox(width: 4),
-                    GestureDetector(
-                      onTap: () => setState(() => _isAccountNumVisible = !_isAccountNumVisible),
-                      child: Icon(
-                        _isAccountNumVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                        size: 13,
-                        color: textGray,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
-        // Clean Circular Bell Notification Button
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            border: Border.all(color: cardBorder),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
+                      fontSize: 13, color: AuraColors.textMuted)),
+              const SizedBox(height: 1),
+              Text(short,
+                  style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.2)),
             ],
           ),
-          child: const Icon(Icons.notifications_none_rounded, size: 20, color: textDark),
+        ),
+        IconButton(
+          tooltip: 'Notifications',
+          onPressed: () {},
+          icon: const Icon(Icons.notifications_none_rounded,
+              color: AuraColors.ink),
         ),
       ],
-    );
-  }
-
-  // --- 2. HERO BALANCE CARD (EXACT 205px HEIGHT MATCHING CARDSSCREEN, NO MASTERCARD LOGO) ---
-  Widget _buildBalanceCard() {
-    return Container(
-      width: double.infinity,
-      height: 205,
-      padding: const EdgeInsets.symmetric(horizontal: 22.0, vertical: 20.0), // Exact same padding
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24), // Exact same border radius
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFF430897),
-            Color(0xFF7A45C6),
-            Color(0xFFB183F4),
-          ],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF430897).withValues(alpha: 0.35),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Top: Available Balance + Eye Icon
-          Row(
-            children: [
-              const Text(
-                'Available Balance',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: () => setState(() => _isBalanceVisible = !_isBalanceVisible),
-                child: Icon(
-                  _isBalanceVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                  size: 16,
-                  color: Colors.white.withValues(alpha: 0.9),
-                ),
-              ),
-            ],
-          ),
-
-          // Middle: Balance Amount
-          Text(
-            _isBalanceVisible
-                ? (_bankService.availableBalance > 0
-                ? _formatBalance(_bankService.availableBalance)
-                : '₱ 50,000,000')
-                : '₱ ••••••••',
-            style: const TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
-              letterSpacing: -0.5,
-            ),
-          ),
-
-          // Bottom: Clean Savings Account Label (No Mastercard logo)
-          Text(
-            'Savings Account',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Colors.white.withValues(alpha: 0.9),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- 3. QUICK ACTIONS ---
-  Widget _buildQuickActions() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        _buildActionCard(
-          iconWidget: const Icon(Icons.swap_horiz_rounded, color: textDark, size: 24),
-          label: 'Transfer',
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => const SendMoneyScreen()),
-            );
-          },
-        ),
-        _buildActionCard(
-          iconWidget: Stack(
-            alignment: Alignment.center,
-            children: [
-              const Icon(Icons.qr_code_2_rounded, color: textDark, size: 24),
-              Container(
-                width: 20,
-                height: 3,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFA855F7),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ],
-          ),
-          label: 'Scan',
-          onTap: () {
-            if (widget.onNavigateTab != null) {
-              widget.onNavigateTab!(2);
-            }
-          },
-        ),
-        _buildActionCard(
-          iconWidget: const Icon(Icons.credit_card_rounded, color: textDark, size: 24),
-          label: 'Cards',
-          onTap: () {
-            if (widget.onNavigateTab != null) {
-              widget.onNavigateTab!(1);
-            }
-          },
-        ),
-        _buildActionCard(
-          iconWidget: const Icon(Icons.show_chart_rounded, color: textDark, size: 24),
-          label: 'Analytics',
-          onTap: () {
-            if (widget.onNavigateTab != null) {
-              widget.onNavigateTab!(3);
-            }
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionCard({
-    required Widget iconWidget,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 66,
-        height: 60,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: cardBorder),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            iconWidget,
-            const SizedBox(height: 3),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 10.5,
-                fontWeight: FontWeight.w700,
-                color: textDark,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // --- 4. RECENT TRANSACTIONS (EXACT CARDSSCREEN SIZING) ---
-  Widget _buildRecentTransactions() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Recent Transactions',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w800,
-            color: textDark,
-            letterSpacing: -0.2,
-          ),
-        ),
-        const SizedBox(height: 12),
-
-        // Transaction 1: Angel Lou F. Yabut
-        _buildTransactionCard(
-          initial: 'A',
-          avatarBgColor: const Color(0xFF380084),
-          name: 'Angel Lou F. Yabut',
-          subtitle: 'Settled',
-          amount: '- 150,000',
-          amountColor: textDark,
-        ),
-
-        const SizedBox(height: 8),
-
-        // Transaction 2: Mae G. Mercado
-        _buildTransactionCard(
-          initial: 'M',
-          avatarBgColor: const Color(0xFF8B5CF6),
-          name: 'Mae G. Mercado',
-          subtitle: 'Interbank Inward',
-          amount: '+ 25,000',
-          amountColor: greenCredit,
-        ),
-
-        const SizedBox(height: 8),
-
-        // Transaction 3: Jessie Mae Dela Paz
-        _buildTransactionCard(
-          initial: 'J',
-          avatarBgColor: const Color(0xFF6366F1),
-          name: 'Jessie Mae Dela Paz',
-          subtitle: 'Failed',
-          amount: '+ 25,000',
-          amountColor: greenCredit,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTransactionCard({
-    required String initial,
-    required Color avatarBgColor,
-    required String name,
-    required String subtitle,
-    required String amount,
-    required Color amountColor,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: cardBorder),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: avatarBgColor,
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              initial,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: 16,
-              ),
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: textDark,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: textGray,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            amount,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-              color: amountColor,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
   String _formatBalance(double amount) {
-    final parts = amount.toStringAsFixed(0);
-    final formatted = parts.replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]},',
+    final fixed = amount.toStringAsFixed(2).split('.');
+    final whole = fixed[0].replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},');
+    return '₱ $whole.${fixed[1]}';
+  }
+}
+
+class _RecentPayees extends StatelessWidget {
+  const _RecentPayees({required this.payees, required this.onTap});
+
+  final List<BankTransaction> payees;
+  final VoidCallback onTap;
+
+  static const _fills = [
+    AuraColors.mint,
+    AuraColors.sky,
+    AuraColors.periwinkle,
+    Color(0xFFF6D7B8)
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+      decoration: BoxDecoration(
+          color: Colors.white, borderRadius: BorderRadius.circular(22)),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Recent transfers',
+                    style:
+                        TextStyle(fontSize: 13, color: AuraColors.textMuted)),
+                const SizedBox(height: 10),
+                SizedBox(
+                  height: 40,
+                  child: Stack(
+                    children: [
+                      for (var i = 0; i < payees.length && i < 5; i++)
+                        Positioned(
+                          left: i * 30.0,
+                          child: Tooltip(
+                            message: payees[i].counterparty,
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: _fills[i % _fills.length],
+                                shape: BoxShape.circle,
+                                border:
+                                    Border.all(color: Colors.white, width: 2.5),
+                              ),
+                              child: Text(payees[i].initial,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w600)),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton.filled(
+            tooltip: 'New transfer',
+            onPressed: onTap,
+            icon: const Icon(Icons.add_rounded),
+            style: IconButton.styleFrom(
+                backgroundColor: AuraColors.sky,
+                foregroundColor: AuraColors.ink,
+                fixedSize: const Size(44, 44)),
+          ),
+        ],
+      ),
     );
-    return '₱ $formatted';
   }
 }

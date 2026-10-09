@@ -15,6 +15,7 @@ import com.bank.ledger.engine.entity.audit.LedgerMutationAudit;
 import com.bank.ledger.engine.entity.master.AccountMaster;
 import com.bank.ledger.engine.entity.master.BalanceMaster;
 import com.bank.ledger.engine.entity.master.TransactionMaster;
+import com.bank.ledger.engine.entity.master.UserMaster;
 import com.bank.ledger.engine.kafka.KafkaEventPublisher;
 import com.bank.ledger.engine.repository.audit.LedgerMutationAuditRepository;
 import com.bank.ledger.engine.repository.master.AccountMasterRepository;
@@ -117,7 +118,7 @@ class BalanceMutationServiceTest {
                 .build();
 
         lenient().when(userMasterRepository.findById(any())).thenReturn(Optional.empty());
-        lenient().when(riskEngineClient.evaluateRisk(any())).thenReturn(
+        lenient().when(riskEngineClient.evaluateRisk(any(), any())).thenReturn(
                 RiskEngineClient.RiskEvaluationResult.builder().decision("ALLOW").fraudScore(0).build()
         );
     }
@@ -563,5 +564,52 @@ class BalanceMutationServiceTest {
                 .build();
 
         assertThrows(IllegalArgumentException.class, () -> mutationService.executeT24Reversal(request));
+    }
+
+    @Test
+    @DisplayName("Admin moves customer from Manila to London: next transfer is held for compliance review, not settled")
+    void testImpossibleTravelHoldsTransferForReview() {
+        when(balanceRepository.findByAccountIdWithLock(SENDER_ACCOUNT)).thenReturn(Optional.of(senderBalance));
+        when(balanceRepository.findByAccountIdWithLock(RECEIVER_ACCOUNT)).thenReturn(Optional.of(receiverBalance));
+        when(kafkaPublisher.publishNotificationAlert(any())).thenReturn(CompletableFuture.completedFuture(null));
+        // The admin geo simulator wrote London as the customer's current location.
+        when(userMasterRepository.findById(MAKER_USER)).thenReturn(Optional.of(UserMaster.builder()
+                .userId(MAKER_USER).firstName("Juan").lastName("Dela Cruz").email("juan.dc@email.com")
+                .phoneNumber("+639171234567").role("CUSTOMER").status("ACTIVE")
+                .lastKnownLatitude(51.5074).lastKnownLongitude(-0.1278)
+                .lastKnownLocationName("London, United Kingdom").lastKnownIp("81.2.69.160").build()));
+        // Five minutes ago the same account transferred from Manila.
+        when(transactionRepository.findTopByFromAccountIdAndLatitudeIsNotNullOrderByCreatedAtDesc(SENDER_ACCOUNT))
+                .thenReturn(Optional.of(TransactionMaster.builder()
+                        .transactionId("TX-MNL").fromAccountId(SENDER_ACCOUNT)
+                        .latitude(new BigDecimal("14.5995")).longitude(new BigDecimal("120.9842"))
+                        .locationName("Manila, Philippines").createdAt(Instant.now().minusSeconds(300)).build()));
+
+        MutationRequest request = MutationRequest.builder()
+                .transactionId("TX-LON-001")
+                .accountId(SENDER_ACCOUNT)
+                .targetAccountId(RECEIVER_ACCOUNT)
+                .eventType(EventType.TRANSFER)
+                .mutationType(MutationType.TRANSFER)
+                .mutationAmount(new BigDecimal("5000.0000"))
+                .initiatorUserId(MAKER_USER)
+                .build();
+
+        MutationResponse response = mutationService.executeTransfer(request);
+
+        assertEquals("PENDING_REVIEW", response.getStatus());
+        assertEquals("IMPOSSIBLE_TRAVEL", response.getThreatCategory());
+        assertTrue(response.getCauseOfSuspicion().contains("Manila, Philippines to London, United Kingdom"));
+        // Funds reserved, nothing moved.
+        assertEquals(0, new BigDecimal("5000.0000").compareTo(senderBalance.getHoldAmount()));
+        assertEquals(0, new BigDecimal("100000.0000").compareTo(senderBalance.getBalanceAmount()));
+        assertEquals(0, new BigDecimal("50000.0000").compareTo(receiverBalance.getBalanceAmount()));
+
+        org.mockito.ArgumentCaptor<TransactionMaster> saved = org.mockito.ArgumentCaptor.forClass(TransactionMaster.class);
+        verify(transactionRepository).save(saved.capture());
+        assertEquals("PENDING_APPROVAL", saved.getValue().getStatus());
+        assertEquals(0, saved.getValue().getRequires2FaOtp(), "customer OTP must not be able to release a geo hold");
+        assertTrue(saved.getValue().getRiskReason().startsWith("IMPOSSIBLE_TRAVEL"));
+        assertEquals("London, United Kingdom", saved.getValue().getLocationName());
     }
 }

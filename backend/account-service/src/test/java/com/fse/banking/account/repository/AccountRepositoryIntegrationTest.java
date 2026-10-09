@@ -61,7 +61,6 @@ class AccountRepositoryIntegrationTest {
                 .accountNumber("100100001234")
                 .accountType(AccountType.SAVINGS)
                 .status(AccountStatus.ACTIVE)
-                .creditLimit(BigDecimal.ZERO.setScale(4))
                 .build();
 
         accountRepository.save(account);

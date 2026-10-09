@@ -44,7 +44,7 @@ class _LoginPageFingerprintState extends State<LoginPageFingerprint> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Fingerprint sensor is not available or not enrolled on this device.'),
-            backgroundColor: Color(0xFFDC2626),
+            backgroundColor: Color(0xFFC8423B),
           ),
         );
       }
@@ -80,7 +80,7 @@ class _LoginPageFingerprintState extends State<LoginPageFingerprint> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Fingerprint verification cancelled or not recognized. Tap to retry.'),
-          backgroundColor: Color(0xFF6B7280),
+          backgroundColor: Color(0xFF7D8892),
         ),
       );
     }
@@ -95,8 +95,8 @@ class _LoginPageFingerprintState extends State<LoginPageFingerprint> {
 
   @override
   Widget build(BuildContext context) {
-    const brandViolet = Color(0xFF3A0088);
-    const borderViolet = Color(0xFF5E17EB);
+    const brandViolet = Color(0xFF10171C);
+    const borderViolet = Color(0xFF2F78A8);
     const disabledButtonBg = Color(0xFFF1EEFB);
     const disabledButtonText = Color(0xFFD5CDF2);
 
@@ -166,7 +166,7 @@ class _LoginPageFingerprintState extends State<LoginPageFingerprint> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w400,
-                        color: Color(0xFF6B7280),
+                        color: Color(0xFF7D8892),
                       ),
                     ),
 
@@ -183,7 +183,7 @@ class _LoginPageFingerprintState extends State<LoginPageFingerprint> {
                       decoration: InputDecoration(
                         hintText: 'Username',
                         hintStyle: const TextStyle(
-                          color: Color(0xFFB0B7C3),
+                          color: Color(0xFFA9B1B8),
                           fontSize: 15,
                           fontWeight: FontWeight.w400,
                         ),
@@ -222,7 +222,7 @@ class _LoginPageFingerprintState extends State<LoginPageFingerprint> {
                       decoration: InputDecoration(
                         hintText: 'Password',
                         hintStyle: const TextStyle(
-                          color: Color(0xFFB0B7C3),
+                          color: Color(0xFFA9B1B8),
                           fontSize: 15,
                           fontWeight: FontWeight.w400,
                         ),
@@ -307,7 +307,7 @@ class _LoginPageFingerprintState extends State<LoginPageFingerprint> {
                         child: const Icon(
                           Icons.fingerprint_rounded,
                           size: 64,
-                          color: Color(0xFF4A10B4),
+                          color: Color(0xFF173039),
                         ),
                       ),
                     ),
@@ -326,7 +326,7 @@ class _LoginPageFingerprintState extends State<LoginPageFingerprint> {
                           'Forgot Passcode?',
                           style: TextStyle(
                             fontSize: 13,
-                            color: Color(0xFF9CA3AF),
+                            color: Color(0xFF9AA3AB),
                             fontWeight: FontWeight.w500,
                           ),
                         ),

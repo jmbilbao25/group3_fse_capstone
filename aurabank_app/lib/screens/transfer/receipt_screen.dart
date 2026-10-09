@@ -39,11 +39,11 @@ class _TransactionReceiptScreenState extends State<TransactionReceiptScreen> {
   late bool _isSuccess;
 
   static const Color brandViolet = AuraColors.primary;
-  static const Color textDark = Color(0xFF0F172A);
-  static const Color textMuted = Color(0xFF64748B);
-  static const Color cardBorder = Color(0xFFF1F5F9);
-  static const Color greenSuccess = Color(0xFF10B981);
-  static const Color redFail = Color(0xFFDC2626);
+  static const Color textDark = Color(0xFF10171C);
+  static const Color textMuted = Color(0xFF6E7882);
+  static const Color cardBorder = Color(0xFFF1F3F4);
+  static const Color greenSuccess = Color(0xFF2FA37E);
+  static const Color redFail = Color(0xFFC8423B);
 
   @override
   void initState() {
@@ -77,7 +77,7 @@ class _TransactionReceiptScreenState extends State<TransactionReceiptScreen> {
     final refDisplay = widget.referenceNumber.trim().isNotEmpty ? widget.referenceNumber : '1235498758130';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: const Color(0xFFF7F7F7),
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
@@ -101,7 +101,7 @@ class _TransactionReceiptScreenState extends State<TransactionReceiptScreen> {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             shape: BoxShape.circle,
-                            border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+                            border: Border.all(color: const Color(0xFFE6E8EA), width: 1.0),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withValues(alpha: 0.05),
@@ -135,7 +135,7 @@ class _TransactionReceiptScreenState extends State<TransactionReceiptScreen> {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             shape: BoxShape.circle,
-                            border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+                            border: Border.all(color: const Color(0xFFE6E8EA), width: 1.0),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withValues(alpha: 0.05),
@@ -169,13 +169,13 @@ class _TransactionReceiptScreenState extends State<TransactionReceiptScreen> {
                       width: 96,
                       height: 96,
                       decoration: BoxDecoration(
-                        color: _isSuccess ? const Color(0xFFD1FAE5) : const Color(0xFFFFD1D1),
+                        color: _isSuccess ? const Color(0xFFE4F5EE) : const Color(0xFFFFD1D1),
                         shape: BoxShape.circle,
                       ),
                       child: Center(
                         child: Icon(
                           _isSuccess ? Icons.check_rounded : Icons.close_rounded,
-                          color: _isSuccess ? greenSuccess : const Color(0xFFEF4444),
+                          color: _isSuccess ? greenSuccess : const Color(0xFFD9534B),
                           size: 54,
                         ),
                       ),
@@ -229,7 +229,7 @@ class _TransactionReceiptScreenState extends State<TransactionReceiptScreen> {
                       border: Border.all(color: cardBorder, width: 1.2),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF0F172A).withValues(alpha: 0.05),
+                          color: const Color(0xFF10171C).withValues(alpha: 0.05),
                           blurRadius: 18,
                           offset: const Offset(0, 4),
                         ),
@@ -329,7 +329,7 @@ class _TransactionReceiptScreenState extends State<TransactionReceiptScreen> {
                           decoration: BoxDecoration(
                             color: _isSuccess ? brandViolet : Colors.white,
                             borderRadius: BorderRadius.circular(18),
-                            border: _isSuccess ? null : Border.all(color: const Color(0xFFE2E8F0)),
+                            border: _isSuccess ? null : Border.all(color: const Color(0xFFE6E8EA)),
                             boxShadow: [
                               BoxShadow(
                                 color: _isSuccess

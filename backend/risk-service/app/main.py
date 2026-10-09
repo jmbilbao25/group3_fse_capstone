@@ -53,6 +53,7 @@ from app.two_stage import (
 from app.threat_builder import has_threat_context, build_threat_narrative
 from app.warning_catalog import get_warning_dialog
 from hybrid_bench.sar_generator import trigger_sar_async
+from app import sar_registry
 from hybrid_bench.nanojev_typology import NanoJevTypologyEngine
 
 from hybrid_bench.gate0 import Gate0Filter
@@ -204,9 +205,13 @@ def analyze_transfer_risk(req: RiskAnalysisRequest):
     # 2. Location coordinates
     current_lat = req.latitude if req.latitude is not None else home_coords["latitude"]
     current_lon = req.longitude if req.longitude is not None else home_coords["longitude"]
-    prev_lat = last_tx["coordinates"]["latitude"] if last_tx else None
-    prev_lon = last_tx["coordinates"]["longitude"] if last_tx else None
-    prev_time_iso = last_tx["timestamp"] if last_tx else None
+    # The ledger's own last located transfer beats the seeded profile.
+    if req.previous_latitude is not None and req.previous_longitude is not None and req.previous_timestamp:
+        prev_lat, prev_lon, prev_time_iso = req.previous_latitude, req.previous_longitude, req.previous_timestamp
+    else:
+        prev_lat = last_tx["coordinates"]["latitude"] if last_tx else None
+        prev_lon = last_tx["coordinates"]["longitude"] if last_tx else None
+        prev_time_iso = last_tx["timestamp"] if last_tx else None
 
     # 3. Deterministic Geo & Velocity Math
     geo_signals = analyze_location_signals(
@@ -449,6 +454,9 @@ def analyze_transfer_risk(req: RiskAnalysisRequest):
             "balance_drain_ratio": balance_drain,
             "memo": memo,
             "velocity_kmh": geo_signals["velocity_kmh"],
+            "distance_from_home_km": geo_signals["distance_from_home_km"],
+            "distance_from_last_km": geo_signals["distance_from_last_km"],
+            "elapsed_minutes": geo_signals["elapsed_minutes"],
             "is_vpn": req.is_vpn or geo_signals["is_vpn_detected"],
             "rooted": req.rooted or (dev_ctx.rooted if dev_ctx else False),
             "hooking": req.hooking or (dev_ctx.hooking if dev_ctx else False) or (threat_cat == "MEMORY_HOOKING_TAMPER"),
@@ -1072,3 +1080,23 @@ def evaluate_kyc_submission(req: KycEvaluationRequest):
     """
     return kyc_evaluator.evaluate(req)
 
+
+
+# =============================================================================
+# SAR / STR drafts (read-only). Laya drafts; the admin service records the
+# human maker/checker decision in the admin schema.
+# =============================================================================
+@app.get("/api/v1/risk/sar")
+def list_sar_reports():
+    return sar_registry.list_reports()
+
+
+@app.get("/api/v1/risk/sar/{tx_id}")
+def get_sar_report(tx_id: str):
+    try:
+        report = sar_registry.get_report(tx_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    if report is None:
+        raise HTTPException(status_code=404, detail="SAR draft not found")
+    return report

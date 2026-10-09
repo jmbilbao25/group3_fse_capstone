@@ -15,6 +15,11 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional
 
+SAR_DRAFTS_DIR = os.environ.get(
+    "SAR_DRAFTS_DIR",
+    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "hybrid_bench", "reports", "sar_drafts"),
+)
+
 # Background worker pool for fire-and-forget execution
 _SAR_EXECUTOR = ThreadPoolExecutor(max_workers=2, thread_name_prefix="sar_worker")
 
@@ -32,6 +37,7 @@ def format_sar_document(tx: Dict[str, Any], verdict: Dict[str, Any]) -> str:
     balance_drain = float(tx.get("balance_drain_ratio", 0.0))
     velocity_kmh = float(tx.get("velocity_kmh", 0.0))
     distance_home = float(tx.get("distance_from_home_km", 0.0))
+    distance_last = float(tx.get("distance_from_last_km", 0.0))
     is_vpn = bool(tx.get("is_vpn", False))
     memo = str(tx.get("memo", "")).strip()
     memo_signal = str(tx.get("memo_signal", "none"))
@@ -235,8 +241,7 @@ def generate_sar_sync(tx: Dict[str, Any], verdict: Dict[str, Any], output_dir: O
     tx_id = tx.get("transaction_id", f"TX_{int(time.time()*1000)}")
 
     if not output_dir:
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        output_dir = os.path.join(base_dir, "hybrid_bench", "reports", "sar_drafts")
+        output_dir = SAR_DRAFTS_DIR
     os.makedirs(output_dir, exist_ok=True)
 
     file_path = os.path.join(output_dir, f"{tx_id}_SAR.txt")

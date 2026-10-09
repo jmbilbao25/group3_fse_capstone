@@ -18,6 +18,8 @@ DROP TABLE notifications CASCADE CONSTRAINTS;
 DROP TABLE auth_sessions CASCADE CONSTRAINTS;
 DROP TABLE transactions CASCADE CONSTRAINTS;
 DROP TABLE credit_assessments CASCADE CONSTRAINTS;
+DROP TABLE kyc_submissions CASCADE CONSTRAINTS;
+DROP TABLE device_push_tokens CASCADE CONSTRAINTS;
 DROP TABLE balance_master CASCADE CONSTRAINTS;
 DROP TABLE accounts CASCADE CONSTRAINTS;
 DROP TABLE users CASCADE CONSTRAINTS;
@@ -74,13 +76,11 @@ CREATE TABLE accounts (
     account_number VARCHAR2(32) NOT NULL UNIQUE,
     account_type   VARCHAR2(20) NOT NULL,
     status         VARCHAR2(20) DEFAULT 'ACTIVE' NOT NULL,
-    credit_limit   NUMBER(18, 4) DEFAULT 0.0000 NOT NULL,
     created_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     CONSTRAINT fk_acc_user FOREIGN KEY (user_id) REFERENCES users(user_id),
     CONSTRAINT chk_acc_type CHECK (account_type IN ('SAVINGS')),
-    CONSTRAINT chk_acc_status CHECK (status IN ('ACTIVE', 'LOCKED', 'PENDING_APPROVAL')),
-    CONSTRAINT chk_acc_credit_limit CHECK (credit_limit >= 0)
+    CONSTRAINT chk_acc_status CHECK (status IN ('ACTIVE', 'LOCKED', 'PENDING_APPROVAL'))
 );
 
 -- ==============================================================================
@@ -115,6 +115,15 @@ CREATE TABLE transactions (
     status                 VARCHAR2(30) NOT NULL,
     requires_2fa_otp       NUMBER(1) DEFAULT 0 NOT NULL,
     approved_by_user_id    VARCHAR2(64),
+    latitude               NUMBER(10, 6),
+    longitude              NUMBER(10, 6),
+    location_name          VARCHAR2(100),
+    ip_address             VARCHAR2(45),
+    risk_score             NUMBER(5, 2),
+    risk_reason            VARCHAR2(255),
+    reversed_by_user_id    VARCHAR2(64),
+    reversal_reason        VARCHAR2(100),
+    reversal_memo          VARCHAR2(255),
     created_at             TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at             TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     CONSTRAINT fk_tx_from_account FOREIGN KEY (from_account_id) REFERENCES accounts(account_id),
@@ -161,6 +170,58 @@ CREATE TABLE notifications (
     CONSTRAINT chk_notif_type CHECK (type IN ('TRANSACTION_ALERT', 'SECURITY_ALERT', 'CUSTOMER_VERIFICATION_ALERT', 'AMLA_CTR_ALERT'))
 );
 
+-- ==============================================================================
+-- 7. Table: kyc_submissions (Laya e-KYC results + maker/checker review)
+-- Laya only recommends. Every submission waits for a maker recommendation and
+-- a checker decision by a different reviewer before kyc_status changes.
+-- ==============================================================================
+CREATE TABLE kyc_submissions (
+    submission_id     VARCHAR2(64) PRIMARY KEY,
+    user_id           VARCHAR2(64) NOT NULL,
+    id_type           VARCHAR2(40) NOT NULL,
+    front_blob_path   VARCHAR2(255) NOT NULL,
+    back_blob_path    VARCHAR2(255),
+    selfie_blob_path  VARCHAR2(255) NOT NULL,
+    laya_decision     VARCHAR2(20) NOT NULL,
+    confidence_score  NUMBER(5, 2) NOT NULL,
+    face_similarity   NUMBER(5, 4),
+    liveness_score    NUMBER(5, 4),
+    ocr_confidence    NUMBER(5, 4),
+    ocr_full_name     VARCHAR2(200),
+    ocr_dob           VARCHAR2(20),
+    ocr_id_number     VARCHAR2(60),
+    laya_flags        VARCHAR2(1000),
+    laya_summary      VARCHAR2(2000) NOT NULL,
+    status            VARCHAR2(20) DEFAULT 'PENDING_MAKER' NOT NULL,
+    maker_id          VARCHAR2(64),
+    maker_decision    VARCHAR2(10),
+    maker_note        VARCHAR2(500),
+    maker_at          TIMESTAMP WITH TIME ZONE,
+    checker_id        VARCHAR2(64),
+    checker_note      VARCHAR2(500),
+    checker_at        TIMESTAMP WITH TIME ZONE,
+    created_at        TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at        TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT fk_kyc_user FOREIGN KEY (user_id) REFERENCES users(user_id),
+    CONSTRAINT chk_kyc_laya CHECK (laya_decision IN ('APPROVED', 'PENDING_REVIEW', 'REJECTED')),
+    CONSTRAINT chk_kyc_status CHECK (status IN ('PENDING_MAKER', 'PENDING_CHECKER', 'APPROVED', 'REJECTED')),
+    CONSTRAINT chk_kyc_maker_decision CHECK (maker_decision IN ('APPROVE', 'REJECT')),
+    CONSTRAINT chk_kyc_four_eyes CHECK (checker_id IS NULL OR checker_id <> maker_id)
+);
+
+-- ==============================================================================
+-- 8. Table: device_push_tokens (FCM registration per bound device)
+-- ==============================================================================
+CREATE TABLE device_push_tokens (
+    device_id     VARCHAR2(128) PRIMARY KEY,
+    user_id       VARCHAR2(64) NOT NULL,
+    push_token    VARCHAR2(512) NOT NULL,
+    platform      VARCHAR2(20) NOT NULL,
+    created_at    TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at    TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT chk_push_platform CHECK (platform IN ('ANDROID', 'IOS', 'WEB'))
+);
+
 -- Note: Authentication session tokens and revocations are persisted in Redis (redis-cache).
 
 -- ==============================================================================
@@ -172,6 +233,9 @@ CREATE INDEX idx_tx_to_acc ON transactions(to_account_id, created_at DESC);
 CREATE INDEX idx_tx_status ON transactions(status);
 CREATE INDEX idx_outbox_status ON outbox_events(status, created_at);
 CREATE INDEX idx_notif_user ON notifications(user_id, sent_at DESC);
+CREATE INDEX idx_kyc_status ON kyc_submissions(status, created_at);
+CREATE INDEX idx_kyc_user ON kyc_submissions(user_id, created_at DESC);
+CREATE INDEX idx_push_user ON device_push_tokens(user_id);
 
 -- ==============================================================================
 -- Seed Population: Realistic Banking Dataset
@@ -310,38 +374,38 @@ INSERT INTO users (
 );
 
 -- 2. Accounts (Savings Only)
-INSERT INTO accounts (account_id, user_id, account_number, account_type, status, credit_limit)
-VALUES ('1000-2000-3001', 'usr-1001-cst-001', '1000-2000-3001', 'SAVINGS', 'ACTIVE', 0.0000);
+INSERT INTO accounts (account_id, user_id, account_number, account_type, status)
+VALUES ('1000-2000-3001', 'usr-1001-cst-001', '1000-2000-3001', 'SAVINGS', 'ACTIVE');
 
-INSERT INTO accounts (account_id, user_id, account_number, account_type, status, credit_limit)
-VALUES ('1000-2000-3002', 'usr-1002-cst-002', '1000-2000-3002', 'SAVINGS', 'ACTIVE', 0.0000);
+INSERT INTO accounts (account_id, user_id, account_number, account_type, status)
+VALUES ('1000-2000-3002', 'usr-1002-cst-002', '1000-2000-3002', 'SAVINGS', 'ACTIVE');
 
-INSERT INTO accounts (account_id, user_id, account_number, account_type, status, credit_limit)
-VALUES ('acc-2001-sav-001', 'usr-1001-cst-001', '100100001234', 'SAVINGS', 'ACTIVE', 0.0000);
+INSERT INTO accounts (account_id, user_id, account_number, account_type, status)
+VALUES ('acc-2001-sav-001', 'usr-1001-cst-001', '100100001234', 'SAVINGS', 'ACTIVE');
 
-INSERT INTO accounts (account_id, user_id, account_number, account_type, status, credit_limit)
-VALUES ('acc-2002-sav-001', 'usr-1001-cst-001', '100100005678', 'SAVINGS', 'ACTIVE', 0.0000);
+INSERT INTO accounts (account_id, user_id, account_number, account_type, status)
+VALUES ('acc-2002-sav-001', 'usr-1001-cst-001', '100100005678', 'SAVINGS', 'ACTIVE');
 
-INSERT INTO accounts (account_id, user_id, account_number, account_type, status, credit_limit)
-VALUES ('acc-2003-sav-002', 'usr-1002-cst-002', '100200009999', 'SAVINGS', 'ACTIVE', 0.0000);
+INSERT INTO accounts (account_id, user_id, account_number, account_type, status)
+VALUES ('acc-2003-sav-002', 'usr-1002-cst-002', '100200009999', 'SAVINGS', 'ACTIVE');
 
-INSERT INTO accounts (account_id, user_id, account_number, account_type, status, credit_limit)
-VALUES ('1000-2000-3004', 'usr-2003-cst-003', '1000-2000-3004', 'SAVINGS', 'ACTIVE', 0.0000);
+INSERT INTO accounts (account_id, user_id, account_number, account_type, status)
+VALUES ('1000-2000-3004', 'usr-2003-cst-003', '1000-2000-3004', 'SAVINGS', 'ACTIVE');
 
-INSERT INTO accounts (account_id, user_id, account_number, account_type, status, credit_limit)
-VALUES ('1000-2000-3005', 'usr-2004-cst-004', '1000-2000-3005', 'SAVINGS', 'ACTIVE', 0.0000);
+INSERT INTO accounts (account_id, user_id, account_number, account_type, status)
+VALUES ('1000-2000-3005', 'usr-2004-cst-004', '1000-2000-3005', 'SAVINGS', 'ACTIVE');
 
-INSERT INTO accounts (account_id, user_id, account_number, account_type, status, credit_limit)
-VALUES ('1000-2000-3006', 'usr-2005-cst-005', '1000-2000-3006', 'SAVINGS', 'ACTIVE', 0.0000);
+INSERT INTO accounts (account_id, user_id, account_number, account_type, status)
+VALUES ('1000-2000-3006', 'usr-2005-cst-005', '1000-2000-3006', 'SAVINGS', 'ACTIVE');
 
-INSERT INTO accounts (account_id, user_id, account_number, account_type, status, credit_limit)
-VALUES ('1000-2000-3007', 'usr-2006-cst-006', '1000-2000-3007', 'SAVINGS', 'ACTIVE', 0.0000);
+INSERT INTO accounts (account_id, user_id, account_number, account_type, status)
+VALUES ('1000-2000-3007', 'usr-2006-cst-006', '1000-2000-3007', 'SAVINGS', 'ACTIVE');
 
-INSERT INTO accounts (account_id, user_id, account_number, account_type, status, credit_limit)
-VALUES ('1000-2000-3008', 'usr-2007-cst-007', '1000-2000-3008', 'SAVINGS', 'ACTIVE', 0.0000);
+INSERT INTO accounts (account_id, user_id, account_number, account_type, status)
+VALUES ('1000-2000-3008', 'usr-2007-cst-007', '1000-2000-3008', 'SAVINGS', 'ACTIVE');
 
-INSERT INTO accounts (account_id, user_id, account_number, account_type, status, credit_limit)
-VALUES ('1000-2000-3009', 'usr-2008-cst-008', '1000-2000-3009', 'SAVINGS', 'ACTIVE', 0.0000);
+INSERT INTO accounts (account_id, user_id, account_number, account_type, status)
+VALUES ('1000-2000-3009', 'usr-2008-cst-008', '1000-2000-3009', 'SAVINGS', 'ACTIVE');
 
 -- 3. Balance Master (Exact 4-decimal precision)
 INSERT INTO balance_master (account_id, balance_amount, hold_amount, available_balance)

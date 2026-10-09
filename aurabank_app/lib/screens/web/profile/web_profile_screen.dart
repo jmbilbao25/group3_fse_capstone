@@ -17,9 +17,9 @@ class _WebProfileScreenState extends State<WebProfileScreen> {
   static const Color brandViolet = AuraColors.primary;
   static const Color textDark = AuraColors.textPrimary;
   static const Color textGray = AuraColors.textMuted;
-  static const Color bgSurface = Color(0xFFF9FAFB);
-  static const Color cardBorder = Color(0xFFE5E7EB);
-  static const Color accentGreen = Color(0xFF16A34A);
+  static const Color bgSurface = Color(0xFFF7F7F7);
+  static const Color cardBorder = Color(0xFFEAECEE);
+  static const Color accentGreen = Color(0xFF17805F);
 
   int _selectedNavSection = 0; // 0: General Profile, 1: Security & Auth, 2: Devices & Sessions, 3: Notifications
 
@@ -121,7 +121,7 @@ class _WebProfileScreenState extends State<WebProfileScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFDCFCE7),
+                        color: const Color(0xFFE4F5EE),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(color: const Color(0xFF86EFAC)),
                       ),
@@ -509,7 +509,7 @@ class _WebProfileScreenState extends State<WebProfileScreen> {
                 );
               },
               style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFFDC2626),
+                foregroundColor: const Color(0xFFC8423B),
                 side: const BorderSide(color: Color(0xFFFCA5A5)),
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -553,7 +553,7 @@ class _WebProfileScreenState extends State<WebProfileScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isCurrent ? brandViolet.withValues(alpha: 0.03) : const Color(0xFFF9FAFB),
+        color: isCurrent ? brandViolet.withValues(alpha: 0.03) : const Color(0xFFF7F7F7),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: isCurrent ? brandViolet.withValues(alpha: 0.2) : cardBorder),
       ),
@@ -584,7 +584,7 @@ class _WebProfileScreenState extends State<WebProfileScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFDCFCE7),
+                          color: const Color(0xFFE4F5EE),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: const Text('CURRENT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: accentGreen)),

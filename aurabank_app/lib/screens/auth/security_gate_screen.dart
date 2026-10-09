@@ -212,7 +212,7 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
               margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: const Color(0xFFF3F4F6),
+                color: const Color(0xFFF1F3F4),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
@@ -286,21 +286,21 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFEE2E2),
+                        color: const Color(0xFFFBE9E7),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFFECACA)),
+                        border: Border.all(color: const Color(0xFFF6CFCB)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: const [
-                          Icon(Icons.circle, color: Color(0xFFDC2626), size: 7),
+                          Icon(Icons.circle, color: Color(0xFFC8423B), size: 7),
                           SizedBox(width: 5),
                           Text(
                             'Critical Risk',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w800,
-                              color: Color(0xFFDC2626),
+                              color: Color(0xFFC8423B),
                             ),
                           ),
                         ],
@@ -310,14 +310,14 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFEE2E2),
+                        color: const Color(0xFFFBE9E7),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFFECACA)),
+                        border: Border.all(color: const Color(0xFFF6CFCB)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: const [
-                          Icon(Icons.circle, color: Color(0xFFDC2626), size: 7),
+                          Icon(Icons.circle, color: Color(0xFFC8423B), size: 7),
                           SizedBox(width: 5),
                           Text(
                             'TRANSACTION BLOCKED',
@@ -325,7 +325,7 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
                               fontSize: 10,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0.5,
-                              color: Color(0xFFDC2626),
+                              color: Color(0xFFC8423B),
                             ),
                           ),
                         ],
@@ -442,7 +442,7 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF380084), Color(0xFF6B11D4)],
+                    colors: [Color(0xFF10171C), Color(0xFF2F78A8)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -499,9 +499,9 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFFF9FAFB),
+            color: const Color(0xFFF7F7F7),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFF3F4F6)),
+            border: Border.all(color: const Color(0xFFF1F3F4)),
           ),
           child: Column(
             children: [
@@ -519,8 +519,8 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
                   Expanded(
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFFDC2626),
-                        side: const BorderSide(color: Color(0xFFFECACA)),
+                        foregroundColor: const Color(0xFFC8423B),
+                        side: const BorderSide(color: Color(0xFFF6CFCB)),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       onPressed: () => setState(() => _currentMode = SecurityGateMode.screenSharingDetected),
@@ -531,8 +531,8 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
                   Expanded(
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFFDC2626),
-                        side: const BorderSide(color: Color(0xFFFECACA)),
+                        foregroundColor: const Color(0xFFC8423B),
+                        side: const BorderSide(color: Color(0xFFF6CFCB)),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       onPressed: () => setState(() => _currentMode = SecurityGateMode.transferBlocked),
@@ -577,13 +577,13 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
                     ),
                     selected: isSelected,
                     selectedColor: item.isCritical
-                        ? const Color(0xFFE11D48)
+                        ? const Color(0xFFC8423B)
                         : const Color(0xFFD97706),
-                    backgroundColor: const Color(0xFFF3F4F6),
+                    backgroundColor: const Color(0xFFF1F3F4),
                     side: BorderSide(
                       color: isSelected
                           ? Colors.transparent
-                          : const Color(0xFFE5E7EB),
+                          : const Color(0xFFEAECEE),
                     ),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
@@ -609,13 +609,13 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
               color: threat.isCritical
-                  ? const Color(0xFFFFE4E6)
+                  ? const Color(0xFFFBE9E7)
                   : const Color(0xFFFEF3C7),
             ),
             boxShadow: [
               BoxShadow(
                 color: (threat.isCritical
-                        ? const Color(0xFFE11D48)
+                        ? const Color(0xFFC8423B)
                         : const Color(0xFFD97706))
                     .withValues(alpha: 0.05),
                 blurRadius: 16,
@@ -633,7 +633,7 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFF3F4F6)),
+                  border: Border.all(color: const Color(0xFFF1F3F4)),
                 ),
                 child: Icon(
                   threat.leftIcon,
@@ -647,7 +647,7 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
                 size: const Size(42, 2),
                 painter: _DashedLinePainter(
                   color: threat.isCritical
-                      ? const Color(0xFFFDA4AF)
+                      ? const Color(0xFFF2B2AC)
                       : const Color(0xFFFDE68A),
                 ),
               ),
@@ -661,13 +661,13 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
                     height: 66,
                     decoration: BoxDecoration(
                       color: threat.isCritical
-                          ? const Color(0xFFE11D48)
+                          ? const Color(0xFFC8423B)
                           : const Color(0xFFD97706),
                       borderRadius: BorderRadius.circular(18),
                       boxShadow: [
                         BoxShadow(
                           color: (threat.isCritical
-                                  ? const Color(0xFFE11D48)
+                                  ? const Color(0xFFC8423B)
                                   : const Color(0xFFD97706))
                               .withValues(alpha: 0.35),
                           blurRadius: 14,
@@ -710,7 +710,7 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
                 size: const Size(42, 2),
                 painter: _DashedLinePainter(
                   color: threat.isCritical
-                      ? const Color(0xFFFDA4AF)
+                      ? const Color(0xFFF2B2AC)
                       : const Color(0xFFFDE68A),
                 ),
               ),
@@ -722,7 +722,7 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFF3F4F6)),
+                  border: Border.all(color: const Color(0xFFF1F3F4)),
                 ),
                 child: Icon(
                   threat.rightIcon,
@@ -810,7 +810,7 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: _transferCancelled
-                  ? const Color(0xFF059669)
+                  ? const Color(0xFF17805F)
                   : AuraColors.primary,
               foregroundColor: Colors.white,
               elevation: 0,
@@ -822,7 +822,7 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Transaction cancelled safely to prevent unauthorized transfer.'),
-                  backgroundColor: Color(0xFF059669),
+                  backgroundColor: Color(0xFF17805F),
                 ),
               );
             },
@@ -853,7 +853,7 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
             style: OutlinedButton.styleFrom(
               backgroundColor: Colors.white,
               side: BorderSide(
-                color: _isPaused ? const Color(0xFFFBBF24) : const Color(0xFFE5E7EB),
+                color: _isPaused ? const Color(0xFFFBBF24) : const Color(0xFFEAECEE),
                 width: 1.5,
               ),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
@@ -904,7 +904,7 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
               fontWeight: FontWeight.w600,
               color: _continueCountdown == 0
                   ? AuraColors.textPrimary
-                  : const Color(0xFF9CA3AF),
+                  : const Color(0xFF9AA3AB),
             ),
           ),
         ),
@@ -925,18 +925,18 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
           height: 130,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: const Color(0xFFFEE2E2).withValues(alpha: 0.6),
+            color: const Color(0xFFFBE9E7).withValues(alpha: 0.6),
           ),
           alignment: Alignment.center,
           child: Container(
             width: 78,
             height: 78,
             decoration: BoxDecoration(
-              color: const Color(0xFFDC2626),
+              color: const Color(0xFFC8423B),
               borderRadius: BorderRadius.circular(22),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFDC2626).withValues(alpha: 0.4),
+                  color: const Color(0xFFC8423B).withValues(alpha: 0.4),
                   blurRadius: 18,
                   offset: const Offset(0, 8),
                 ),
@@ -987,7 +987,7 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
           height: 52,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1E1E2D),
+              backgroundColor: const Color(0xFF10171C),
               foregroundColor: Colors.white,
               elevation: 0,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
@@ -1013,8 +1013,8 @@ class _SecurityGateScreenState extends State<SecurityGateScreen>
           height: 50,
           child: OutlinedButton(
             style: OutlinedButton.styleFrom(
-              backgroundColor: const Color(0xFFFAF7FF),
-              side: const BorderSide(color: Color(0xFFE9D5FF), width: 1.2),
+              backgroundColor: const Color(0xFFF5F9FB),
+              side: const BorderSide(color: Color(0xFFC9EBDD), width: 1.2),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
             ),
             onPressed: () {
@@ -1058,8 +1058,8 @@ class _RadarArcPainter extends CustomPainter {
       ..shader = const SweepGradient(
         colors: [
           Colors.transparent,
-          Color(0xFF8B5CF6),
-          Color(0xFF5E17EB),
+          Color(0xFF5AA9D6),
+          Color(0xFF2F78A8),
         ],
         stops: [0.0, 0.7, 1.0],
       ).createShader(Rect.fromCircle(center: center, radius: radius))
@@ -1084,7 +1084,7 @@ class _RadarArcPainter extends CustomPainter {
 class _DashedLinePainter extends CustomPainter {
   final Color color;
 
-  _DashedLinePainter({this.color = const Color(0xFFFDA4AF)});
+  _DashedLinePainter({this.color = const Color(0xFFF2B2AC)});
 
   @override
   void paint(Canvas canvas, Size size) {

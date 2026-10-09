@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/user_persona.dart';
 import '../../services/auth_api_service.dart';
 import '../../services/notification_stream_service.dart';
-import '../../widgets/brand_logo.dart';
+import '../../widgets/aura_logo.dart';
 import '../../widgets/security_dialog.dart';
 
 class PendingApprovalScreen extends StatefulWidget {
@@ -214,7 +214,7 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const BrandLockup(markSize: 44),
+                  const AuraWordmark(size: 44),
                   const SizedBox(height: 28),
 
                   // Animated Pending Icon
@@ -299,7 +299,7 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
                               size: 18,
                               color: isDark
                                   ? const Color(0xFF6B7FFF)
-                                  : const Color(0xFF3A4CD6),
+                                  : const Color(0xFF2F78A8),
                             ),
                             const SizedBox(width: 8),
                             const Expanded(
@@ -441,7 +441,7 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
                           size: 16,
                           color: isDark
                               ? const Color(0xFF6B7FFF)
-                              : const Color(0xFF3A4CD6),
+                              : const Color(0xFF2F78A8),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -468,7 +468,7 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
                       key: const Key('btn_check_pending_status'),
                       onPressed: _isChecking ? null : _manualCheckStatus,
                       style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFF3A4CD6),
+                        backgroundColor: const Color(0xFF2F78A8),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),

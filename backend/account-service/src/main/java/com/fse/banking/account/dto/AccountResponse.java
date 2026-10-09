@@ -8,7 +8,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 
 @Data
@@ -31,9 +30,6 @@ public class AccountResponse {
 
     @JsonProperty("status")
     private AccountStatus status;
-
-    @JsonProperty("credit_limit")
-    private BigDecimal creditLimit;
 
     @JsonProperty("created_at")
     private Instant createdAt;

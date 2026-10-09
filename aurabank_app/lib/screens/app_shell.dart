@@ -30,9 +30,6 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   late int _currentIndex;
 
-  static const Color brandViolet = AuraColors.primary;
-  static const Color textGray = AuraColors.textMuted;
-
   @override
   void initState() {
     super.initState();
@@ -78,7 +75,7 @@ class _AppShellState extends State<AppShell> {
     ];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: AuraColors.canvas,
       body: Row(
         children: [
           // 1. Persistent 260px Left Sidebar
@@ -90,7 +87,7 @@ class _AppShellState extends State<AppShell> {
             },
           ),
 
-          // 2. Main Content Viewport
+          const VerticalDivider(width: 1),
           Expanded(
             child: Column(
               children: [
@@ -126,7 +123,7 @@ class _AppShellState extends State<AppShell> {
     ];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: AuraColors.canvas,
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 540),
@@ -136,126 +133,64 @@ class _AppShellState extends State<AppShell> {
           ),
         ),
       ),
-      bottomNavigationBar: SafeArea(
+      bottomNavigationBar: Center(
+        heightFactor: 1,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 540),
+          child: _buildBottomBar(),
+        ),
+      ),
+    );
+  }
+
+  static const _tabs = <(int, IconData, IconData, String)>[
+    (0, Icons.home_rounded, Icons.home_outlined, 'Home'),
+    (1, Icons.credit_card_rounded, Icons.credit_card_outlined, 'Cards'),
+    (2, Icons.qr_code_scanner_rounded, Icons.qr_code_scanner_rounded, 'Scan'),
+    (3, Icons.insights_rounded, Icons.insights_outlined, 'Insights'),
+    (4, Icons.person_rounded, Icons.person_outline_rounded, 'Profile'),
+  ];
+
+  Widget _buildBottomBar() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: AuraColors.cardBorder)),
+      ),
+      child: SafeArea(
         top: false,
-        child: Center(
-          heightFactor: 1.0,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 540),
-            child: SizedBox(
-              height: 66 + MediaQuery.of(context).padding.bottom,
-              child: _buildLuxuryBottomBar(),
-            ),
+        child: SizedBox(
+          height: 68,
+          child: Row(
+            children: [
+              for (final t in _tabs)
+                Expanded(child: t.$1 == 2 ? _buildScanTab() : _buildNavItem(index: t.$1, icon: t.$2, unselectedIcon: t.$3, label: t.$4)),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildLuxuryBottomBar() {
-    final bottomInset = MediaQuery.of(context).padding.bottom;
-
-    return Container(
-      color: Colors.transparent,
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.bottomCenter,
-        children: [
-          // Background Bar Container with rounded top and violet ambient shadow
-          Container(
-            height: 66 + bottomInset,
-            padding: EdgeInsets.only(bottom: bottomInset, top: 6),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
-              border: const Border(
-                top: BorderSide(color: Color(0xFFEDE9FE), width: 1.0),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: brandViolet.withValues(alpha: 0.08),
-                  blurRadius: 18,
-                  offset: const Offset(0, -4),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildNavItem(
-                  index: 0,
-                  icon: Icons.home_rounded,
-                  unselectedIcon: Icons.home_outlined,
-                  label: 'Home',
-                ),
-                _buildNavItem(
-                  index: 1,
-                  icon: Icons.credit_card_rounded,
-                  unselectedIcon: Icons.credit_card_outlined,
-                  label: 'Cards',
-                ),
-                // Spacer for elevated center floating button
-                const SizedBox(width: 56),
-                _buildNavItem(
-                  index: 3,
-                  icon: Icons.show_chart_rounded,
-                  unselectedIcon: Icons.show_chart_rounded,
-                  label: 'Analytics',
-                ),
-                _buildNavItem(
-                  index: 4,
-                  icon: Icons.person_rounded,
-                  unselectedIcon: Icons.person_outline_rounded,
-                  label: 'Profile',
-                ),
-              ],
+  Widget _buildScanTab() {
+    final selected = _currentIndex == 2;
+    return Center(
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: 'Scan',
+        child: Material(
+          color: selected ? AuraColors.mint : AuraColors.ink,
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: () => setState(() => _currentIndex = 2),
+            child: SizedBox.square(
+              dimension: 50,
+              child: Icon(Icons.qr_code_scanner_rounded, size: 22, color: selected ? AuraColors.ink : Colors.white),
             ),
           ),
-
-          // Elevated Floating Center Action Button (Scan QR)
-          Positioned(
-            top: -16,
-            child: GestureDetector(
-              onTap: () => setState(() => _currentIndex = 2),
-              behavior: HitTestBehavior.opaque,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: AuraColors.balanceHeroGradient,
-                      border: Border.all(color: Colors.white, width: 3.5),
-                      boxShadow: [
-                        BoxShadow(
-                          color: brandViolet.withValues(alpha: 0.40),
-                          blurRadius: 14,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.qr_code_scanner_rounded,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Scan',
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: _currentIndex == 2 ? FontWeight.w800 : FontWeight.w600,
-                      color: _currentIndex == 2 ? brandViolet : textGray,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -267,38 +202,35 @@ class _AppShellState extends State<AppShell> {
     required String label,
   }) {
     final isSelected = _currentIndex == index;
-
-    return Expanded(
-      child: GestureDetector(
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: label,
+      child: InkResponse(
         onTap: () => setState(() => _currentIndex = index),
-        behavior: HitTestBehavior.opaque,
+        radius: 32,
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: EdgeInsets.symmetric(
-                horizontal: isSelected ? 12 : 6,
-                vertical: 3,
-              ),
+              duration: AuraMotion.resolve(context, AuraMotion.fast),
+              curve: AuraMotion.standard,
+              padding: EdgeInsets.symmetric(horizontal: isSelected ? 16 : 8, vertical: 5),
               decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFFF5EEFF) : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
+                color: isSelected ? AuraColors.tintPurple : Colors.transparent,
+                borderRadius: BorderRadius.circular(99),
               ),
-              child: Icon(
-                isSelected ? icon : unselectedIcon,
-                color: isSelected ? brandViolet : textGray,
-                size: 22,
-              ),
+              child: Icon(isSelected ? icon : unselectedIcon, size: 22, color: isSelected ? AuraColors.ink : AuraColors.textMuted),
             ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10.5,
-                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-                color: isSelected ? brandViolet : textGray,
+            const SizedBox(height: 3),
+            ExcludeSemantics(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  color: isSelected ? AuraColors.ink : AuraColors.textMuted,
+                ),
               ),
             ),
           ],

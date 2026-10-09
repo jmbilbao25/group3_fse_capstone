@@ -53,17 +53,12 @@ public class AccountProvisioningService {
                 ? request.getInitialDeposit().setScale(4, RoundingMode.HALF_UP)
                 : BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP);
 
-        BigDecimal creditLimit = (request.getAccountType() == AccountType.CREDIT)
-                ? initialDeposit
-                : BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP);
-
         AccountEntity account = AccountEntity.builder()
                 .accountId(accountId)
                 .userId(user.getUserId())
                 .accountNumber(accountNumber)
                 .accountType(request.getAccountType())
                 .status(AccountStatus.ACTIVE)
-                .creditLimit(creditLimit)
                 .build();
 
         BalanceMasterEntity balanceMaster = BalanceMasterEntity.builder()
@@ -129,8 +124,6 @@ public class AccountProvisioningService {
     private String generateUniqueAccountNumber(AccountType type) {
         String prefix = switch (type) {
             case SAVINGS -> "1001";
-            case CHECKING -> "1002";
-            case CREDIT -> "4001";
         };
 
         String candidate;
@@ -154,7 +147,6 @@ public class AccountProvisioningService {
                 .accountNumber(entity.getAccountNumber())
                 .accountType(entity.getAccountType())
                 .status(entity.getStatus())
-                .creditLimit(entity.getCreditLimit())
                 .createdAt(entity.getCreatedAt())
                 .build();
     }

@@ -114,7 +114,7 @@ class ScreenSharingWarningSheet extends StatelessWidget {
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
-                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                color: isDark ? Colors.white : const Color(0xFF10171C),
                 letterSpacing: -0.3,
               ),
             ),
@@ -126,7 +126,7 @@ class ScreenSharingWarningSheet extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14.5,
                   height: 1.45,
-                  color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155),
+                  color: isDark ? const Color(0xFFD5DADF) : const Color(0xFF334155),
                 ),
                 children: [
                   const TextSpan(
@@ -136,7 +136,7 @@ class ScreenSharingWarningSheet extends StatelessWidget {
                     text: 'Aura Bank will never ask you to share your screen',
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
-                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      color: isDark ? Colors.white : const Color(0xFF10171C),
                     ),
                   ),
                   const TextSpan(
@@ -191,7 +191,7 @@ class ScreenSharingWarningSheet extends StatelessWidget {
                   backgroundColor: isDark ? const Color(0xFF262C38) : Colors.white,
                   foregroundColor: isDark ? const Color(0xFF93A8FF) : brandPurple,
                   side: BorderSide(
-                    color: isDark ? const Color(0xFF384357) : const Color(0xFFE2E8F0),
+                    color: isDark ? const Color(0xFF384357) : const Color(0xFFE6E8EA),
                     width: 1.5,
                   ),
                   elevation: isDark ? 0 : 1,
@@ -229,7 +229,7 @@ class ScreenSharingWarningSheet extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w500,
-                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    color: isDark ? const Color(0xFF9AA3AB) : const Color(0xFF6E7882),
                   ),
                 ),
                 Padding(
@@ -238,7 +238,7 @@ class ScreenSharingWarningSheet extends StatelessWidget {
                     '•',
                     style: TextStyle(
                       fontSize: 12.5,
-                      color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                      color: isDark ? const Color(0xFF6E7882) : const Color(0xFF9AA3AB),
                     ),
                   ),
                 ),
@@ -326,13 +326,13 @@ class _ScreenShareIconPainter extends CustomPainter {
 
     // Glowing signal dot in vibrant red/orange
     final dotPaint = Paint()
-      ..color = const Color(0xFFDC2626)
+      ..color = const Color(0xFFC8423B)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(signalDotCenter, 3.2, dotPaint);
 
     // Radiating broadcast wave arc
     final wavePaint = Paint()
-      ..color = const Color(0xFFDC2626)
+      ..color = const Color(0xFFC8423B)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.6
       ..strokeCap = StrokeCap.round;

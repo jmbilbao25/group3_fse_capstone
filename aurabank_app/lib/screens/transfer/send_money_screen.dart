@@ -48,20 +48,6 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
       'balance': _bankService.availableBalance,
       'icon': Icons.account_balance_rounded,
     },
-    {
-      'type': 'Current',
-      'title': 'Current Account',
-      'accountNo': 'AUR-CUR-4412',
-      'balance': 125000.0,
-      'icon': Icons.account_balance_wallet_rounded,
-    },
-    {
-      'type': 'Credit',
-      'title': 'Credit Account',
-      'accountNo': 'AUR-CRD-7703',
-      'balance': 75000.0,
-      'icon': Icons.credit_card_rounded,
-    },
   ];
 
   static const List<Map<String, dynamic>> _purposes = [
@@ -100,7 +86,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
       'shortName': 'Apex Digital',
       'group': 'Group 1 Partner Bank • APX-001',
       'avatar': 'A',
-      'color': Color(0xFF047857),
+      'color': Color(0xFF17805F),
     },
     {
       'name': 'Nexus Core Bank',
@@ -169,7 +155,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           behavior: SnackBarBehavior.floating,
-          backgroundColor: const Color(0xFFDC2626),
+          backgroundColor: const Color(0xFFC8423B),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           content: const Row(
             children: [
@@ -187,7 +173,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           behavior: SnackBarBehavior.floating,
-          backgroundColor: const Color(0xFFDC2626),
+          backgroundColor: const Color(0xFFC8423B),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           content: const Row(
             children: [
@@ -233,7 +219,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: const Color(0xFFF7F7F7),
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
@@ -302,7 +288,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
           ),
           child: IconButton(
             icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
-            color: const Color(0xFF38008A),
+            color: const Color(0xFF10171C),
             onPressed: widget.onBack ?? () => Navigator.of(context).pop(),
           ),
         ),
@@ -354,7 +340,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE5E7EB), width: 1.0),
+          border: Border.all(color: const Color(0xFFEAECEE), width: 1.0),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.03),
@@ -382,7 +368,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                   '$_selectedSourceAccount Account • ₱${_formatAmountPlain(_currentSourceBalance)}',
                   style: const TextStyle(
                     fontSize: 11.5,
-                    color: Color(0xFF6B7280),
+                    color: Color(0xFF7D8892),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -394,7 +380,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFFE5E7EB)),
+                border: Border.all(color: const Color(0xFFEAECEE)),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.04),
@@ -405,7 +391,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
               ),
               child: const Icon(
                 Icons.keyboard_arrow_down_rounded,
-                color: Color(0xFF38008A),
+                color: Color(0xFF10171C),
                 size: 24,
               ),
             ),
@@ -420,7 +406,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
       height: 44,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFFE5E7EB),
+        color: const Color(0xFFEAECEE),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -448,7 +434,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
-                    color: _isAuraToAura ? const Color(0xFF38008A) : const Color(0xFF6B7280),
+                    color: _isAuraToAura ? const Color(0xFF10171C) : const Color(0xFF7D8892),
                   ),
                 ),
               ),
@@ -478,7 +464,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                     Icon(
                       Icons.account_balance_rounded,
                       size: 15,
-                      color: !_isAuraToAura ? const Color(0xFF38008A) : const Color(0xFF6B7280),
+                      color: !_isAuraToAura ? const Color(0xFF10171C) : const Color(0xFF7D8892),
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -486,7 +472,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w800,
-                        color: !_isAuraToAura ? const Color(0xFF38008A) : const Color(0xFF6B7280),
+                        color: !_isAuraToAura ? const Color(0xFF10171C) : const Color(0xFF7D8892),
                       ),
                     ),
                   ],
@@ -508,7 +494,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB), width: 1.0),
+        border: Border.all(color: const Color(0xFFEAECEE), width: 1.0),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -527,7 +513,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF3E8FF),
+                  color: const Color(0xFFE6F6EF),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
@@ -536,7 +522,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF38008A),
+                        color: const Color(0xFF10171C),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       alignment: Alignment.center,
@@ -566,7 +552,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                           'Partner Bank',
                           style: TextStyle(
                             fontSize: 11,
-                            color: Color(0xFF6B7280),
+                            color: Color(0xFF7D8892),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -576,7 +562,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFDCFCE7),
+                        color: const Color(0xFFE4F5EE),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Text(
@@ -584,7 +570,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF16A34A),
+                          color: Color(0xFF17805F),
                           fontStyle: FontStyle.italic,
                         ),
                       ),
@@ -601,7 +587,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF6B7280),
+              color: Color(0xFF7D8892),
             ),
           ),
           const SizedBox(height: 6),
@@ -609,7 +595,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
             height: 44,
             padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
-              color: const Color(0xFFF3F4F6),
+              color: const Color(0xFFF1F3F4),
               borderRadius: BorderRadius.circular(10),
             ),
             alignment: Alignment.centerLeft,
@@ -627,7 +613,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                 contentPadding: EdgeInsets.zero,
                 hintText: '1234 5678 9123 4569',
                 hintStyle: TextStyle(
-                  color: Color(0xFF9CA3AF),
+                  color: Color(0xFF9AA3AB),
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -641,7 +627,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF6B7280),
+              color: Color(0xFF7D8892),
             ),
           ),
           const SizedBox(height: 6),
@@ -649,7 +635,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
             height: 44,
             padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
-              color: const Color(0xFFF3F4F6),
+              color: const Color(0xFFF1F3F4),
               borderRadius: BorderRadius.circular(10),
             ),
             alignment: Alignment.centerLeft,
@@ -666,7 +652,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                 contentPadding: EdgeInsets.zero,
                 hintText: 'Jessie Mae Dela Paz',
                 hintStyle: TextStyle(
-                  color: Color(0xFF9CA3AF),
+                  color: Color(0xFF9AA3AB),
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -684,7 +670,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB), width: 1.0),
+        border: Border.all(color: const Color(0xFFEAECEE), width: 1.0),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -701,7 +687,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF6B7280),
+              color: Color(0xFF7D8892),
             ),
           ),
           const SizedBox(height: 8),
@@ -709,7 +695,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
             height: 46,
             padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
-              color: const Color(0xFFF3F4F6),
+              color: const Color(0xFFF1F3F4),
               borderRadius: BorderRadius.circular(10),
             ),
             alignment: Alignment.centerLeft,
@@ -738,7 +724,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                       contentPadding: EdgeInsets.zero,
                       hintText: '0.00',
                       hintStyle: TextStyle(
-                        color: Color(0xFF9CA3AF),
+                        color: Color(0xFF9AA3AB),
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -752,7 +738,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
             'Transfer Fee: PHP 10.00',
             style: TextStyle(
               fontSize: 10,
-              color: Color(0xFF9CA3AF),
+              color: Color(0xFF9AA3AB),
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -768,7 +754,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB), width: 1.0),
+        border: Border.all(color: const Color(0xFFEAECEE), width: 1.0),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -796,7 +782,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
               height: 44,
               padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
-                color: const Color(0xFFF3F4F6),
+                color: const Color(0xFFF1F3F4),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(
@@ -807,12 +793,12 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                     style: TextStyle(
                       fontSize: 12.5,
                       fontWeight: _selectedPurpose != null ? FontWeight.w700 : FontWeight.w500,
-                      color: _selectedPurpose != null ? Colors.black : const Color(0xFF6B7280),
+                      color: _selectedPurpose != null ? Colors.black : const Color(0xFF7D8892),
                     ),
                   ),
                   const Icon(
                     Icons.keyboard_arrow_down_rounded,
-                    color: Color(0xFF38008A),
+                    color: Color(0xFF10171C),
                     size: 22,
                   ),
                 ],
@@ -835,7 +821,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
             height: 44,
             padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
-              color: const Color(0xFFF3F4F6),
+              color: const Color(0xFFF1F3F4),
               borderRadius: BorderRadius.circular(10),
             ),
             alignment: Alignment.centerLeft,
@@ -852,7 +838,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                 contentPadding: EdgeInsets.zero,
                 hintText: 'Enter details',
                 hintStyle: TextStyle(
-                  color: Color(0xFF9CA3AF),
+                  color: Color(0xFF9AA3AB),
                   fontSize: 12.5,
                 ),
               ),
@@ -870,11 +856,11 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
         width: double.infinity,
         height: 50,
         decoration: BoxDecoration(
-          color: const Color(0xFF38008A),
+          color: const Color(0xFF10171C),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF38008A).withValues(alpha: 0.35),
+              color: const Color(0xFF10171C).withValues(alpha: 0.35),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -920,7 +906,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFCBD5E1),
+                  color: const Color(0xFFD5DADF),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -940,10 +926,10 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
               return Container(
                 margin: const EdgeInsets.only(bottom: 10),
                 decoration: BoxDecoration(
-                  color: isSel ? const Color(0xFFF3E8FF) : const Color(0xFFF8FAFC),
+                  color: isSel ? const Color(0xFFE6F6EF) : const Color(0xFFF7F7F7),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: isSel ? const Color(0xFF38008A) : const Color(0xFFE2E8F0),
+                    color: isSel ? const Color(0xFF10171C) : const Color(0xFFE6E8EA),
                     width: isSel ? 1.5 : 1.0,
                   ),
                 ),
@@ -952,12 +938,12 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: isSel ? const Color(0xFF38008A) : Colors.white,
+                      color: isSel ? const Color(0xFF10171C) : Colors.white,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       acc['icon'] as IconData,
-                      color: isSel ? Colors.white : const Color(0xFF6B7280),
+                      color: isSel ? Colors.white : const Color(0xFF7D8892),
                       size: 20,
                     ),
                   ),
@@ -967,10 +953,10 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                   ),
                   subtitle: Text(
                     '${acc['accountNo']} • Available: ₱${_formatAmountPlain(acc['balance'] as double)}',
-                    style: const TextStyle(fontSize: 11.5, color: Color(0xFF6B7280)),
+                    style: const TextStyle(fontSize: 11.5, color: Color(0xFF7D8892)),
                   ),
                   trailing: isSel
-                      ? const Icon(Icons.check_circle_rounded, color: Color(0xFF38008A), size: 22)
+                      ? const Icon(Icons.check_circle_rounded, color: Color(0xFF10171C), size: 22)
                       : null,
                   onTap: () {
                     setState(() => _selectedSourceAccount = acc['type'] as String);
@@ -1003,7 +989,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFCBD5E1),
+                  color: const Color(0xFFD5DADF),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -1024,10 +1010,10 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
               return Container(
                 margin: const EdgeInsets.only(bottom: 10),
                 decoration: BoxDecoration(
-                  color: isSel ? const Color(0xFFF3E8FF) : const Color(0xFFF8FAFC),
+                  color: isSel ? const Color(0xFFE6F6EF) : const Color(0xFFF7F7F7),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: isSel ? const Color(0xFF38008A) : const Color(0xFFE2E8F0),
+                    color: isSel ? const Color(0xFF10171C) : const Color(0xFFE6E8EA),
                     width: isSel ? 1.5 : 1.0,
                   ),
                 ),
@@ -1036,7 +1022,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF38008A),
+                      color: const Color(0xFF10171C),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     alignment: Alignment.center,
@@ -1055,10 +1041,10 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                   ),
                   subtitle: Text(
                     b['group'] as String,
-                    style: const TextStyle(fontSize: 11.5, color: Color(0xFF6B7280)),
+                    style: const TextStyle(fontSize: 11.5, color: Color(0xFF7D8892)),
                   ),
                   trailing: isSel
-                      ? const Icon(Icons.check_circle_rounded, color: Color(0xFF38008A), size: 22)
+                      ? const Icon(Icons.check_circle_rounded, color: Color(0xFF10171C), size: 22)
                       : null,
                   onTap: () {
                     setState(() => _selectedPartnerBankIndex = idx);
@@ -1091,7 +1077,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFCBD5E1),
+                  color: const Color(0xFFD5DADF),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -1112,10 +1098,10 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
               return Container(
                 margin: const EdgeInsets.only(bottom: 10),
                 decoration: BoxDecoration(
-                  color: isSel ? const Color(0xFFF3E8FF) : const Color(0xFFF8FAFC),
+                  color: isSel ? const Color(0xFFE6F6EF) : const Color(0xFFF7F7F7),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: isSel ? const Color(0xFF38008A) : const Color(0xFFE2E8F0),
+                    color: isSel ? const Color(0xFF10171C) : const Color(0xFFE6E8EA),
                     width: isSel ? 1.5 : 1.0,
                   ),
                 ),
@@ -1124,12 +1110,12 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                     width: 38,
                     height: 38,
                     decoration: BoxDecoration(
-                      color: isSel ? const Color(0xFF38008A) : const Color(0xFFEDE9FE),
+                      color: isSel ? const Color(0xFF10171C) : const Color(0xFFEFF6FB),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
                       p['icon'] as IconData,
-                      color: isSel ? Colors.white : const Color(0xFF38008A),
+                      color: isSel ? Colors.white : const Color(0xFF10171C),
                       size: 20,
                     ),
                   ),
@@ -1139,10 +1125,10 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                   ),
                   subtitle: Text(
                     p['desc'] as String,
-                    style: const TextStyle(fontSize: 11.5, color: Color(0xFF6B7280)),
+                    style: const TextStyle(fontSize: 11.5, color: Color(0xFF7D8892)),
                   ),
                   trailing: isSel
-                      ? const Icon(Icons.check_circle_rounded, color: Color(0xFF38008A), size: 22)
+                      ? const Icon(Icons.check_circle_rounded, color: Color(0xFF10171C), size: 22)
                       : null,
                   onTap: () {
                     setState(() => _selectedPurpose = name);

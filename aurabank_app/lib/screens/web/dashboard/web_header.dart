@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+
 import '../../../services/bank_service.dart';
+import '../../../theme/aura_theme.dart';
 
 class WebHeader extends StatelessWidget {
   final VoidCallback? onQuickTransfer;
@@ -13,54 +15,40 @@ class WebHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = BankService().user;
-    final userName = user.name.isNotEmpty ? user.name : 'Elijah Riley Montefalco';
+    final name = BankService().user.name;
+    final first = name.isNotEmpty ? name.split(' ').first : 'Elijah';
+    final h = DateTime.now().hour;
+    final greeting = h < 12 ? 'Good morning' : (h < 18 ? 'Good afternoon' : 'Good evening');
 
     return Container(
-      height: 72,
-      padding: const EdgeInsets.symmetric(horizontal: 28),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: Color(0xFFF3F4F6), width: 1.0),
-        ),
-      ),
+      height: 76,
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      color: AuraColors.canvas,
       child: Row(
         children: [
-          // Greeting
           Expanded(
             child: Text(
-              'Welcome back, $userName',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF111827),
-                letterSpacing: -0.3,
-              ),
+              '$greeting, $first',
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600, letterSpacing: -0.5),
             ),
           ),
-
-          // Notification Bell
-          Stack(
-            children: [
-              IconButton(
-                tooltip: 'Notifications',
-                icon: const Icon(Icons.notifications_none_rounded, color: Color(0xFF4B5563), size: 22),
-                onPressed: () {},
-              ),
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFEF4444),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            ],
+          IconButton(
+            tooltip: 'Refresh',
+            onPressed: onRefresh,
+            icon: const Icon(Icons.refresh_rounded, color: AuraColors.textSecondary),
+          ),
+          const SizedBox(width: 4),
+          IconButton(
+            tooltip: 'Notifications',
+            onPressed: () {},
+            icon: const Icon(Icons.notifications_none_rounded, color: AuraColors.textSecondary),
+          ),
+          const SizedBox(width: 12),
+          FilledButton.icon(
+            onPressed: onQuickTransfer,
+            icon: const Icon(Icons.north_east_rounded, size: 18),
+            label: const Text('Send money'),
+            style: FilledButton.styleFrom(minimumSize: const Size(0, 44), padding: const EdgeInsets.symmetric(horizontal: 20)),
           ),
         ],
       ),

@@ -106,7 +106,7 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
           decoration: InputDecoration(
             hintText: 'Enter transfer purpose or memo',
             filled: true,
-            fillColor: const Color(0xFFF8FAFC),
+            fillColor: const Color(0xFFF7F7F7),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: cardBorder),
@@ -355,10 +355,10 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
                           width: 42,
                           height: 42,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF7928CA).withValues(alpha: 0.15),
+                            color: const Color(0xFF2F78A8).withValues(alpha: 0.15),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.account_balance_rounded, color: Color(0xFF7928CA), size: 22),
+                          child: const Icon(Icons.account_balance_rounded, color: Color(0xFF2F78A8), size: 22),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
@@ -431,7 +431,7 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEDE9FE),
+                        color: const Color(0xFFEFF6FB),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(Icons.notes_rounded, color: AuraColors.primary, size: 20),
@@ -936,14 +936,14 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFFECFDF5),
+                color: const Color(0xFFE4F5EE),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFA7F3D0)),
+                border: Border.all(color: const Color(0xFFA7E8D1)),
               ),
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.verified_rounded, color: Color(0xFF059669), size: 16),
+                  Icon(Icons.verified_rounded, color: Color(0xFF17805F), size: 16),
                   SizedBox(width: 8),
                   Text(
                     'Identity Verified • Secure Transfer',
@@ -976,7 +976,7 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Biometric authorization was cancelled or unverified.'),
-                            backgroundColor: Color(0xFF6B7280),
+                            backgroundColor: Color(0xFF7D8892),
                           ),
                         );
                       }
@@ -1140,10 +1140,10 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
                 width: 64,
                 height: 64,
                 decoration: const BoxDecoration(
-                  color: Color(0xFFFEF2F2),
+                  color: Color(0xFFFDF3F2),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.shield_outlined, color: Color(0xFFDC2626), size: 36),
+                child: const Icon(Icons.shield_outlined, color: Color(0xFFC8423B), size: 36),
               ),
               const SizedBox(height: 16),
               const Text(
@@ -1161,9 +1161,9 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFEF2F2),
+                  color: const Color(0xFFFDF3F2),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFFECACA)),
+                  border: Border.all(color: const Color(0xFFF6CFCB)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1174,7 +1174,7 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
                         Text('Security Status', style: TextStyle(fontSize: 12, color: textGray)),
                         Text(
                           'Protected',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFDC2626)),
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFC8423B)),
                         ),
                       ],
                     ),
@@ -1185,7 +1185,7 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
                         Text('Notice', style: TextStyle(fontSize: 12, color: textGray)),
                         Text(
                           'Suspicious activity detected',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFDC2626)),
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFC8423B)),
                         ),
                       ],
                     ),
@@ -1196,7 +1196,7 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
                         Text('Account Protection', style: TextStyle(fontSize: 12, color: textGray)),
                         Text(
                           'Funds 100% Preserved',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF059669)),
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF17805F)),
                         ),
                       ],
                     ),
@@ -1220,7 +1220,7 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
                 height: 48,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFDC2626),
+                    backgroundColor: const Color(0xFFC8423B),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                     elevation: 0,
@@ -1387,10 +1387,10 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
               width: 64,
               height: 64,
               decoration: const BoxDecoration(
-                color: Color(0xFFECFDF5),
+                color: Color(0xFFE4F5EE),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.shield_rounded, color: Color(0xFF059669), size: 36),
+              child: const Icon(Icons.shield_rounded, color: Color(0xFF17805F), size: 36),
             ),
             const SizedBox(height: 16),
             const Text(
@@ -1492,7 +1492,7 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Biometric authorization was cancelled or unverified.'),
-                              backgroundColor: Color(0xFF6B7280),
+                              backgroundColor: Color(0xFF7D8892),
                             ),
                           );
                         }
@@ -1904,13 +1904,13 @@ class _AdvisoryWarningSheetState extends State<_AdvisoryWarningSheet> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFFFEF2F2),
+                color: const Color(0xFFFDF3F2),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFFECACA)),
+                border: Border.all(color: const Color(0xFFF6CFCB)),
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.shield_outlined, color: Color(0xFFDC2626), size: 16),
+                  Icon(Icons.shield_outlined, color: Color(0xFFC8423B), size: 16),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -1918,7 +1918,7 @@ class _AdvisoryWarningSheetState extends State<_AdvisoryWarningSheet> {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF991B1B),
+                        color: Color(0xFF8E2B26),
                       ),
                     ),
                   ),
@@ -1964,7 +1964,7 @@ class _AdvisoryWarningSheetState extends State<_AdvisoryWarningSheet> {
             height: 48,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFDC2626),
+                backgroundColor: const Color(0xFFC8423B),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                 elevation: 0,
@@ -2089,7 +2089,7 @@ class _AdvisoryWarningSheetState extends State<_AdvisoryWarningSheet> {
               width: 13,
               height: 13,
               decoration: const BoxDecoration(
-                color: Color(0xFFDC2626),
+                color: Color(0xFFC8423B),
                 shape: BoxShape.circle,
               ),
               child: const Center(

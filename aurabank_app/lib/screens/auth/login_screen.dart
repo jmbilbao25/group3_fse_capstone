@@ -29,8 +29,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   bool _showPasswordFields = false; // For biometric-first mode
   bool _hasAutoPrompted = false;
 
-  static const Color brandViolet = Color(0xFF3A0088);
-  static const Color borderViolet = Color(0xFF5E17EB);
+  static const Color brandViolet = Color(0xFF10171C);
+  static const Color borderViolet = Color(0xFF2F78A8);
   static const Color disabledButtonBg = Color(0xFFF1EEFB);
   static const Color disabledButtonText = Color(0xFFD5CDF2);
 
@@ -287,7 +287,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                         style: TextStyle(
                           fontSize: 27,
                           fontWeight: FontWeight.w900,
-                          color: Color(0xFF111827),
+                          color: Color(0xFF10171C),
                           letterSpacing: -0.5,
                         ),
                       ),
@@ -298,7 +298,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                         "Please enter your email and password",
                         style: TextStyle(
                           fontSize: 13,
-                          color: Color(0xFF6B7280),
+                          color: Color(0xFF7D8892),
                         ),
                       ),
 
@@ -333,7 +333,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                 child: const Text(
                                   "Forgot Passcode?",
                                   style: TextStyle(
-                                    color: Color(0xFF9CA3AF),
+                                    color: Color(0xFF9AA3AB),
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -389,7 +389,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           style: const TextStyle(fontSize: 14.5),
           decoration: InputDecoration(
             hintText: "Username",
-            hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13.5),
+            hintStyle: const TextStyle(color: Color(0xFF9AA3AB), fontSize: 13.5),
             contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
@@ -411,7 +411,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           style: const TextStyle(fontSize: 14.5),
           decoration: InputDecoration(
             hintText: "Password",
-            hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13.5),
+            hintStyle: const TextStyle(color: Color(0xFF9AA3AB), fontSize: 13.5),
             contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
             suffixIcon: IconButton(
               key: const ValueKey('passwordVisibilityToggle'),
@@ -563,7 +563,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           const SizedBox(height: 10),
           const Text(
             'Tap Fingerprint or Face ID to sign in',
-            style: TextStyle(fontSize: 11.5, color: Color(0xFF9CA3AF), fontWeight: FontWeight.w500),
+            style: TextStyle(fontSize: 11.5, color: Color(0xFF9AA3AB), fontWeight: FontWeight.w500),
           ),
         ],
       );
@@ -575,7 +575,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           const SizedBox(height: 10),
           const Text(
             'Tap fingerprint sensor to sign in',
-            style: TextStyle(fontSize: 11.5, color: Color(0xFF9CA3AF), fontWeight: FontWeight.w500),
+            style: TextStyle(fontSize: 11.5, color: Color(0xFF9AA3AB), fontWeight: FontWeight.w500),
           ),
         ],
       );
@@ -587,7 +587,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           const SizedBox(height: 10),
           const Text(
             'Tap Face ID to glance and sign in',
-            style: TextStyle(fontSize: 11.5, color: Color(0xFF9CA3AF), fontWeight: FontWeight.w500),
+            style: TextStyle(fontSize: 11.5, color: Color(0xFF9AA3AB), fontWeight: FontWeight.w500),
           ),
         ],
       );
@@ -615,7 +615,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           child: Icon(
             Icons.fingerprint_rounded,
             size: 68,
-            color: Color(0xFF4A10B4),
+            color: Color(0xFF173039),
           ),
         ),
       ),
@@ -644,7 +644,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             width: 54,
             height: 54,
             child: CustomPaint(
-              painter: _FaceIdIconPainter(color: const Color(0xFF4A10B4)),
+              painter: _FaceIdIconPainter(color: const Color(0xFF173039)),
             ),
           ),
         ),
@@ -673,7 +673,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           child: Icon(
             Icons.fingerprint_rounded,
             size: 42,
-            color: Color(0xFF4A10B4),
+            color: Color(0xFF173039),
           ),
         ),
       ),
@@ -702,7 +702,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             width: 36,
             height: 36,
             child: CustomPaint(
-              painter: _FaceIdIconPainter(color: const Color(0xFF4A10B4)),
+              painter: _FaceIdIconPainter(color: const Color(0xFF173039)),
             ),
           ),
         ),
@@ -901,7 +901,7 @@ class _BiometricAuthModalState extends State<_BiometricAuthModal> {
             width: 44,
             height: 4,
             decoration: BoxDecoration(
-              color: const Color(0xFFE5E7EB),
+              color: const Color(0xFFEAECEE),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -912,17 +912,17 @@ class _BiometricAuthModalState extends State<_BiometricAuthModal> {
             height: 90,
             decoration: BoxDecoration(
               color: _verified
-                  ? const Color(0xFFDCFCE7)
+                  ? const Color(0xFFE4F5EE)
                   : (_hasError
-                      ? const Color(0xFFFEE2E2)
-                      : const Color(0xFFF3E8FF)),
+                      ? const Color(0xFFFBE9E7)
+                      : const Color(0xFFE6F6EF)),
               shape: BoxShape.circle,
             ),
             child: Center(
               child: _verified
-                  ? const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 54)
+                  ? const Icon(Icons.check_circle_rounded, color: Color(0xFF17805F), size: 54)
                   : (_hasError
-                      ? const Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 50)
+                      ? const Icon(Icons.error_outline_rounded, color: Color(0xFFC8423B), size: 50)
                       : widget.icon),
             ),
           ),
@@ -934,7 +934,7 @@ class _BiometricAuthModalState extends State<_BiometricAuthModal> {
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF111827),
+              color: Color(0xFF10171C),
             ),
           ),
           const SizedBox(height: 8),
@@ -947,7 +947,7 @@ class _BiometricAuthModalState extends State<_BiometricAuthModal> {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,
-              color: _hasError ? const Color(0xFFDC2626) : const Color(0xFF6B7280),
+              color: _hasError ? const Color(0xFFC8423B) : const Color(0xFF7D8892),
             ),
           ),
           const SizedBox(height: 24),
@@ -958,7 +958,7 @@ class _BiometricAuthModalState extends State<_BiometricAuthModal> {
               child: ElevatedButton(
                 onPressed: _startNativeAuth,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF3A0088),
+                  backgroundColor: const Color(0xFF10171C),
                   foregroundColor: Colors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -971,7 +971,7 @@ class _BiometricAuthModalState extends State<_BiometricAuthModal> {
               onPressed: () => Navigator.of(context).pop(),
               child: const Text(
                 'Cancel & Use Password',
-                style: TextStyle(color: Color(0xFF6B7280), fontWeight: FontWeight.w600),
+                style: TextStyle(color: Color(0xFF7D8892), fontWeight: FontWeight.w600),
               ),
             ),
           ] else if (!_verified) ...[
@@ -979,7 +979,7 @@ class _BiometricAuthModalState extends State<_BiometricAuthModal> {
               onPressed: () => Navigator.of(context).pop(),
               child: const Text(
                 'Cancel',
-                style: TextStyle(color: Color(0xFF6B7280), fontWeight: FontWeight.w600),
+                style: TextStyle(color: Color(0xFF7D8892), fontWeight: FontWeight.w600),
               ),
             ),
           ],

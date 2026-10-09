@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 
-enum AuraLogoStyle {
-  wine, // Rich deep bordeaux wine (#4E0C1B -> #80142D)
-  violet, // Regal imperial violet (#380084 -> #6312C9)
-  white, // Monochrome crisp white (for dark backgrounds)
-  dark, // Modern onyx slate (#181824)
-}
+import '../theme/aura_theme.dart';
 
-/// Official Aura Bank Logo: "The Aura Horizon Monogram"
-/// The signature vector mark featuring an architectural 'A' apex
-/// fused with an orbital continuous radiant ribbon and central geometric spark.
+/// Badge treatments. `violet` and `wine` are legacy names kept for existing
+/// call sites; both now render the ink badge.
+enum AuraLogoStyle { wine, violet, white, dark }
+
+/// The Aura mark: an arch that reads as the letter A and as an aurora arc over
+/// the horizon, crossed by the same ribbon that runs across the cards.
+///
+/// Drawn on a 64 unit grid so the SVG in `frontend/public/mark.svg` and this
+/// painter stay the same shape.
 class AuraLogo extends StatelessWidget {
   final double size;
   final AuraLogoStyle style;
@@ -26,142 +27,120 @@ class AuraLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!showBadgeContainer) {
-      return SizedBox(
-        width: size,
-        height: size,
+    final onLight = style == AuraLogoStyle.white;
+    return Semantics(
+      label: 'Aura Bank',
+      child: SizedBox.square(
+        dimension: size,
         child: CustomPaint(
-          size: Size(size, size),
-          painter: _AuraMonogramPainter(style: style, standalone: true),
-        ),
-      );
-    }
-
-    final List<Color> bgGradient = switch (style) {
-      AuraLogoStyle.wine => const [Color(0xFF4A0E17), Color(0xFF6B1224)],
-      AuraLogoStyle.violet => const [Color(0xFF2E006A), Color(0xFF4B0FAF)],
-      AuraLogoStyle.white => const [Colors.white, Color(0xFFF0F0F4)],
-      AuraLogoStyle.dark => const [Color(0xFF1E1E28), Color(0xFF111118)],
-    };
-
-    final shadowColor = switch (style) {
-      AuraLogoStyle.wine => const Color(0xFF4A0E17).withValues(alpha: 0.35),
-      AuraLogoStyle.violet => const Color(0xFF380084).withValues(alpha: 0.35),
-      AuraLogoStyle.white => Colors.black.withValues(alpha: 0.08),
-      AuraLogoStyle.dark => Colors.black.withValues(alpha: 0.25),
-    };
-
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(borderRadius),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: bgGradient,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: shadowColor,
-            blurRadius: size * 0.25,
-            offset: Offset(0, size * 0.1),
-          ),
-        ],
-      ),
-      child: Center(
-        child: SizedBox(
-          width: size * 0.62,
-          height: size * 0.62,
-          child: CustomPaint(
-            painter: _AuraMonogramPainter(
-              style: style,
-              standalone: false,
-            ),
-          ),
+          painter: AuraMarkPainter(badge: showBadgeContainer, lightBadge: onLight, radius: borderRadius),
         ),
       ),
     );
   }
 }
 
-class _AuraMonogramPainter extends CustomPainter {
-  final AuraLogoStyle style;
-  final bool standalone;
+class AuraMarkPainter extends CustomPainter {
+  const AuraMarkPainter({this.badge = true, this.lightBadge = false, this.radius = 12});
 
-  _AuraMonogramPainter({required this.style, required this.standalone});
+  final bool badge;
+  final bool lightBadge;
+  final double radius;
+
+  static Path arch(double u) => Path()
+    ..moveTo(18 * u, 48 * u)
+    ..cubicTo(18 * u, 29 * u, 24.5 * u, 15 * u, 32 * u, 15 * u)
+    ..cubicTo(39.5 * u, 15 * u, 46 * u, 29 * u, 46 * u, 48 * u);
+
+  static Path ribbon(double u) => Path()
+    ..moveTo(22.5 * u, 37 * u)
+    ..cubicTo(26.5 * u, 33 * u, 29.5 * u, 33 * u, 32 * u, 35.5 * u)
+    ..cubicTo(34.5 * u, 38 * u, 37.5 * u, 38 * u, 41.5 * u, 34 * u);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
+    final u = size.width / 64;
+    final rect = Offset.zero & size;
+    // Unbadged + lightBadge means the bare mark sits on a dark surface.
+    final darkGround = badge ? !lightBadge : lightBadge;
 
-    final Color strokeColor = (style == AuraLogoStyle.white && standalone)
-        ? Colors.white
-        : (!standalone && (style == AuraLogoStyle.wine || style == AuraLogoStyle.violet || style == AuraLogoStyle.dark))
-            ? Colors.white
-            : const Color(0xFF4A0E17);
+    if (badge) {
+      final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
+      canvas.drawRRect(rrect, Paint()..color = lightBadge ? Colors.white : AuraColors.ink);
+      if (darkGround) {
+        // A low glow on the horizon, so the badge reads as a night sky rather
+        // than a flat tile.
+        canvas.save();
+        canvas.clipRRect(rrect);
+        canvas.drawRect(
+          rect,
+          Paint()
+            ..shader = RadialGradient(
+              center: const Alignment(0, 1.1),
+              radius: 0.9,
+              colors: [AuraColors.mint.withValues(alpha: 0.28), AuraColors.mint.withValues(alpha: 0)],
+            ).createShader(rect),
+        );
+        canvas.restore();
+      }
+    }
 
-    final Color accentColor = (style == AuraLogoStyle.wine)
-        ? const Color(0xFFFFC2CD)
-        : (style == AuraLogoStyle.violet)
-            ? const Color(0xFFD4B5FF)
-            : Colors.white;
+    final archColors = darkGround
+        ? const [AuraColors.sky, AuraColors.mint]
+        : const [AuraColors.accentVibrant, AuraColors.accent];
 
-    // 1. Draw the primary upward Architectural 'A' Chevron Vault
-    final chevronPaint = Paint()
-      ..color = strokeColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = w * 0.14
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    final chevronPath = Path();
-    chevronPath.moveTo(w * 0.16, h * 0.88);
-    chevronPath.lineTo(w * 0.50, h * 0.14);
-    chevronPath.lineTo(w * 0.84, h * 0.88);
-    canvas.drawPath(chevronPath, chevronPaint);
-
-    // 2. Draw the continuous Horizon Aura Loop weaving through the crossbar
-    final loopPaint = Paint()
-      ..color = accentColor.withValues(alpha: standalone ? 0.9 : 0.85)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = w * 0.09
-      ..strokeCap = StrokeCap.round;
-
-    final loopPath = Path();
-    loopPath.moveTo(w * 0.08, h * 0.58);
-    loopPath.cubicTo(
-      w * 0.30, h * 0.42,
-      w * 0.70, h * 0.74,
-      w * 0.92, h * 0.58,
+    canvas.drawPath(
+      arch(u),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 6.4 * u
+        ..strokeCap = StrokeCap.round
+        ..shader = LinearGradient(colors: archColors).createShader(Rect.fromLTWH(18 * u, 15 * u, 28 * u, 33 * u)),
     );
-    canvas.drawPath(loopPath, loopPaint);
-
-    // 3. Central Cryptographic Diamond Spark (Apex Clarity)
-    final sparkPaint = Paint()
-      ..color = accentColor
-      ..style = PaintingStyle.fill;
-
-    final sparkPath = Path();
-    final cx = w * 0.50;
-    final cy = h * 0.50;
-    final sparkRadius = w * 0.10;
-
-    sparkPath.moveTo(cx, cy - sparkRadius);
-    sparkPath.quadraticBezierTo(cx, cy, cx + sparkRadius, cy);
-    sparkPath.quadraticBezierTo(cx, cy, cx, cy + sparkRadius);
-    sparkPath.quadraticBezierTo(cx, cy, cx - sparkRadius, cy);
-    sparkPath.quadraticBezierTo(cx, cy, cx, cy - sparkRadius);
-    canvas.drawPath(sparkPath, sparkPaint);
+    canvas.drawPath(
+      ribbon(u),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3.6 * u
+        ..strokeCap = StrokeCap.round
+        ..color = darkGround ? Colors.white.withValues(alpha: 0.94) : AuraColors.ink,
+    );
   }
 
   @override
-  bool shouldRepaint(covariant _AuraMonogramPainter oldDelegate) =>
-      oldDelegate.style != style || oldDelegate.standalone != standalone;
+  bool shouldRepaint(covariant AuraMarkPainter old) =>
+      old.badge != badge || old.lightBadge != lightBadge || old.radius != radius;
 }
 
-/// Brand Header component matching the Aura Bank statement & dashboard headers
+/// Mark plus wordmark.
+class AuraWordmark extends StatelessWidget {
+  const AuraWordmark({super.key, this.size = 32, this.onDark = false});
+
+  final double size;
+  final bool onDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AuraLogo(size: size, borderRadius: size * 0.28),
+        SizedBox(width: size * 0.32),
+        Text(
+          'Aura',
+          style: TextStyle(
+            fontSize: size * 0.62,
+            fontWeight: FontWeight.w600,
+            letterSpacing: -0.4,
+            color: onDark ? Colors.white : AuraColors.ink,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Brand header used on statements and documents.
 class AuraBrandHeader extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -185,14 +164,14 @@ class AuraBrandHeader extends StatelessWidget {
         if (onBack != null) ...[
           IconButton(
             icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-            color: const Color(0xFF1E1E2D),
+            color: AuraColors.ink,
             onPressed: onBack,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
           ),
           const SizedBox(width: 8),
         ],
-        AuraLogo(size: 38, style: style, borderRadius: 10),
+        AuraLogo(size: 38, style: style, borderRadius: 11),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -203,20 +182,15 @@ class AuraBrandHeader extends StatelessWidget {
                 title,
                 style: const TextStyle(
                   fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF181824),
+                  fontWeight: FontWeight.w600,
+                  color: AuraColors.ink,
                   letterSpacing: -0.3,
                 ),
               ),
               if (subtitle.isNotEmpty)
                 Text(
                   subtitle,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF8A92A6),
-                    letterSpacing: 0.1,
-                  ),
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: AuraColors.textMuted),
                 ),
             ],
           ),

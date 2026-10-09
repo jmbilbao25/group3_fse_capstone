@@ -55,43 +55,61 @@ class _WebDashboardScreenState extends State<WebDashboardScreen> {
   Widget build(BuildContext context) {
     return Container(
       color: AuraColors.canvas,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(32, 8, 32, 32),
-        child: Row(
+      child: LayoutBuilder(builder: (context, c) {
+        final main = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // LEFT / MAIN COLUMN (Dashboard Ledger & Analytics)
-            Expanded(
-              flex: 65,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildBalanceHeroCard(),
-                  const SizedBox(height: 20),
-                  _buildKpiMetricsRow(),
-                  const SizedBox(height: 24),
-                  _buildTransactionLedgerTable(),
-                ],
-              ),
-            ),
-
-            const SizedBox(width: 24),
-
-            // RIGHT COLUMN (Embedded Quick Transfer & Card Control)
-            Expanded(
-              flex: 35,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildQuickSendMoneyPanel(),
-                  const SizedBox(height: 20),
-                  _buildQuickCardControlPanel(),
-                ],
-              ),
-            ),
+            _buildBalanceHeroCard(),
+            const SizedBox(height: 20),
+            _buildKpiMetricsRow(),
+            const SizedBox(height: 24),
+            _buildTransactionLedgerTable(),
           ],
-        ),
-      ),
+        );
+        final side = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildQuickSendMoneyPanel(),
+            const SizedBox(height: 20),
+            _buildQuickCardControlPanel(),
+          ],
+        );
+        // Below ~1100px of content the side panels drop under the main column
+        // instead of squeezing both until text wraps by the letter.
+        final twoColumn = c.maxWidth >= 1100;
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(32, 8, 32, 32),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1360),
+              child: twoColumn
+                  ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(flex: 65, child: main),
+                        const SizedBox(width: 24),
+                        Expanded(flex: 35, child: side),
+                      ],
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        main,
+                        const SizedBox(height: 24),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(child: _buildQuickSendMoneyPanel()),
+                            const SizedBox(width: 20),
+                            Expanded(child: _buildQuickCardControlPanel()),
+                          ],
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+        );
+      }),
     );
   }
 
@@ -185,7 +203,7 @@ class _WebDashboardScreenState extends State<WebDashboardScreen> {
                     ],
                   ),
                 ),
-                if (card != null)
+                if (card != null && MediaQuery.sizeOf(context).width >= 1180)
                   SizedBox(
                     width: 300,
                     child: AspectRatio(

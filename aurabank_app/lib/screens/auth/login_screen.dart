@@ -1010,13 +1010,15 @@ class _BiometricAuthModalState extends State<_BiometricAuthModal> {
   }
 }
 
-/// Aurora sky behind the greeting. The form below stays plain paper.
+/// Aurora sky behind the greeting. The form below stays plain paper. On wide
+/// screens the greeting sits in the same 388px column as the fields.
 class _AuroraLoginHeader extends StatelessWidget {
   const _AuroraLoginHeader();
 
   @override
   Widget build(BuildContext context) {
     final top = MediaQuery.paddingOf(context).top;
+    final wide = MediaQuery.sizeOf(context).width >= 600;
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
       child: SizedBox(
@@ -1026,32 +1028,32 @@ class _AuroraLoginHeader extends StatelessWidget {
           intensity: 0.9,
           child: Padding(
             padding: EdgeInsets.fromLTRB(28, top + 20, 28, 26),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const AuraWordmark(size: 30, onDark: true),
-                const Spacer(),
-                const Reveal(
-                  child: Text(
-                    "Welcome Back!",
-                    style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                        letterSpacing: -0.9),
-                  ),
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: wide ? 388 : double.infinity),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const AuraWordmark(size: 30, onDark: true),
+                    const Spacer(),
+                    const Reveal(
+                      child: Text(
+                        'Welcome Back!',
+                        style: TextStyle(fontSize: 32, fontWeight: FontWeight.w600, color: Colors.white, letterSpacing: -0.9),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Reveal(
+                      delay: const Duration(milliseconds: 90),
+                      child: Text(
+                        'Please enter your email and password',
+                        style: TextStyle(fontSize: 14.5, color: Colors.white.withValues(alpha: 0.72)),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 6),
-                Reveal(
-                  delay: const Duration(milliseconds: 90),
-                  child: Text(
-                    "Please enter your email and password",
-                    style: TextStyle(
-                        fontSize: 14.5,
-                        color: Colors.white.withValues(alpha: 0.72)),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),

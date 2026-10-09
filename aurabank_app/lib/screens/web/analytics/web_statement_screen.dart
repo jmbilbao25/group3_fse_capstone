@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../widgets/aura_logo.dart';
 import '../../../models/bank_models.dart';
 import '../../../services/bank_service.dart';
-import '../../analytics/statement_preview_screen.dart';
+import 'web_statement_preview_screen.dart';
 
 class WebStatementScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -217,7 +217,7 @@ class _WebStatementScreenState extends State<WebStatementScreen> {
           onPressed: () {
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (context) => StatementPreviewScreen(
+                builder: (context) => WebStatementPreviewScreen(
                   statement: statement,
                 ),
               ),

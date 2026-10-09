@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../../models/annual_quarter_item.dart';
 import '../../../widgets/aura_logo.dart';
 import '../../../services/bank_service.dart';
-import '../../analytics/statement_preview_screen.dart';
-import '../../analytics/annual_report_screen.dart';
+import 'web_statement_preview_screen.dart';
 
 class WebAnnualReportScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -265,7 +265,7 @@ class _WebAnnualReportScreenState extends State<WebAnnualReportScreen> {
             final statement = _bankService.statements['2026-10']!;
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (context) => StatementPreviewScreen(
+                builder: (context) => WebStatementPreviewScreen(
                   statement: statement,
                 ),
               ),

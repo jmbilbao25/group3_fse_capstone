@@ -1,25 +1,8 @@
 import '../../widgets/aura_logo.dart';
 import 'package:flutter/material.dart';
+import '../../models/annual_quarter_item.dart';
 import '../../services/bank_service.dart';
 import 'statement_preview_screen.dart';
-
-class AnnualQuarterItem {
-  final String id;
-  final String title;
-  final String subtitle;
-  final double amount;
-  final int settledCount;
-  final bool isIncoming;
-
-  const AnnualQuarterItem({
-    required this.id,
-    required this.title,
-    required this.subtitle,
-    required this.amount,
-    required this.settledCount,
-    this.isIncoming = true,
-  });
-}
 
 class AnnualReportScreen extends StatefulWidget {
   final VoidCallback? onBack;

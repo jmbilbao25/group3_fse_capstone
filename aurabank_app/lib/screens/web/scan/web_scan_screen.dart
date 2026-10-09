@@ -4,12 +4,13 @@ import 'package:image_picker/image_picker.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../../services/bank_service.dart';
 import '../../../theme/aura_theme.dart';
-import '../../transfer/send_money_screen.dart';
+import '../transfer/web_transfer_screen.dart';
 
 class WebScanScreen extends StatefulWidget {
   final VoidCallback? onBack;
+  final VoidCallback? onTransfer;
 
-  const WebScanScreen({super.key, this.onBack});
+  const WebScanScreen({super.key, this.onBack, this.onTransfer});
 
   @override
   State<WebScanScreen> createState() => _WebScanScreenState();
@@ -140,9 +141,13 @@ class _WebScanScreenState extends State<WebScanScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
+              if (widget.onTransfer != null) {
+                widget.onTransfer!();
+                return;
+              }
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const SendMoneyScreen()),
+                MaterialPageRoute(builder: (_) => const WebTransferScreen()),
               );
             },
             style: ElevatedButton.styleFrom(

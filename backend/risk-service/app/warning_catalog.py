@@ -10,6 +10,30 @@ from .models import WarningDialogModel
 
 # Standard warning templates categorized by primary threat vector
 WARNING_TEMPLATES: Dict[str, Dict[str, Any]] = {
+    "MEMORY_HOOKING_TAMPER": {
+        "title": "Runtime Memory Hooking Tool Detected",
+        "threat_category": "MEMORY_HOOKING_TAMPER",
+        "body_message": (
+            "A dynamic binary instrumentation or memory manipulation framework (such as Frida or Xposed) "
+            "is operating on this device. These tools can alter application security checks and intercept private banking data. "
+            "Close all debugging and hooking frameworks before proceeding."
+        ),
+        "checkbox_acknowledgment_text": "I confirm no unauthorized debugging or instrumentation tools are active.",
+        "recommended_action": "TERMINATE_TAMPER_FRAMEWORK",
+        "mandatory_read_delay_seconds": 3
+    },
+    "PACKET_INSPECTION_MITM": {
+        "title": "Network Packet Capture Tool Detected",
+        "threat_category": "PACKET_INSPECTION_MITM",
+        "body_message": (
+            "A network packet interception or proxy tool (such as HTTP Canary, Charles, or Mitmproxy) "
+            "was detected on this device. These utilities can capture sensitive authorization tokens and financial information. "
+            "Disable packet capture tools to protect your funds."
+        ),
+        "checkbox_acknowledgment_text": "I acknowledge the network security alert and confirm my connection is secure.",
+        "recommended_action": "TERMINATE_INSPECTION_TOOL",
+        "mandatory_read_delay_seconds": 3
+    },
     "REMOTE_ACCESS_MALWARE": {
         "title": "Active Screen Sharing or Remote App Detected",
         "threat_category": "REMOTE_ACCESS_MALWARE",

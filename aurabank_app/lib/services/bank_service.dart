@@ -806,7 +806,18 @@ class BankService extends ChangeNotifier {
     String? callState,
     String? inputMode,
     bool isEmulator = false,
+    List<String>? runningPackages,
+    List<String>? detectedThreats,
+    bool? remoteAppActive,
+    bool? activeCall,
+    bool? hooking,
+    bool? rooted,
+    bool? isVpn,
+    String? deviceId,
+    bool? isPrimaryDevice,
   }) async {
+    final effectiveRemote = remoteAppActive ?? isScreenSharing;
+    final effectiveCall = activeCall ?? (callState != null && callState != 'IDLE');
     final payload = {
       'account_id': activeAccountId,
       'target_account_id': targetAccount,
@@ -814,12 +825,26 @@ class BankService extends ChangeNotifier {
       'memo': memo ?? '',
       'user_id': 'U1001',
       'emulator': isEmulator,
+      if (deviceId != null) 'device_id': deviceId,
+      if (isPrimaryDevice != null) 'is_primary_device': isPrimaryDevice,
+      if (effectiveRemote) 'remote_app_active': true,
+      if (effectiveCall) 'active_call': true,
+      if (hooking != null) 'hooking': hooking,
+      if (rooted != null) 'rooted': rooted,
+      if (isVpn != null) 'is_vpn': isVpn,
       'device_context': {
+        if (runningPackages != null && runningPackages.isNotEmpty) 'running_packages': runningPackages,
+        if (detectedThreats != null && detectedThreats.isNotEmpty) 'detected_threats': detectedThreats,
+        if (hooking != null) 'hooking': hooking,
+        if (rooted != null) 'rooted': rooted,
+        if (isEmulator) 'emulator': true,
+        'remote_app_active': effectiveRemote,
+        'active_call': effectiveCall,
         'media_projection': {
-          'is_screen_sharing': isScreenSharing,
+          'is_screen_sharing': effectiveRemote,
         },
         'telephony': {
-          'call_state': callState ?? 'IDLE',
+          'call_state': effectiveCall ? 'CALL_STATE_OFFHOOK' : (callState ?? 'IDLE'),
         },
         'interaction': {
           'account_input_mode': inputMode ?? 'TYPED',
@@ -871,6 +896,16 @@ class BankService extends ChangeNotifier {
     required double amount,
     required String destinationBank,
     String? remarks,
+    List<String>? runningPackages,
+    List<String>? detectedThreats,
+    bool? remoteAppActive,
+    bool? activeCall,
+    bool? hooking,
+    bool? rooted,
+    bool? isEmulator,
+    bool? isVpn,
+    String? deviceId,
+    bool? isPrimaryDevice,
   }) async {
     final dateStr = DateTime.now().year.toString().substring(2) +
         DateTime.now().month.toString().padLeft(2, '0') +
@@ -887,6 +922,16 @@ class BankService extends ChangeNotifier {
       'reference': fallbackRef,
       'initiatorUserId': 'U1001',
       'remarks': remarks ?? 'Mobile Fund Transfer to $recipientName',
+      if (deviceId != null) 'deviceId': deviceId,
+      if (isPrimaryDevice != null) 'isPrimaryDevice': isPrimaryDevice,
+      if (remoteAppActive != null) 'remoteAppActive': remoteAppActive,
+      if (activeCall != null) 'activeCall': activeCall,
+      if (hooking != null) 'hooking': hooking,
+      if (rooted != null) 'rooted': rooted,
+      if (isEmulator != null) 'emulator': isEmulator,
+      if (isVpn != null) 'isVpn': isVpn,
+      if (runningPackages != null && runningPackages.isNotEmpty) 'runningPackages': runningPackages,
+      if (detectedThreats != null && detectedThreats.isNotEmpty) 'detectedThreats': detectedThreats,
     };
 
     // 1. Try Primary endpoint (Cloud Prod or Local Dev)
@@ -916,6 +961,10 @@ class BankService extends ChangeNotifier {
           't24_reference': t24Ref,
           'amount': amount,
           'status': data['status'] ?? 'COMMITTED',
+          'threat_category': data['threat_category'] ?? data['threatCategory'],
+          'cause_of_suspicion': data['cause_of_suspicion'] ?? data['causeOfSuspicion'],
+          'sar_draft_created': data['sar_draft_created'] ?? data['sarDraftCreated'] ?? false,
+          'sar_report_id': data['sar_report_id'] ?? data['sarReportId'],
         };
       } else {
         try {
@@ -924,6 +973,10 @@ class BankService extends ChangeNotifier {
             'success': false,
             'reference': fallbackRef,
             'failureReason': errData['message'] ?? errData['error'] ?? 'Transfer rejected by core banking (${response.statusCode})',
+            'threat_category': errData['threat_category'] ?? errData['threatCategory'],
+            'cause_of_suspicion': errData['cause_of_suspicion'] ?? errData['causeOfSuspicion'],
+            'sar_draft_created': errData['sar_draft_created'] ?? errData['sarDraftCreated'] ?? false,
+            'sar_report_id': errData['sar_report_id'] ?? errData['sarReportId'],
           };
         } catch (_) {
           return {
@@ -963,6 +1016,10 @@ class BankService extends ChangeNotifier {
               't24_reference': t24Ref,
               'amount': amount,
               'status': data['status'] ?? 'COMMITTED',
+              'threat_category': data['threat_category'] ?? data['threatCategory'],
+              'cause_of_suspicion': data['cause_of_suspicion'] ?? data['causeOfSuspicion'],
+              'sar_draft_created': data['sar_draft_created'] ?? data['sarDraftCreated'] ?? false,
+              'sar_report_id': data['sar_report_id'] ?? data['sarReportId'],
             };
           }
         } catch (_) {}

@@ -125,16 +125,6 @@ INSERT INTO accounts (
     TIMESTAMP '2024-01-12 10:15:00 UTC', TIMESTAMP '2024-01-12 10:15:00 UTC'
 );
 
--- Juan's Secondary Checking Account (A2003)
-INSERT INTO accounts (
-    account_id, user_id, account_number, account_type, status, credit_limit,
-    created_at, updated_at
-) VALUES (
-    'A2003', 'U1001', '1000-2000-3003', 'CHECKING', 'ACTIVE', 0.0000,
-    TIMESTAMP '2024-01-15 14:00:00 UTC', TIMESTAMP '2024-01-15 14:00:00 UTC'
-);
-
-
 -- ------------------------------------------------------------------------------
 -- 3. SEED BALANCE MASTER
 -- Note: available_balance is automatically calculated via trg_calc_available_balance
@@ -155,14 +145,6 @@ INSERT INTO balance_master (
     TIMESTAMP '2024-01-12 10:15:00 UTC', TIMESTAMP '2024-06-01 14:32:00 UTC'
 );
 
--- Balance for Juan's Checking Account A2003 (Balance: 15,500, Hold: 0)
-INSERT INTO balance_master (
-    account_id, balance_amount, hold_amount, created_at, updated_at
-) VALUES (
-    'A2003', 15500.0000, 0.0000,
-    TIMESTAMP '2024-01-15 14:00:00 UTC', TIMESTAMP '2024-05-20 11:00:00 UTC'
-);
-
 
 -- ------------------------------------------------------------------------------
 -- 5. SEED TRANSACTIONS
@@ -177,18 +159,6 @@ INSERT INTO transactions (
     300000.0000, 298000.0000, 'COMMITTED', 0,
     NULL,
     TIMESTAMP '2024-06-01 14:32:00 UTC', TIMESTAMP '2024-06-01 14:32:00 UTC'
-);
-
--- Transaction T5002: Over-The-Counter Cash Deposit into Juan's Savings
-INSERT INTO transactions (
-    transaction_id, from_account_id, to_account_id, type, amount,
-    before_balance, after_balance, status, requires_maker_checker,
-    approved_by_user_id, created_at, updated_at
-) VALUES (
-    'T5002', 'A2003', NULL, 'DEPOSIT', 15500.0000,
-    0.0000, 15500.0000, 'COMMITTED', 0,
-    'U3001',
-    TIMESTAMP '2024-05-20 11:00:00 UTC', TIMESTAMP '2024-05-20 11:00:00 UTC'
 );
 
 

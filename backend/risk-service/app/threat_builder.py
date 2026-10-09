@@ -12,7 +12,21 @@ from .models import RiskAnalysisRequest, DeviceThreatContext, CounterpartyContex
 # Suspicious keywords in accessibility service packages and running tools
 REMOTE_KEYWORDS = [
     "anydesk", "teamviewer", "rustdesk", "quickconnect", "screenhelper",
-    "remote", "support", "airmirror", "vnc", "screenstream", "mirror"
+    "remote", "support", "airmirror", "vnc", "screenstream", "mirror",
+    "scrcpy", "zoho assist", "splashtop", "com.anydesk"
+]
+
+# Network packet inspection / MITM sniffing tools
+MITM_INSPECTION_KEYWORDS = [
+    "httpcanary", "charles", "wireshark", "mitmproxy", "burp", "fiddler",
+    "packetcapture", "canary", "networklog", "proxy", "com.guoshi.httpcanary"
+]
+
+# Memory hooking / Dynamic binary instrumentation tools
+HOOKING_KEYWORDS = [
+    "frida", "xposed", "edxposed", "lsposed", "substrate", "cydia",
+    "cheatengine", "gameguardian", "magisk", "zygisk", "hooking", "tamper",
+    "de.robv.android.xposed"
 ]
 
 # Suspicious package installer sources
@@ -35,16 +49,34 @@ def has_threat_context(request: RiskAnalysisRequest) -> bool:
     Returns True if any unstructured threat signals or counterparty anomalies are present.
     Allows clean routine transfers to bypass the neural model and stay on the sub-20ms path.
     """
+    # Top-level direct indicators
+    if request.remote_app_active or request.active_call or request.hooking:
+        return True
+
     # 1. Check Device Context
     dev = request.device_context
     if dev:
-        # Remote-access accessibility tools
+        if dev.hooking or dev.remote_app_active or dev.active_call:
+            return True
+
+        # Check all package lists and threat signatures
+        all_probed_strings = []
         if dev.active_accessibility_services:
-            for s in dev.active_accessibility_services:
-                s_lower = s.lower()
-                if any(kw in s_lower for kw in REMOTE_KEYWORDS):
-                    return True
-        
+            all_probed_strings.extend(dev.active_accessibility_services)
+        if dev.running_packages:
+            all_probed_strings.extend(dev.running_packages)
+        if dev.detected_threats:
+            all_probed_strings.extend(dev.detected_threats)
+
+        for item in all_probed_strings:
+            item_lower = item.lower()
+            if any(kw in item_lower for kw in REMOTE_KEYWORDS):
+                return True
+            if any(kw in item_lower for kw in MITM_INSPECTION_KEYWORDS):
+                return True
+            if any(kw in item_lower for kw in HOOKING_KEYWORDS):
+                return True
+
         # Screen sharing / mirroring
         if dev.media_projection and dev.media_projection.is_screen_sharing:
             return True
@@ -96,29 +128,47 @@ def detect_threat_category(request: RiskAnalysisRequest) -> str:
     cp = request.counterparty_context
     memo = (request.memo or "").lower()
 
-    # Priority 1: Remote-Access / Screen Sharing
-    if dev and dev.active_accessibility_services:
-        for s in dev.active_accessibility_services:
-            if any(kw in s.lower() for kw in REMOTE_KEYWORDS):
-                return "REMOTE_ACCESS_MALWARE"
+    # Collect all inspected package and threat strings
+    packages = []
+    if dev:
+        packages.extend(dev.active_accessibility_services or [])
+        packages.extend(dev.running_packages or [])
+        packages.extend(dev.detected_threats or [])
+    packages_str = " ".join(p.lower() for p in packages)
 
-    if dev and dev.media_projection and dev.media_projection.is_screen_sharing:
+    # Priority 1: Dynamic Memory Hooking / Binary Instrumentation (Frida / Xposed)
+    if request.hooking or (dev and dev.hooking) or any(kw in packages_str for kw in HOOKING_KEYWORDS):
+        return "MEMORY_HOOKING_TAMPER"
+
+    # Priority 2: Network Packet Inspection / Man-In-The-Middle Tools (HTTP Canary)
+    if any(kw in packages_str for kw in MITM_INSPECTION_KEYWORDS):
+        return "PACKET_INSPECTION_MITM"
+
+    # Priority 3: Remote-Access / Screen Sharing (AnyDesk / TeamViewer)
+    if (
+        request.remote_app_active
+        or (dev and dev.remote_app_active)
+        or (dev and dev.media_projection and dev.media_projection.is_screen_sharing)
+        or any(kw in packages_str for kw in REMOTE_KEYWORDS)
+        or any(kw in memo for kw in ["remote", "support fee", "anydesk", "teamviewer"])
+    ):
         return "REMOTE_ACCESS_MALWARE"
 
-    if "remote" in memo or "support fee" in memo or "anydesk" in memo or "teamviewer" in memo:
-        return "REMOTE_ACCESS_MALWARE"
-
-    # Priority 2: Live Phone Call Coercion
-    if dev and dev.telephony and (
-        dev.telephony.call_state in ["CALL_STATE_OFFHOOK", "IN_CALL", "ACTIVE_CALL", "CALL_ACTIVE"]
-        or (dev.telephony.call_state and dev.telephony.call_state.upper() not in ["IDLE", "NONE", ""])
+    # Priority 4: Live Phone Call Coercion
+    if (
+        request.active_call
+        or (dev and dev.active_call)
+        or (
+            dev and dev.telephony and (
+                dev.telephony.call_state in ["CALL_STATE_OFFHOOK", "IN_CALL", "ACTIVE_CALL", "CALL_ACTIVE"]
+                or (dev.telephony.call_state and dev.telephony.call_state.upper() not in ["IDLE", "NONE", ""])
+            )
+        )
+        or any(kw in memo for kw in ["bail", "police"])
     ):
         return "LIVE_CALL_COERCION"
 
-    if "bail" in memo or "police" in memo:
-        return "LIVE_CALL_COERCION"
-
-    # Priority 3: Purpose / Account Mismatch
+    # Priority 5: Purpose / Account Mismatch
     if cp:
         purpose = (cp.transfer_purpose or "").upper()
         acct_type = (cp.payee_account_type or "").upper()
@@ -128,11 +178,11 @@ def detect_threat_category(request: RiskAnalysisRequest) -> str:
     if "meralco" in memo or "electricity bill" in memo:
         return "PURPOSE_ACCOUNT_MISMATCH"
 
-    # Priority 4: External Clipboard Paste
+    # Priority 6: External Clipboard Paste
     if dev and dev.interaction and dev.interaction.account_input_mode in ["PASTED_FROM_EXTERNAL_APP", "PASTED_FROM_CLIPBOARD", "PASTED"]:
         return "EXTERNAL_CLIPBOARD_PASTE"
 
-    # Priority 5: Memo Typology Patterns
+    # Priority 7: Memo Typology Patterns
     if any(kw in memo for kw in ["crypto", "bitcoin", "guaranteed", "profit", "investment", "task", "commission", "prize", "lottery"]):
         return "MEMO_SCAM_PATTERN"
 
@@ -159,15 +209,43 @@ def build_threat_narrative(request: RiskAnalysisRequest) -> Tuple[str, str]:
         if dev.installer_source:
             lines.append(f"App Origin: {dev.installer_source}")
 
+        # Highlight memory hooking if detected
+        if category == "MEMORY_HOOKING_TAMPER":
+            matched_hooks = [s for s in (dev.active_accessibility_services + dev.running_packages + dev.detected_threats) if any(k in s.lower() for k in HOOKING_KEYWORDS)]
+            detail = ", ".join(matched_hooks) if matched_hooks else "Frida / Dynamic Instrumentation Active"
+            lines.append(f"Runtime Memory Hooking: ACTIVE [{detail}]")
+
+        # Highlight packet capture / MITM inspection tools if detected
+        if category == "PACKET_INSPECTION_MITM":
+            matched_mitm = [s for s in (dev.active_accessibility_services + dev.running_packages + dev.detected_threats) if any(k in s.lower() for k in MITM_INSPECTION_KEYWORDS)]
+            detail = ", ".join(matched_mitm) if matched_mitm else "HTTP Canary / Packet Interceptor Active"
+            lines.append(f"Network Packet Sniffing / MITM: ACTIVE [{detail}]")
+
+        # Highlight remote access tools
+        if category == "REMOTE_ACCESS_MALWARE":
+            matched_remote = [s for s in (dev.active_accessibility_services + dev.running_packages + dev.detected_threats) if any(k in s.lower() for k in REMOTE_KEYWORDS)]
+            detail = ", ".join(matched_remote) if matched_remote else "Remote Assistance / Mirroring Active"
+            lines.append(f"Remote Desktop / Screen Broadcast: ACTIVE [{detail}]")
+
         if dev.active_accessibility_services:
             services_str = ", ".join(dev.active_accessibility_services)
             lines.append(f"Accessibility Services Active: [{services_str}]")
 
-        if dev.media_projection and dev.media_projection.is_screen_sharing:
+        if dev.running_packages:
+            packages_str = ", ".join(dev.running_packages)
+            lines.append(f"Running Monitored Packages: [{packages_str}]")
+
+        if dev.detected_threats:
+            threats_str = ", ".join(dev.detected_threats)
+            lines.append(f"Client Security Telemetry: [{threats_str}]")
+
+        if (dev.media_projection and dev.media_projection.is_screen_sharing) or request.remote_app_active:
             lines.append("Screen Mirroring: ACTIVE (Virtual display broadcasting)")
 
-        if dev.telephony and dev.telephony.call_state != "IDLE":
-            lines.append(f"Phone State: {dev.telephony.call_state} (Duration: {dev.telephony.call_duration_seconds:.0f}s)")
+        if (dev.telephony and dev.telephony.call_state != "IDLE") or request.active_call:
+            call_state = dev.telephony.call_state if (dev.telephony and dev.telephony.call_state != "IDLE") else "ACTIVE_CALL"
+            call_dur = dev.telephony.call_duration_seconds if dev.telephony else 0.0
+            lines.append(f"Phone State: {call_state} (Duration: {call_dur:.0f}s)")
 
         if dev.interaction:
             lines.append(f"Input Mode: {dev.interaction.account_input_mode} (Form duration: {dev.interaction.time_spent_on_form_seconds:.1f}s)")

@@ -227,6 +227,9 @@ def analyze_transfer_risk(req: RiskAnalysisRequest):
     est_balance = float(customer.get("balance", amount * 3.0))
     balance_drain = round(min(1.0, amount / est_balance), 2) if est_balance > 0 else 0.50
 
+    is_hooked = bool(req.hooking or (req.device_context and req.device_context.hooking))
+    is_rooted = bool(req.rooted or (req.device_context and req.device_context.rooted))
+
     # Construct comprehensive tabular telemetry row for S2 model & async reviewer
     tabular_row = {
         "amount_php": amount,
@@ -256,17 +259,17 @@ def analyze_transfer_risk(req: RiskAnalysisRequest):
         "velocity_kmh": geo_signals["velocity_kmh"],
         "new_payee": req.new_payee,
         "device_id_new": False,
-        "rooted": req.rooted,
-        "hooking": req.hooking,
+        "rooted": is_rooted,
+        "hooking": is_hooked,
         "emulator": req.emulator,
         "debugger": False,
         "tampered": req.tampered,
         "unofficial_store": False,
         "dev_options": False,
         "mock_location": req.mock_location or geo_signals["is_impossible_travel"],
-        "accessibility_active": False,
-        "screen_sharing": False,
-        "payee_pasted": False,
+        "accessibility_active": bool(req.device_context.active_accessibility_services) if req.device_context else False,
+        "screen_sharing": bool(req.remote_app_active or (req.device_context.media_projection.is_screen_sharing if (req.device_context and req.device_context.media_projection) else False)),
+        "payee_pasted": bool(req.device_context.interaction.account_input_mode in ["PASTED_FROM_EXTERNAL_APP", "PASTED_FROM_CLIPBOARD", "PASTED"]) if (req.device_context and req.device_context.interaction) else False,
         "tz_mismatch": False,
         "ip_gps_mismatch": geo_signals["ip_discrepancy_km"] > 500.0,
         "is_vpn": req.is_vpn or geo_signals["is_vpn_detected"],
@@ -281,8 +284,8 @@ def analyze_transfer_risk(req: RiskAnalysisRequest):
     gate0_row = {
         "velocity_kmh": geo_signals["velocity_kmh"],
         "amount_php": amount,
-        "rooted": req.rooted,
-        "hooking": req.hooking,
+        "rooted": is_rooted,
+        "hooking": is_hooked,
         "emulator": req.emulator,
         "tampered": req.tampered,
         "device_id_new": req.new_payee,
@@ -363,40 +366,120 @@ def analyze_transfer_risk(req: RiskAnalysisRequest):
     advisory_tier = "NONE"
     warning_dialog = None
     threat_narrative = None
+    threat_cat = "NONE"
 
     is_primary_device = req.is_primary_device if req.is_primary_device is not None else True
     if req.device_context and req.device_context.is_primary_device is not None:
         is_primary_device = req.device_context.is_primary_device
 
-    if decision != "BLOCK":
-        if has_threat_context(req):
-            threat_narrative, threat_cat = build_threat_narrative(req)
-            if decision == "ALLOW":
-                decision = "ADVISORY_WARNING"
-                status = "ADVISORY_PENDING"
-                advisory_tier = "ADVISORY_WARNING"
-                warning_dialog = get_warning_dialog(threat_cat)
-                primary_flag = f"DEVICE_THREAT_{threat_cat}"
-                all_flags.append(primary_flag)
-            elif decision == "REQUIRE_2FA":
-                advisory_tier = "ADVISORY_WARNING"
-                warning_dialog = get_warning_dialog(threat_cat)
-                all_flags.append(f"DEVICE_THREAT_{threat_cat}")
-        elif memo_analysis and (memo_analysis.get("is_anomaly") or memo_analysis.get("typology", "none") != "none"):
-            typology = memo_analysis.get("typology", "other")
-            if decision == "ALLOW":
-                decision = "ADVISORY_WARNING"
-                status = "ADVISORY_PENDING"
-                advisory_tier = "ADVISORY_WARNING"
-                warning_dialog = get_warning_dialog("MEMO_SCAM_PATTERN")
-                primary_flag = f"SCAM_TYPOLOGY_{typology.upper()}"
-                all_flags.append(primary_flag)
-            elif decision == "REQUIRE_2FA":
-                advisory_tier = "ADVISORY_WARNING"
-                warning_dialog = get_warning_dialog("MEMO_SCAM_PATTERN")
-                all_flags.append(f"SCAM_TYPOLOGY_{typology.upper()}")
+    if has_threat_context(req):
+        threat_narrative, threat_cat = build_threat_narrative(req)
+        # Runtime memory hooking, Frida, or root tampering -> Immediate hard BLOCK (Zero tolerance)
+        if is_hooked or is_rooted or threat_cat in ["MEMORY_HOOKING_TAMPER", "RUNTIME_INTEGRITY_COMPROMISED"]:
+            decision = "BLOCK"
+            status = "BLOCKED"
+            advisory_tier = "ADVISORY_WARNING"
+            warning_dialog = get_warning_dialog(threat_cat)
+            auth_method = "NONE_BLOCKED"
+            fraud_score = 100
+            primary_flag = "SUSPICIOUS_ENVIRONMENT_BLOCKED"
+            all_flags.append("RUNTIME_INTEGRITY_BLOCK")
+        elif decision == "ALLOW":
+            decision = "ADVISORY_WARNING"
+            status = "ADVISORY_PENDING"
+            advisory_tier = "ADVISORY_WARNING"
+            warning_dialog = get_warning_dialog(threat_cat)
+            primary_flag = f"DEVICE_THREAT_{threat_cat}"
+            all_flags.append(primary_flag)
+        elif decision == "REQUIRE_2FA":
+            advisory_tier = "ADVISORY_WARNING"
+            warning_dialog = get_warning_dialog(threat_cat)
+            all_flags.append(f"DEVICE_THREAT_{threat_cat}")
+    elif memo_analysis and (memo_analysis.get("is_anomaly") or memo_analysis.get("typology", "none") != "none"):
+        typology = memo_analysis.get("typology", "other")
+        threat_cat = "MEMO_SCAM_PATTERN"
+        if decision == "ALLOW":
+            decision = "ADVISORY_WARNING"
+            status = "ADVISORY_PENDING"
+            advisory_tier = "ADVISORY_WARNING"
+            warning_dialog = get_warning_dialog("MEMO_SCAM_PATTERN")
+            primary_flag = f"SCAM_TYPOLOGY_{typology.upper()}"
+            all_flags.append(primary_flag)
+        elif decision == "REQUIRE_2FA":
+            advisory_tier = "ADVISORY_WARNING"
+            warning_dialog = get_warning_dialog("MEMO_SCAM_PATTERN")
+            all_flags.append(f"SCAM_TYPOLOGY_{typology.upper()}")
 
-    # 7. Dynamic Authorization Channel mapping (Zero SMS OTP for Transactions)
+    if threat_cat == "NONE":
+        if decision == "BLOCK":
+            threat_cat = g0_reason if g0_action else "CRITICAL_FRAUD"
+        elif decision == "REQUIRE_2FA":
+            threat_cat = "ELEVATED_RISK"
+
+    # 7. Laya Cause of Suspicion Synthesis
+    if laya_engine_instance is not None:
+        cause_of_suspicion = laya_engine_instance.determine_cause_of_suspicion(
+            threat_category=threat_cat,
+            threat_narrative=threat_narrative,
+            memo=memo,
+            geo_signals=geo_signals,
+            spike_ratio=spike_ratio,
+            flags=all_flags
+        )
+    else:
+        cause_of_suspicion = f"Evaluated fraud risk score of {fraud_score}/100 with flag {primary_flag}."
+
+    # 8. Automated AMLC SAR/STR Draft Trigger
+    sar_draft_created = False
+    sar_report_id = None
+    is_sar_candidate = (
+        decision == "BLOCK"
+        or threat_cat in ["MEMORY_HOOKING_TAMPER", "PACKET_INSPECTION_MITM", "REMOTE_ACCESS_MALWARE"]
+        or fraud_score >= 80
+        or (g0_action == "BLOCK")
+    )
+    if is_sar_candidate:
+        sar_report_id = f"SAR-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{tx_id}"
+        dev_ctx = req.device_context
+        sar_tx_row = {
+            "transaction_id": tx_id,
+            "user_id": customer.get("user_id", req.user_id or "UNKNOWN"),
+            "amount_php": amount,
+            "spike_ratio": spike_ratio,
+            "balance_drain_ratio": balance_drain,
+            "memo": memo,
+            "velocity_kmh": geo_signals["velocity_kmh"],
+            "is_vpn": req.is_vpn or geo_signals["is_vpn_detected"],
+            "rooted": req.rooted or (dev_ctx.rooted if dev_ctx else False),
+            "hooking": req.hooking or (dev_ctx.hooking if dev_ctx else False) or (threat_cat == "MEMORY_HOOKING_TAMPER"),
+            "emulator": req.emulator or (dev_ctx.emulator if dev_ctx else False),
+            "tampered": req.tampered,
+            "attestation_verdict": req.attestation_verdict,
+            "remote_app_active": req.remote_app_active or (dev_ctx.remote_app_active if dev_ctx else False) or (threat_cat == "REMOTE_ACCESS_MALWARE"),
+            "screen_sharing": (dev_ctx.media_projection.is_screen_sharing if (dev_ctx and dev_ctx.media_projection) else False),
+            "active_call": req.active_call or (dev_ctx.telephony.call_state != "IDLE" if (dev_ctx and dev_ctx.telephony) else False),
+            "call_state": (dev_ctx.telephony.call_state if (dev_ctx and dev_ctx.telephony) else "IDLE"),
+            "running_packages": (dev_ctx.running_packages if dev_ctx else []),
+            "active_accessibility_services": (dev_ctx.active_accessibility_services if dev_ctx else []),
+            "detected_threats": (dev_ctx.detected_threats if dev_ctx else []),
+            "threat_category": threat_cat,
+            "cause_of_suspicion": cause_of_suspicion,
+        }
+        sar_verdict = {
+            "action": decision,
+            "primary_reason": primary_flag,
+            "gate_used": "TWO_STAGE_RISK_ENGINE" if not g0_action else "GATE_0_HARD_RULES",
+            "fraud_score": float(fraud_score),
+            "threat_category": threat_cat,
+            "cause_of_suspicion": cause_of_suspicion,
+        }
+        try:
+            trigger_sar_async(sar_tx_row, sar_verdict)
+            sar_draft_created = True
+        except Exception:
+            pass
+
+    # 9. Dynamic Authorization Channel mapping (Zero SMS OTP for Transactions)
     if decision == "BLOCK":
         auth_method = "NONE_BLOCKED"
     elif decision == "REQUIRE_2FA":
@@ -404,7 +487,7 @@ def analyze_transfer_risk(req: RiskAnalysisRequest):
     else:  # ALLOW or ADVISORY_WARNING
         auth_method = "BIOMETRIC_PRIMARY" if is_primary_device else "PUSH_NOTIFICATION_PRIMARY"
 
-    # 8. Post-Decision Enqueueing for Memo-Present Transfers
+    # 10. Post-Decision Enqueueing for Memo-Present Transfers
     if has_memo and decision != "BLOCK":
         # Persist transfer record in TransferStore
         transfer_store.save_transfer(
@@ -442,6 +525,10 @@ def analyze_transfer_risk(req: RiskAnalysisRequest):
         advisory_tier=advisory_tier,
         warning_dialog=warning_dialog,
         threat_narrative=threat_narrative,
+        threat_category=threat_cat,
+        cause_of_suspicion=cause_of_suspicion,
+        sar_draft_created=sar_draft_created,
+        sar_report_id=sar_report_id,
         auth_method=auth_method,
         metrics=RiskMetrics(
             distance_from_home_km=geo_signals["distance_from_home_km"],

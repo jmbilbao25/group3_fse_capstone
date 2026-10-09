@@ -4,7 +4,7 @@
   "meta": {
     "title": "Banking Core API: Event-Driven Transfer & Kafka Stream",
     "output": "api_sequence.html",
-    "viewBox": [880, 840],
+    "viewBox": [880, 860],
     "animation": "trace",
     "quality_profile": "showcase",
     "column_fit": "spread",

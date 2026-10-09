@@ -18,6 +18,11 @@ public class IdempotencyFilter implements GlobalFilter {
     public Mono<Void> filter(ServerWebExchange exchange,
                              GatewayFilterChain chain) {
 
+        if (Boolean.TRUE.equals(exchange.getAttribute("IDEMPOTENCY_PROCESSED"))) {
+            return chain.filter(exchange);
+        }
+        exchange.getAttributes().put("IDEMPOTENCY_PROCESSED", Boolean.TRUE);
+
         String key =
                 exchange.getRequest()
                         .getHeaders()

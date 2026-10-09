@@ -11,7 +11,7 @@
       "id": "customer",
       "type": "external",
       "label": "Retail Banking Customer",
-      "sublabel": "Web Browser & Mobile App",
+      "sublabel": "Flutter Mobile & Web Banking",
       "pos": [60, 140],
       "size": [180, 70],
       "tag": "Transfers & 2FA OTP"
@@ -20,7 +20,7 @@
       "id": "admin",
       "type": "external",
       "label": "Bank Ops & Compliance",
-      "sublabel": "Back-Office Portal",
+      "sublabel": "React Web Admin Portal",
       "pos": [60, 320],
       "size": [180, 70],
       "tag": "Auditing & KYC"
@@ -134,7 +134,7 @@
       "dot": "cyan",
       "title": "C1 System Context Overview",
       "items": [
-        "Customer & Admin Channels: Web SPA and Flutter Mobile interact with the Retail Banking Platform over secure HTTPS/TLS with JWT authentication.",
+        "Omnichannel Presentation: Mobile Online Banking (Flutter iOS/Android), Web Online Banking (Flutter Web), and Web Admin Portal (React) interact with the Retail Banking Platform over secure HTTPS/TLS with JWT authentication.",
         "Temenos T24 CBS Dual Ingress: Platform communicates with Temenos T24 via 2 explicit endpoints (Endpoint 1: Real-time Funds Transfer settlement; Endpoint 2: Compensating Reversal).",
         "Separation of Concerns: The Retail Banking Platform manages customer authentication, transfer orchestration, and saga compensation, offloading master double-entry bookkeeping to T24."
       ]

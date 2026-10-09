@@ -54,8 +54,14 @@ class Gate0Filter:
                 trigger_sar_async(row, {"action": action, "primary_reason": reason, "gate_used": "GATE_0_HARD_RULES", "fraud_score": 100.0})
             return action, reason
 
-        # Rule 2: Active hooking or emulator with high value transfer >= 50k PHP -> BLOCK
-        if (emulator or hooking) and amount >= self.high_val_php:
+        # Rule 2: Active hooking or runtime memory tampering -> BLOCK immediately (Zero tolerance)
+        if hooking:
+            action, reason = "BLOCK", "SUSPICIOUS_DEVICE_ENVIRONMENT"
+            if trigger_async_sar:
+                trigger_sar_async(row, {"action": action, "primary_reason": reason, "gate_used": "GATE_0_HARD_RULES", "fraud_score": 100.0})
+            return action, reason
+
+        if emulator and amount >= self.high_val_php:
             action, reason = "BLOCK", "CRITICAL_DEVICE_TAMPERING_HIGH_VALUE"
             if trigger_async_sar:
                 trigger_sar_async(row, {"action": action, "primary_reason": reason, "gate_used": "GATE_0_HARD_RULES", "fraud_score": 98.0})

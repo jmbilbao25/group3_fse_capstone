@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Inter-Bank Funds Transfer Sequence: Nostro Settlement & Saga Reversal",
+    "output": "interbank_sequence.html",
+    "viewBox": [1160, 740],
+    "animation": "trace",
+    "quality_profile": "standard",
+    "column_fit": "spread"
+  },
+  "participants": [
+    { "id": "aura_client", "type": "frontend", "label": "Alice (Client)", "sublabel": "AuraBank Mobile :3000" },
+    { "id": "aura_orch", "type": "backend", "label": "AuraBank Orch", "sublabel": "Saga Engine :8082" },
+    { "id": "aura_t24", "type": "backend", "label": "AuraBank T24 CBS", "sublabel": "Mock Engine :9100" },
+    { "id": "interbank_wire", "type": "cloud", "label": "Inter-Bank Wire", "sublabel": "HTTP REST / API Key" },
+    { "id": "partner_orch", "type": "backend", "label": "Partner Orch", "sublabel": "Group B Inbound API" },
+    { "id": "partner_t24", "type": "backend", "label": "Partner T24 CBS", "sublabel": "Group B Core Engine" },
+    { "id": "partner_cust", "type": "frontend", "label": "Bob (Beneficiary)", "sublabel": "Partner Bank Account" }
+  ],
+  "segments": [
+    { "from": 145, "to": 310, "label": "Phase 1: Domestic Leg 1 — Debit Customer & Credit Nostro Buffer" },
+    { "from": 325, "to": 520, "label": "Phase 2: Inter-Bank Wire — Partner Bank Inward Settlement" },
+    { "from": 530, "to": 675, "label": "Phase 3: Saga Compensation — Rollback on Downstream Failure / Timeout" }
+  ],
+  "messages": [
+    { "id": "m1", "from": "aura_client", "to": "aura_orch", "y": 165, "label": "POST /api/v1/transfers (Target: Bank B, Bob)", "variant": "emphasis" },
+    { "id": "m2", "from": "aura_orch", "to": "aura_t24", "y": 200, "label": "POST /api/v1/cbs/funds-transfer (Debit: Alice, Credit: NOSTRO_B)", "variant": "emphasis" },
+    { "id": "m3", "from": "aura_t24", "to": "aura_orch", "y": 235, "label": "200 OK (ref: TXN-AURA-101, Status: POSTED)", "variant": "return" },
+    { "id": "m4", "from": "aura_orch", "to": "aura_client", "y": 270, "label": "202 Accepted (Transfer Initiated, Processing Wire)", "variant": "return" },
+
+    { "id": "m5", "from": "aura_orch", "to": "interbank_wire", "y": 350, "label": "POST /api/v1/transfers/interbank/inward", "variant": "emphasis" },
+    { "id": "m6", "from": "interbank_wire", "to": "partner_orch", "y": 380, "label": "HTTP Inward Wire Dispatch (API Key Header)", "variant": "emphasis" },
+    { "id": "m7", "from": "partner_orch", "to": "partner_t24", "y": 415, "label": "POST /api/v1/cbs/funds-transfer (Debit: VOSTRO_A, Credit: Bob)", "variant": "emphasis" },
+    { "id": "m8", "from": "partner_t24", "to": "partner_cust", "y": 445, "label": "Credit Bob Account (500 PHP)", "variant": "emphasis" },
+    { "id": "m9", "from": "partner_t24", "to": "partner_orch", "y": 475, "label": "200 OK (ref: TXN-PARTNER-882)", "variant": "return" },
+    { "id": "m10", "from": "partner_orch", "to": "aura_orch", "y": 505, "label": "200 OK (Status: SETTLED)", "variant": "return" },
+
+    { "id": "m11", "from": "interbank_wire", "to": "aura_orch", "y": 550, "label": "[Failure Branch] 404 / 500 / Timeout (> 5000ms)", "variant": "security" },
+    { "id": "m12", "from": "aura_orch", "to": "aura_t24", "y": 585, "label": "POST /api/v1/cbs/reversal (Compensate: Credit Alice, Debit NOSTRO)", "variant": "security" },
+    { "id": "m13", "from": "aura_t24", "to": "aura_orch", "y": 620, "label": "200 OK (ref: REV-AURA-202, Alice Balance Restored)", "variant": "return" },
+    { "id": "m14", "from": "aura_orch", "to": "aura_client", "y": 655, "label": "Push Notification: Inter-bank transfer failed, funds refunded", "variant": "default" }
+  ],
+  "activations": [
+    { "participant": "aura_orch", "from": 160, "to": 275, "type": "backend" },
+    { "participant": "aura_t24", "from": 195, "to": 240, "type": "backend" },
+    { "participant": "aura_orch", "from": 345, "to": 510, "type": "backend" },
+    { "participant": "partner_orch", "from": 375, "to": 508, "type": "backend" },
+    { "participant": "partner_t24", "from": 410, "to": 480, "type": "backend" },
+    { "participant": "aura_orch", "from": 545, "to": 660, "type": "security" },
+    { "participant": "aura_t24", "from": 580, "to": 625, "type": "security" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Bilateral Inter-Bank Settlement Mechanism",
+      "items": [
+        "Pre-Funded Settlement Accounts: AuraBank holds a clearing ledger account (NOSTRO_BANK_B) and Partner Bank holds a VOSTRO_AURABANK account.",
+        "Zero Loss Invariant: Money is never created or destroyed. Debiting Alice is paired with crediting the Nostro buffer. Debiting the Vostro buffer is paired with crediting Bob.",
+        "Saga Compensation Guarantee: If the partner bank cannot be reached or rejects the beneficiary, AuraBank T24 CBS Reversal automatically restores the customer balance."
+      ]
+    }
+  ]
+}

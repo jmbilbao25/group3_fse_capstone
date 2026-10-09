@@ -190,6 +190,8 @@ class LayaEngine:
                 "anomaly_probability": 1.0,
                 "primary_flag": "IMPOSSIBLE_TRAVEL_VELOCITY",
                 "all_flags": flags if flags else ["IMPOSSIBLE_TRAVEL_VELOCITY"],
+                "threat_category": "IMPOSSIBLE_TRAVEL_VELOCITY",
+                "cause_of_suspicion": "Physically impossible travel velocity exceeding 1,000 km/h indicating remote credential abuse or session token replay.",
                 "choice_probabilities": {"ALLOW": 0.0, "REQUIRE_2FA": 0.0, "BLOCK": 1.0},
                 "spike_ratio": round(spike_ratio, 2),
                 "gate_used": "GATE_0_FAST_PATH",
@@ -212,6 +214,8 @@ class LayaEngine:
                 "advisory_tier": "NONE",
                 "warning_dialog": None,
                 "threat_narrative": None,
+                "threat_category": "NONE",
+                "cause_of_suspicion": "Transaction conforms to expected baseline behavior within home vicinity.",
                 "fraud_score": 0,
                 "is_anomaly": False,
                 "anomaly_probability": 0.001,
@@ -365,6 +369,15 @@ class LayaEngine:
             decision = "ALLOW"
             primary_flag = "NORMAL_TRANSACTION"
 
+        cause_of_suspicion = self.determine_cause_of_suspicion(
+            threat_category=threat_category,
+            threat_narrative=threat_narrative,
+            memo=memo,
+            geo_signals=geo_signals,
+            spike_ratio=spike_ratio,
+            flags=flags
+        )
+
         total_latency_ms = round((time.perf_counter() - t0) * 1000.0, 2)
 
         return {
@@ -372,6 +385,8 @@ class LayaEngine:
             "advisory_tier": advisory_tier,
             "warning_dialog": warning_dialog,
             "threat_narrative": threat_narrative,
+            "threat_category": threat_category or ("NONE" if decision == "ALLOW" else "GENERAL_ADVISORY"),
+            "cause_of_suspicion": cause_of_suspicion,
             "fraud_score": final_score,
             "is_anomaly": anomaly_probability > 0.40,
             "anomaly_probability": anomaly_probability,
@@ -390,6 +405,48 @@ class LayaEngine:
                 "primitives": ["Choice", "Score", "Noul"]
             }
         }
+
+    def determine_cause_of_suspicion(
+        self,
+        threat_category: Optional[str] = None,
+        threat_narrative: Optional[str] = None,
+        memo: Optional[str] = None,
+        geo_signals: Optional[Dict[str, Any]] = None,
+        spike_ratio: float = 1.0,
+        flags: Optional[List[str]] = None
+    ) -> str:
+        """
+        Synthesizes structured telemetry, unstructured threat narratives, and memo semantics
+        to categorize and articulate the primary cause of suspicion.
+        """
+        geo = geo_signals or {}
+        flag_list = flags or []
+        cat = (threat_category or "").upper().strip()
+
+        if cat == "MEMORY_HOOKING_TAMPER" or any("HOOK" in f for f in flag_list):
+            return "Runtime memory manipulation detected (e.g. Frida or Xposed dynamic instrumentation framework active during transfer authorization)."
+        if cat == "PACKET_INSPECTION_MITM" or any("MITM" in f for f in flag_list):
+            return "Network traffic interception detected (e.g. HTTP Canary or proxy packet analysis tool actively inspecting session payloads)."
+        if cat == "REMOTE_ACCESS_MALWARE" or any("REMOTE" in f for f in flag_list):
+            return "Remote screen broadcast or control assistance application (e.g. AnyDesk, TeamViewer) actively operating during financial movement."
+        if cat == "LIVE_CALL_COERCION" or any("CALL" in f for f in flag_list):
+            return "Active phone call maintained concurrently with fund transfer to an unverified recipient, exhibiting phone-based social engineering or coercion."
+        if geo.get("is_impossible_travel", False) or any("IMPOSSIBLE" in f for f in flag_list):
+            velocity = geo.get("velocity_kmh", 0.0)
+            return f"Physically impossible travel velocity ({velocity:,.1f} km/h), indicating remote credential abuse, proxy routing, or session token replay."
+        if cat == "PURPOSE_ACCOUNT_MISMATCH":
+            return "Declared payment purpose conflicts with beneficiary account type, indicating invoice diversion or money mule aggregation."
+        if cat == "EXTERNAL_CLIPBOARD_PASTE":
+            return "Beneficiary credentials copied directly from external messaging application, indicating third-party task or investment guidance."
+        if cat == "MEMO_SCAM_PATTERN" or any("SCAM" in f or "CRYPTO" in f for f in flag_list):
+            return "Transaction memo semantics exhibit high correlation with known advance-fee release, crypto task, or lottery scam vernacular."
+        if spike_ratio >= 4.0 or any("SPIKE" in f for f in flag_list):
+            return f"Anomalous transaction spike ({spike_ratio:.1f}x baseline) deviating substantially from historical customer behavioral profile."
+        if geo.get("is_vpn_detected", False) or any("VPN" in f for f in flag_list):
+            return "Connection routed through commercial VPN masking customer geographic origin."
+        if flag_list:
+            return f"Multi-factor anomaly detected: {', '.join(flag_list)}."
+        return "Transaction conforms to expected baseline behavior."
 
     def analyze_transfer(
         self,

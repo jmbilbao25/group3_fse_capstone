@@ -44,6 +44,12 @@ public class LedgerMutationAudit {
     @Column(name = "approved_by_user_id", length = 36)
     private String approvedByUserId;
 
+    @Column(name = "reversed_by_user_id", length = 64)
+    private String reversedByUserId;
+
+    @Column(name = "reversal_reason", length = 100)
+    private String reversalReason;
+
     @Column(name = "status", nullable = false, length = 20)
     private String status; // COMMITTED, FAILED, ROLLED_BACK
 

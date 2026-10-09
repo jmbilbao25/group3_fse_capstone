@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import '../../models/user_persona.dart';
+import '../../services/auth_api_service.dart';
 import '../../services/bank_service.dart';
-import '../../services/biometric_service.dart';
+import '../../services/security_service.dart';
 import '../../widgets/aura_logo.dart';
 import '../app_shell.dart';
+import 'otp_verification_screen.dart';
+import 'pending_approval_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -70,12 +74,116 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   }
 
   void _onSignIn() async {
+    FocusScope.of(context).unfocus();
+
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 600));
-    if (mounted) {
+
+    final email = _usernameController.text.trim();
+    final password = _passwordController.text;
+
+    // 1. Pre-flight hardware & device integrity check
+    final assessment = await SecurityService.assessDevice();
+    if (assessment.isCompromised) {
+      if (!mounted) return;
       setState(() => _isLoading = false);
+      await SecurityService.showWarningDialogAndExit(
+        context,
+        reason: assessment.summary,
+      );
+      return;
+    }
+
+    // 2. Call AuthApiService to authenticate against backend
+    final authResult = await AuthApiService().login(
+      email: email,
+      password: password,
+      deviceId: DeviceIdentity().id,
+      deviceName: DeviceIdentity().name,
+    );
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (authResult.status == AuthStatus.mfaRequired) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (ctx) => OtpVerificationScreen(
+            email: authResult.maskedEmail ?? email,
+            rawEmail: email,
+            userId: authResult.userId ?? 'USR-0001',
+            persona: authResult.persona,
+            onVerified: () {
+              Navigator.of(ctx).pop();
+              if (AuthApiService().isDeviceApproved == false) {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(
+                    builder: (pCtx) => PendingApprovalScreen(
+                      user: authResult.persona ??
+                          UserPersona(
+                            name: 'Aura User',
+                            role: 'Customer',
+                            email: email,
+                            password: password,
+                            accountId: '1000-4491-0023',
+                            balance: 250000.0,
+                          ),
+                      onApproved: () {
+                        Navigator.of(pCtx).pushReplacement(
+                          MaterialPageRoute(builder: (_) => const AppShell()),
+                        );
+                      },
+                      onCancel: () {
+                        AuthApiService().logout();
+                        Navigator.of(pCtx).pop();
+                      },
+                    ),
+                  ),
+                );
+              } else {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (_) => const AppShell()),
+                );
+              }
+            },
+          ),
+        ),
+      );
+    } else if (authResult.status == AuthStatus.pendingApproval ||
+        (authResult.status == AuthStatus.authenticated && authResult.isApproved == false)) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (pCtx) => PendingApprovalScreen(
+            user: authResult.persona ??
+                UserPersona(
+                  name: 'Aura User',
+                  role: 'Customer',
+                  email: email,
+                  password: password,
+                  accountId: '1000-4491-0023',
+                  balance: 250000.0,
+                ),
+            onApproved: () {
+              Navigator.of(pCtx).pushReplacement(
+                MaterialPageRoute(builder: (_) => const AppShell()),
+              );
+            },
+            onCancel: () {
+              AuthApiService().logout();
+              Navigator.of(pCtx).pop();
+            },
+          ),
+        ),
+      );
+    } else if (authResult.status == AuthStatus.authenticated) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const AppShell()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authResult.errorMessage ?? 'Authentication failed. Please check credentials.'),
+          backgroundColor: const Color(0xFFC53030),
+        ),
       );
     }
   }

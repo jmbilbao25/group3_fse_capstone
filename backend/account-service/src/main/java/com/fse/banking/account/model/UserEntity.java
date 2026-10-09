@@ -76,6 +76,28 @@ public class UserEntity {
     @Builder.Default
     private UserStatus status = UserStatus.ACTIVE;
 
+    @Column(name = "last_known_latitude")
+    @Builder.Default
+    private Double lastKnownLatitude = 14.5995;
+
+    @Column(name = "last_known_longitude")
+    @Builder.Default
+    private Double lastKnownLongitude = 120.9842;
+
+    @Column(name = "last_known_location_name", length = 100)
+    @Builder.Default
+    private String lastKnownLocationName = "Manila, Philippines";
+
+    @Column(name = "last_known_ip", length = 45)
+    @Builder.Default
+    private String lastKnownIp = "112.198.45.10";
+
+    @Column(name = "last_geo_updated_at")
+    private Instant lastGeoUpdatedAt;
+
+    @Column(name = "last_login_at")
+    private Instant lastLoginAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

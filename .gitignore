@@ -66,6 +66,7 @@ infrastructure/datadog/synthetics-location-config.json
 **/__pycache__/
 **/cache/*.json
 hybrid_bench/cache/
+hybrid_bench/reports/sar_drafts/
 
 ### Local Agent Skills ###
 .agents/*

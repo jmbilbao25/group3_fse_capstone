@@ -15,12 +15,19 @@ import React from 'react';
 const STORAGE_KEY = 'aurabank.theme';
 const ThemeContext = React.createContext(null);
 
+const THEME_VERSION_KEY = 'aurabank.theme_v3';
 const read = () => {
   try {
+    const migrated = localStorage.getItem(THEME_VERSION_KEY);
+    if (!migrated) {
+      localStorage.setItem(THEME_VERSION_KEY, '1');
+      localStorage.setItem(STORAGE_KEY, 'light');
+      return 'light';
+    }
     const saved = localStorage.getItem(STORAGE_KEY);
-    return saved === 'light' || saved === 'dark' || saved === 'system' ? saved : 'system';
+    return saved === 'dark' ? 'dark' : 'light';
   } catch {
-    return 'system';
+    return 'light';
   }
 };
 

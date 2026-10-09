@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../models/user_persona.dart';
 import '../../services/auth_api_service.dart';
+import '../../services/device_storage.dart';
 import '../../services/notification_stream_service.dart';
 import '../../theme/aura_theme.dart';
 import '../auth/login_screen.dart';
@@ -28,18 +29,44 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
 
   Future<void> _loadBackendDevices() async {
     final devices = await AuthApiService().getRegisteredDevices();
-    if (!mounted || devices.isEmpty) return;
+    if (!mounted) return;
+
+    final currentId = AuthApiService().currentDeviceId.isNotEmpty
+        ? AuthApiService().currentDeviceId
+        : DeviceIdentity().id;
+    final currentType = AuthApiService().currentDeviceType.isNotEmpty
+        ? AuthApiService().currentDeviceType
+        : DeviceIdentity().type;
+    final currentName = AuthApiService().currentDeviceName.isNotEmpty
+        ? AuthApiService().currentDeviceName
+        : DeviceIdentity().name;
+    final isRunningOnWeb = kIsWeb || currentType.toUpperCase() == 'WEB';
+    final hasUserAuth = AuthApiService().currentUserId != null ||
+        DeviceStorage.getUserId() != null ||
+        AuthApiService().currentAccessToken != null;
+
+    // In unauthenticated widget test/preview mode without backend, keep preview mock data
+    if (!hasUserAuth && devices.isEmpty) {
+      return;
+    }
+
     setState(() {
       _trustedDevices.clear();
       _webSessions.clear();
+
       for (final d in devices) {
         final type = (d['device_type'] as String? ?? 'MOBILE').toUpperCase();
         final isWeb = type == 'WEB';
         if (isWeb) {
+          final clientIp = d['client_ip'];
+          String details = 'Active Web Session';
+          if (clientIp != null && clientIp.toString().isNotEmpty) {
+            details = 'IP: $clientIp • Active now';
+          }
           _webSessions.add({
             'id': d['device_id'] ?? '',
-            'browser': d['device_name'] ?? 'Web Session',
-            'details': d['client_ip'] != null ? 'IP: ${d['client_ip']}' : 'Active Web Session',
+            'browser': d['device_name'] ?? 'Web Browser',
+            'details': details,
             'icon': Icons.laptop_mac_rounded,
           });
         } else {
@@ -48,7 +75,9 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
           _trustedDevices.add({
             'id': d['device_id'] ?? '',
             'name': d['device_name'] ?? 'Mobile Device',
-            'os': isPrim ? 'Primary Trusted Device' : (isAppr ? 'Secondary Device (Approved)' : 'Secondary Device (Pending Approval)'),
+            'os': isPrim
+                ? 'Primary Trusted Device'
+                : (isAppr ? 'Secondary Device (Approved)' : 'Secondary Device (Pending Approval)'),
             'location': d['client_ip'] != null ? 'IP: ${d['client_ip']}' : 'Registered Device',
             'isPrimary': isPrim,
             'isApproved': isAppr,
@@ -58,22 +87,30 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
           });
         }
       }
-      final currentType = AuthApiService().currentDeviceType.isNotEmpty
-          ? AuthApiService().currentDeviceType
-          : DeviceIdentity().type;
-      final isRunningOnWeb = kIsWeb || currentType.toUpperCase() == 'WEB';
-      if (_webSessions.isEmpty && isRunningOnWeb) {
-        final currentId = AuthApiService().currentDeviceId.isNotEmpty
-            ? AuthApiService().currentDeviceId
-            : DeviceIdentity().id;
-        final currentName = AuthApiService().currentDeviceName.isNotEmpty
-            ? AuthApiService().currentDeviceName
-            : DeviceIdentity().name;
-        _webSessions.add({
+
+      // If running on web, ensure current web session is present and marked
+      if (isRunningOnWeb && !_webSessions.any((w) => w['id'] == currentId)) {
+        _webSessions.insert(0, {
           'id': currentId,
           'browser': currentName,
           'details': 'Active Web Session • Connected',
           'icon': Icons.laptop_mac_rounded,
+        });
+      }
+
+      // If running on mobile and no devices in backend yet, register current mobile device
+      if (!isRunningOnWeb && _trustedDevices.isEmpty) {
+        final isPrimary = AuthApiService().currentIsPrimaryDevice ?? true;
+        _trustedDevices.add({
+          'id': currentId,
+          'name': currentName,
+          'os': isPrimary ? 'Primary Trusted Device' : 'Secondary Device',
+          'location': 'Current Device',
+          'isPrimary': isPrimary,
+          'isApproved': AuthApiService().isDeviceApproved,
+          'status': 'Active Now',
+          'isActive': true,
+          'icon': Icons.phone_iphone_rounded,
         });
       }
     });
@@ -220,9 +257,36 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
   void _endWebSession(int index) async {
     final session = _webSessions[index];
     final deviceId = session['id'] as String?;
+    final currentId = AuthApiService().currentDeviceId.isNotEmpty
+        ? AuthApiService().currentDeviceId
+        : DeviceIdentity().id;
+    final isCurrentSession = (deviceId == currentId);
+
     if (deviceId != null && deviceId.isNotEmpty) {
       await AuthApiService().revokeDevice(deviceId: deviceId);
     }
+
+    if (isCurrentSession) {
+      NotificationStreamService().disconnect();
+      if (deviceId != null && deviceId.isNotEmpty) {
+        await AuthApiService().revokeDevice(deviceId: deviceId);
+      }
+      await AuthApiService().logout();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).clearSnackBars();
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Signed out of session for ${session['browser']}'),
+          backgroundColor: brandViolet,
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _webSessions.removeAt(index);
     });
@@ -241,111 +305,139 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Center(
-              child: Container(
-                width: 44,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE5E7EB),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Container(
-              width: 56,
-              height: 56,
-              decoration: const BoxDecoration(
-                color: Color(0xFFF3E8FF),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.logout_rounded, color: brandViolet, size: 28),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Log out of all sessions?',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: textDark,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Sign out of all active browsers and sessions. Your registered mobile devices and login credentials will remain secure.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12.5,
-                color: textGray,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: brandViolet,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                ),
-                onPressed: () async {
-                  Navigator.of(ctx).pop();
-                  for (final s in List<Map<String, dynamic>>.from(_webSessions)) {
-                    final devId = s['id'] as String?;
-                    if (devId != null && devId.isNotEmpty) {
-                      await AuthApiService().revokeDevice(deviceId: devId);
-                    }
-                  }
-                  setState(() {
-                    _webSessions.clear();
-                  });
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('All web sessions have been logged out.'),
-                      backgroundColor: brandViolet,
-                    ),
-                  );
-                  _loadBackendDevices();
-                },
-                child: const Text(
-                  'Log Out All Sessions',
-                  style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: TextButton(
-                style: TextButton.styleFrom(
-                  backgroundColor: const Color(0xFFF3F4F6),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                ),
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text(
-                  'Cancel',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: textDark,
+      builder: (ctx) => SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE5E7EB),
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 20),
+              Container(
+                width: 56,
+                height: 56,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF3E8FF),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.logout_rounded, color: brandViolet, size: 28),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Log out of all sessions?',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: textDark,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Sign out of all active browsers and sessions. Your registered mobile devices and login credentials will remain secure.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  color: textGray,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: brandViolet,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                  ),
+                  onPressed: () async {
+                    Navigator.of(ctx).pop();
+
+                    final currentType = AuthApiService().currentDeviceType.isNotEmpty
+                        ? AuthApiService().currentDeviceType
+                        : DeviceIdentity().type;
+                    final isRunningOnWeb = kIsWeb || currentType.toUpperCase() == 'WEB';
+
+                    if (isRunningOnWeb) {
+                      // Disconnect notification stream first to avoid receiving self-revocation alerts
+                      NotificationStreamService().disconnect();
+                    }
+
+                    // 1. Call backend API to terminate all web sessions cleanly
+                    await AuthApiService().logoutAllSessions();
+
+                    if (isRunningOnWeb) {
+                      await AuthApiService().logout();
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).clearSnackBars();
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                        (route) => false,
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('All web sessions have been logged out.'),
+                          backgroundColor: brandViolet,
+                        ),
+                      );
+                    } else {
+                      setState(() {
+                        _webSessions.clear();
+                      });
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).clearSnackBars();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('All web sessions have been logged out.'),
+                          backgroundColor: brandViolet,
+                        ),
+                      );
+                      _loadBackendDevices();
+                    }
+                  },
+                  child: const Text(
+                    'Log Out All Sessions',
+                    style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: TextButton(
+                  style: TextButton.styleFrom(
+                    backgroundColor: const Color(0xFFF3F4F6),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                  ),
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: textDark,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -355,170 +447,160 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Center(
-              child: Container(
-                width: 44,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE5E7EB),
-                  borderRadius: BorderRadius.circular(2),
+      builder: (ctx) => SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE5E7EB),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            Container(
-              width: 56,
-              height: 56,
-              decoration: const BoxDecoration(
-                color: Color(0xFFF3E8FF),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.devices_other_rounded, color: brandViolet, size: 28),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Log out of all devices?',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: textDark,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'This will remove both registered devices from your account. You will need your password and an OTP to sign in again.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12.5,
-                color: textGray,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 18),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: bgLavender,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: borderLavender),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: const [
-                          Icon(Icons.phone_iphone_rounded, size: 18, color: brandViolet),
-                          SizedBox(width: 8),
-                          Text('iPhone 15 Pro', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textDark)),
-                        ],
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF3E8FF),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: const Color(0xFFDDD6FE), width: 0.8),
-                        ),
-                        child: const Text(
-                          'Primary',
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: brandViolet),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Divider(color: borderLavender, height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: const [
-                          Icon(Icons.tablet_mac_rounded, size: 18, color: brandViolet),
-                          SizedBox(width: 8),
-                          Text('iPad Air', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textDark)),
-                        ],
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF3E8FF),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: const Color(0xFFDDD6FE), width: 0.8),
-                        ),
-                        child: const Text(
-                          'Secondary',
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: brandViolet),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 22),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: brandViolet,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              const SizedBox(height: 20),
+              Container(
+                width: 56,
+                height: 56,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF3E8FF),
+                  shape: BoxShape.circle,
                 ),
-                onPressed: () async {
-                  Navigator.of(ctx).pop();
-                  await AuthApiService().logoutAll();
-                  await AuthApiService().logout();
-                  NotificationStreamService().disconnect();
-                  if (!mounted) return;
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                    (route) => false,
-                  );
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('All devices signed out everywhere.'),
-                      backgroundColor: brandViolet,
+                child: const Icon(Icons.devices_other_rounded, color: brandViolet, size: 28),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Log out of all devices?',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: textDark,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'This will remove both registered devices from your account. You will need your password and an OTP to sign in again.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  color: textGray,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 18),
+              if (_trustedDevices.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: bgLavender,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: borderLavender),
+                  ),
+                  child: Column(
+                    children: [
+                      for (int i = 0; i < _trustedDevices.length; i++) ...[
+                        if (i > 0) const Divider(color: borderLavender, height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  _trustedDevices[i]['icon'] as IconData? ?? Icons.phone_iphone_rounded,
+                                  size: 18,
+                                  color: brandViolet,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  _trustedDevices[i]['name'] as String? ?? 'Device',
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textDark),
+                                ),
+                              ],
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF3E8FF),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: const Color(0xFFDDD6FE), width: 0.8),
+                              ),
+                              child: Text(
+                                _trustedDevices[i]['isPrimary'] == true ? 'Primary' : 'Secondary',
+                                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: brandViolet),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 22),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: brandViolet,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                  ),
+                  onPressed: () async {
+                    Navigator.of(ctx).pop();
+                    NotificationStreamService().disconnect();
+                    await AuthApiService().logoutAll();
+                    await AuthApiService().logout();
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).clearSnackBars();
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      (route) => false,
+                    );
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('All devices signed out everywhere.'),
+                        backgroundColor: brandViolet,
+                      ),
+                    );
+                  },
+                  child: const Text(
+                    'Log Out Everywhere',
+                    style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: TextButton(
+                  style: TextButton.styleFrom(
+                    backgroundColor: const Color(0xFFF3F4F6),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                  ),
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: textDark,
                     ),
-                  );
-                },
-                child: const Text(
-                  'Log Out Everywhere',
-                  style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: TextButton(
-                style: TextButton.styleFrom(
-                  backgroundColor: const Color(0xFFF3F4F6),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                ),
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text(
-                  'Cancel',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: textDark,
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -797,11 +879,15 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                                     children: [
                                       const Icon(Icons.location_on_outlined, size: 12, color: textGray),
                                       const SizedBox(width: 3),
-                                      Text(
-                                        dev['location'] as String,
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          color: textGray,
+                                      Expanded(
+                                        child: Text(
+                                          dev['location'] as String,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            color: textGray,
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -1065,6 +1151,8 @@ class _DevicesSessionsScreenState extends State<DevicesSessionsScreen> {
                                           isCurrentSession && !(s['details'] as String).toLowerCase().contains('active')
                                               ? '${s['details']} • Active now'
                                               : s['details'] as String,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                           style: const TextStyle(
                                             fontSize: 11,
                                             color: textGray,

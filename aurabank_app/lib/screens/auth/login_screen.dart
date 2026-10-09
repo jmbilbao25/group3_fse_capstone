@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/user_persona.dart';
 import '../../services/auth_api_service.dart';
 import '../../services/bank_service.dart';
+import '../../services/notification_stream_service.dart';
 import '../../services/security_service.dart';
 import '../../widgets/aura_logo.dart';
 import '../app_shell.dart';
@@ -38,6 +39,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   @override
   void initState() {
     super.initState();
+    NotificationStreamService().disconnect();
     _bankService.addListener(_onServiceUpdate);
     _loadPreferences();
   }

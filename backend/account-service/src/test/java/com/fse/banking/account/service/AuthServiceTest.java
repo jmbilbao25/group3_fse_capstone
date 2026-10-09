@@ -35,6 +35,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -524,5 +525,26 @@ class AuthServiceTest {
         verify(redisSessionStore).deleteSessionsForDevice("USR-100001", "dev-secondary-ipad");
         verify(redisSessionStore).deleteUserDevice("USR-100001", "dev-web-chrome");
         verify(redisSessionStore).deleteSessionsForDevice("USR-100001", "dev-web-chrome");
+    }
+
+    @Test
+    @DisplayName("Should log out only web sessions on logoutAllWebSessions while keeping primary and secondary mobile intact")
+    void testLogoutAllWebSessions() {
+        when(jwtProvider.validateToken("valid.jwt.token")).thenReturn(true);
+        when(jwtProvider.getJti("valid.jwt.token")).thenReturn("jti-web");
+        when(jwtProvider.getRemainingTtlSeconds("valid.jwt.token")).thenReturn(300L);
+
+        DeviceInfoDto primaryDev = DeviceInfoDto.builder().deviceId("dev-primary-mobile").deviceName("iPhone").deviceType("MOBILE").isPrimary(true).build();
+        DeviceInfoDto secondaryDev = DeviceInfoDto.builder().deviceId("dev-secondary-ipad").deviceName("iPad").deviceType("MOBILE").isPrimary(false).build();
+        DeviceInfoDto webDev = DeviceInfoDto.builder().deviceId("dev-web-chrome").deviceName("Chrome").deviceType("WEB").isPrimary(false).build();
+
+        when(redisSessionStore.getUserDevices("USR-100001")).thenReturn(List.of(primaryDev, secondaryDev, webDev));
+
+        authService.logoutAllWebSessions("USR-100001", "Bearer valid.jwt.token");
+
+        verify(redisSessionStore).deleteUserDevice("USR-100001", "dev-web-chrome");
+        verify(redisSessionStore).deleteSessionsForDevice("USR-100001", "dev-web-chrome");
+        verify(redisSessionStore, never()).deleteUserDevice("USR-100001", "dev-secondary-ipad");
+        verify(redisSessionStore).blacklistToken("jti-web", 300L);
     }
 }

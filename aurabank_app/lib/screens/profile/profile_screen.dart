@@ -293,6 +293,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   await AuthApiService().logout();
                   NotificationStreamService().disconnect();
                   if (!mounted) return;
+                  ScaffoldMessenger.of(context).clearSnackBars();
                   Navigator.of(context).pushAndRemoveUntil(
                     MaterialPageRoute(builder: (_) => const LoginScreen()),
                     (route) => false,
@@ -301,6 +302,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SnackBar(
                       content: Text('You have been signed out of this device.'),
                       backgroundColor: brandViolet,
+                      duration: Duration(seconds: 2),
+                      behavior: SnackBarBehavior.floating,
                     ),
                   );
                 },

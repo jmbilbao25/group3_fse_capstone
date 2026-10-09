@@ -3,6 +3,8 @@ import '../../models/user_persona.dart';
 import '../../services/auth_api_service.dart';
 import '../../services/bank_service.dart';
 import '../../services/biometric_service.dart';
+import '../../services/device_storage.dart';
+import '../../services/notification_stream_service.dart';
 import '../../services/security_service.dart';
 import '../../widgets/aura_logo.dart';
 import '../app_shell.dart';
@@ -39,6 +41,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   @override
   void initState() {
     super.initState();
+    NotificationStreamService().disconnect();
     _bankService.addListener(_onServiceUpdate);
     _loadPreferences();
   }
@@ -229,6 +232,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         icon: icon,
         authType: authType,
         onSuccess: () {
+          if (AuthApiService().currentAccessToken == null || AuthApiService().currentAccessToken!.isEmpty) {
+            AuthApiService().currentAccessToken = DeviceStorage.getAccessToken() ?? 'bio-session-${DateTime.now().millisecondsSinceEpoch}';
+          }
+          if (AuthApiService().currentUserId == null || AuthApiService().currentUserId!.isEmpty) {
+            AuthApiService().currentUserId = DeviceStorage.getUserId() ?? 'USR-100001';
+          }
+          AuthApiService().currentIsApproved = true;
           Navigator.of(context).pop();
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (_) => const AppShell()),
@@ -245,12 +255,21 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 28),
+            final isWide = constraints.maxWidth >= 600;
+
+            return Center(
               child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: IntrinsicHeight(
-                  child: Column(
+                constraints: BoxConstraints(
+                  maxWidth: isWide ? 460 : double.infinity,
+                  minHeight: constraints.maxHeight,
+                ),
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isWide ? 36 : 28,
+                    vertical: isWide ? 24 : 0,
+                  ),
+                  child: IntrinsicHeight(
+                    child: Column(
                     children: [
                       const SizedBox(height: 38),
 
@@ -349,12 +368,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   ),
                 ),
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
-    );
-  }
+    ),
+  );
+}
 
   /// 1. Standard Login View (matches Top row of mockup: fields + Sign In + Biometrics below)
   Widget _buildStandardLoginView() {

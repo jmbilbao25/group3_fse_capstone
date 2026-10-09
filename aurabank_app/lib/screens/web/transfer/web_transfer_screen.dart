@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../../services/bank_service.dart';
+import '../../../services/bank_service.dart';
 
 class WebTransferScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -15,7 +15,7 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
   final BankService _bankService = BankService();
 
   // Form State
-  String _selectedSourceAccount = 'Savings';
+  final String _selectedSourceAccount = 'Savings';
   bool _isAuraToAura = true;
   String _selectedPartnerBank = 'MeyBank';
   String _selectedPurpose = 'Remittance';
@@ -41,18 +41,6 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
           'title': 'Savings Account',
           'accountNo': 'AUR-SAV-9821(1000-2000-3001)',
           'balance': _bankService.availableBalance,
-        },
-        {
-          'type': 'Current',
-          'title': 'Current Account',
-          'accountNo': 'AUR-CUR-4412(1000-2000-3002)',
-          'balance': 125000.0,
-        },
-        {
-          'type': 'Credit',
-          'title': 'Credit Line Account',
-          'accountNo': 'AUR-CRD-7703(1000-2000-3003)',
-          'balance': 75000.0,
         },
       ];
 
@@ -118,7 +106,7 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
     return double.tryParse(clean) ?? 0.0;
   }
 
-  double get _transferFee => _isAuraToAura ? 0.0 : 10.0;
+  double get _transferFee => 0.0;
 
   double get _totalDebit => _parsedAmount + _transferFee;
 
@@ -844,84 +832,65 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
           ),
           const SizedBox(height: 12),
 
-          // Source Account Selector Card
+          // Source Account Card (Static Savings Account)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: const Color(0xFFF9FAFB),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: borderLight),
             ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: _selectedSourceAccount,
-                isExpanded: true,
-                icon: const Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  color: Color(0xFF6B7280),
-                  size: 22,
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: const BoxDecoration(
+                    color: brandViolet,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.account_balance_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
-                items: _sourceAccounts.map((acc) {
-                  return DropdownMenuItem<String>(
-                    value: acc['type'] as String,
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: const BoxDecoration(
-                            color: brandViolet,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.account_balance_rounded,
-                            color: Colors.white,
-                            size: 20,
-                          ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _currentSourceAccountData['title'] as String,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF111827),
                         ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                acc['title'] as String,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF111827),
-                                ),
+                      ),
+                      const SizedBox(height: 2),
+                      RichText(
+                        text: TextSpan(
+                          style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                          children: [
+                            TextSpan(
+                              text: '${_currentSourceAccountData['accountNo']} • Available: ',
+                            ),
+                            TextSpan(
+                              text: '₱${_formatCurrency(_currentSourceAccountData['balance'] as double)}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF111827),
                               ),
-                              const SizedBox(height: 2),
-                              RichText(
-                                text: TextSpan(
-                                  style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
-                                  children: [
-                                    TextSpan(
-                                      text: '${acc['accountNo']} • Available: ',
-                                    ),
-                                    TextSpan(
-                                      text: '₱${_formatCurrency(acc['balance'] as double)}',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        color: Color(0xFF111827),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-                onChanged: (val) {
-                  if (val != null) setState(() => _selectedSourceAccount = val);
-                },
-              ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
 
@@ -977,7 +946,7 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: 8),
                 Expanded(
                   child: InkWell(
                     onTap: () => setState(() => _isAuraToAura = false),
@@ -1050,9 +1019,6 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
                     DropdownMenuItem(value: 'MeyBank', child: Text('MeyBank (Group 2 Partner)')),
                     DropdownMenuItem(value: 'Apex Digital Bank', child: Text('Apex Digital Bank (Group 1 Partner)')),
                     DropdownMenuItem(value: 'Nexus Core Bank', child: Text('Nexus Core Bank (Group 4 Partner)')),
-                    DropdownMenuItem(value: 'BDO Unibank', child: Text('BDO Unibank')),
-                    DropdownMenuItem(value: 'BPI', child: Text('Bank of the Philippine Islands')),
-                    DropdownMenuItem(value: 'GCash', child: Text('GCash Wallet')),
                   ],
                   onChanged: (val) {
                     if (val != null) setState(() => _selectedPartnerBank = val);
@@ -1561,7 +1527,7 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              const SizedBox(width: 4),
+                              const SizedBox(width: 8),
                               const Icon(
                                 Icons.check_circle,
                                 size: 13,
@@ -1643,36 +1609,7 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
           const SizedBox(height: 10),
 
           // Settlement Speed
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Settlement Speed',
-                style: TextStyle(
-                  fontSize: 12.5,
-                  color: Color(0xFF6B7280),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Icon(Icons.bolt_rounded, size: 14, color: Color(0xFF10B981)),
-                  SizedBox(width: 2),
-                  Text(
-                    'Real-Time (Instant)',
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF10B981),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 10),
+        
 
           // Balance After Transfer
           Row(

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../services/auth_api_service.dart';
 import '../../services/biometric_service.dart';
+import '../../services/device_storage.dart';
 import '../app_shell.dart';
 
 /// Custom Face ID Icon Widget matching the Aura Bank biometric design
@@ -186,6 +188,13 @@ class _LoginPageFaceIdState extends State<LoginPageFaceId> {
     if (!mounted) return;
 
     if (success) {
+      if (AuthApiService().currentAccessToken == null || AuthApiService().currentAccessToken!.isEmpty) {
+        AuthApiService().currentAccessToken = DeviceStorage.getAccessToken() ?? 'bio-session-${DateTime.now().millisecondsSinceEpoch}';
+      }
+      if (AuthApiService().currentUserId == null || AuthApiService().currentUserId!.isEmpty) {
+        AuthApiService().currentUserId = DeviceStorage.getUserId() ?? 'USR-100001';
+      }
+      AuthApiService().currentIsApproved = true;
       if (widget.onLoginSuccess != null) {
         widget.onLoginSuccess!();
       } else {

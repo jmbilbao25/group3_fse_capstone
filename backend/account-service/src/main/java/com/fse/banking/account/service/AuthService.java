@@ -653,17 +653,45 @@ public class AuthService {
             String token = authHeader.substring(7);
             if (jwtProvider.validateToken(token)) {
                 String userId = jwtProvider.getUserId(token);
-                String primaryDeviceId = redisSessionStore.getPrimaryDeviceId(userId);
-                List<DeviceInfoDto> allDevices = redisSessionStore.getUserDevices(userId);
-                for (DeviceInfoDto d : allDevices) {
-                    if (primaryDeviceId == null || !d.getDeviceId().equals(primaryDeviceId)) {
-                        redisSessionStore.deleteUserDevice(userId, d.getDeviceId());
-                        redisSessionStore.deleteSessionsForDevice(userId, d.getDeviceId());
-                        dispatchDeviceApprovalEvent(userId, d.getDeviceId(), "device-revoked");
-                    }
-                }
-                log.info("Logged out all non-primary sessions and devices for user {}", userId);
+                logoutAll(userId, authHeader);
             }
         }
+    }
+
+    public void logoutAll(String userId, String authHeader) {
+        if (userId == null || userId.isBlank()) return;
+        String primaryDeviceId = redisSessionStore.getPrimaryDeviceId(userId);
+        List<DeviceInfoDto> allDevices = redisSessionStore.getUserDevices(userId);
+        for (DeviceInfoDto d : allDevices) {
+            if (primaryDeviceId == null || !d.getDeviceId().equals(primaryDeviceId)) {
+                redisSessionStore.deleteUserDevice(userId, d.getDeviceId());
+                redisSessionStore.deleteSessionsForDevice(userId, d.getDeviceId());
+                dispatchDeviceApprovalEvent(userId, d.getDeviceId(), "device-revoked");
+            }
+        }
+        log.info("Logged out all non-primary sessions and devices for user {}", userId);
+    }
+
+    public void logoutAllWebSessions(String userId, String authHeader) {
+        if (userId == null || userId.isBlank()) return;
+        List<DeviceInfoDto> allDevices = redisSessionStore.getUserDevices(userId);
+        for (DeviceInfoDto d : allDevices) {
+            if ("WEB".equalsIgnoreCase(d.getDeviceType())) {
+                redisSessionStore.deleteUserDevice(userId, d.getDeviceId());
+                redisSessionStore.deleteSessionsForDevice(userId, d.getDeviceId());
+                dispatchDeviceApprovalEvent(userId, d.getDeviceId(), "device-revoked");
+                log.info("Logged out web session {} for user {}", d.getDeviceId(), userId);
+            }
+        }
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            if (jwtProvider.validateToken(token)) {
+                String jti = jwtProvider.getJti(token);
+                long remainingTtl = jwtProvider.getRemainingTtlSeconds(token);
+                redisSessionStore.blacklistToken(jti, remainingTtl);
+                redisSessionStore.removeSessionToken(userId, jti);
+            }
+        }
+        log.info("Logged out all web sessions for user {}", userId);
     }
 }

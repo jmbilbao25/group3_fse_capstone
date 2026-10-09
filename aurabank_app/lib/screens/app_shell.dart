@@ -9,14 +9,14 @@ import '../services/bank_service.dart';
 import '../services/notification_stream_service.dart';
 import '../theme/aura_theme.dart';
 
-import 'web/web_sidebar.dart';
-import 'web/web_header.dart';
-import 'web/web_dashboard_screen.dart';
-import 'web/web_transfer_screen.dart';
-import 'web/web_cards_screen.dart';
-import 'web/web_scan_screen.dart';
-import 'web/web_analytics_screen.dart';
-import 'web/web_profile_screen.dart';
+import 'web/dashboard/web_sidebar.dart';
+import 'web/dashboard/web_header.dart';
+import 'web/dashboard/web_dashboard_screen.dart';
+import 'web/transfer/web_transfer_screen.dart';
+import 'web/cards/web_cards_screen.dart';
+import 'web/scan/web_scan_screen.dart';
+import 'web/analytics/web_analytics_screen.dart';
+import 'web/profile/web_profile_screen.dart';
 
 class AppShell extends StatefulWidget {
   final int initialIndex;

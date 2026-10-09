@@ -148,6 +148,23 @@ class AccountProvisioningServiceTest {
     }
 
     @Test
+    @DisplayName("Should attach the owner's name and role to every account in the staff listing")
+    void testGetAllAccountsCarriesOwner() {
+        AccountEntity owned = AccountEntity.builder()
+                .accountId("ACC-201").userId("USR-200001").accountNumber("100100009876")
+                .accountType(AccountType.SAVINGS).status(AccountStatus.ACTIVE).build();
+        UserEntity owner = UserEntity.builder()
+                .userId("USR-200001").firstName("Juan").lastName("Dela Cruz")
+                .role(com.fse.banking.common.enums.UserRole.CUSTOMER).build();
+        when(accountRepository.findAll()).thenReturn(List.of(owned));
+        when(userRepository.findAllById(List.of("USR-200001"))).thenReturn(List.of(owner));
+
+        AccountResponse r = provisioningService.getAllAccounts().get(0);
+        assertThat(r.getOwnerName()).isEqualTo("Juan Dela Cruz");
+        assertThat(r.getOwnerRole()).isEqualTo("CUSTOMER");
+    }
+
+    @Test
     @DisplayName("Should retrieve list of accounts for a user")
     void testGetAccountsByUser() {
         AccountEntity account = AccountEntity.builder()

@@ -109,9 +109,22 @@ public class AccountProvisioningService {
     }
 
     public List<AccountResponse> getAllAccounts() {
-        return accountRepository.findAll()
+        List<AccountEntity> accounts = accountRepository.findAll();
+        // One batch lookup for every owner, not a query per account.
+        java.util.Map<String, UserEntity> owners = userRepository
+                .findAllById(accounts.stream().map(AccountEntity::getUserId).distinct().toList())
                 .stream()
-                .map(this::toAccountResponse)
+                .collect(java.util.stream.Collectors.toMap(UserEntity::getUserId, u -> u));
+        return accounts.stream()
+                .map(a -> {
+                    AccountResponse r = toAccountResponse(a);
+                    UserEntity u = owners.get(a.getUserId());
+                    if (u != null) {
+                        r.setOwnerName((u.getFirstName() + " " + u.getLastName()).trim());
+                        r.setOwnerRole(u.getRole() != null ? u.getRole().name() : null);
+                    }
+                    return r;
+                })
                 .toList();
     }
 

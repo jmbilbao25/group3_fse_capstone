@@ -75,8 +75,8 @@ public class AccountController {
             return ResponseEntity.ok(accountProvisioningService.getAccountsByUser(userIdParam));
         }
 
-        // For administrators or general core inquiry, return all customer accounts
-        if ("ROLE_ADMIN".equals(userRole) || "ADMIN".equals(userRole) 
+        // For staff (admin, teller, manager) or general core inquiry, return all customer accounts
+        if (userRole != null && userRole.replace("ROLE_", "").matches("ADMIN|TELLER|MANAGER")
                 || effectiveUserId == null || effectiveUserId.isBlank() 
                 || effectiveUserId.contains("adm") || effectiveUserId.contains("mgr")) {
             return ResponseEntity.ok(accountProvisioningService.getAllAccounts());

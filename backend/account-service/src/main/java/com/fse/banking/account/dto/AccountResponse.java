@@ -33,4 +33,13 @@ public class AccountResponse {
 
     @JsonProperty("created_at")
     private Instant createdAt;
+
+    /** Only set on the staff listing, so the console can name the customer. */
+    @JsonProperty("owner_name")
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private String ownerName;
+
+    @JsonProperty("owner_role")
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private String ownerRole;
 }

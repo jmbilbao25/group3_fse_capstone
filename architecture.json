@@ -8,23 +8,32 @@
   },
   "components": [
     {
-      "id": "client_web",
-      "type": "frontend",
-      "label": "Retail Web SPA",
-      "sublabel": "React 18 + Vite :3000",
-      "brand": "react",
-      "pos": [40, 160],
-      "size": [150, 60],
-      "tag": "Customer Portal"
-    },
-    {
       "id": "client_mobile",
       "type": "frontend",
-      "label": "Mobile Banking App",
-      "sublabel": "Flutter / iOS & Android",
-      "pos": [40, 290],
-      "size": [150, 60],
+      "label": "Mobile Online Banking",
+      "sublabel": "Flutter (Android/iOS)",
+      "pos": [40, 130],
+      "size": [160, 60],
       "tag": "Biometrics & Push"
+    },
+    {
+      "id": "client_web",
+      "type": "frontend",
+      "label": "Web Online Banking",
+      "sublabel": "Flutter Web :3000",
+      "pos": [40, 225],
+      "size": [160, 60],
+      "tag": "Customer Web Portal"
+    },
+    {
+      "id": "client_admin",
+      "type": "frontend",
+      "label": "Web Admin Portal",
+      "sublabel": "React 18 + Vite :3001",
+      "brand": "react",
+      "pos": [40, 320],
+      "size": [160, 60],
+      "tag": "Back-Office Ops"
     },
     {
       "id": "gateway",
@@ -120,8 +129,9 @@
       "kind": "region",
       "label": "Client Presentation Tier",
       "wraps": [
+        "client_mobile",
         "client_web",
-        "client_mobile"
+        "client_admin"
       ]
     },
     {
@@ -150,6 +160,14 @@
   ],
   "connections": [
     {
+      "id": "mobile-to-gateway",
+      "from": "client_mobile",
+      "to": "gateway",
+      "label": "HTTPS :443",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
       "id": "web-to-gateway",
       "from": "client_web",
       "to": "gateway",
@@ -158,8 +176,8 @@
       "toSide": "left"
     },
     {
-      "id": "mobile-to-gateway",
-      "from": "client_mobile",
+      "id": "admin-to-gateway",
+      "from": "client_admin",
       "to": "gateway",
       "label": "HTTPS :443",
       "fromSide": "right",

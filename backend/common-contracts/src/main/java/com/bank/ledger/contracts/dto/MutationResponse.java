@@ -62,4 +62,16 @@ public class MutationResponse {
 
     @JsonProperty("warning_message")
     private String warningMessage;
+
+    @JsonProperty("threat_category")
+    private String threatCategory;
+
+    @JsonProperty("cause_of_suspicion")
+    private String causeOfSuspicion;
+
+    @JsonProperty("sar_draft_created")
+    private Boolean sarDraftCreated;
+
+    @JsonProperty("sar_report_id")
+    private String sarReportId;
 }

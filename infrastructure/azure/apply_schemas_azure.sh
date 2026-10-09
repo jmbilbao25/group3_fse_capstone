@@ -27,8 +27,12 @@ echo "------------------------------------------------------------"
 if command -v sqlcmd &> /dev/null; then
   sqlcmd -S "$SQL_FQDN" -d "$SQL_DB" -U "$SQL_USER" -P "$SQL_ADMIN_PASS" -i "${SCRIPT_DIR}/01_azure_sql_master_schema.sql"
   echo "Azure SQL schema applied successfully."
+elif command -v kubectl &> /dev/null; then
+  echo "sqlcmd not found locally. Running via temporary in-cluster runner in AKS..."
+  cat "${SCRIPT_DIR}/01_azure_sql_master_schema.sql" | kubectl run sql-schema-init -n banking --rm -i --restart=Never --image=mcr.microsoft.com/mssql-tools -- /opt/mssql-tools/bin/sqlcmd -S "$SQL_FQDN" -d "$SQL_DB" -U "$SQL_USER" -P "$SQL_ADMIN_PASS"
+  echo "Azure SQL schema applied successfully via AKS."
 else
-  echo "sqlcmd not found in PATH. Please run the schema via Azure Portal Query Editor or sqlcmd."
+  echo "sqlcmd not found in PATH. Please run the schema via Azure Portal Query Editor."
 fi
 
 if [ -n "$PG_SERVER_NAME" ] && [ -n "$PG_ADMIN_PASS" ]; then

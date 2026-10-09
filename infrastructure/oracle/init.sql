@@ -49,6 +49,12 @@ CREATE TABLE users (
     max_concurrent_sessions NUMBER(3) DEFAULT 3 NOT NULL,
     failed_login_attempts   NUMBER(3) DEFAULT 0 NOT NULL,
     status                  VARCHAR2(20) DEFAULT 'ACTIVE' NOT NULL,
+    last_known_latitude     NUMBER(10, 6) DEFAULT 14.5995,
+    last_known_longitude    NUMBER(10, 6) DEFAULT 120.9842,
+    last_known_location_name VARCHAR2(100) DEFAULT 'Manila, Philippines',
+    last_known_ip           VARCHAR2(45)  DEFAULT '112.198.45.10',
+    last_geo_updated_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    last_login_at           TIMESTAMP WITH TIME ZONE,
     created_at              TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at              TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     CONSTRAINT chk_usr_role CHECK (role IN ('CUSTOMER', 'TELLER', 'MANAGER', 'ADMIN')),
@@ -58,7 +64,7 @@ CREATE TABLE users (
 -- ==============================================================================
 -- 2. Table: accounts
 -- ==============================================================================
--- 2. Table: accounts (Savings and Checking Accounts Only)
+-- 2. Table: accounts (Savings Accounts Only)
 -- ==============================================================================
 CREATE TABLE accounts (
     account_id     VARCHAR2(64) PRIMARY KEY,
@@ -70,7 +76,7 @@ CREATE TABLE accounts (
     created_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     CONSTRAINT fk_acc_user FOREIGN KEY (user_id) REFERENCES users(user_id),
-    CONSTRAINT chk_acc_type CHECK (account_type IN ('SAVINGS', 'CHECKING')),
+    CONSTRAINT chk_acc_type CHECK (account_type IN ('SAVINGS')),
     CONSTRAINT chk_acc_status CHECK (status IN ('ACTIVE', 'LOCKED', 'PENDING_APPROVAL')),
     CONSTRAINT chk_acc_credit_limit CHECK (credit_limit >= 0)
 );
@@ -113,7 +119,7 @@ CREATE TABLE transactions (
     CONSTRAINT fk_tx_to_account FOREIGN KEY (to_account_id) REFERENCES accounts(account_id),
     CONSTRAINT fk_tx_approved_by FOREIGN KEY (approved_by_user_id) REFERENCES users(user_id),
     CONSTRAINT chk_tx_type CHECK (type IN ('DEPOSIT', 'WITHDRAWAL', 'TRANSFER', 'REVERSAL')),
-    CONSTRAINT chk_tx_status CHECK (status IN ('PENDING_APPROVAL', 'COMMITTED', 'FAILED', 'REVERSED')),
+    CONSTRAINT chk_tx_status CHECK (status IN ('PENDING_APPROVAL', 'COMMITTED', 'FAILED', 'REJECTED_FRAUD', 'REVERSED', 'CANCELLED', 'POSTED', 'INITIATED', 'PROCESSING')),
     CONSTRAINT chk_tx_2fa_otp CHECK (requires_2fa_otp IN (0, 1)),
     CONSTRAINT chk_tx_amount CHECK (amount > 0)
 );
@@ -224,7 +230,84 @@ INSERT INTO users (
     '$2a$10$4gw7WpRKwOnwNP5i8AQR2e9raJhzryXNsf7Qu.LxSt7alkeeN9nAS', NULL, 10, 0, 'ACTIVE'
 );
 
--- 2. Accounts
+INSERT INTO users (
+    user_id, first_name, middle_name, last_name, email, phone_number, dob,
+    government_id, role, password_hash, pin_hash, max_concurrent_sessions, failed_login_attempts, status,
+    last_known_latitude, last_known_longitude, last_known_location_name, last_known_ip
+) VALUES (
+    'usr-1007-sec-003', 'Alex', 'James', 'Rivera', 'alex.rivera@bank.com', '+639178889900',
+    TO_DATE('1988-04-18', 'YYYY-MM-DD'), 'PRC-7788-9900', 'ADMIN',
+    '$2a$10$4gw7WpRKwOnwNP5i8AQR2e9raJhzryXNsf7Qu.LxSt7alkeeN9nAS', '$2a$10$e8V9m5gQ4F9oY9o8O8V7eeY9o8O8V7ee', 5, 0, 'ACTIVE',
+    14.5995, 120.9842, 'Manila, Philippines', '112.198.45.10'
+);
+
+INSERT INTO users (
+    user_id, first_name, middle_name, last_name, email, phone_number, dob,
+    government_id, role, password_hash, pin_hash, max_concurrent_sessions, failed_login_attempts, status,
+    last_known_latitude, last_known_longitude, last_known_location_name, last_known_ip
+) VALUES (
+    'usr-2003-cst-003', 'Jose', 'Protacio', 'Rizal', 'jose.rizal@retailbank.ph', '+639195556677',
+    TO_DATE('1987-06-19', 'YYYY-MM-DD'), 'PRC-1861-1234', 'CUSTOMER',
+    '$2a$10$4gw7WpRKwOnwNP5i8AQR2e9raJhzryXNsf7Qu.LxSt7alkeeN9nAS', '$2a$10$e8V9m5gQ4F9oY9o8O8V7eeY9o8O8V7ee', 3, 0, 'ACTIVE',
+    14.2117, 121.1656, 'Calamba, Laguna, Philippines', '112.198.33.15'
+);
+
+INSERT INTO users (
+    user_id, first_name, middle_name, last_name, email, phone_number, dob,
+    government_id, role, password_hash, pin_hash, max_concurrent_sessions, failed_login_attempts, status,
+    last_known_latitude, last_known_longitude, last_known_location_name, last_known_ip
+) VALUES (
+    'usr-2004-cst-004', 'Andres', 'Castro', 'Bonifacio', 'andres.bonifacio@retailbank.ph', '+639173334455',
+    TO_DATE('1989-11-30', 'YYYY-MM-DD'), 'PSA-1863-1130', 'CUSTOMER',
+    '$2a$10$4gw7WpRKwOnwNP5i8AQR2e9raJhzryXNsf7Qu.LxSt7alkeeN9nAS', '$2a$10$e8V9m5gQ4F9oY9o8O8V7eeY9o8O8V7ee', 3, 0, 'ACTIVE',
+    7.1907, 125.4578, 'Davao City, Philippines', '112.198.99.77'
+);
+
+INSERT INTO users (
+    user_id, first_name, middle_name, last_name, email, phone_number, dob,
+    government_id, role, password_hash, pin_hash, max_concurrent_sessions, failed_login_attempts, status,
+    last_known_latitude, last_known_longitude, last_known_location_name, last_known_ip
+) VALUES (
+    'usr-2005-cst-005', 'Gabriela', 'Cario', 'Silang', 'gabriela.silang@retailbank.ph', '+639178881122',
+    TO_DATE('1991-03-19', 'YYYY-MM-DD'), 'PSA-1988-1234', 'CUSTOMER',
+    '$2a$10$4gw7WpRKwOnwNP5i8AQR2e9raJhzryXNsf7Qu.LxSt7alkeeN9nAS', '$2a$10$e8V9m5gQ4F9oY9o8O8V7eeY9o8O8V7ee', 3, 0, 'ACTIVE',
+    17.5705, 120.3878, 'Vigan, Ilocos Sur, Philippines', '112.198.71.12'
+);
+
+INSERT INTO users (
+    user_id, first_name, middle_name, last_name, email, phone_number, dob,
+    government_id, role, password_hash, pin_hash, max_concurrent_sessions, failed_login_attempts, status,
+    last_known_latitude, last_known_longitude, last_known_location_name, last_known_ip
+) VALUES (
+    'usr-2006-cst-006', 'Emilio', 'Dizon', 'Jacinto', 'emilio.jacinto@retailbank.ph', '+639192223344',
+    TO_DATE('1993-12-15', 'YYYY-MM-DD'), 'PSA-1991-5678', 'CUSTOMER',
+    '$2a$10$4gw7WpRKwOnwNP5i8AQR2e9raJhzryXNsf7Qu.LxSt7alkeeN9nAS', '$2a$10$e8V9m5gQ4F9oY9o8O8V7eeY9o8O8V7ee', 3, 0, 'ACTIVE',
+    14.6760, 121.0437, 'Quezon City, Philippines', '112.198.22.44'
+);
+
+INSERT INTO users (
+    user_id, first_name, middle_name, last_name, email, phone_number, dob,
+    government_id, role, password_hash, pin_hash, max_concurrent_sessions, failed_login_attempts, status,
+    last_known_latitude, last_known_longitude, last_known_location_name, last_known_ip
+) VALUES (
+    'usr-2007-cst-007', 'Melchora', 'Aquino', 'Ramos', 'melchora.aquino@retailbank.ph', '+639174445566',
+    TO_DATE('1984-01-06', 'YYYY-MM-DD'), 'PSA-1980-9988', 'CUSTOMER',
+    '$2a$10$4gw7WpRKwOnwNP5i8AQR2e9raJhzryXNsf7Qu.LxSt7alkeeN9nAS', '$2a$10$e8V9m5gQ4F9oY9o8O8V7eeY9o8O8V7ee', 3, 0, 'ACTIVE',
+    14.6507, 120.9830, 'Caloocan, Philippines', '112.198.63.89'
+);
+
+INSERT INTO users (
+    user_id, first_name, middle_name, last_name, email, phone_number, dob,
+    government_id, role, password_hash, pin_hash, max_concurrent_sessions, failed_login_attempts, status,
+    last_known_latitude, last_known_longitude, last_known_location_name, last_known_ip
+) VALUES (
+    'usr-2008-cst-008', 'Apolinario', 'Marasigan', 'Mabini', 'apolinario.mabini@retailbank.ph', '+639187778899',
+    TO_DATE('1986-07-23', 'YYYY-MM-DD'), 'PSA-1984-7766', 'CUSTOMER',
+    '$2a$10$4gw7WpRKwOnwNP5i8AQR2e9raJhzryXNsf7Qu.LxSt7alkeeN9nAS', '$2a$10$e8V9m5gQ4F9oY9o8O8V7eeY9o8O8V7ee', 3, 0, 'ACTIVE',
+    13.7565, 121.0583, 'Batangas City, Philippines', '112.198.54.33'
+);
+
+-- 2. Accounts (Savings Only)
 INSERT INTO accounts (account_id, user_id, account_number, account_type, status, credit_limit)
 VALUES ('1000-2000-3001', 'usr-1001-cst-001', '1000-2000-3001', 'SAVINGS', 'ACTIVE', 0.0000);
 
@@ -232,16 +315,31 @@ INSERT INTO accounts (account_id, user_id, account_number, account_type, status,
 VALUES ('1000-2000-3002', 'usr-1002-cst-002', '1000-2000-3002', 'SAVINGS', 'ACTIVE', 0.0000);
 
 INSERT INTO accounts (account_id, user_id, account_number, account_type, status, credit_limit)
-VALUES ('1000-2000-3003', 'usr-1001-cst-001', '1000-2000-3003', 'CHECKING', 'ACTIVE', 0.0000);
-
-INSERT INTO accounts (account_id, user_id, account_number, account_type, status, credit_limit)
 VALUES ('acc-2001-sav-001', 'usr-1001-cst-001', '100100001234', 'SAVINGS', 'ACTIVE', 0.0000);
 
 INSERT INTO accounts (account_id, user_id, account_number, account_type, status, credit_limit)
-VALUES ('acc-2002-chk-001', 'usr-1001-cst-001', '100100005678', 'SAVINGS', 'ACTIVE', 0.0000);
+VALUES ('acc-2002-sav-001', 'usr-1001-cst-001', '100100005678', 'SAVINGS', 'ACTIVE', 0.0000);
 
 INSERT INTO accounts (account_id, user_id, account_number, account_type, status, credit_limit)
 VALUES ('acc-2003-sav-002', 'usr-1002-cst-002', '100200009999', 'SAVINGS', 'ACTIVE', 0.0000);
+
+INSERT INTO accounts (account_id, user_id, account_number, account_type, status, credit_limit)
+VALUES ('1000-2000-3004', 'usr-2003-cst-003', '1000-2000-3004', 'SAVINGS', 'ACTIVE', 0.0000);
+
+INSERT INTO accounts (account_id, user_id, account_number, account_type, status, credit_limit)
+VALUES ('1000-2000-3005', 'usr-2004-cst-004', '1000-2000-3005', 'SAVINGS', 'ACTIVE', 0.0000);
+
+INSERT INTO accounts (account_id, user_id, account_number, account_type, status, credit_limit)
+VALUES ('1000-2000-3006', 'usr-2005-cst-005', '1000-2000-3006', 'SAVINGS', 'ACTIVE', 0.0000);
+
+INSERT INTO accounts (account_id, user_id, account_number, account_type, status, credit_limit)
+VALUES ('1000-2000-3007', 'usr-2006-cst-006', '1000-2000-3007', 'SAVINGS', 'ACTIVE', 0.0000);
+
+INSERT INTO accounts (account_id, user_id, account_number, account_type, status, credit_limit)
+VALUES ('1000-2000-3008', 'usr-2007-cst-007', '1000-2000-3008', 'SAVINGS', 'ACTIVE', 0.0000);
+
+INSERT INTO accounts (account_id, user_id, account_number, account_type, status, credit_limit)
+VALUES ('1000-2000-3009', 'usr-2008-cst-008', '1000-2000-3009', 'SAVINGS', 'ACTIVE', 0.0000);
 
 -- 3. Balance Master (Exact 4-decimal precision)
 INSERT INTO balance_master (account_id, balance_amount, hold_amount, available_balance)
@@ -251,16 +349,22 @@ INSERT INTO balance_master (account_id, balance_amount, hold_amount, available_b
 VALUES ('1000-2000-3002', 5000000.0000, 0.0000, 5000000.0000);
 
 INSERT INTO balance_master (account_id, balance_amount, hold_amount, available_balance)
-VALUES ('1000-2000-3003', 10000000.0000, 0.0000, 10000000.0000);
+VALUES ('1000-2000-3004', 5200000.0000, 0.0000, 5200000.0000);
 
 INSERT INTO balance_master (account_id, balance_amount, hold_amount, available_balance)
-VALUES ('acc-2001-sav-001', 25000000.0000, 5000000.0000, 20000000.0000);
+VALUES ('1000-2000-3005', 3750000.0000, 0.0000, 3750000.0000);
 
 INSERT INTO balance_master (account_id, balance_amount, hold_amount, available_balance)
-VALUES ('acc-2002-chk-001', 8500000.0000, 0.0000, 8500000.0000);
+VALUES ('1000-2000-3006', 4200000.0000, 0.0000, 4200000.0000);
 
 INSERT INTO balance_master (account_id, balance_amount, hold_amount, available_balance)
-VALUES ('acc-2003-sav-002', 12345678.1250, 0.0000, 12345678.1250);
+VALUES ('1000-2000-3007', 6800000.0000, 0.0000, 6800000.0000);
+
+INSERT INTO balance_master (account_id, balance_amount, hold_amount, available_balance)
+VALUES ('1000-2000-3008', 2950000.0000, 0.0000, 2950000.0000);
+
+INSERT INTO balance_master (account_id, balance_amount, hold_amount, available_balance)
+VALUES ('1000-2000-3009', 9100000.0000, 0.0000, 9100000.0000);
 
 -- 4. Transactions
 -- Tx 1: High-value transfer pending Customer Email Verification (> 50k PHP hold applied)
@@ -277,7 +381,7 @@ INSERT INTO transactions (
     transaction_id, from_account_id, to_account_id, type, amount,
     before_balance, after_balance, status, requires_2fa_otp, approved_by_user_id
 ) VALUES (
-    'tx-4002-cmt-002', 'acc-2002-chk-001', 'acc-2003-sav-002', 'TRANSFER', 150000.0000,
+    'tx-4002-cmt-002', 'acc-2002-sav-001', 'acc-2003-sav-002', 'TRANSFER', 150000.0000,
     8650000.0000, 8500000.0000, 'COMMITTED', 0, 'usr-1003-tel-001'
 );
 
@@ -305,7 +409,7 @@ INSERT INTO outbox_events (
 ) VALUES (
     'evt-5002-tx-002', 'TRANSACTION', 'tx-4002-cmt-002', 'MUTATION_COMMITTED',
     'banking.transfers.events',
-    '{"transactionId":"tx-4002-cmt-002","fromAccount":"acc-2002-chk-001","toAccount":"acc-2003-sav-002","amount":150000.0000,"status":"COMMITTED"}',
+    '{"transactionId":"tx-4002-cmt-002","fromAccount":"acc-2002-sav-001","toAccount":"acc-2003-sav-002","amount":150000.0000,"status":"COMMITTED"}',
     'PUBLISHED', 0, CURRENT_TIMESTAMP
 );
 

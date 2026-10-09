@@ -20,6 +20,8 @@ import com.bank.ledger.engine.repository.audit.LedgerMutationAuditRepository;
 import com.bank.ledger.engine.repository.master.AccountMasterRepository;
 import com.bank.ledger.engine.repository.master.BalanceMasterRepository;
 import com.bank.ledger.engine.repository.master.TransactionMasterRepository;
+import com.bank.ledger.engine.repository.master.UserMasterRepository;
+import com.bank.ledger.engine.service.RiskEngineClient;
 import com.bank.ledger.engine.entity.master.OutboxEventMaster;
 import com.bank.ledger.engine.repository.master.OutboxEventMasterRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -53,6 +55,12 @@ class BalanceMutationServiceTest {
 
     @Mock
     private AccountMasterRepository accountRepository;
+
+    @Mock
+    private UserMasterRepository userMasterRepository;
+
+    @Mock
+    private RiskEngineClient riskEngineClient;
 
     @Mock
     private LedgerMutationAuditRepository auditRepository;
@@ -107,6 +115,11 @@ class BalanceMutationServiceTest {
                 .accountType("SAVINGS")
                 .status("ACTIVE")
                 .build();
+
+        lenient().when(userMasterRepository.findById(any())).thenReturn(Optional.empty());
+        lenient().when(riskEngineClient.evaluateRisk(any())).thenReturn(
+                RiskEngineClient.RiskEvaluationResult.builder().decision("ALLOW").fraudScore(0).build()
+        );
     }
 
     @Test
@@ -138,7 +151,7 @@ class BalanceMutationServiceTest {
         verify(balanceRepository).save(senderBalance);
         verify(balanceRepository).save(receiverBalance);
         verify(transactionRepository).save(any(TransactionMaster.class));
-        verify(auditRepository).save(any(LedgerMutationAudit.class));
+        verify(auditRepository, times(2)).save(any(LedgerMutationAudit.class));
         verify(kafkaPublisher).publishTransactionEvent(any());
         verify(kafkaPublisher).publishNotificationAlert(any());
     }
@@ -409,6 +422,7 @@ class BalanceMutationServiceTest {
     void testT24FundsTransferSuccess() {
         when(balanceRepository.findByAccountIdWithLock(SENDER_ACCOUNT)).thenReturn(Optional.of(senderBalance));
         when(balanceRepository.findByAccountIdWithLock(RECEIVER_ACCOUNT)).thenReturn(Optional.of(receiverBalance));
+        when(balanceRepository.findByAccountId(SENDER_ACCOUNT)).thenReturn(Optional.of(senderBalance));
         when(balanceRepository.findByAccountId(RECEIVER_ACCOUNT)).thenReturn(Optional.of(receiverBalance));
 
         T24FundsTransferRequest request = T24FundsTransferRequest.builder()

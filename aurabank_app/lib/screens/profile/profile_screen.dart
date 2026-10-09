@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../services/auth_api_service.dart';
 import '../../services/bank_service.dart';
+import '../../services/notification_stream_service.dart';
 import '../../theme/aura_theme.dart';
 import '../../widgets/aura_logo.dart';
 import '../auth/login_screen.dart';
+import 'devices_sessions_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -285,8 +288,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   elevation: 0,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                 ),
-                onPressed: () {
+                onPressed: () async {
                   Navigator.of(ctx).pop();
+                  await AuthApiService().logout();
+                  NotificationStreamService().disconnect();
+                  if (!mounted) return;
                   Navigator.of(context).pushAndRemoveUntil(
                     MaterialPageRoute(builder: (_) => const LoginScreen()),
                     (route) => false,
@@ -1293,6 +1299,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     title: 'Change Password',
                     subtitle: 'Update account security password',
                     onTap: _showChangePasswordDialog,
+                  ),
+                  const SizedBox(height: 14),
+                  _buildActionNavRow(
+                    title: 'Devices & Active Sessions',
+                    subtitle: 'Manage 2-device policy & web logins',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const DevicesSessionsScreen(),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),

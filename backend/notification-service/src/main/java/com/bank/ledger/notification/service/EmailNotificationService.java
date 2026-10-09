@@ -30,6 +30,11 @@ public interface EmailNotificationService {
                                 String recipientName);
 
     /**
+     * Dispatches Customer First-Time Login OTP verification code email to customer inbox.
+     */
+    boolean sendLoginOtp(String recipientEmail, String recipientName, String verificationCode);
+
+    /**
      * Returns the current status of the retry buffer spool.
      */
     Map<String, Object> getSpoolStatus();

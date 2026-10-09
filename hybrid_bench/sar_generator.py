@@ -22,10 +22,11 @@ def format_sar_document(tx: Dict[str, Any], verdict: Dict[str, Any]) -> str:
     """
     Constructs a complete, legally structured Suspicious Activity Report (SAR)
     in compliance with Anti-Money Laundering Council (AMLC) guidelines.
+    Evaluated by Laya Non-Autoregressive System 1 Decision Engine.
     """
     tx_id = tx.get("transaction_id", "UNKNOWN_TX")
     user_id = tx.get("user_id", "UNKNOWN_USER")
-    amount = float(tx.get("amount_php", 0.0))
+    amount = float(tx.get("amount_php", tx.get("amount", 0.0)))
     user_avg = float(tx.get("user_avg_amount_php", amount))
     spike_ratio = float(tx.get("spike_ratio", amount / user_avg if user_avg > 0 else 1.0))
     balance_drain = float(tx.get("balance_drain_ratio", 0.0))
@@ -34,16 +35,43 @@ def format_sar_document(tx: Dict[str, Any], verdict: Dict[str, Any]) -> str:
     is_vpn = bool(tx.get("is_vpn", False))
     memo = str(tx.get("memo", "")).strip()
     memo_signal = str(tx.get("memo_signal", "none"))
-    gate_used = verdict.get("gate_used", "GATE_0_HARD_RULES")
+    gate_used = verdict.get("gate_used", "TWO_STAGE_RISK_ENGINE")
     primary_reason = verdict.get("primary_reason", "CRITICAL_FRAUD_DETECTED")
-    fraud_score = verdict.get("fraud_score", 95.0)
+    fraud_score = float(verdict.get("fraud_score", 95.0))
 
-    # Device Context
+    # Laya Threat Categorization & Cause of Suspicion
+    threat_category = str(verdict.get("threat_category", tx.get("threat_category", "GENERAL_ADVISORY"))).upper()
+    cause_of_suspicion = str(verdict.get("cause_of_suspicion", tx.get("cause_of_suspicion", ""))).strip()
+    if not cause_of_suspicion:
+        cause_of_suspicion = "Elevated cumulative fraud score across multi-factor behavioural and endpoint telemetry."
+
+    # Device & Telemetry Context
     rooted = bool(tx.get("rooted", False))
     hooking = bool(tx.get("hooking", False))
     emulator = bool(tx.get("emulator", False))
     tampered = bool(tx.get("tampered", False))
-    attestation = str(tx.get("attestation_verdict", "UNKNOWN"))
+    attestation = str(tx.get("attestation_verdict", "PASS"))
+    screen_sharing = bool(tx.get("screen_sharing", False) or tx.get("remote_app_active", False))
+    active_call = bool(tx.get("active_call", False))
+    call_state = str(tx.get("call_state", "IDLE"))
+
+    # Monitored packages and tools
+    raw_packages = tx.get("running_packages", []) or []
+    if isinstance(raw_packages, str):
+        raw_packages = [raw_packages]
+    raw_acc = tx.get("active_accessibility_services", []) or []
+    if isinstance(raw_acc, str):
+        raw_acc = [raw_acc]
+    raw_threats = tx.get("detected_threats", []) or []
+    if isinstance(raw_threats, str):
+        raw_threats = [raw_threats]
+
+    combined_tools = list(dict.fromkeys(raw_packages + raw_acc + raw_threats))
+    tools_str = ", ".join(combined_tools) if combined_tools else "None reported"
+
+    is_anydesk_present = any("anydesk" in t.lower() or "teamviewer" in t.lower() for t in combined_tools) or screen_sharing
+    is_httpcanary_present = any("httpcanary" in t.lower() or "charles" in t.lower() or "mitm" in t.lower() or "canary" in t.lower() for t in combined_tools)
+    is_frida_present = hooking or any("frida" in t.lower() or "xposed" in t.lower() for t in combined_tools)
 
     # Payee Context
     purpose = str(tx.get("transfer_purpose", "Funds Transfer"))
@@ -54,42 +82,81 @@ def format_sar_document(tx: Dict[str, Any], verdict: Dict[str, Any]) -> str:
     timestamp_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
     report_id = f"SAR-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{tx_id}"
 
-    # Determine Typology Category and Regulatory Citations
+    # Determine Red Flags
     red_flags = []
+    if is_frida_present:
+        red_flags.append("Runtime dynamic memory hooking detected (Frida / Xposed binary instrumentation active in memory space).")
+    if is_httpcanary_present:
+        red_flags.append("Network packet interception tool detected (HTTP Canary / proxy capture utility inspecting network stream).")
+    if is_anydesk_present:
+        red_flags.append("Active screen broadcasting or remote desktop tool detected (e.g. AnyDesk / TeamViewer active during transfer).")
+    if active_call or call_state in ["CALL_STATE_OFFHOOK", "IN_CALL", "ACTIVE_CALL"]:
+        red_flags.append(f"Live voice telephone call active during fund transfer ({call_state}), indicating potential social engineering coercion.")
     if velocity_kmh > 1000.0:
-        red_flags.append(f"Impossible travel speed ({velocity_kmh:,.1f} km/h) indicating remote session compromise or credential stuffing.")
-    if hooking or emulator or tampered:
-        red_flags.append(f"Active application tampering detected (Hooking: {hooking}, Emulator: {emulator}, Attestation: {attestation}).")
+        red_flags.append(f"Physically impossible travel velocity ({velocity_kmh:,.1f} km/h), indicating remote session compromise or credential replay.")
+    if hooking or emulator or tampered or rooted:
+        red_flags.append(f"Host endpoint integrity failure (Hooking: {hooking}, Emulator: {emulator}, Rooted: {rooted}, Attestation: {attestation}).")
     if spike_ratio >= 3.0:
-        red_flags.append(f"Anomalous transaction spike ({spike_ratio:.1f}x baseline) with {balance_drain*100:.1f}% total balance drain.")
+        red_flags.append(f"Severe transaction spike ({spike_ratio:.1f}x baseline) resulting in {balance_drain*100:.1f}% balance liquidation.")
     if is_vpn:
-        red_flags.append("Traffic routed through commercial VPN/proxy masking true physical geolocation.")
+        red_flags.append("Traffic routed through commercial VPN/proxy masking true physical origin.")
     if new_payee and senders_to_payee >= 4:
-        red_flags.append(f"Beneficiary counterparty shows money mule aggregation patterns ({senders_to_payee} inbound senders in 24 hours).")
+        red_flags.append(f"Beneficiary counterparty shows money mule aggregation traits ({senders_to_payee} inbound senders in 24 hours).")
     if memo:
-        red_flags.append(f"Natural language memo reflects known social engineering or extortion pattern: \"{memo}\".")
+        red_flags.append(f"Natural language memo correlates with known Philippine scam typography: \"{memo}\".")
 
     red_flags_str = "\n".join([f"  - {f}" for f in red_flags]) or "  - Elevated cumulative risk score across multi-factor behavioural telemetry."
 
-    # Construct Narrative
-    narrative = (
-        f"On {timestamp_str}, the automated risk monitoring system intercepted and blocked a high-value "
-        f"transfer request of PHP {amount:,.2f} initiated under customer account {user_id}. "
-        f"The transaction represents a {spike_ratio:.1f}x surge above the customer's established baseline "
-        f"of PHP {user_avg:,.2f}, resulting in an acute balance liquidation of {balance_drain*100:.1f}%.\n\n"
-        f"Forensic telemetry revealed immediate indicators of compromise: the originating endpoint reported "
-        f"an attestation verdict of '{attestation}' with device tampering indicators (Hooking={hooking}, Emulator={emulator}, Rooted={rooted}). "
+    # Construct Forensic Compliance Narrative
+    narrative_paras = []
+    narrative_paras.append(
+        f"On {timestamp_str}, the automated risk monitoring system intercepted and quarantined a transfer request "
+        f"of PHP {amount:,.2f} initiated under customer account {user_id}. "
+        f"The transaction represents a {spike_ratio:.1f}x surge above the customer's historical average of "
+        f"PHP {user_avg:,.2f}, resulting in an acute balance liquidation of {balance_drain*100:.1f}%."
     )
+
+    narrative_paras.append(
+        f"The Laya Non-Autoregressive Decision Engine classified this transaction under threat category {threat_category}. "
+        f"Forensic cause of suspicion: {cause_of_suspicion}"
+    )
+
+    endpoint_evidence = []
+    if is_frida_present:
+        endpoint_evidence.append("active runtime memory hooking frameworks (Frida/Xposed)")
+    if is_httpcanary_present:
+        endpoint_evidence.append("packet interception utilities (HTTP Canary)")
+    if is_anydesk_present:
+        endpoint_evidence.append("remote screen broadcasting software (AnyDesk/TeamViewer)")
+    if active_call:
+        endpoint_evidence.append(f"concurrent active voice telephony ({call_state})")
+
+    if endpoint_evidence:
+        narrative_paras.append(
+            f"Endpoint inspection revealed immediate technical indicators of compromise, specifically: "
+            f"{', '.join(endpoint_evidence)}. Such tools are frequently used by third-party actors to bypass "
+            f"in-app security barriers or coerce customers into unauthorized financial disbursements."
+        )
+
     if velocity_kmh > 1000.0:
-        narrative += f"Physical transit velocity was calculated at {velocity_kmh:,.1f} km/h, which is physically impossible under standard commercial travel. "
+        narrative_paras.append(
+            f"Physical transit velocity was calculated at {velocity_kmh:,.1f} km/h, which is physically impossible under "
+            f"commercial travel, corroborating remote session manipulation."
+        )
+
     if memo:
-        narrative += f"Furthermore, semantic analysis of the memo string \"{memo}\" identified predatory advance-fee or account-unlock fraud semantics. "
-    narrative += (
-        f"The destination account ({payee_type}) exhibits mule routing characteristics with {senders_to_payee} distinct "
-        f"originating transfers within a 24-hour window, inconsistent with stated transfer purpose '{purpose}'. "
-        f"Pursuant to Bangko Sentral ng Pilipinas (BSP) Circular No. 1108 and Republic Act No. 9160, this transaction has been "
-        f"quarantined and referred for formal regulatory STR submission."
+        narrative_paras.append(
+            f"Semantic analysis of the transfer memo string \"{memo}\" confirmed predatory advance-fee, "
+            f"crypto task, or unauthorized account release patterns."
+        )
+
+    narrative_paras.append(
+        f"Pursuant to Republic Act No. 9160 (Anti-Money Laundering Act of 2001) as amended by Republic Act No. 11521, "
+        f"and Bangko Sentral ng Pilipinas (BSP) Circular Nos. 1108 and 1140, this transaction has been quarantined and "
+        f"formulated into this official Suspicious Transaction Report (STR / SAR) draft pending compliance officer sign-off."
     )
+
+    narrative = "\n\n".join(narrative_paras)
 
     sar_text = f"""================================================================================
 SUSPICIOUS TRANSACTION REPORT (STR / SAR)
@@ -102,9 +169,12 @@ Status: PENDING_HUMAN_SIGN_OFF | Priority: HIGH_CONFIDENCE_FRAUD
 - Transaction ID: {tx_id}
 - Interception Timestamp: {timestamp_str}
 - Triage Gate: {gate_used}
+- Evaluator: Laya Non-Autoregressive System 1 Decision Engine
 - Automated Action: {verdict.get('action', 'BLOCK')}
 - Primary Reason Code: {primary_reason}
+- Threat Category: {threat_category}
 - Fraud Risk Score: {fraud_score:.1f} / 100.0
+- Cause of Suspicion: {cause_of_suspicion}
 
 2. SUBJECT IDENTIFICATION & BASELINE
 - Subject Account ID: {user_id}
@@ -117,6 +187,12 @@ Status: PENDING_HUMAN_SIGN_OFF | Priority: HIGH_CONFIDENCE_FRAUD
 3. TECHNICAL AND PHYSICAL TELEMETRY
 - Device Attestation: {attestation}
 - Rooted: {rooted} | Hooking: {hooking} | Emulator: {emulator} | Tampered: {tampered}
+- Screen Sharing Broadcast: {'ACTIVE' if screen_sharing else 'INACTIVE'}
+- Telephony State: {'ACTIVE_CALL (' + call_state + ')' if active_call else 'IDLE'}
+- Memory Hooking Tool: {'DETECTED (Frida / Xposed)' if is_frida_present else 'NONE'}
+- Network Packet Sniffer: {'DETECTED (HTTP Canary / MITM)' if is_httpcanary_present else 'NONE'}
+- Remote Desktop Tool: {'DETECTED (AnyDesk / Mirror)' if is_anydesk_present else 'NONE'}
+- Monitored Telemetry Tools: [{tools_str}]
 - Distance from Registered Home: {distance_home:,.1f} km
 - Elapsed Time Since Prior Activity: {tx.get('elapsed_minutes', 0.0):.1f} minutes
 - Calculated Velocity: {velocity_kmh:,.1f} km/h
@@ -139,7 +215,7 @@ Status: PENDING_HUMAN_SIGN_OFF | Priority: HIGH_CONFIDENCE_FRAUD
 {narrative}
 
 8. RECOMMENDED REMEDIATION & NEXT STEPS
-- [X] Immediate Transaction Rejection (Executed in real-time)
+- [X] Immediate Transaction Interception (Executed in real-time)
 - [X] Beneficiary Account Temporary Credit Freeze (P.O. Request to Receiving Bank)
 - [X] Customer Account Step-up Verification (Mandatory in-branch biometric KYC)
 - [ ] AMLC Official STR Electronic Dispatch (Pending Compliance Officer Sign-off)

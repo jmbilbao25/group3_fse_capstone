@@ -59,15 +59,27 @@ public class AccountController {
             @RequestParam(value = "userId", required = false) String userIdParam,
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
         String effectiveUserId = userIdParam;
-        if ((effectiveUserId == null || effectiveUserId.isBlank()) && authHeader != null && authHeader.startsWith("Bearer ")) {
+        String userRole = null;
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
             if (jwtProvider.validateToken(token)) {
-                effectiveUserId = jwtProvider.getUserId(token);
+                if (effectiveUserId == null || effectiveUserId.isBlank()) {
+                    effectiveUserId = jwtProvider.getUserId(token);
+                }
+                userRole = jwtProvider.getRole(token);
             }
         }
 
-        if (effectiveUserId == null || effectiveUserId.isBlank()) {
-            return ResponseEntity.ok(Collections.emptyList());
+        // If specific customer userId is queried, filter by customer
+        if (userIdParam != null && !userIdParam.isBlank()) {
+            return ResponseEntity.ok(accountProvisioningService.getAccountsByUser(userIdParam));
+        }
+
+        // For administrators or general core inquiry, return all customer accounts
+        if ("ROLE_ADMIN".equals(userRole) || "ADMIN".equals(userRole) 
+                || effectiveUserId == null || effectiveUserId.isBlank() 
+                || effectiveUserId.contains("adm") || effectiveUserId.contains("mgr")) {
+            return ResponseEntity.ok(accountProvisioningService.getAllAccounts());
         }
 
         List<AccountResponse> accounts = accountProvisioningService.getAccountsByUser(effectiveUserId);

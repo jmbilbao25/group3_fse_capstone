@@ -108,6 +108,14 @@ public class BalanceMutationController {
     }
 
     /**
+     * 4b. Admin Real-Time Transaction Journal: Query all transactions
+     */
+    @GetMapping({"/transfers", "/transactions"})
+    public ResponseEntity<List<TransactionMaster>> getAllTransactions() {
+        return ResponseEntity.ok(mutationService.getAllTransactions());
+    }
+
+    /**
      * 5. Customer 2FA Email OTP Verification & Settlement (UI-704 / TRX-504)
      */
     @PostMapping("/transfers/verify-otp")
@@ -124,6 +132,40 @@ public class BalanceMutationController {
     public ResponseEntity<List<com.bank.ledger.engine.entity.audit.LedgerMutationAudit>> getAuditRecords() {
         log.info("[HTTP REQUEST] GET /api/v1/ledger/audit querying PostgreSQL ledger_mutation_audit");
         return ResponseEntity.ok(mutationService.getAuditRecords());
+    }
+
+    /**
+     * 7. T24 Reversal / Rollback: Reverse a committed transfer with compensating contra-entry
+     */
+    @PostMapping("/transfers/{transactionId}/reverse")
+    public ResponseEntity<MutationResponse> reverseTransfer(
+            @PathVariable String transactionId,
+            @RequestBody(required = false) Map<String, Object> reversalRequest) {
+        log.info("[HTTP REQUEST] POST /api/v1/ledger/transfers/{}/reverse payload: {}", transactionId, reversalRequest);
+        MutationResponse response = mutationService.reverseTransfer(transactionId, reversalRequest != null ? reversalRequest : Map.of());
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 8. Update Customer Location in Oracle XE Master (Geo-Simulator)
+     */
+    @RequestMapping(value = "/users/{userId}/location", method = {RequestMethod.PATCH, RequestMethod.PUT, RequestMethod.POST})
+    public ResponseEntity<Map<String, Object>> updateUserLocation(
+            @PathVariable String userId,
+            @RequestBody Map<String, Object> locationPayload) {
+        log.info("[HTTP REQUEST] UPDATE /api/v1/ledger/users/{}/location: {}", userId, locationPayload);
+        Map<String, Object> response = mutationService.updateUserLocation(userId, locationPayload);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 9. Query Customer Location from Oracle XE Master
+     */
+    @GetMapping("/users/{userId}/location")
+    public ResponseEntity<Map<String, Object>> getUserLocation(@PathVariable String userId) {
+        log.info("[HTTP REQUEST] GET /api/v1/ledger/users/{}/location", userId);
+        Map<String, Object> response = mutationService.getUserLocation(userId);
+        return ResponseEntity.ok(response);
     }
 
     // =========================================================================
@@ -183,13 +225,14 @@ public class BalanceMutationController {
     }
 
     /**
-     * Security Risk Engine Blocked -> HTTP 403 Forbidden
+     * Security Risk Engine Blocked -> HTTP 422 Unprocessable Entity (Matches Fraud Security Notice Modal)
      */
     @ExceptionHandler(SecurityException.class)
     public ResponseEntity<Map<String, Object>> handleSecurityBlocked(SecurityException ex) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
-                "status", "BLOCKED",
-                "error_code", "RISK_ENGINE_BLOCKED",
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
+                "status", "REJECTED_FRAUD",
+                "error_code", "RISK_THRESHOLD_EXCEEDED",
+                "title", "Security Notice: Transaction Temporarily Held",
                 "message", ex.getMessage(),
                 "timestamp", Instant.now()
         ));

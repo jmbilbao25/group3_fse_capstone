@@ -55,6 +55,33 @@ public class TransactionMaster {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Column(name = "latitude", precision = 10, scale = 6)
+    private BigDecimal latitude;
+
+    @Column(name = "longitude", precision = 10, scale = 6)
+    private BigDecimal longitude;
+
+    @Column(name = "location_name", length = 100)
+    private String locationName;
+
+    @Column(name = "ip_address", length = 45)
+    private String ipAddress;
+
+    @Column(name = "risk_score", precision = 5, scale = 2)
+    private BigDecimal riskScore;
+
+    @Column(name = "risk_reason", length = 255)
+    private String riskReason;
+
+    @Column(name = "reversed_by_user_id", length = 64)
+    private String reversedByUserId;
+
+    @Column(name = "reversal_reason", length = 100)
+    private String reversalReason;
+
+    @Column(name = "reversal_memo", length = 255)
+    private String reversalMemo;
+
     // Backward-compatibility accessors
     public Integer getRequiresMakerChecker() {
         return requires2FaOtp != null ? requires2FaOtp : 0;

@@ -94,6 +94,7 @@ public class AccountProvisioningService {
         log.info("Updating account {} status to {}", accountId, status);
 
         AccountEntity account = accountRepository.findById(accountId)
+                .or(() -> accountRepository.findByAccountNumber(accountId))
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found: " + accountId));
 
         account.setStatus(status);
@@ -107,6 +108,13 @@ public class AccountProvisioningService {
 
     public List<AccountResponse> getAccountsByUser(String userId) {
         return accountRepository.findByUserId(userId)
+                .stream()
+                .map(this::toAccountResponse)
+                .toList();
+    }
+
+    public List<AccountResponse> getAllAccounts() {
+        return accountRepository.findAll()
                 .stream()
                 .map(this::toAccountResponse)
                 .toList();

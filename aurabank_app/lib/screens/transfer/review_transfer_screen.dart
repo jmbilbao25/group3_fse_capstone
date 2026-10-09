@@ -2,7 +2,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../services/bank_service.dart';
 import '../../services/biometric_service.dart';
+import '../../services/security_service.dart';
 import '../../theme/aura_theme.dart';
+import '../../widgets/require_device_approval.dart';
+import '../../widgets/screen_sharing_warning_sheet.dart';
 import 'receipt_screen.dart';
 
 class ReviewTransferScreen extends StatefulWidget {
@@ -60,6 +63,15 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
           break;
         case 'REMOTE':
           _currentRemarks = 'IT remote support fee';
+          break;
+        case 'ANYDESK':
+          _currentRemarks = 'AnyDesk remote connection support';
+          break;
+        case 'HOOKING':
+          _currentRemarks = 'Memory hooking tamper test';
+          break;
+        case 'CANARY':
+          _currentRemarks = 'HTTP Canary packet sniffer inspection';
           break;
         case 'CALL':
           _currentRemarks = 'Police bail bond deposit';
@@ -127,45 +139,64 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
   void _showSimulationBottomSheet() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AuraColors.divider,
-                  borderRadius: BorderRadius.circular(2),
+      builder: (ctx) => SafeArea(
+        child: Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(ctx).size.height * 0.82,
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AuraColors.divider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 18),
-            const Text(
-              'Security Simulation Modes',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: textDark),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Select a scenario to test risk engine outcomes.',
-              style: TextStyle(fontSize: 13, color: textGray),
-            ),
-            const SizedBox(height: 18),
-            _buildSimulationOption('AUTO', 'Standard (Normal)', 'Clean biometric transfer approval', Icons.check_circle_outline_rounded),
-            _buildSimulationOption('SCAM', 'Scam Warning', 'Simulates detected investment scam memo pattern', Icons.warning_amber_rounded),
-            _buildSimulationOption('REMOTE', 'Screen Sharing', 'Simulates active remote desktop app detected', Icons.screen_share_outlined),
-            _buildSimulationOption('CALL', 'Active Call', 'Simulates active phone call during transaction', Icons.phone_in_talk_outlined),
-            _buildSimulationOption('BLOCK', 'High Risk Block', 'Simulates restricted device or severe anomaly', Icons.block_flipped),
-            const SizedBox(height: 12),
-          ],
+              const SizedBox(height: 18),
+              const Text(
+                'Security Simulation Modes',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: textDark),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Select a scenario to test risk engine outcomes.',
+                style: TextStyle(fontSize: 13, color: textGray),
+              ),
+              const SizedBox(height: 14),
+              Flexible(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildSimulationOption('AUTO', 'Standard (Normal)', 'Clean biometric transfer approval', Icons.check_circle_outline_rounded),
+                      _buildSimulationOption('SCAM', 'Scam Warning', 'Simulates detected investment scam memo pattern', Icons.warning_amber_rounded),
+                      _buildSimulationOption('REMOTE', 'Screen Sharing', 'Simulates active remote desktop app detected', Icons.screen_share_outlined),
+                      _buildSimulationOption('ANYDESK', 'AnyDesk Remote App', 'Simulates running package com.anydesk.anydeskandroid', Icons.phone_android_rounded),
+                      _buildSimulationOption('HOOKING', 'Frida / Xposed Hooking', 'Simulates memory hooking frameworks detected', Icons.memory_rounded),
+                      _buildSimulationOption('CANARY', 'HTTP Canary Sniffer', 'Simulates packet inspection / MITM tool active', Icons.network_check_rounded),
+                      _buildSimulationOption('CALL', 'Active Call', 'Simulates active phone call during transaction', Icons.phone_in_talk_outlined),
+                      _buildSimulationOption('BLOCK', 'High Risk Block', 'Simulates restricted device or severe anomaly', Icons.block_flipped),
+                      const SizedBox(height: 12),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -552,30 +583,33 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
               const SizedBox(height: 24),
 
               // Confirm & Send Button
-              Container(
-                width: double.infinity,
-                height: 52,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(26),
-                  boxShadow: AuraColors.buttonShadow,
-                ),
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: brandViolet,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
-                    elevation: 0,
+              RequireDeviceApproval(
+                actionLabel: 'Transfer confirmations',
+                child: Container(
+                  width: double.infinity,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(26),
+                    boxShadow: AuraColors.buttonShadow,
                   ),
-                  onPressed: _showConfirmationModal,
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.shield_outlined, color: Colors.white, size: 20),
-                      SizedBox(width: 10),
-                      Text(
-                        'Confirm & Transfer',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white),
-                      ),
-                    ],
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: brandViolet,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
+                      elevation: 0,
+                    ),
+                    onPressed: _showConfirmationModal,
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.shield_outlined, color: Colors.white, size: 20),
+                        SizedBox(width: 10),
+                        Text(
+                          'Confirm & Transfer',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -623,6 +657,10 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
   }
 
   void _showConfirmationModal() {
+    if (!RequireDeviceApproval.canTransact(context)) {
+      return;
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -741,10 +779,66 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
 
   // Multi-Stage Risk Scan Overlay
   Future<void> _triggerMultiStageScan() async {
-    final bool isThreatScenario = _riskScenario == 'SCAM' || _riskScenario == 'REMOTE' || _riskScenario == 'CALL';
-    final bool isBlockScenario = _riskScenario == 'BLOCK';
+    final bool isThreatScenario = _riskScenario == 'SCAM' ||
+        _riskScenario == 'REMOTE' ||
+        _riskScenario == 'ANYDESK' ||
+        _riskScenario == 'CANARY' ||
+        _riskScenario == 'CALL';
+    final bool isBlockScenario = _riskScenario == 'BLOCK' || _riskScenario == 'HOOKING';
+
+    final List<String> runningPkgs = [];
+    final List<String> threats = [];
+    bool remoteApp = false;
+    bool activeCall = false;
+    bool hooking = false;
+    bool rooted = false;
+    bool isEmulator = false;
+
+    if (_riskScenario == 'REMOTE') {
+      remoteApp = true;
+      threats.add('REMOTE_SCREEN_SHARE');
+    } else if (_riskScenario == 'ANYDESK') {
+      remoteApp = true;
+      runningPkgs.add('com.anydesk.anydeskandroid');
+      threats.add('REMOTE_ACCESS_ANYDESK');
+    } else if (_riskScenario == 'HOOKING') {
+      hooking = true;
+      runningPkgs.addAll(['re.robv.android.xposed.installer', 'frida-server']);
+      threats.addAll(['MEMORY_HOOKING_FRAMEWORK', 'FRIDA_SERVER_DETECTED']);
+    } else if (_riskScenario == 'CANARY') {
+      runningPkgs.add('com.guoshi.httpcanary');
+      threats.add('PACKET_INSPECTION_TOOL');
+    } else if (_riskScenario == 'CALL') {
+      activeCall = true;
+      threats.add('ACTIVE_VOICE_CALL_COERCION');
+    } else if (_riskScenario == 'BLOCK') {
+      isEmulator = true;
+      rooted = true;
+      threats.add('ROOTED_DEVICE_EMULATOR');
+    }
+
+    bool alreadyWarnedScreenShare = false;
+    if ((_riskScenario == 'REMOTE' || _riskScenario == 'ANYDESK') || SecurityService.simulateScreenSharing) {
+      final userAction = await ScreenSharingWarningSheet.show(context);
+      if (userAction == ScreenSharingUserAction.cancelTransaction) {
+        _showTransferCancelledModal();
+        return;
+      } else if (userAction == ScreenSharingUserAction.pauseFor10Minutes) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Transfer paused for 10 minutes to protect your account.'),
+            backgroundColor: Color(0xFFD97706),
+            duration: Duration(seconds: 4),
+          ),
+        );
+        return;
+      }
+      alreadyWarnedScreenShare = true;
+    }
 
     // Show the animated scanner dialog
+    if (!mounted) return;
     final scanResult = await showDialog<Map<String, dynamic>>(
       context: context,
       barrierDismissible: false,
@@ -753,10 +847,16 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
         targetAccount: widget.recipientAccount,
         amount: widget.amount,
         memo: _currentRemarks,
-        isScreenSharing: _riskScenario == 'REMOTE',
-        callState: _riskScenario == 'CALL' ? 'ACTIVE_CALL' : 'IDLE',
+        isScreenSharing: remoteApp,
+        callState: activeCall ? 'ACTIVE_CALL' : 'IDLE',
         inputMode: _riskScenario == 'SCAM' ? 'PASTED' : 'TYPED',
-        isEmulator: isBlockScenario,
+        isEmulator: isEmulator,
+        runningPackages: runningPkgs,
+        detectedThreats: threats,
+        remoteAppActive: remoteApp,
+        activeCall: activeCall,
+        hooking: hooking,
+        rooted: rooted,
         forcedThreat: isThreatScenario,
         forcedBlock: isBlockScenario,
       ),
@@ -765,11 +865,21 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
     if (!mounted || scanResult == null) return;
 
     final decision = (scanResult['decision'] ?? 'ALLOW').toString().toUpperCase();
+    final bool isHardBlock = decision == 'BLOCK' ||
+        isBlockScenario ||
+        hooking ||
+        (scanResult['hooking'] == true) ||
+        (scanResult['rooted'] == true);
 
-    if (decision == 'BLOCK') {
+    if (isHardBlock) {
       _showBlockModal(scanResult);
     } else if (decision == 'ADVISORY_WARNING') {
-      _showAdvisoryWarningModal(scanResult);
+      if (alreadyWarnedScreenShare) {
+        // Already acknowledged screen sharing warning; proceed to biometric approval
+        _showBiometricApprovalModal(scanResult);
+      } else {
+        _showAdvisoryWarningModal(scanResult);
+      }
     } else if (decision == 'REQUIRE_2FA' || decision == 'STEP_UP') {
       _showStepUpModal();
     } else {
@@ -902,6 +1012,10 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
   }
 
   Future<void> _executeTransferAndNavigate() async {
+    if (!RequireDeviceApproval.canTransact(context)) {
+      return;
+    }
+
     // Show a quick settling HUD
     showDialog(
       context: context,
@@ -929,12 +1043,50 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
       ),
     );
 
+    final List<String> runningPkgs = [];
+    final List<String> threats = [];
+    bool remoteApp = false;
+    bool activeCall = false;
+    bool hooking = false;
+    bool rooted = false;
+    bool isEmulator = false;
+
+    if (_riskScenario == 'REMOTE') {
+      remoteApp = true;
+      threats.add('REMOTE_SCREEN_SHARE');
+    } else if (_riskScenario == 'ANYDESK') {
+      remoteApp = true;
+      runningPkgs.add('com.anydesk.anydeskandroid');
+      threats.add('REMOTE_ACCESS_ANYDESK');
+    } else if (_riskScenario == 'HOOKING') {
+      hooking = true;
+      runningPkgs.addAll(['re.robv.android.xposed.installer', 'frida-server']);
+      threats.addAll(['MEMORY_HOOKING_FRAMEWORK', 'FRIDA_SERVER_DETECTED']);
+    } else if (_riskScenario == 'CANARY') {
+      runningPkgs.add('com.guoshi.httpcanary');
+      threats.add('PACKET_INSPECTION_TOOL');
+    } else if (_riskScenario == 'CALL') {
+      activeCall = true;
+      threats.add('ACTIVE_VOICE_CALL_COERCION');
+    } else if (_riskScenario == 'BLOCK') {
+      isEmulator = true;
+      rooted = true;
+      threats.add('ROOTED_DEVICE_EMULATOR');
+    }
+
     final result = await _bankService.executeTransfer(
       targetAccount: widget.recipientAccount,
       recipientName: widget.recipientName,
       amount: widget.amount,
       destinationBank: widget.recipientBank,
       remarks: _currentRemarks,
+      runningPackages: runningPkgs,
+      detectedThreats: threats,
+      remoteAppActive: remoteApp,
+      activeCall: activeCall,
+      hooking: hooking,
+      rooted: rooted,
+      isEmulator: isEmulator,
     );
 
     if (!mounted) return;
@@ -959,6 +1111,8 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
   }
 
   void _showBlockModal(Map<String, dynamic> risk) {
+    final refCode = 'SEC-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -989,16 +1143,16 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
                   color: Color(0xFFFEF2F2),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.block_rounded, color: Color(0xFFDC2626), size: 36),
+                child: const Icon(Icons.shield_outlined, color: Color(0xFFDC2626), size: 36),
               ),
               const SizedBox(height: 16),
               const Text(
-                'Transfer Blocked',
+                'Suspicious Activity Detected',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: textDark),
               ),
               const SizedBox(height: 8),
               const Text(
-                'We stopped this transfer to protect your account. Suspicious activity or an unrecognized security environment was detected.',
+                'We stopped this transfer to protect your account. Suspicious activity or an unrecognized security environment was detected on your device.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 13, color: textGray, height: 1.4),
               ),
@@ -1011,27 +1165,49 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: const Color(0xFFFECACA)),
                 ),
-                child: const Column(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
+                    const Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text('Security Status', style: TextStyle(fontSize: 12, color: textGray)),
                         Text(
-                          'High Risk Protection',
+                          'Protected',
                           style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFDC2626)),
                         ),
                       ],
                     ),
-                    SizedBox(height: 10),
-                    Row(
+                    const SizedBox(height: 10),
+                    const Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Notice', style: TextStyle(fontSize: 12, color: textGray)),
+                        Text(
+                          'Suspicious activity detected',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFDC2626)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    const Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text('Account Protection', style: TextStyle(fontSize: 12, color: textGray)),
                         Text(
                           'Funds 100% Preserved',
                           style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF059669)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Security Reference', style: TextStyle(fontSize: 12, color: textGray)),
+                        Text(
+                          refCode,
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textGray),
                         ),
                       ],
                     ),
@@ -1062,12 +1238,13 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
 
   void _showAdvisoryWarningModal(Map<String, dynamic> risk) {
     final warning = risk['warning_dialog'] as Map<String, dynamic>?;
-    final threatCategory = warning?['threat_category'] ?? risk['primary_flag'] ?? 'GENERAL_ADVISORY';
+    final threatCategory = warning?['threat_category'] ?? risk['threat_category'] ?? risk['primary_flag'] ?? 'GENERAL_ADVISORY';
     final title = warning?['title'] ?? 'Screen Sharing or Scam Typology Detected';
     final body = warning?['body_message'] ??
         'An active risk signal was flagged for this transfer. Bank personnel and legitimate organizations will NEVER ask you to share your screen, pay advance fees, or move money to "secure" an account.';
     final ackText = warning?['checkbox_acknowledgment_text'] ??
         'I confirm I understand this transfer is non-refundable and not an advance fee.';
+    final causeOfSuspicion = risk['cause_of_suspicion'];
 
     showModalBottomSheet(
       context: context,
@@ -1083,6 +1260,7 @@ class _ReviewTransferScreenState extends State<ReviewTransferScreen> {
           ackText: ackText,
           amount: widget.amount,
           memoAnalysis: risk['memo_analysis'] as Map<String, dynamic>?,
+          causeOfSuspicion: causeOfSuspicion?.toString(),
           onProceed: () {
             Navigator.of(ctx).pop();
             _showBiometricApprovalModal(risk);
@@ -1365,6 +1543,12 @@ class _RiskScanDialog extends StatefulWidget {
   final String callState;
   final String inputMode;
   final bool isEmulator;
+  final List<String>? runningPackages;
+  final List<String>? detectedThreats;
+  final bool? remoteAppActive;
+  final bool? activeCall;
+  final bool? hooking;
+  final bool? rooted;
   final bool forcedThreat;
   final bool forcedBlock;
 
@@ -1377,6 +1561,12 @@ class _RiskScanDialog extends StatefulWidget {
     required this.callState,
     required this.inputMode,
     required this.isEmulator,
+    this.runningPackages,
+    this.detectedThreats,
+    this.remoteAppActive,
+    this.activeCall,
+    this.hooking,
+    this.rooted,
     required this.forcedThreat,
     required this.forcedBlock,
   });
@@ -1401,6 +1591,12 @@ class _RiskScanDialogState extends State<_RiskScanDialog> {
       callState: widget.callState,
       inputMode: widget.inputMode,
       isEmulator: widget.isEmulator,
+      runningPackages: widget.runningPackages,
+      detectedThreats: widget.detectedThreats,
+      remoteAppActive: widget.remoteAppActive,
+      activeCall: widget.activeCall,
+      hooking: widget.hooking,
+      rooted: widget.rooted,
     );
 
     final results = await Future.wait([
@@ -1411,20 +1607,22 @@ class _RiskScanDialogState extends State<_RiskScanDialog> {
     if (!mounted) return;
     final apiRes = results[0] as Map<String, dynamic>;
 
-    if (widget.forcedBlock) {
+    if (widget.forcedBlock || widget.hooking == true || widget.rooted == true) {
       Navigator.of(context).pop({
+        ...apiRes,
         'decision': 'BLOCK',
         'fraud_score': 100,
         'primary_flag': 'HIGH_RISK_SUSPICIOUS_ENVIRONMENT',
-        ...apiRes,
+        'threat_category': 'SUSPICIOUS_ACTIVITY',
+        'cause_of_suspicion': 'Suspicious device environment detected',
       });
       return;
     }
 
     final backendDecision = (apiRes['decision'] ?? 'ALLOW').toString().toUpperCase();
-    final finalDecision = widget.forcedThreat
-        ? 'ADVISORY_WARNING'
-        : (widget.forcedBlock ? 'BLOCK' : backendDecision);
+    final finalDecision = (backendDecision == 'BLOCK' || widget.hooking == true || widget.rooted == true)
+        ? 'BLOCK'
+        : (widget.forcedThreat ? 'ADVISORY_WARNING' : backendDecision);
 
     Navigator.of(context).pop({
       ...apiRes,
@@ -1554,6 +1752,7 @@ class _AdvisoryWarningSheet extends StatefulWidget {
   final String ackText;
   final double amount;
   final Map<String, dynamic>? memoAnalysis;
+  final String? causeOfSuspicion;
   final VoidCallback onProceed;
   final VoidCallback onPause;
   final VoidCallback onCancel;
@@ -1565,6 +1764,7 @@ class _AdvisoryWarningSheet extends StatefulWidget {
     required this.ackText,
     required this.amount,
     this.memoAnalysis,
+    this.causeOfSuspicion,
     required this.onProceed,
     required this.onPause,
     required this.onCancel,
@@ -1691,6 +1891,34 @@ class _AdvisoryWarningSheetState extends State<_AdvisoryWarningSheet> {
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: AuraColors.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          if (widget.causeOfSuspicion != null && widget.causeOfSuspicion!.trim().isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFFECACA)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.shield_outlined, color: Color(0xFFDC2626), size: 16),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Security Notice: Unusual activity flagged on this transfer',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF991B1B),
                       ),
                     ),
                   ),

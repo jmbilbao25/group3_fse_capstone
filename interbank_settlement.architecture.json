@@ -1,0 +1,301 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Inter-Bank Funds Transfer & Nostro-Vostro Settlement Architecture",
+    "output": "interbank_settlement.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "aura_client",
+      "type": "frontend",
+      "label": "AuraBank Channels",
+      "sublabel": "Flutter Mobile & Web :3000",
+      "pos": [40, 140],
+      "size": [160, 64],
+      "tag": "Customer Inter-Bank UI"
+    },
+    {
+      "id": "aura_gateway",
+      "type": "security",
+      "label": "API Gateway",
+      "sublabel": "Spring Cloud :8080",
+      "brand": "spring",
+      "pos": [290, 140],
+      "size": [160, 64],
+      "tag": "JWT & Rate Limiter"
+    },
+    {
+      "id": "aura_orchestrator",
+      "type": "backend",
+      "label": "Transfer Orchestrator",
+      "sublabel": "Spring Boot :8082",
+      "brand": "spring",
+      "pos": [560, 140],
+      "size": [170, 72],
+      "tag": "Saga Inter-Bank Coordinator"
+    },
+    {
+      "id": "aura_t24",
+      "type": "backend",
+      "label": "Temenos T24 Mock CBS",
+      "sublabel": "Core Engine :9100",
+      "pos": [310, 310],
+      "size": [170, 72],
+      "tag": "FT & Reversal Endpoints"
+    },
+    {
+      "id": "aura_db",
+      "type": "database",
+      "label": "AuraBank Master DB",
+      "sublabel": "Azure SQL :1433",
+      "pos": [40, 310],
+      "size": [150, 72],
+      "tag": "Customers & Nostro Account"
+    },
+    {
+      "id": "aura_kafka",
+      "type": "messagebus",
+      "label": "Kafka Event Bus",
+      "sublabel": "KRaft Broker :9092",
+      "brand": "apache-kafka",
+      "pos": [560, 270],
+      "size": [170, 60],
+      "tag": "Outbox Event Streaming"
+    },
+    {
+      "id": "aura_audit",
+      "type": "database",
+      "label": "Immutable Audit Vault",
+      "sublabel": "PostgreSQL 16 :5432",
+      "brand": "postgresql",
+      "pos": [560, 380],
+      "size": [170, 60],
+      "tag": "AMLA Compliance Trail"
+    },
+    {
+      "id": "interbank_wire",
+      "type": "cloud",
+      "label": "Inter-Bank Wire Gateway",
+      "sublabel": "HTTP REST / API Key",
+      "pos": [900, 140],
+      "size": [180, 72],
+      "tag": "POST /interbank/inward"
+    },
+    {
+      "id": "settlement_model",
+      "type": "external",
+      "label": "Bilateral Settlement Model",
+      "sublabel": "Pre-Funded Nostro/Vostro",
+      "pos": [900, 310],
+      "size": [180, 72],
+      "tag": "Net Balance Buffer"
+    },
+    {
+      "id": "partner_gateway",
+      "type": "security",
+      "label": "Partner API Gateway",
+      "sublabel": "Group B Ingress :8080",
+      "pos": [1260, 140],
+      "size": [160, 64],
+      "tag": "Inbound Wire Auth"
+    },
+    {
+      "id": "partner_orchestrator",
+      "type": "backend",
+      "label": "Partner Orchestrator",
+      "sublabel": "Group B Core Service",
+      "brand": "spring",
+      "pos": [1530, 140],
+      "size": [170, 72],
+      "tag": "Beneficiary Verifier"
+    },
+    {
+      "id": "partner_t24",
+      "type": "backend",
+      "label": "Partner T24 CBS",
+      "sublabel": "Group B Core Ledger",
+      "pos": [1530, 310],
+      "size": [170, 72],
+      "tag": "Debit Vostro | Credit Recipient"
+    },
+    {
+      "id": "partner_db",
+      "type": "database",
+      "label": "Partner Master DB",
+      "sublabel": "Group B Ledger Storage",
+      "pos": [1260, 310],
+      "size": [150, 72],
+      "tag": "Vostro Buffer & Accounts"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "AuraBank Platform Perimeter (Our Bank - Group 3)",
+      "wraps": [
+        "aura_client",
+        "aura_gateway",
+        "aura_orchestrator",
+        "aura_t24",
+        "aura_db",
+        "aura_kafka",
+        "aura_audit"
+      ]
+    },
+    {
+      "kind": "security-group",
+      "label": "Inter-Bank Clearing & Bilateral Settlement Corridor",
+      "wraps": [
+        "interbank_wire",
+        "settlement_model"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Partner Bank Perimeter (Other Group's Capstone Bank)",
+      "wraps": [
+        "partner_gateway",
+        "partner_orchestrator",
+        "partner_t24",
+        "partner_db"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "client-to-gateway",
+      "from": "aura_client",
+      "to": "aura_gateway",
+      "label": "HTTPS :443",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "gateway-to-orch",
+      "from": "aura_gateway",
+      "to": "aura_orchestrator",
+      "label": "POST /transfers",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "orch-to-t24-ft",
+      "from": "aura_orchestrator",
+      "to": "aura_t24",
+      "label": "Leg 1: Debit -> Nostro",
+      "variant": "emphasis",
+      "fromSide": "left",
+      "toSide": "top"
+    },
+    {
+      "id": "orch-to-t24-rev",
+      "from": "aura_orchestrator",
+      "to": "aura_t24",
+      "label": "Saga Reversal",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "right"
+    },
+    {
+      "id": "t24-to-db",
+      "from": "aura_t24",
+      "to": "aura_db",
+      "label": "ACID row lock",
+      "fromSide": "left",
+      "toSide": "right"
+    },
+    {
+      "id": "orch-to-wire",
+      "from": "aura_orchestrator",
+      "to": "interbank_wire",
+      "label": "Leg 2: Outward Wire (HTTP)",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "wire-to-settlement",
+      "from": "interbank_wire",
+      "to": "settlement_model",
+      "label": "Nostro/Vostro Sync",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "wire-to-partner-gw",
+      "from": "interbank_wire",
+      "to": "partner_gateway",
+      "label": "HTTP Inward Wire",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "partner-gw-to-orch",
+      "from": "partner_gateway",
+      "to": "partner_orchestrator",
+      "label": "Dispatch Wire",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "partner-orch-to-t24",
+      "from": "partner_orchestrator",
+      "to": "partner_t24",
+      "label": "Leg 3: Debit Vostro -> Credit Bob",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "partner-t24-to-db",
+      "from": "partner_t24",
+      "to": "partner_db",
+      "label": "Commit Balance",
+      "fromSide": "left",
+      "toSide": "right"
+    },
+    {
+      "id": "orch-to-kafka",
+      "from": "aura_orchestrator",
+      "to": "aura_kafka",
+      "label": "outbox events",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "kafka-to-audit",
+      "from": "aura_kafka",
+      "to": "aura_audit",
+      "label": "audit stream",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Bilateral Nostro & Vostro Settlement Principle",
+      "items": [
+        "Nostro Account (Our money at Partner Bank): AuraBank defines a pre-funded GL account (e.g. ACC-NOSTRO-BANK-B) in its T24 Master DB. When Alice sends money to Bank B, AuraBank debits Alice and credits its Nostro clearing buffer.",
+        "Vostro Account (Partner Bank money with AuraBank): Partner Bank maintains a corresponding Vostro account (ACC-VOSTRO-AURABANK). Partner Bank debits the Vostro buffer and credits Bob's personal account.",
+        "Zero Third-Party Dependency: No centralized clearing switch needed. Both capstone groups simply agree on a pre-seeded balance (e.g. 10,000,000 PHP) and an authenticated JSON wire contract."
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Outbound & Inbound Inter-Bank Transaction Lifecycle",
+      "items": [
+        "Leg 1 (Domestic Debit): AuraBank Transfer Orchestrator invokes internal T24 CBS POST /api/v1/cbs/funds-transfer (Debit: Alice, Credit: ACC-NOSTRO-BANK-B).",
+        "Leg 2 (Inter-Bank Wire Dispatch): Orchestrator sends authenticated HTTP REST payload with API Key header and idempotency token to Partner Bank POST /api/v1/transfers/interbank/inward.",
+        "Leg 3 (Beneficiary Credit): Partner Bank CBS executes internal funds transfer (Debit: ACC-VOSTRO-AURABANK, Credit: Bob) and returns 200 OK with partner transaction reference.",
+        "Saga Compensation (Rollback on Failure): If Partner Bank returns 404/500 or times out, AuraBank Orchestrator calls T24 POST /api/v1/cbs/reversal to immediately restore Alice's funds."
+      ]
+    }
+  ]
+}

@@ -15,6 +15,7 @@ import 'package:aurabank_app/screens/app_shell.dart';
 import 'package:aurabank_app/screens/auth/login_screen.dart';
 import 'package:aurabank_app/services/auth_api_service.dart';
 import 'package:aurabank_app/services/bank_service.dart';
+import 'package:aurabank_app/services/notification_stream_service.dart';
 import 'package:aurabank_app/widgets/require_device_approval.dart';
 
 void main() {
@@ -250,6 +251,11 @@ void main() {
 
   testWidgets('Devices & Sessions screen renders hardware list and web sessions',
       (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     await tester.pumpWidget(
       const MaterialApp(
         home: DevicesSessionsScreen(),
@@ -283,6 +289,19 @@ void main() {
     expect(find.text('iPhone 15 Pro'), findsNothing);
     expect(find.text('iPad Air'), findsOneWidget);
     expect(find.text('PRIMARY'), findsOneWidget);
+
+    // Test Log Out All Sessions functionality
+    await tester.ensureVisible(find.text('Log Out All Sessions'));
+    await tester.tap(find.text('Log Out All Sessions'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Log out of all sessions?'), findsOneWidget);
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Log Out All Sessions'));
+    await tester.pumpAndSettle();
+
+    // Verify web sessions are terminated and empty state is rendered
+    expect(find.text('Chrome • macOS'), findsNothing);
+    expect(find.text('No active web sessions.'), findsOneWidget);
   });
 
   testWidgets('Security Gate screen cycles scan, screen share warning, and fraud block',
@@ -416,5 +435,70 @@ void main() {
     // Reset approval state back to true
     AuthApiService().currentIsApproved = true;
     AuthApiService().currentIsPrimaryDevice = true;
+  });
+
+  testWidgets('Unauthenticated login screen ignores DEVICE_REVOKED events',
+      (WidgetTester tester) async {
+    // Ensure client is unauthenticated
+    AuthApiService().currentAccessToken = null;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: rootNavigatorKey,
+        home: const LoginScreen(),
+      ),
+    );
+
+    expect(find.text('Welcome Back!'), findsOneWidget);
+
+    // Inject a DEVICE_REVOKED event
+    NotificationStreamService().injectDeviceApprovalEvent({
+      'type': 'DEVICE_REVOKED',
+      'user_id': 'USR-100001',
+      'device_id': AuthApiService().currentDeviceId,
+    });
+    await tester.pump(const Duration(milliseconds: 100));
+
+    // Verify unauthenticated client does NOT display revoked banner
+    expect(find.text('Access revoked. You have been logged out of this session.'), findsNothing);
+    expect(find.text('Welcome Back!'), findsOneWidget);
+  });
+
+  testWidgets('Authenticated session suppresses duplicate DEVICE_REVOKED events',
+      (WidgetTester tester) async {
+    AuthApiService().currentAccessToken = 'mock-valid-token-12345';
+    NotificationStreamService().connect('USR-100001');
+
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: rootNavigatorKey,
+        home: const Scaffold(
+          body: Text('Active Session Screen'),
+        ),
+      ),
+    );
+
+    expect(find.text('Active Session Screen'), findsOneWidget);
+
+    // Fire first DEVICE_REVOKED event
+    NotificationStreamService().injectDeviceApprovalEvent({
+      'type': 'DEVICE_REVOKED',
+      'user_id': 'USR-100001',
+      'device_id': AuthApiService().currentDeviceId,
+    });
+    await tester.pump(const Duration(milliseconds: 100));
+
+    // Fire duplicate DEVICE_REVOKED event immediately
+    NotificationStreamService().injectDeviceApprovalEvent({
+      'type': 'DEVICE_REVOKED',
+      'user_id': 'USR-100001',
+      'device_id': AuthApiService().currentDeviceId,
+    });
+    await tester.pump(const Duration(milliseconds: 100));
+
+    // Exactly one snackbar is rendered (not multiple stacked)
+    expect(find.text('Access revoked. You have been logged out of this session.'), findsOneWidget);
+
+    NotificationStreamService().disconnect();
   });
 }

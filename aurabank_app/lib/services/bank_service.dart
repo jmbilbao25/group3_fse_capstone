@@ -16,7 +16,16 @@ class BankService extends ChangeNotifier {
       ? AppEnvironment.prod
       : AppEnvironment.local;
 
-  String localUrl = const String.fromEnvironment('LOCAL_API_URL', defaultValue: 'http://localhost:8080');
+  static String _resolveInitialLocalUrl() {
+    const envUrl = String.fromEnvironment('LOCAL_API_URL');
+    if (envUrl.isNotEmpty) return envUrl;
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      return 'http://10.0.2.2:8080';
+    }
+    return 'http://localhost:8080';
+  }
+
+  String localUrl = _resolveInitialLocalUrl();
   String cloudUrl = const String.fromEnvironment('CLOUD_API_URL', defaultValue: 'https://gateway.aurabank.azurecontainerapps.io');
   bool autoFallbackToLocal = true;
   String? lastConnectionStatus;
@@ -45,30 +54,43 @@ class BankService extends ChangeNotifier {
   }
 
   Future<bool> testConnection() async {
-    final target = baseUrl;
-    final stopwatch = Stopwatch()..start();
-    try {
-      final res = await http.get(Uri.parse('$target/actuator/health')).timeout(const Duration(seconds: 3));
-      stopwatch.stop();
-      lastPingLatencyMs = stopwatch.elapsedMilliseconds;
-      if (res.statusCode >= 200 && res.statusCode < 400) {
-        lastConnectionStatus = 'Healthy (${res.statusCode}) - ${lastPingLatencyMs}ms';
-        notifyListeners();
-        return true;
-      }
-    } catch (_) {
+    final candidateTargets = <String>{
+      baseUrl,
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) ...[
+        'http://10.0.2.2:8080',
+        'http://127.0.0.1:8080',
+        'http://192.168.254.159:8080',
+      ],
+      'http://localhost:8080',
+    }.toList();
+
+    for (final target in candidateTargets) {
+      final stopwatch = Stopwatch()..start();
       try {
-        final res = await http.get(Uri.parse('$target/api/v1/accounts/1000-2000-3001')).timeout(const Duration(seconds: 3));
+        final res = await http.get(Uri.parse('$target/actuator/health')).timeout(const Duration(seconds: 2));
         stopwatch.stop();
         lastPingLatencyMs = stopwatch.elapsedMilliseconds;
-        if (res.statusCode >= 200 && res.statusCode < 500) {
+        if (res.statusCode >= 200 && res.statusCode < 400) {
+          localUrl = target;
           lastConnectionStatus = 'Healthy (${res.statusCode}) - ${lastPingLatencyMs}ms';
           notifyListeners();
           return true;
         }
-      } catch (_) {}
+      } catch (_) {
+        try {
+          final res = await http.get(Uri.parse('$target/api/v1/accounts/1000-2000-3001')).timeout(const Duration(seconds: 2));
+          stopwatch.stop();
+          lastPingLatencyMs = stopwatch.elapsedMilliseconds;
+          if (res.statusCode >= 200 && res.statusCode < 500) {
+            localUrl = target;
+            lastConnectionStatus = 'Healthy (${res.statusCode}) - ${lastPingLatencyMs}ms';
+            notifyListeners();
+            return true;
+          }
+        } catch (_) {}
+      }
     }
-    stopwatch.stop();
+
     lastPingLatencyMs = null;
     lastConnectionStatus = 'Unreachable';
     notifyListeners();

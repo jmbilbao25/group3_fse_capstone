@@ -339,8 +339,6 @@ class _WebDashboardScreenState extends State<WebDashboardScreen> {
           child: _buildMetricTile(
             title: 'Monthly Inflow',
             value: '+ ₱125,000.00',
-            trend: '+ 12.4% vs last mo',
-            trendColor: const Color(0xFF059669),
             icon: Icons.arrow_downward_rounded,
             iconBg: const Color(0xFFECFDF5),
             iconColor: const Color(0xFF059669),
@@ -351,8 +349,6 @@ class _WebDashboardScreenState extends State<WebDashboardScreen> {
           child: _buildMetricTile(
             title: 'Monthly Outflow',
             value: '- ₱45,820.00',
-            trend: 'Within budget',
-            trendColor: const Color(0xFF6B7280),
             icon: Icons.arrow_upward_rounded,
             iconBg: const Color(0xFFFEF2F2),
             iconColor: const Color(0xFFDC2626),
@@ -365,8 +361,6 @@ class _WebDashboardScreenState extends State<WebDashboardScreen> {
   Widget _buildMetricTile({
     required String title,
     required String value,
-    required String trend,
-    required Color trendColor,
     required IconData icon,
     required Color iconBg,
     required Color iconColor,
@@ -408,15 +402,6 @@ class _WebDashboardScreenState extends State<WebDashboardScreen> {
                     color: Color(0xFF111827),
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  trend,
-                  style: TextStyle(
-                    color: trendColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],

@@ -16,6 +16,10 @@ const DIRECTORY = {
   'usr-1005-boo-001': { name: 'Beatriz Ocampo', title: 'Customer Onboarding Officer' },
   'usr-1007-sec-003': { name: 'Alex Rivera', title: 'Fraud and Security Analyst' },
   'usr-1003-tel-001': { name: 'Crisostomo Ibarra', title: 'Branch Teller' },
+  // IDs from infrastructure/oracle/03_seed_sample_data.sql, the seed the docker stack actually loads.
+  U0001: { name: 'Diana Vance', title: 'Chief Compliance Officer' },
+  U3002: { name: 'Beatriz Ocampo', title: 'Customer Onboarding Officer' },
+  U3003: { name: 'Carlos Mendoza', title: 'Branch Operations Manager' },
 };
 export const staffName = (id) => DIRECTORY[id]?.name || id || 'Unknown';
 
@@ -51,7 +55,8 @@ export function AuthProvider({ children }) {
 
   const verifyOtp = useCallback(
     async (userId, otp, email) => {
-      const { data } = await api.post('/auth/verify-login-otp', { userId, otp, deviceType: 'WEB', deviceName: 'Aura Console' });
+      // VerifyLoginOtpRequest binds snake_case only (no camelCase aliases, unknown keys are dropped).
+      const { data } = await api.post('/auth/verify-login-otp', { user_id: userId, otp, device_type: 'WEB', device_name: 'Aura Console' });
       return adopt(data, email);
     },
     [adopt],

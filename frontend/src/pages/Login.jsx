@@ -7,7 +7,7 @@ import { Aurora, Button, ErrorNote, Logo } from '../components/ui';
 const DEMO = [
   { email: 'beatriz.ocampo@bank.com', who: 'Beatriz Ocampo', role: 'Maker, onboarding' },
   { email: 'diana.admin@bank.com', who: 'Diana Vance', role: 'Checker, compliance' },
-  { email: 'alex.rivera@bank.com', who: 'Alex Rivera', role: 'Fraud analyst' },
+  { email: 'carlos.mendoza@bank.com', who: 'Carlos Mendoza', role: 'Maker, branch operations' },
 ];
 
 const field =

@@ -40,6 +40,9 @@ class RiskAnalysisRequest(BaseModel):
     new_payee: Optional[bool] = Field(default=False)
     remote_app_active: Optional[bool] = Field(default=False, description="True if remote screen/control app (AnyDesk, TeamViewer) is active")
     active_call: Optional[bool] = Field(default=False, description="True if voice call is active during transfer")
+    is_on_call: Optional[bool] = Field(default=False, description="Alias for active_call")
+    is_screen_sharing: Optional[bool] = Field(default=False, description="Alias for screen sharing")
+    is_pasted: Optional[bool] = Field(default=False, description="True if destination account was pasted from clipboard")
 
     # Device binding & channel metadata
     is_primary_device: Optional[bool] = Field(default=True, description="True if initiated on user's cryptographically bound primary device")

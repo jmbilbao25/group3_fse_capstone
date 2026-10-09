@@ -250,7 +250,7 @@ class RiskRequestHandler(BaseHTTPRequestHandler):
             self._send_json(400, {"error": "Invalid JSON payload"})
             return
 
-        if path in ("/api/v1/risk/analyze", "/api/v1/risk/transfer"):
+        if path in ("/api/v1/risk/analyze", "/api/v1/risk/transfer", "/api/v1/risk/evaluate"):
             result = self._handle_analyze(payload)
             self._send_json(200, result)
             return

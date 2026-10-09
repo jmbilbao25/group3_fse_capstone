@@ -74,4 +74,19 @@ public class MutationResponse {
 
     @JsonProperty("sar_report_id")
     private String sarReportId;
+
+    @JsonProperty("cooling_off_required")
+    private Boolean coolingOffRequired;
+
+    @JsonProperty("cooling_off_expires_in_seconds")
+    private Integer coolingOffExpiresInSeconds;
+
+    @JsonProperty("biometric_required")
+    private Boolean biometricRequired;
+
+    @JsonProperty("biometric_challenge")
+    private String biometricChallenge;
+
+    @JsonProperty("processed_at")
+    private Instant processedAt;
 }

@@ -56,7 +56,7 @@ public class RiskEngineClient {
      * Enforces a 1500ms timeout for local neural model evaluation with safe fallback.
      */
     public RiskEvaluationResult evaluateRisk(MutationRequest request) {
-        String url = riskServiceBaseUrl + "/api/v1/risk/analyze";
+        String url = riskServiceBaseUrl + "/api/v1/risk/evaluate";
 
         try {
             Map<String, Object> payload = new HashMap<>();
@@ -73,8 +73,16 @@ public class RiskEngineClient {
             // Telemetry and device flags
             if (request.getDeviceId() != null) payload.put("device_id", request.getDeviceId());
             if (request.getIsPrimaryDevice() != null) payload.put("is_primary_device", request.getIsPrimaryDevice());
+            if (request.getIsOnCall() != null) payload.put("is_on_call", request.getIsOnCall());
+            if (request.getIsScreenSharing() != null) payload.put("is_screen_sharing", request.getIsScreenSharing());
+            if (request.getIsPasted() != null) payload.put("is_pasted", request.getIsPasted());
+
             if (request.getRemoteAppActive() != null) payload.put("remote_app_active", request.getRemoteAppActive());
+            else if (request.getIsScreenSharing() != null) payload.put("remote_app_active", request.getIsScreenSharing());
+
             if (request.getActiveCall() != null) payload.put("active_call", request.getActiveCall());
+            else if (request.getIsOnCall() != null) payload.put("active_call", request.getIsOnCall());
+
             if (request.getRooted() != null) payload.put("rooted", request.getRooted());
             if (request.getHooking() != null) payload.put("hooking", request.getHooking());
             if (request.getEmulator() != null) payload.put("emulator", request.getEmulator());
@@ -92,17 +100,24 @@ public class RiskEngineClient {
             if (request.getDetectedThreats() != null && !request.getDetectedThreats().isEmpty()) {
                 deviceContext.put("detected_threats", request.getDetectedThreats());
             }
-            if (request.getRemoteAppActive() != null) {
-                deviceContext.put("remote_app_active", request.getRemoteAppActive());
+            if (request.getRemoteAppActive() != null || request.getIsScreenSharing() != null) {
+                boolean screenShare = Boolean.TRUE.equals(request.getRemoteAppActive()) || Boolean.TRUE.equals(request.getIsScreenSharing());
+                deviceContext.put("remote_app_active", screenShare);
                 Map<String, Object> mediaProjection = new HashMap<>();
-                mediaProjection.put("is_screen_sharing", request.getRemoteAppActive());
+                mediaProjection.put("is_screen_sharing", screenShare);
                 deviceContext.put("media_projection", mediaProjection);
             }
-            if (request.getActiveCall() != null) {
-                deviceContext.put("active_call", request.getActiveCall());
+            if (request.getActiveCall() != null || request.getIsOnCall() != null) {
+                boolean onCall = Boolean.TRUE.equals(request.getActiveCall()) || Boolean.TRUE.equals(request.getIsOnCall());
+                deviceContext.put("active_call", onCall);
                 Map<String, Object> telephony = new HashMap<>();
-                telephony.put("call_state", Boolean.TRUE.equals(request.getActiveCall()) ? "CALL_STATE_OFFHOOK" : "IDLE");
+                telephony.put("call_state", onCall ? "CALL_STATE_OFFHOOK" : "IDLE");
                 deviceContext.put("telephony", telephony);
+            }
+            if (request.getIsPasted() != null && Boolean.TRUE.equals(request.getIsPasted())) {
+                Map<String, Object> interaction = new HashMap<>();
+                interaction.put("account_input_mode", "PASTED_FROM_CLIPBOARD");
+                deviceContext.put("interaction", interaction);
             }
             if (request.getHooking() != null) {
                 deviceContext.put("hooking", request.getHooking());

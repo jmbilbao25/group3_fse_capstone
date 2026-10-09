@@ -19,7 +19,10 @@ import java.time.Instant;
 public class BalanceMaster {
 
     @Id
-    @Column(name = "account_id", length = 64)
+    @Column(name = "balance_id", length = 64)
+    private String balanceId;
+
+    @Column(name = "account_id", nullable = false, unique = true, length = 64)
     private String accountId;
 
     @Column(name = "balance_amount", nullable = false, precision = 18, scale = 4)
@@ -36,4 +39,11 @@ public class BalanceMaster {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    @jakarta.persistence.PrePersist
+    public void prePersist() {
+        if (this.balanceId == null || this.balanceId.isBlank()) {
+            this.balanceId = "BM-" + (this.accountId != null ? this.accountId : java.util.UUID.randomUUID().toString());
+        }
+    }
 }

@@ -20,10 +20,43 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
   String _selectedPartnerBank = 'MeyBank';
   String _selectedPurpose = 'Remittance';
 
+  static const List<Map<String, String>> _seededCustomers = [
+    {
+      'name': 'Maria Clara Reyes',
+      'accountNo': '1000-2000-3002',
+    },
+    {
+      'name': 'Jose Protacio Rizal',
+      'accountNo': '1000-2000-3004',
+    },
+    {
+      'name': 'Andres Castro Bonifacio',
+      'accountNo': '1000-2000-3005',
+    },
+    {
+      'name': 'Gabriela Carlo Silang',
+      'accountNo': '1000-2000-3006',
+    },
+    {
+      'name': 'Emilio Dizon Jacinto',
+      'accountNo': '1000-2000-3007',
+    },
+    {
+      'name': 'Melchora Aquino Ramos',
+      'accountNo': '1000-2000-3008',
+    },
+    {
+      'name': 'Apolinario Marasigan Mabini',
+      'accountNo': '1000-2000-3009',
+    },
+  ];
+
+  String? _selectedCustomerName = 'Maria Clara Reyes';
+
   final TextEditingController _accountController =
-      TextEditingController(text: '1234568898951');
+      TextEditingController(text: '1000-2000-3002');
   final TextEditingController _recipientController =
-      TextEditingController(text: 'Jessie Mae Dela Paz');
+      TextEditingController(text: 'Maria Clara Reyes');
   final TextEditingController _amountController =
       TextEditingController(text: '5000');
   final TextEditingController _remarksController =
@@ -1056,6 +1089,98 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
                   ],
                   onChanged: (val) {
                     if (val != null) setState(() => _selectedPartnerBank = val);
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+          ],
+
+          if (_isAuraToAura) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Select Customer / Account',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF374151),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFAF5FF),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: const Color(0xFFE9D5FF)),
+                  ),
+                  child: const Text(
+                    'Oracle Master',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: brandViolet,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
+              decoration: BoxDecoration(
+                color: bgSurface,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: borderLight),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _selectedCustomerName,
+                  isExpanded: true,
+                  icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: Color(0xFF6B7280)),
+                  items: [
+                    ..._seededCustomers.map((cust) => DropdownMenuItem<String>(
+                      value: cust['name'],
+                      child: Row(
+                        children: [
+                          const Icon(Icons.person_pin_rounded, size: 18, color: brandViolet),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '${cust['name']} (${cust['accountNo']})',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF111827),
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )),
+                    const DropdownMenuItem<String>(
+                      value: 'CUSTOM',
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit_note_rounded, size: 18, color: Color(0xFF6B7280)),
+                          SizedBox(width: 8),
+                          Text('Enter custom account...', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF4B5563))),
+                        ],
+                      ),
+                    ),
+                  ],
+                  onChanged: (val) {
+                    if (val == null) return;
+                    setState(() {
+                      _selectedCustomerName = val;
+                      if (val != 'CUSTOM') {
+                        final found = _seededCustomers.firstWhere((c) => c['name'] == val);
+                        _recipientController.text = found['name']!;
+                        _accountController.text = found['accountNo']!;
+                      }
+                    });
                   },
                 ),
               ),

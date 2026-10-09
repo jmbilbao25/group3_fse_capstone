@@ -30,4 +30,8 @@ public class AccountMaster {
 
     @Column(name = "status", nullable = false, length = 20)
     private String status;
+
+    @Column(name = "currency", length = 3)
+    @Builder.Default
+    private String currency = "PHP";
 }

@@ -26,7 +26,10 @@ import java.time.Instant;
 public class BalanceMasterEntity {
 
     @Id
-    @Column(name = "account_id", length = 64, nullable = false)
+    @Column(name = "balance_id", length = 64, nullable = false)
+    private String balanceId;
+
+    @Column(name = "account_id", length = 64, nullable = false, unique = true)
     private String accountId;
 
     @Column(name = "balance_amount", precision = 18, scale = 4, nullable = false)
@@ -49,6 +52,9 @@ public class BalanceMasterEntity {
 
     @PrePersist
     public void prePersist() {
+        if (this.balanceId == null || this.balanceId.isBlank()) {
+            this.balanceId = "BM-" + (this.accountId != null ? this.accountId : java.util.UUID.randomUUID().toString());
+        }
         Instant now = Instant.now();
         if (this.createdAt == null) {
             this.createdAt = now;

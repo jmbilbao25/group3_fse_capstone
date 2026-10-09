@@ -83,6 +83,7 @@ class _AppShellState extends State<AppShell> {
             selectedIndex: _currentIndex,
             onDestinationSelected: _onNavigateTab,
             onLogout: () {
+              AuthApiService().logout();
               Navigator.of(context).pushReplacementNamed('/login');
             },
           ),

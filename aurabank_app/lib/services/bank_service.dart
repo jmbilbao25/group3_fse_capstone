@@ -934,6 +934,10 @@ class BankService extends ChangeNotifier {
         DateTime.now().day.toString().padLeft(2, '0');
     final fallbackRef = 'FT$dateStr${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
 
+    final effectiveUserId = (user.email.toLowerCase().contains('juan') || activeAccountId.contains('3001'))
+        ? 'usr-1001-cst-001'
+        : 'U1001';
+
     final payload = {
       'accountId': activeAccountId,
       'targetAccountId': targetAccount,
@@ -942,7 +946,7 @@ class BankService extends ChangeNotifier {
       'eventType': 'TRANSFER',
       'mutationType': 'TRANSFER',
       'reference': fallbackRef,
-      'initiatorUserId': 'U1001',
+      'initiatorUserId': effectiveUserId,
       'remarks': remarks ?? 'Mobile Fund Transfer to $recipientName',
       if (deviceId != null) 'deviceId': deviceId,
       if (isPrimaryDevice != null) 'isPrimaryDevice': isPrimaryDevice,
@@ -956,95 +960,73 @@ class BankService extends ChangeNotifier {
       if (detectedThreats != null && detectedThreats.isNotEmpty) 'detectedThreats': detectedThreats,
     };
 
-    // 1. Try Primary endpoint (Cloud Prod or Local Dev)
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/v1/ledger/mutate'),
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Idempotency-Key': 'TX-${DateTime.now().millisecondsSinceEpoch}',
-        },
-        body: jsonEncode(payload),
-      ).timeout(const Duration(seconds: 4));
+    final headers = {
+      'Content-Type': 'application/json',
+      'X-Idempotency-Key': 'TX-${DateTime.now().millisecondsSinceEpoch}',
+      'Authorization': 'Bearer active_token',
+    };
 
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        final data = jsonDecode(response.body);
-        final t24Ref = data['t24_reference'] ?? data['t24Reference'] ?? data['transaction_id'] ?? fallbackRef;
-        final newBal = (data['balance_after'] ?? data['available_balance'] as num?)?.toDouble();
-        if (newBal != null) {
-          availableBalance = newBal;
-        } else {
-          availableBalance -= amount;
-        }
-        _applyLocalTransfer(amount, recipientName, t24Ref, remarks);
-        return {
-          'success': true,
-          'reference': t24Ref,
-          't24_reference': t24Ref,
-          'amount': amount,
-          'status': data['status'] ?? 'COMMITTED',
-          'threat_category': data['threat_category'] ?? data['threatCategory'],
-          'cause_of_suspicion': data['cause_of_suspicion'] ?? data['causeOfSuspicion'],
-          'sar_draft_created': data['sar_draft_created'] ?? data['sarDraftCreated'] ?? false,
-          'sar_report_id': data['sar_report_id'] ?? data['sarReportId'],
-        };
-      } else {
-        try {
-          final errData = jsonDecode(response.body);
-          return {
-            'success': false,
-            'reference': fallbackRef,
-            'failureReason': errData['message'] ?? errData['error'] ?? 'Transfer rejected by core banking (${response.statusCode})',
-            'threat_category': errData['threat_category'] ?? errData['threatCategory'],
-            'cause_of_suspicion': errData['cause_of_suspicion'] ?? errData['causeOfSuspicion'],
-            'sar_draft_created': errData['sar_draft_created'] ?? errData['sarDraftCreated'] ?? false,
-            'sar_report_id': errData['sar_report_id'] ?? errData['sarReportId'],
-          };
-        } catch (_) {
-          return {
-            'success': false,
-            'reference': fallbackRef,
-            'failureReason': 'Transfer rejected by core banking (${response.statusCode})',
-          };
-        }
-      }
-    } catch (_) {
-      // 2. Cloud Fallback to Local Docker PC
-      if (environment == AppEnvironment.prod && autoFallbackToLocal) {
-        try {
-          final fallbackResponse = await http.post(
-            Uri.parse('$localUrl/api/v1/ledger/mutate'),
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Idempotency-Key': 'TX-FALLBACK-${DateTime.now().millisecondsSinceEpoch}',
-            },
-            body: jsonEncode(payload),
-          ).timeout(const Duration(seconds: 4));
+    // Candidate endpoints: Gateway (:8080) and direct Ledger Engine (:8082)
+    final candidateEndpoints = [
+      '$baseUrl/api/v1/ledger/transfer',
+      '$baseUrl/api/v1/ledger/transfers',
+      '$baseUrl/api/v1/ledger/mutate',
+      'http://localhost:8082/api/v1/ledger/transfer',
+      'http://localhost:8082/api/v1/ledger/mutate',
+      if (environment == AppEnvironment.prod && autoFallbackToLocal) '$localUrl/api/v1/ledger/transfer',
+    ];
 
-          if (fallbackResponse.statusCode >= 200 && fallbackResponse.statusCode < 300) {
-            debugPrint('[AURA CLOUD FALLBACK] Cloud ledger engine unavailable. Committed on local Docker PC.');
-            final data = jsonDecode(fallbackResponse.body);
-            final t24Ref = data['t24_reference'] ?? data['t24Reference'] ?? data['transaction_id'] ?? fallbackRef;
-            final newBal = (data['balance_after'] ?? data['available_balance'] as num?)?.toDouble();
-            if (newBal != null) {
-              availableBalance = newBal;
-            } else {
-              availableBalance -= amount;
-            }
-            _applyLocalTransfer(amount, recipientName, t24Ref, remarks);
+    for (final endpoint in candidateEndpoints) {
+      try {
+        final response = await http.post(
+          Uri.parse(endpoint),
+          headers: headers,
+          body: jsonEncode(payload),
+        ).timeout(const Duration(seconds: 4));
+
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          final data = jsonDecode(response.body);
+          final t24Ref = data['t24_reference'] ?? data['t24Reference'] ?? data['transaction_id'] ?? fallbackRef;
+          final newBal = (data['balance_after'] ?? data['available_balance'] as num?)?.toDouble();
+          if (newBal != null) {
+            availableBalance = newBal;
+          } else {
+            availableBalance -= amount;
+          }
+          _applyLocalTransfer(amount, recipientName, t24Ref, remarks);
+          return {
+            'success': true,
+            'reference': t24Ref,
+            't24_reference': t24Ref,
+            'amount': amount,
+            'status': data['status'] ?? 'COMMITTED',
+            'threat_category': data['threat_category'] ?? data['threatCategory'],
+            'cause_of_suspicion': data['cause_of_suspicion'] ?? data['causeOfSuspicion'],
+            'sar_draft_created': data['sar_draft_created'] ?? data['sarDraftCreated'] ?? false,
+            'sar_report_id': data['sar_report_id'] ?? data['sarReportId'],
+          };
+        } else if (response.statusCode == 400 || response.statusCode == 403 || response.statusCode == 422) {
+          try {
+            final errData = jsonDecode(response.body);
             return {
-              'success': true,
-              'reference': t24Ref,
-              't24_reference': t24Ref,
-              'amount': amount,
-              'status': data['status'] ?? 'COMMITTED',
-              'threat_category': data['threat_category'] ?? data['threatCategory'],
-              'cause_of_suspicion': data['cause_of_suspicion'] ?? data['causeOfSuspicion'],
-              'sar_draft_created': data['sar_draft_created'] ?? data['sarDraftCreated'] ?? false,
-              'sar_report_id': data['sar_report_id'] ?? data['sarReportId'],
+              'success': false,
+              'reference': fallbackRef,
+              'failureReason': errData['message'] ?? errData['error'] ?? 'Transfer rejected by core banking (${response.statusCode})',
+              'threat_category': errData['threat_category'] ?? errData['threatCategory'],
+              'cause_of_suspicion': errData['cause_of_suspicion'] ?? errData['causeOfSuspicion'],
+              'sar_draft_created': errData['sar_draft_created'] ?? errData['sarDraftCreated'] ?? false,
+              'sar_report_id': errData['sar_report_id'] ?? errData['sarReportId'],
+            };
+          } catch (_) {
+            return {
+              'success': false,
+              'reference': fallbackRef,
+              'failureReason': 'Transfer rejected by core banking (${response.statusCode})',
             };
           }
-        } catch (_) {}
+        }
+      } catch (_) {
+        // Try next candidate endpoint
       }
     }
 
@@ -1075,5 +1057,51 @@ class BankService extends ChangeNotifier {
       octStatement.transactions.insert(0, newTxn);
     }
     notifyListeners();
+  }
+
+  // Update customer location in Oracle XE Master (for geo-velocity & anomaly simulation)
+  Future<bool> updateCustomerLocation({
+    required double latitude,
+    required double longitude,
+    required String locationName,
+    String? ipAddress,
+  }) async {
+    final effectiveUserId = (user.email.toLowerCase().contains('juan') || activeAccountId.contains('3001'))
+        ? 'usr-1001-cst-001'
+        : 'U1001';
+
+    final payload = {
+      'latitude': latitude,
+      'longitude': longitude,
+      'location_name': locationName,
+      'ip_address': ipAddress ?? '112.198.45.10',
+    };
+
+    final headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer active_token',
+    };
+
+    final candidateUrls = [
+      '$baseUrl/api/v1/ledger/users/$effectiveUserId/location',
+      'http://localhost:8082/api/v1/ledger/users/$effectiveUserId/location',
+      '$baseUrl/api/v1/users/$effectiveUserId/location',
+    ];
+
+    for (final url in candidateUrls) {
+      try {
+        final res = await http.post(
+          Uri.parse(url),
+          headers: headers,
+          body: jsonEncode(payload),
+        ).timeout(const Duration(seconds: 3));
+
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          debugPrint('[GEO UPDATE] Location updated to $locationName for $effectiveUserId');
+          return true;
+        }
+      } catch (_) {}
+    }
+    return false;
   }
 }

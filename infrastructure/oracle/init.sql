@@ -71,6 +71,7 @@ CREATE TABLE accounts (
     user_id        VARCHAR2(64) NOT NULL,
     account_number VARCHAR2(32) NOT NULL UNIQUE,
     account_type   VARCHAR2(20) NOT NULL,
+    currency       VARCHAR2(3) DEFAULT 'PHP' NOT NULL,
     status         VARCHAR2(20) DEFAULT 'ACTIVE' NOT NULL,
     credit_limit   NUMBER(18, 4) DEFAULT 0.0000 NOT NULL,
     created_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -84,9 +85,11 @@ CREATE TABLE accounts (
 -- ==============================================================================
 -- 3. Table: balance_master
 -- Strict numeric parameters: NUMBER(18, 4) with mathematical sanity checks
+-- Surrogate balance_id PK eliminates shared-key anti-pattern
 -- ==============================================================================
 CREATE TABLE balance_master (
-    account_id        VARCHAR2(64) PRIMARY KEY,
+    balance_id        VARCHAR2(64) PRIMARY KEY,
+    account_id        VARCHAR2(64) NOT NULL UNIQUE,
     balance_amount    NUMBER(18, 4) DEFAULT 0.0000 NOT NULL,
     hold_amount       NUMBER(18, 4) DEFAULT 0.0000 NOT NULL,
     available_balance NUMBER(18, 4) DEFAULT 0.0000 NOT NULL,
@@ -107,12 +110,14 @@ CREATE TABLE transactions (
     from_account_id        VARCHAR2(64) NOT NULL,
     to_account_id          VARCHAR2(64),
     type                   VARCHAR2(30) NOT NULL,
+    currency               VARCHAR2(3) DEFAULT 'PHP' NOT NULL,
     amount                 NUMBER(18, 4) NOT NULL,
     before_balance         NUMBER(18, 4) NOT NULL,
     after_balance          NUMBER(18, 4) NOT NULL,
     status                 VARCHAR2(30) NOT NULL,
     requires_2fa_otp       NUMBER(1) DEFAULT 0 NOT NULL,
     approved_by_user_id    VARCHAR2(64),
+    memo                   VARCHAR2(255),
     created_at             TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at             TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     CONSTRAINT fk_tx_from_account FOREIGN KEY (from_account_id) REFERENCES accounts(account_id),

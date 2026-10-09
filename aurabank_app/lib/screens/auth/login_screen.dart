@@ -23,7 +23,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   final TextEditingController _usernameController =
       TextEditingController(text: 'elijahriley.montefalco@gmail.com');
   final TextEditingController _passwordController =
-      TextEditingController(text: 'Montefalco@2026');
+      TextEditingController(text: 'password123');
   bool _obscurePassword = true;
   bool _isLoading = false;
   bool _showPasswordFields = false; // For biometric-first mode
@@ -179,6 +179,14 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         ),
       );
     } else if (authResult.status == AuthStatus.authenticated) {
+      if (authResult.persona != null) {
+        _bankService.updateUserProfile(
+          name: authResult.persona!.name,
+          email: authResult.persona!.email,
+        );
+        _bankService.availableBalance = authResult.persona!.balance;
+        _bankService.activeAccountId = authResult.persona!.accountId;
+      }
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const AppShell()),
       );
@@ -239,6 +247,18 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             AuthApiService().currentUserId = DeviceStorage.getUserId() ?? 'USR-100001';
           }
           AuthApiService().currentIsApproved = true;
+
+          final enteredEmail = _usernameController.text.trim().toLowerCase();
+          final matchedPersona = UserPersona.demoPersonas.firstWhere(
+            (p) => p.email.toLowerCase() == enteredEmail,
+            orElse: () => UserPersona.demoPersonas.first,
+          );
+          _bankService.updateUserProfile(
+            name: matchedPersona.name,
+            email: matchedPersona.email,
+          );
+          _bankService.availableBalance = matchedPersona.balance;
+          _bankService.activeAccountId = matchedPersona.accountId;
           Navigator.of(context).pop();
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (_) => const AppShell()),

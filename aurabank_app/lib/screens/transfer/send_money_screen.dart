@@ -110,6 +110,47 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
       'color': Color(0xFF1E3A8A),
     },
   ];
+
+  static const List<Map<String, String>> _seededCustomers = [
+    {
+      'name': 'Maria Clara Reyes',
+      'accountNo': '1000-2000-3002',
+      'tag': 'Verified Customer',
+    },
+    {
+      'name': 'Jose Protacio Rizal',
+      'accountNo': '1000-2000-3004',
+      'tag': 'Verified Customer',
+    },
+    {
+      'name': 'Andres Castro Bonifacio',
+      'accountNo': '1000-2000-3005',
+      'tag': 'Verified Customer',
+    },
+    {
+      'name': 'Gabriela Carlo Silang',
+      'accountNo': '1000-2000-3006',
+      'tag': 'Verified Customer',
+    },
+    {
+      'name': 'Emilio Dizon Jacinto',
+      'accountNo': '1000-2000-3007',
+      'tag': 'Verified Customer',
+    },
+    {
+      'name': 'Melchora Aquino Ramos',
+      'accountNo': '1000-2000-3008',
+      'tag': 'Verified Customer',
+    },
+    {
+      'name': 'Apolinario Marasigan Mabini',
+      'accountNo': '1000-2000-3009',
+      'tag': 'Verified Customer',
+    },
+  ];
+
+  String? _selectedCustomerName = 'Maria Clara Reyes';
+
   @override
   void initState() {
     super.initState();
@@ -117,10 +158,10 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
     _selectedPartnerBankIndex = widget.initialPartnerBankIndex;
     _bankService.addListener(_onServiceUpdate);
     _accountController = TextEditingController(
-      text: widget.initialAccountNo ?? '1234568898951',
+      text: widget.initialAccountNo ?? '1000-2000-3002',
     );
     _recipientController = TextEditingController(
-      text: widget.initialRecipientName ?? 'Jessie Mae Dela Paz',
+      text: widget.initialRecipientName ?? 'Maria Clara Reyes',
     );
     _amountController = TextEditingController(
       text: widget.initialAmount ?? '',
@@ -590,6 +631,95 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                       ),
                     ),
                   ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+          ],
+
+          if (_isAuraToAura) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Select Customer / Account',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF6B7280),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEDE9FE),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Text(
+                    'Oracle Master',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF5B21B6),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Container(
+              height: 46,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF3E8FF),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFE9D5FF)),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _selectedCustomerName,
+                  isExpanded: true,
+                  hint: const Text('Choose customer...', style: TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
+                  icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF38008A)),
+                  items: [
+                    ..._seededCustomers.map((cust) => DropdownMenuItem<String>(
+                      value: cust['name'],
+                      child: Row(
+                        children: [
+                          const Icon(Icons.person_pin_rounded, size: 18, color: Color(0xFF38008A)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '${cust['name']} (${cust['accountNo']})',
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1F2937)),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )),
+                    const DropdownMenuItem<String>(
+                      value: 'CUSTOM',
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit_note_rounded, size: 18, color: Color(0xFF6B7280)),
+                          SizedBox(width: 8),
+                          Text('Enter custom account...', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF4B5563))),
+                        ],
+                      ),
+                    ),
+                  ],
+                  onChanged: (val) {
+                    if (val == null) return;
+                    setState(() {
+                      _selectedCustomerName = val;
+                      if (val != 'CUSTOM') {
+                        final found = _seededCustomers.firstWhere((c) => c['name'] == val);
+                        _recipientController.text = found['name']!;
+                        _accountController.text = found['accountNo']!;
+                      }
+                    });
+                  },
                 ),
               ),
             ),

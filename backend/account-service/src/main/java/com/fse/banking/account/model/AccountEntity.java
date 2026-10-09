@@ -47,6 +47,10 @@ public class AccountEntity {
     @Builder.Default
     private AccountStatus status = AccountStatus.ACTIVE;
 
+    @Column(name = "currency", length = 3, nullable = false)
+    @Builder.Default
+    private String currency = "PHP";
+
     @Column(name = "credit_limit", precision = 18, scale = 4, nullable = false)
     @Builder.Default
     private BigDecimal creditLimit = BigDecimal.ZERO.setScale(4);

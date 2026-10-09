@@ -422,7 +422,6 @@ class BalanceMutationServiceTest {
     void testT24FundsTransferSuccess() {
         when(balanceRepository.findByAccountIdWithLock(SENDER_ACCOUNT)).thenReturn(Optional.of(senderBalance));
         when(balanceRepository.findByAccountIdWithLock(RECEIVER_ACCOUNT)).thenReturn(Optional.of(receiverBalance));
-        when(balanceRepository.findByAccountId(SENDER_ACCOUNT)).thenReturn(Optional.of(senderBalance));
         when(balanceRepository.findByAccountId(RECEIVER_ACCOUNT)).thenReturn(Optional.of(receiverBalance));
 
         T24FundsTransferRequest request = T24FundsTransferRequest.builder()

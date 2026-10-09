@@ -634,7 +634,7 @@ class _KycWizardScreenState extends State<KycWizardScreen>
                   fit: StackFit.expand,
                   children: [
                     if (hasImage)
-                      Image.memory(bytes, fit: BoxFit.contain)
+                      Image.memory(bytes, fit: BoxFit.cover)
                     else
                       Column(
                         mainAxisAlignment: MainAxisAlignment.center,

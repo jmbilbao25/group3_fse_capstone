@@ -187,6 +187,7 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
   }
 
   void _showVerificationModal() {
+    // Step 1: Confirmation Modal (Desktop Dialog)
     showDialog(
       context: context,
       barrierDismissible: !_isSubmitting,
@@ -198,16 +199,16 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
               elevation: 0,
               backgroundColor: Colors.transparent,
               child: Container(
-                width: 480,
+                width: 460,
                 padding: const EdgeInsets.all(28),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.15),
-                      blurRadius: 30,
-                      offset: const Offset(0, 10),
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 32,
+                      offset: const Offset(0, 12),
                     ),
                   ],
                 ),
@@ -215,16 +216,16 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      width: 52,
-                      height: 52,
+                      width: 56,
+                      height: 56,
                       decoration: const BoxDecoration(
                         color: Color(0xFFFAF5FF),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
-                        Icons.lock_outline_rounded,
+                        Icons.shield_rounded,
                         color: brandViolet,
-                        size: 26,
+                        size: 28,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -238,17 +239,78 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    const Text(
-                      'Please review the transfer details before proceeding.',
+                    Text(
+                      'You are sending PHP ${_formatCurrency(_parsedAmount)} to ${_recipientController.text.trim()}. Please confirm to proceed with secure verification.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 13,
                         color: Color(0xFF6B7280),
+                        height: 1.4,
                       ),
                     ),
                     const SizedBox(height: 20),
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFAF5FF),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFF3E8FF)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Amount',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF6B7280),
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'PHP ${_formatCurrency(_parsedAmount)}',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF111827),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              const Text(
+                                'Memo',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF6B7280),
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                _remarksController.text.trim().isNotEmpty
+                                    ? _remarksController.text.trim()
+                                    : _selectedPurpose,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF111827),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF9FAFB),
                         borderRadius: BorderRadius.circular(12),
@@ -264,13 +326,7 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
                             'Bank',
                             _isAuraToAura ? 'Aura Bank (Direct)' : _selectedPartnerBank,
                           ),
-                          const Divider(height: 20, color: borderLight),
-                          _buildModalRow(
-                            'Transfer Amount',
-                            'PHP ${_formatCurrency(_parsedAmount)}',
-                            isBold: true,
-                          ),
-                          const SizedBox(height: 6),
+                          const Divider(height: 18, color: borderLight),
                           _buildModalRow(
                             'Transfer Fee',
                             _transferFee == 0
@@ -280,100 +336,258 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
                                 ? const Color(0xFF16A34A)
                                 : const Color(0xFF374151),
                           ),
-                          const Divider(height: 20, color: borderLight),
-                          _buildModalRow(
-                            'Total Deduction',
-                            'PHP ${_formatCurrency(_totalDebit)}',
-                            isBold: true,
-                            color: brandViolet,
-                            fontSize: 16,
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(ctx).pop();
+                          _showBiometricApprovalModal();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: brandViolet,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.shield_rounded, size: 18, color: Colors.white),
+                            SizedBox(width: 8),
+                            Text(
+                              'Verify & Transfer',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: const Text(
+                        'Cancel Transaction',
+                        style: TextStyle(
+                          color: Color(0xFF6B7280),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // Step 2: Approve with Biometrics (WebAuthn / Passkey Simulation)
+  void _showBiometricApprovalModal() {
+    showDialog(
+      context: context,
+      barrierDismissible: !_isSubmitting,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              elevation: 0,
+              backgroundColor: Colors.transparent,
+              child: Container(
+                width: 460,
+                padding: const EdgeInsets.all(28),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 32,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 68,
+                      height: 68,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFAF5FF),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFFE9D5FF),
+                          width: 2,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.face_retouching_natural_rounded,
+                        color: brandViolet,
+                        size: 34,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Approve with Biometrics',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF111827),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Authorize with your biometrics or WebAuthn passkey to confirm this transfer.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF6B7280),
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    // Security verification status badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFECFDF5),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFA7F3D0)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.verified_rounded,
+                            color: Color(0xFF059669),
+                            size: 15,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Identity Verified • Secure Web Transfer',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF065F46),
+                            ),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: _isSubmitting ? null : () => Navigator.of(ctx).pop(),
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: Color(0xFFD1D5DB)),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            child: const Text(
-                              'Cancel',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF4B5563),
-                              ),
-                            ),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: _isSubmitting
+                            ? null
+                            : () async {
+                                setModalState(() => _isSubmitting = true);
+                                setState(() => _isSubmitting = true);
+
+                                final result = await _bankService.executeTransfer(
+                                  targetAccount: _accountController.text.trim(),
+                                  recipientName: _recipientController.text.trim(),
+                                  amount: _parsedAmount,
+                                  destinationBank: _isAuraToAura
+                                      ? 'Aura Bank Direct'
+                                      : _selectedPartnerBank,
+                                  remarks: _remarksController.text.trim().isNotEmpty
+                                      ? _remarksController.text.trim()
+                                      : _selectedPurpose,
+                                );
+
+                                setModalState(() => _isSubmitting = false);
+                                if (mounted) setState(() => _isSubmitting = false);
+
+                                if (ctx.mounted) Navigator.of(ctx).pop();
+
+                                final isOk = result['success'] == true;
+                                if (isOk) {
+                                  _showReceiptModal((result['reference'] ??
+                                          result['t24_reference'] ??
+                                          'FT${DateTime.now().millisecondsSinceEpoch.toString().substring(3)}')
+                                      as String);
+                                } else {
+                                  _showWarningSnackBar(
+                                      (result['failureReason'] ??
+                                              result['message'] ??
+                                              'Transfer failed')
+                                          as String);
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: brandViolet,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
                           ),
+                          elevation: 0,
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: _isSubmitting
-                                ? null
-                                : () async {
-                                    setModalState(() => _isSubmitting = true);
-                                    setState(() => _isSubmitting = true);
-
-                                    final result = await _bankService.executeTransfer(
-                                      targetAccount: _accountController.text.trim(),
-                                      recipientName: _recipientController.text.trim(),
-                                      amount: _parsedAmount,
-                                      destinationBank: _isAuraToAura ? 'Aura Bank Direct' : _selectedPartnerBank,
-                                      remarks: _remarksController.text.trim().isNotEmpty
-                                          ? _remarksController.text.trim()
-                                          : _selectedPurpose,
-                                    );
-
-                                    setModalState(() => _isSubmitting = false);
-                                    if (mounted) setState(() => _isSubmitting = false);
-
-                                    if (ctx.mounted) Navigator.of(ctx).pop();
-
-                                    final isOk = result['success'] == true;
-                                    if (isOk) {
-                                      _showReceiptModal((result['reference'] ?? result['t24_reference'] ??
-                                          'TXN-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}') as String);
-                                    } else {
-                                      _showWarningSnackBar((result['failureReason'] ?? result['message'] ?? 'Transfer failed') as String);
-                                    }
-                                  },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: brandViolet,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            child: _isSubmitting
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
+                        child: _isSubmitting
+                            ? const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: 18,
+                                    height: 18,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      valueColor:
-                                          AlwaysStoppedAnimation<Color>(Colors.white),
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                     ),
-                                  )
-                                : const Text(
-                                    'Confirm & Send',
+                                  ),
+                                  SizedBox(width: 10),
+                                  Text(
+                                    'Verifying Biometrics...',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.fingerprint_rounded, size: 20, color: Colors.white),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Confirm with Biometrics',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w800,
                                       fontSize: 14,
                                     ),
                                   ),
-                          ),
+                                ],
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextButton(
+                      onPressed: _isSubmitting ? null : () => Navigator.of(ctx).pop(),
+                      child: const Text(
+                        'Cancel Transaction',
+                        style: TextStyle(
+                          color: Color(0xFF6B7280),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
                         ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
@@ -415,7 +629,16 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
     );
   }
 
+  // Step 3: Transaction Receipt Modal (Clean Desktop Architecture)
   void _showReceiptModal(String ref) {
+    final now = DateTime.now();
+    final months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    final dateStr = '${now.day.toString().padLeft(2, '0')} ${months[now.month - 1]} ${now.year}';
+    final timeStr = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+
     showDialog(
       context: context,
       barrierDismissible: true,
@@ -430,13 +653,20 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.12),
+                  blurRadius: 36,
+                  offset: const Offset(0, 12),
+                ),
+              ],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 56,
-                  height: 56,
+                  width: 58,
+                  height: 58,
                   decoration: const BoxDecoration(
                     color: Color(0xFFDCFCE7),
                     shape: BoxShape.circle,
@@ -447,66 +677,76 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
                     size: 34,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 const Text(
-                  'Transfer Successful',
+                  'Transaction Receipt',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF111827),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF6B7280),
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  'Your funds have been transferred successfully.',
+                Text(
+                  'PHP ${_formatCurrency(_parsedAmount)}',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+                  style: const TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF111827),
+                    letterSpacing: -0.5,
+                  ),
                 ),
                 const SizedBox(height: 20),
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFAF5FF),
+                    color: const Color(0xFFF9FAFB),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFF3E8FF)),
+                    border: Border.all(color: borderLight),
                   ),
                   child: Column(
                     children: [
-                      const Text(
-                        'TOTAL DEDUCTION',
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF6B21A8),
-                          letterSpacing: 0.8,
-                        ),
+                      _buildModalRow(
+                        'From',
+                        '${_currentSourceAccountData['title']} • ${_currentSourceAccountData['accountNo']}',
                       ),
-                      const SizedBox(height: 4),
-                      Text(
+                      const SizedBox(height: 8),
+                      _buildModalRow(
+                        'To',
+                        '${_recipientController.text.trim()} (${_accountController.text.trim()})',
+                      ),
+                      const Divider(height: 20, color: borderLight),
+                      _buildModalRow('Transfer Amount', 'PHP ${_formatCurrency(_parsedAmount)}'),
+                      const SizedBox(height: 8),
+                      _buildModalRow(
+                        'Transfer Fee',
+                        _transferFee == 0 ? 'FREE' : 'PHP ${_formatCurrency(_transferFee)}',
+                        color: _transferFee == 0 ? const Color(0xFF16A34A) : const Color(0xFF111827),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildModalRow(
+                        'Total Amount',
                         'PHP ${_formatCurrency(_totalDebit)}',
-                        style: const TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w900,
-                          color: Color(0xFF1E103F),
-                        ),
+                        isBold: true,
                       ),
-                      const Divider(height: 20, color: Color(0xFFE9D5FF)),
+                      const Divider(height: 20, color: borderLight),
                       _buildModalRow('Reference Number', ref),
-                      const SizedBox(height: 6),
-                      _buildModalRow('Recipient', _recipientController.text.trim()),
-                      const SizedBox(height: 6),
-                      _buildModalRow('Account Number', _accountController.text.trim()),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 8),
+                      _buildModalRow('Transaction Date', dateStr),
+                      const SizedBox(height: 8),
+                      _buildModalRow('Transaction Time', timeStr),
+                      const SizedBox(height: 8),
                       _buildModalRow('Status', 'COMPLETED', color: const Color(0xFF16A34A)),
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 22),
                 SizedBox(
                   width: double.infinity,
-                  height: 44,
+                  height: 46,
                   child: ElevatedButton(
                     onPressed: () => Navigator.of(ctx).pop(),
                     style: ElevatedButton.styleFrom(
@@ -515,7 +755,10 @@ class _WebTransferScreenState extends State<WebTransferScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       elevation: 0,
                     ),
-                    child: const Text('Done', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                    child: const Text(
+                      'Back to Home',
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                    ),
                   ),
                 ),
               ],

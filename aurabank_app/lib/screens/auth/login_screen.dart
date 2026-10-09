@@ -21,7 +21,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
   final BankService _bankService = BankService();
   final TextEditingController _usernameController =
-      TextEditingController(text: 'elijahriley.montefalco@gmail.com');
+      TextEditingController(text: 'juan.dc@email.com');
   final TextEditingController _passwordController =
       TextEditingController(text: 'password123');
   bool _obscurePassword = true;

@@ -19,7 +19,8 @@ public class AccountMaster {
     @Column(name = "account_id", length = 64)
     private String accountId;
 
-    @Column(name = "user_id", nullable = false, length = 64)
+    /** Owning CIF. Named userId in Java because the CIF id is the login id. */
+    @Column(name = "customer_id", nullable = false, length = 64)
     private String userId;
 
     @Column(name = "account_number", nullable = false, length = 32)

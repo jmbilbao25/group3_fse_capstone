@@ -11,6 +11,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 import json
 import pandas as pd
@@ -1100,3 +1101,19 @@ def get_sar_report(tx_id: str):
     if report is None:
         raise HTTPException(status_code=404, detail="SAR draft not found")
     return report
+
+
+class SarReviewRequest(BaseModel):
+    reviewer_id: str
+    action: str  # RECOMMEND_FILE | RECOMMEND_DISMISS | CONFIRM | RETURN
+    note: str = ""
+
+
+@app.post("/api/v1/risk/sar/{tx_id}/review")
+def review_sar_report(tx_id: str, req: SarReviewRequest):
+    try:
+        return sar_registry.review_report(tx_id, req.reviewer_id, req.action, req.note)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="SAR draft not found")
+    except sar_registry.SarReviewError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))

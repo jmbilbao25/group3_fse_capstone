@@ -47,6 +47,16 @@ class KycServiceTest {
     @Mock
     private KycClient kycClient;
 
+    @org.mockito.Spy
+    private InMemoryReviews reviewStore = new InMemoryReviews();
+
+    static class InMemoryReviews implements com.fse.banking.account.kyc.KycReviewStore {
+        final java.util.Map<String, com.fse.banking.account.kyc.KycReview> rows = new java.util.HashMap<>();
+        public void save(com.fse.banking.account.kyc.KycReview r) { rows.put(r.getUserId(), r); }
+        public Optional<com.fse.banking.account.kyc.KycReview> find(String id) { return Optional.ofNullable(rows.get(id)); }
+        public List<com.fse.banking.account.kyc.KycReview> findAll() { return List.copyOf(rows.values()); }
+    }
+
     @InjectMocks
     private KycService kycService;
 
@@ -156,7 +166,7 @@ class KycServiceTest {
     }
 
     @Test
-    @DisplayName("Should approve and activate user when Laya returns APPROVED")
+    @DisplayName("Laya APPROVED still waits for a human: PENDING_REVIEW with summary and confidence stored")
     void testVerifyKycSubmission_Approved() {
         when(userRepository.findById("USR-100001")).thenReturn(Optional.of(user));
         when(userRepository.save(any(UserEntity.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -178,11 +188,13 @@ class KycServiceTest {
 
         KycVerifyResponse response = kycService.verifyKycSubmission("USR-100001", request);
 
-        assertThat(response.getKycStatus()).isEqualTo("VERIFIED");
-        assertThat(response.getUserStatus()).isEqualTo("ACTIVE");
+        assertThat(response.getKycStatus()).isEqualTo("PENDING_REVIEW");
         assertThat(response.getConfidenceScore()).isEqualTo(94.5);
-        assertThat(user.getKycStatus()).isEqualTo(KycStatus.VERIFIED);
-        assertThat(user.getStatus()).isEqualTo(UserStatus.ACTIVE);
+        assertThat(user.getKycStatus()).isEqualTo(KycStatus.PENDING_REVIEW);
+        var review = reviewStore.find("USR-100001").orElseThrow();
+        assertThat(review.getStatus()).isEqualTo("PENDING_MAKER");
+        assertThat(review.getLayaSummary()).startsWith("Laya recommends approval (confidence 94.5%).");
+        assertThat(review.getSelfieBlobPath()).isEqualTo("users/USR-100001/KYC-2026-001/selfie.jpg");
     }
 
     @Test
@@ -214,7 +226,7 @@ class KycServiceTest {
     }
 
     @Test
-    @DisplayName("Should set REJECTED when Laya returns REJECTED")
+    @DisplayName("Laya REJECTED is a recommendation, not a decision")
     void testVerifyKycSubmission_Rejected() {
         when(userRepository.findById("USR-100001")).thenReturn(Optional.of(user));
         when(userRepository.save(any(UserEntity.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -236,8 +248,38 @@ class KycServiceTest {
 
         KycVerifyResponse response = kycService.verifyKycSubmission("USR-100001", request);
 
-        assertThat(response.getKycStatus()).isEqualTo("REJECTED");
-        assertThat(user.getKycStatus()).isEqualTo(KycStatus.REJECTED);
-        assertThat(user.getKycReviewReason()).contains("Biometric verification failed");
+        assertThat(response.getKycStatus()).isEqualTo("PENDING_REVIEW");
+        assertThat(user.getKycReviewReason()).contains("recommends rejected").contains("Biometric verification failed");
+        assertThat(reviewStore.find("USR-100001").orElseThrow().getLayaDecision()).isEqualTo("REJECTED");
+    }
+
+    @Test
+    @DisplayName("Maker recommends, same person cannot check, different checker confirms and verifies the customer")
+    void testFourEyesKycApproval() {
+        reviewStore.save(com.fse.banking.account.kyc.KycReview.builder()
+                .userId("USR-100001").status("PENDING_MAKER").layaDecision("APPROVED").build());
+        when(userRepository.findById("USR-100001")).thenReturn(Optional.of(user));
+        when(userRepository.save(any(UserEntity.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        kycService.recommend("USR-100001", "maker-1", "APPROVE", "ID and selfie match");
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> kycService.check("USR-100001", "maker-1", true, null))
+                .isInstanceOf(com.fse.banking.common.exception.ConflictException.class)
+                .hasMessageContaining("Four-eyes");
+        assertThat(user.getKycStatus()).isNotEqualTo(KycStatus.VERIFIED);
+
+        var done = kycService.check("USR-100001", "checker-2", true, "Agreed");
+        assertThat(done.getStatus()).isEqualTo("APPROVED");
+        assertThat(user.getKycStatus()).isEqualTo(KycStatus.VERIFIED);
+        assertThat(user.getStatus()).isEqualTo(UserStatus.ACTIVE);
+    }
+
+    @Test
+    @DisplayName("Rejection needs a reason; checker RETURN sends the case back to the maker")
+    void testRejectNeedsReasonAndReturn() {
+        reviewStore.save(com.fse.banking.account.kyc.KycReview.builder().userId("USR-100001").status("PENDING_MAKER").build());
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> kycService.recommend("USR-100001", "m", "REJECT", " "))
+                .isInstanceOf(IllegalArgumentException.class);
+        kycService.recommend("USR-100001", "m", "REJECT", "Expired ID");
+        assertThat(kycService.check("USR-100001", "c", false, "Re-check expiry").getStatus()).isEqualTo("PENDING_MAKER");
     }
 }

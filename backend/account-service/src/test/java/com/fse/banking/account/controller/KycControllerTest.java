@@ -2,7 +2,6 @@ package com.fse.banking.account.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fse.banking.account.dto.KycProfileResponse;
-import com.fse.banking.account.dto.KycRejectRequest;
 import com.fse.banking.account.dto.KycUploadIntentRequest;
 import com.fse.banking.account.dto.KycUploadIntentResponse;
 import com.fse.banking.account.dto.KycUploadSlot;
@@ -174,42 +173,30 @@ class KycControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/v1/kyc/{userId}/approve should return 200")
-    void testApproveKyc() throws Exception {
-        KycProfileResponse response = KycProfileResponse.builder()
-                .userId("USR-100001")
-                .status("ACTIVE")
-                .kycStatus("VERIFIED")
-                .build();
-
-        when(kycService.approveKyc(eq("USR-100001"), any())).thenReturn(response);
-
-        mockMvc.perform(post("/api/v1/kyc/USR-100001/approve"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("ACTIVE"))
-                .andExpect(jsonPath("$.kyc_status").value("VERIFIED"));
+    @DisplayName("Maker/checker endpoints refuse callers without a staff token")
+    void testReviewEndpointsRequireStaff() throws Exception {
+        when(jwtProvider.validateToken("cust")).thenReturn(true);
+        when(jwtProvider.getRole("cust")).thenReturn("ROLE_CUSTOMER");
+        mockMvc.perform(post("/api/v1/kyc/USR-100001/recommend")
+                        .header("Authorization", "Bearer cust")
+                        .contentType("application/json").content("{\"decision\":\"APPROVE\"}"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/v1/kyc/reviews")).andExpect(status().isForbidden());
     }
 
     @Test
-    @DisplayName("POST /api/v1/kyc/{userId}/reject should return 200")
-    void testRejectKyc() throws Exception {
-        KycProfileResponse response = KycProfileResponse.builder()
-                .userId("USR-100001")
-                .status("SUSPENDED")
-                .kycStatus("REJECTED")
-                .kycReviewReason("Document expired")
-                .build();
-
-        when(kycService.rejectKyc(eq("USR-100001"), any(), eq("Document expired"))).thenReturn(response);
-
-        KycRejectRequest request = new KycRejectRequest("Document expired");
-
-        mockMvc.perform(post("/api/v1/kyc/USR-100001/reject")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+    @DisplayName("POST /api/v1/kyc/{userId}/recommend records the maker from the JWT")
+    void testRecommendUsesJwtMaker() throws Exception {
+        when(jwtProvider.validateToken("staff")).thenReturn(true);
+        when(jwtProvider.getRole("staff")).thenReturn("ROLE_ADMIN");
+        when(jwtProvider.getUserId("staff")).thenReturn("usr-1005-boo-001");
+        when(kycService.recommend("USR-100001", "usr-1005-boo-001", "APPROVE", "IDs match"))
+                .thenReturn(com.fse.banking.account.kyc.KycReview.builder().userId("USR-100001").status("PENDING_CHECKER").build());
+        mockMvc.perform(post("/api/v1/kyc/USR-100001/recommend")
+                        .header("Authorization", "Bearer staff")
+                        .contentType("application/json").content("{\"decision\":\"APPROVE\",\"note\":\"IDs match\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("SUSPENDED"))
-                .andExpect(jsonPath("$.kyc_status").value("REJECTED"));
+                .andExpect(jsonPath("$.status").value("PENDING_CHECKER"));
     }
 
     @Test

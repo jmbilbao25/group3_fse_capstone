@@ -22,3 +22,17 @@ def test_sar_drafts_list_and_detail(tmp_path, monkeypatch):
         assert False, "path traversal must be rejected"
     except ValueError:
         pass
+
+
+def test_sar_four_eyes(tmp_path, monkeypatch):
+    from hybrid_bench import sar_generator
+    from app import sar_registry
+    import pytest
+    monkeypatch.setattr(sar_registry, "SAR_DRAFTS_DIR", str(tmp_path))
+    sar_generator.generate_sar_sync({"transaction_id": "TX-4E"}, {"action": "BLOCK"}, output_dir=str(tmp_path))
+    sar_registry.review_report("TX-4E", "maker", "RECOMMEND_FILE", "geo hop")
+    with pytest.raises(sar_registry.SarReviewError, match="Four-eyes"):
+        sar_registry.review_report("TX-4E", "maker", "CONFIRM")
+    done = sar_registry.review_report("TX-4E", "checker", "CONFIRM")
+    assert done["review"]["status"] == "FILED"
+    assert [h["by"] for h in done["review"]["history"]] == ["maker", "checker"]

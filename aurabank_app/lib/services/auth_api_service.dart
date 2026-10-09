@@ -227,11 +227,7 @@ class AuthApiService {
       ),
     );
 
-    final endpoints = kIsWeb
-        ? [accountServiceUrl, gatewayUrl]
-        : [gatewayUrl, accountServiceUrl];
     final endpoints = _endpoints;
-    String lastError = 'No backend service available';
 
     for (final baseUrl in endpoints) {
       try {

@@ -46,6 +46,7 @@ import apiClient, { mockState } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { formatPHP } from '../utils/currency';
 import { cn } from '../ui/cn';
+import KycMakerCheckerPortal from './KycMakerCheckerPortal';
 
 // Geolocation Presets for Fraud Testing
 const GEO_PRESETS = [
@@ -220,7 +221,7 @@ const ADMIN_ROSTER = [
     capability: 'SIMULATION',
     capabilityLabel: 'Security Simulation & Threat Radar',
     desc: 'Authorized to inject Geo jumps, simulate threat vectors, and monitor live AI threat radar.',
-    allowedViews: ['overview', 'threat_radar', 'geo_surveillance'],
+    allowedViews: ['overview', 'threat_radar', 'geo_surveillance', 'kyc_verification'],
     defaultView: 'threat_radar',
     menuSection: 'Fraud & Threat Center',
   },
@@ -233,7 +234,7 @@ const ADMIN_ROSTER = [
     capability: 'ACCOUNT_LOCK_UNLOCK',
     capabilityLabel: 'Account Freeze/Unfreeze & 360 Governance',
     desc: 'Authorized to freeze/unfreeze customer accounts and manage Customer 360° profiles.',
-    allowedViews: ['overview', 'accounts', 'transactions'],
+    allowedViews: ['overview', 'accounts', 'kyc_verification', 'transactions'],
     defaultView: 'accounts',
     menuSection: 'Branch Operations Center',
   },
@@ -246,7 +247,7 @@ const ADMIN_ROSTER = [
     capability: 'REVERSAL_APPROVAL',
     capabilityLabel: 'Maker-Checker Reversal Sign-Off',
     desc: 'Authorized to approve T24 compensating reversals (Maker-Checker) and inspect WORM vault.',
-    allowedViews: ['overview', 'transactions', 'audit_vault', 'sar_queue'],
+    allowedViews: ['overview', 'transactions', 'kyc_verification', 'audit_vault', 'sar_queue'],
     defaultView: 'transactions',
     menuSection: 'Compliance & Audit Center',
   }
@@ -1746,6 +1747,7 @@ export default function AdminExecutivePortal() {
                 { id: 'threat_radar', label: 'Two-Stage Threat Radar', icon: Zap },
                 { id: 'geo_surveillance', label: 'Geo & Device Signals', icon: Globe, alert: stats.isAnomaly },
                 { id: 'accounts', label: 'Customer Accounts & 360°', icon: Users, count: accounts.length },
+                { id: 'kyc_verification', label: 'KYC Maker-Checker Portal', icon: UserCheck },
                 { id: 'transactions', label: 'Transactions & Reversals', icon: Layers, count: transactions.length },
                 { id: 'audit_vault', label: 'Immutable Audit Vault', icon: Database, count: auditLogs.length },
                 { id: 'sar_queue', label: 'AMLC SAR Reports', icon: FileText }
@@ -2773,6 +2775,13 @@ export default function AdminExecutivePortal() {
               ))}
             </div>
           </div>
+        )}
+
+        {/* =========================================================================
+            VIEW 7: KYC MAKER-CHECKER VERIFICATION PORTAL
+            ========================================================================= */}
+        {activeView === 'kyc_verification' && (
+          <KycMakerCheckerPortal showToast={showToast} />
         )}
       </main>
 

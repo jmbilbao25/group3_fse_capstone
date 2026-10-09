@@ -8,6 +8,7 @@ import 'risk_showcase_screen.dart';
 import '../auth/security_gate_screen.dart';
 import '../auth/otp_verification_screen.dart';
 import '../auth/login_screen.dart';
+import '../kyc_wizard_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -380,6 +381,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 child: Column(
                   children: [
+                    _buildNavTile(
+                      title: 'Identity Verification (e-KYC)',
+                      subtitle: user.isKycVerified
+                          ? 'Philippine ID verified'
+                          : (user.kycStatus == 'PENDING_REVIEW'
+                              ? 'Application under compliance review'
+                              : 'Upload Philippine ID & selfie'),
+                      badgeText: user.isKycVerified ? 'Verified' : (user.kycStatus == 'PENDING_REVIEW' ? 'Review' : 'Required'),
+                      isPurpleBadge: !user.isKycVerified,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (context) => KycWizardScreen(onCompleted: () => setState(() {}))),
+                        );
+                      },
+                    ),
+                    const Divider(color: AuraColors.divider, height: 1),
                     _buildSwitchTile(
                       title: 'Biometric Login (Face ID)',
                       subtitle: 'Unlock app instantly with Face ID',

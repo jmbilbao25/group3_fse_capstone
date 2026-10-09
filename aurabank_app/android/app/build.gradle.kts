@@ -7,7 +7,7 @@ plugins {
 android {
     namespace = "com.group3.aurabank.aurabank_app"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // ndkVersion = flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

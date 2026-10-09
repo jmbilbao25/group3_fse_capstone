@@ -54,7 +54,7 @@ class PessimisticLockConcurrencyTest {
         sender.setAvailableBalance(new BigDecimal("10000.0000"));
         sender.setCreatedAt(Instant.now());
         sender.setUpdatedAt(Instant.now());
-        balanceRepository.save(sender);
+        balanceRepository.saveAndFlush(sender);
 
         // Reset Receiver with exactly PHP 5,000.00
         BalanceMaster receiver = balanceRepository.findById(RECEIVER_ID).orElseGet(() ->
@@ -64,7 +64,7 @@ class PessimisticLockConcurrencyTest {
         receiver.setAvailableBalance(new BigDecimal("5000.0000"));
         receiver.setCreatedAt(Instant.now());
         receiver.setUpdatedAt(Instant.now());
-        balanceRepository.save(receiver);
+        balanceRepository.saveAndFlush(receiver);
     }
 
     @Test

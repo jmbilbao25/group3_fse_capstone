@@ -2,12 +2,17 @@ package com.fse.banking.account.controller;
 
 import com.fse.banking.account.dto.KycProfileResponse;
 import com.fse.banking.account.dto.KycRejectRequest;
+import com.fse.banking.account.dto.KycUploadIntentRequest;
+import com.fse.banking.account.dto.KycUploadIntentResponse;
+import com.fse.banking.account.dto.KycVerifyRequest;
+import com.fse.banking.account.dto.KycVerifyResponse;
 import com.fse.banking.account.security.JwtProvider;
 import com.fse.banking.account.service.KycService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,6 +32,34 @@ public class KycController {
 
     private final KycService kycService;
     private final JwtProvider jwtProvider;
+
+    @PostMapping("/upload-intent")
+    public ResponseEntity<KycUploadIntentResponse> requestUploadIntent(
+            @Valid @RequestBody KycUploadIntentRequest request,
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
+
+        String userId = extractCallerId(authHeader, null);
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        KycUploadIntentResponse response = kycService.generateUploadIntent(userId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/verify")
+    public ResponseEntity<KycVerifyResponse> verifyKyc(
+            @Valid @RequestBody KycVerifyRequest request,
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
+
+        String userId = extractCallerId(authHeader, null);
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        KycVerifyResponse response = kycService.verifyKycSubmission(userId, request);
+        return ResponseEntity.ok(response);
+    }
 
     @GetMapping("/pending")
     public ResponseEntity<List<KycProfileResponse>> listPendingKyc() {

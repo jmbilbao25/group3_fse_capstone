@@ -40,6 +40,10 @@ dependencies:
   qr_flutter: ^4.1.0
   shared_preferences: '>=2.2.0 <3.0.0'
   local_auth: ^2.3.0
+  aurabank_core:
+    path: ../aurabank_core
+  camera: ^0.12.1
+  image: ^4.10.1
 
 dev_dependencies:
   flutter_test:

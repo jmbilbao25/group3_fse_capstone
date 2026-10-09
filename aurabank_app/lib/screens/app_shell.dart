@@ -9,15 +9,6 @@ import '../services/bank_service.dart';
 import '../services/notification_stream_service.dart';
 import '../theme/aura_theme.dart';
 
-import 'web/web_sidebar.dart';
-import 'web/web_header.dart';
-import 'web/web_dashboard_screen.dart';
-import 'web/web_transfer_screen.dart';
-import 'web/web_cards_screen.dart';
-import 'web/web_scan_screen.dart';
-import 'web/web_analytics_screen.dart';
-import 'web/web_profile_screen.dart';
-
 class AppShell extends StatefulWidget {
   final int initialIndex;
 
@@ -54,64 +45,7 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth >= 960) {
-          return _buildWebDesktopShell();
-        }
-        return _buildMobileShell();
-      },
-    );
-  }
-
-  Widget _buildWebDesktopShell() {
-    final webScreens = [
-      WebDashboardScreen(onNavigateTab: _onNavigateTab),
-      const WebTransferScreen(),
-      const WebCardsScreen(),
-      WebScanScreen(onBack: () => _onNavigateTab(0)),
-      const WebAnalyticsScreen(),
-      const WebProfileScreen(),
-    ];
-
-    return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
-      body: Row(
-        children: [
-          // 1. Persistent 260px Left Sidebar
-          WebSidebar(
-            selectedIndex: _currentIndex,
-            onDestinationSelected: _onNavigateTab,
-            onLogout: () {
-              AuthApiService().logout();
-              Navigator.of(context).pushReplacementNamed('/login');
-            },
-          ),
-
-          // 2. Main Content Viewport
-          Expanded(
-            child: Column(
-              children: [
-                // Top Header Bar
-                WebHeader(
-                  onQuickTransfer: () => _onNavigateTab(1),
-                  onRefresh: () {
-                    BankService().syncWithBackend();
-                  },
-                ),
-                // Body View
-                Expanded(
-                  child: IndexedStack(
-                    index: _currentIndex,
-                    children: webScreens,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+    return _buildMobileShell();
   }
 
   Widget _buildMobileShell() {
@@ -134,10 +68,17 @@ class _AppShellState extends State<AppShell> {
           ),
         ),
       ),
-      bottomNavigationBar: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 540),
-          child: _buildLuxuryBottomBar(),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Center(
+          heightFactor: 1.0,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 540),
+            child: SizedBox(
+              height: 66 + MediaQuery.of(context).padding.bottom,
+              child: _buildLuxuryBottomBar(),
+            ),
+          ),
         ),
       ),
     );

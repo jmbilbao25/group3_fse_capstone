@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../services/bank_service.dart';
+import '../../services/biometric_service.dart';
 import '../../services/security_service.dart';
 import '../../theme/aura_theme.dart';
 import '../../widgets/require_device_approval.dart';

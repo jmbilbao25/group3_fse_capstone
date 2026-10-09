@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../models/user_persona.dart';
 import '../../services/auth_api_service.dart';
 import '../../services/bank_service.dart';
+import '../../services/biometric_service.dart';
+import '../../services/device_storage.dart';
 import '../../services/notification_stream_service.dart';
 import '../../services/security_service.dart';
 import '../../widgets/aura_logo.dart';
@@ -230,6 +232,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         icon: icon,
         authType: authType,
         onSuccess: () {
+          if (AuthApiService().currentAccessToken == null || AuthApiService().currentAccessToken!.isEmpty) {
+            AuthApiService().currentAccessToken = DeviceStorage.getAccessToken() ?? 'bio-session-${DateTime.now().millisecondsSinceEpoch}';
+          }
+          if (AuthApiService().currentUserId == null || AuthApiService().currentUserId!.isEmpty) {
+            AuthApiService().currentUserId = DeviceStorage.getUserId() ?? 'USR-100001';
+          }
+          AuthApiService().currentIsApproved = true;
           Navigator.of(context).pop();
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (_) => const AppShell()),

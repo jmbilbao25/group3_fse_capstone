@@ -13,8 +13,11 @@ import 'package:aurabank_app/screens/profile/profile_screen.dart';
 import 'package:aurabank_app/screens/analytics/analytics_screen.dart';
 import 'package:aurabank_app/screens/app_shell.dart';
 import 'package:aurabank_app/screens/auth/login_screen.dart';
+import 'package:aurabank_app/screens/auth/login_page_face_id.dart';
+import 'package:aurabank_app/screens/auth/login_page_fingerprint.dart';
 import 'package:aurabank_app/services/auth_api_service.dart';
 import 'package:aurabank_app/services/bank_service.dart';
+import 'package:aurabank_app/services/biometric_service.dart';
 import 'package:aurabank_app/services/notification_stream_service.dart';
 import 'package:aurabank_app/widgets/require_device_approval.dart';
 
@@ -500,5 +503,58 @@ void main() {
     expect(find.text('Access revoked. You have been logged out of this session.'), findsOneWidget);
 
     NotificationStreamService().disconnect();
+  });
+
+  testWidgets('LoginPageFaceId renders Face ID biometric trigger and auth layout',
+      (WidgetTester tester) async {
+    bool loginSuccessCalled = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: LoginPageFaceId(
+          onLoginSuccess: () {
+            loginSuccessCalled = true;
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Welcome Back!'), findsOneWidget);
+    expect(find.byType(FaceIdIcon), findsOneWidget);
+    expect(find.text('Forgot Passcode?'), findsOneWidget);
+    expect(find.text('Switch Account'), findsOneWidget);
+    expect(loginSuccessCalled, isFalse);
+  });
+
+  testWidgets('LoginPageFingerprint renders fingerprint trigger and auth layout',
+      (WidgetTester tester) async {
+    bool fingerprintTapCalled = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: LoginPageFingerprint(
+          onFingerprintTap: () {
+            fingerprintTapCalled = true;
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Welcome Back!'), findsOneWidget);
+    expect(find.byIcon(Icons.fingerprint_rounded), findsOneWidget);
+    expect(find.text('Forgot Passcode?'), findsOneWidget);
+    expect(find.text('Switch Account'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.fingerprint_rounded));
+    await tester.pumpAndSettle();
+    expect(fingerprintTapCalled, isTrue);
+  });
+
+  test('BiometricService gracefully returns false in headless test runner', () async {
+    final service = BiometricService();
+    final canAuth = await service.canAuthenticate();
+    expect(canAuth, isFalse);
+    final biometrics = await service.getAvailableBiometrics();
+    expect(biometrics, isEmpty);
   });
 }

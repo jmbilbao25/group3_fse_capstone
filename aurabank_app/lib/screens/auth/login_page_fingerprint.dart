@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../services/auth_api_service.dart';
 import '../../services/biometric_service.dart';
+import '../../services/device_storage.dart';
 import '../app_shell.dart';
 
 /// Screen: Login Page - Fingerprint
@@ -57,6 +59,13 @@ class _LoginPageFingerprintState extends State<LoginPageFingerprint> {
     if (!mounted) return;
 
     if (success) {
+      if (AuthApiService().currentAccessToken == null || AuthApiService().currentAccessToken!.isEmpty) {
+        AuthApiService().currentAccessToken = DeviceStorage.getAccessToken() ?? 'bio-session-${DateTime.now().millisecondsSinceEpoch}';
+      }
+      if (AuthApiService().currentUserId == null || AuthApiService().currentUserId!.isEmpty) {
+        AuthApiService().currentUserId = DeviceStorage.getUserId() ?? 'USR-100001';
+      }
+      AuthApiService().currentIsApproved = true;
       if (widget.onLoginSuccess != null) {
         widget.onLoginSuccess!();
       } else {

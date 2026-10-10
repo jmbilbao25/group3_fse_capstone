@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Scene 5: end card</title>
+  </head>
+  <body>
+    <template id="s5-template">
+      <style>
+        #root { position: absolute; inset: 0; overflow: hidden; }
+        .s5-cam { position: absolute; inset: 0; }
+        .s5-lockup { position: absolute; left: 0; right: 0; top: 210px; display: flex; justify-content: center; align-items: center; gap: 34px; }
+        .s5-badge-rig { position: relative; width: 140px; height: 140px; perspective: 700px; }
+        .s5-badge { position: absolute; inset: 0; transform-style: preserve-3d; }
+        .s5-depth { position: absolute; inset: 0; border-radius: 39px; background: linear-gradient(135deg, #1c2a31, #0a1014); transform: translateZ(calc(var(--z) * -2px)); }
+        .s5-front { position: absolute; inset: 0; border-radius: 39px; overflow: hidden; box-shadow: 0 30px 90px rgba(167, 232, 209, .25), 0 0 0 1px rgba(255, 255, 255, .1); }
+        .s5-front svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+        .s5-glint { position: absolute; top: -30%; left: 0; width: 55%; height: 160%; background: linear-gradient(100deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, .34), rgba(255, 255, 255, 0)); }
+        .s5-word { display: flex; font-size: 142px; font-weight: 600; letter-spacing: -.045em; line-height: 1; padding: 0 .04em .08em 0; perspective: 700px; }
+        .s5-word span { display: inline-block; transform-origin: 50% 85%; }
+        .s5-tag { position: absolute; left: 0; right: 0; top: 414px; display: flex; justify-content: center; gap: .26em; font-size: 60px; font-weight: 500; letter-spacing: -.03em; white-space: nowrap; }
+        .s5-devices { position: absolute; left: 0; right: 0; top: 590px; display: flex; justify-content: center; align-items: flex-end; gap: 60px; perspective: 1600px; }
+        .s5-dev { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+        .s5-lab { font-size: 17px; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; color: rgba(255, 255, 255, .78); }
+        .s5-mini { position: relative; overflow: hidden; border: 1px solid rgba(255, 255, 255, .2); box-shadow: 0 30px 70px rgba(0, 0, 0, .5), 0 0 60px rgba(167, 232, 209, .1); }
+        .s5-web, .s5-con { width: 400px; height: 250px; border-radius: 14px; }
+        .s5-web { background: radial-gradient(110% 90% at 50% 120%, #173039, #0c1216 60%); }
+        .s5-con { background: #f4f5f6; }
+        .s5-phone { width: 140px; height: 286px; border-radius: 30px; border: 6px solid #05080a; outline: 1px solid rgba(255, 255, 255, .2); background: #f7f7f7; }
+        .s5-mini i { position: absolute; display: block; }
+        .s5-mini .s5-sheen { position: absolute; top: -40%; left: 0; width: 45%; height: 180%; background: linear-gradient(100deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, .18), rgba(255, 255, 255, 0)); }
+      </style>
+
+      <div id="root" data-composition-id="s5" data-width="1920" data-height="1080">
+        <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+          <defs>
+            <linearGradient id="s5-arch-g" x1="18" y1="15" x2="46" y2="48" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#97CFF3" /><stop offset="1" stop-color="#A7E8D1" /></linearGradient>
+            <radialGradient id="s5-glow-g" cx="32" cy="67" r="58" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#A7E8D1" stop-opacity=".34" /><stop offset="1" stop-color="#A7E8D1" stop-opacity="0" /></radialGradient>
+          </defs>
+        </svg>
+
+        <div id="s5-cam" class="s5-cam">
+          <div class="s5-lockup">
+            <div class="s5-badge-rig">
+              <div id="s5-badge" class="s5-badge">
+                <div class="s5-depth" style="--z: 6"></div><div class="s5-depth" style="--z: 5"></div><div class="s5-depth" style="--z: 4"></div><div class="s5-depth" style="--z: 3"></div><div class="s5-depth" style="--z: 2"></div><div class="s5-depth" style="--z: 1"></div>
+                <div class="s5-front">
+                  <svg viewBox="0 0 64 64" aria-label="Aura Bank">
+                    <rect width="64" height="64" fill="#10171C" />
+                    <rect width="64" height="64" fill="url(#s5-glow-g)" />
+                    <path d="M18 48C18 29 24.5 15 32 15C39.5 15 46 29 46 48" fill="none" stroke="url(#s5-arch-g)" stroke-width="6.4" stroke-linecap="round" />
+                    <path d="M22.5 37C26.5 33 29.5 33 32 35.5C34.5 38 37.5 38 41.5 34" fill="none" stroke="#fff" stroke-opacity=".94" stroke-width="3.6" stroke-linecap="round" />
+                  </svg>
+                  <div id="s5-glint" class="s5-glint" data-layout-allow-overflow></div>
+                </div>
+              </div>
+            </div>
+            <div id="s5-word" class="s5-word"><span>A</span><span>u</span><span>r</span><span>a</span></div>
+          </div>
+          <div class="s5-tag">
+            <span class="ln"><span id="s5-t1" class="w">Banking,</span></span>
+            <span class="ln"><span id="s5-t2" class="w grad">in a new light.</span></span>
+          </div>
+          <div class="s5-devices">
+            <div id="s5-d1" class="s5-dev">
+              <div class="s5-mini s5-web">
+                <i style="left:0;top:0;width:400px;height:18px;background:#151d23"></i>
+                <i style="left:40px;top:10px;width:320px;height:170px;border-radius:50%;background:radial-gradient(closest-side,rgba(151,207,243,.45),rgba(151,207,243,0))"></i>
+                <i style="left:170px;top:90px;width:260px;height:160px;border-radius:50%;background:radial-gradient(closest-side,rgba(167,232,209,.45),rgba(167,232,209,0))"></i>
+                <i style="left:22px;top:66px;width:118px;height:15px;border-radius:4px;background:#fff"></i>
+                <i style="left:22px;top:88px;width:92px;height:15px;border-radius:4px;background:#fff"></i>
+                <i style="left:22px;top:116px;width:130px;height:6px;border-radius:3px;background:rgba(255,255,255,.5)"></i>
+                <i style="left:22px;top:128px;width:108px;height:6px;border-radius:3px;background:rgba(255,255,255,.5)"></i>
+                <i style="left:22px;top:148px;width:74px;height:20px;border-radius:10px;background:#a7e8d1"></i>
+                <i style="left:222px;top:46px;width:140px;height:88px;border-radius:12px;background:linear-gradient(135deg,#10171c,#173039);border:1px solid rgba(255,255,255,.25);transform:rotate(-7deg)"></i>
+                <i style="left:184px;top:118px;width:140px;height:88px;border-radius:12px;background:linear-gradient(135deg,#10171c,#1c3a3f);border:1px solid rgba(255,255,255,.25);transform:rotate(-7deg)"></i>
+                <i class="s5-sheen"></i>
+              </div>
+              <div class="s5-lab">Web</div>
+            </div>
+            <div id="s5-d2" class="s5-dev">
+              <div class="s5-mini s5-phone">
+                <i style="left:8px;top:32px;width:112px;height:70px;border-radius:12px;background:linear-gradient(135deg,#10171c,#173039)"></i>
+                <i style="left:18px;top:70px;width:64px;height:11px;border-radius:3px;background:#fff"></i>
+                <i style="left:18px;top:86px;width:40px;height:7px;border-radius:3px;background:#a7e8d1"></i>
+                <i style="left:12px;top:114px;width:18px;height:18px;border-radius:50%;background:#fff;border:1px solid #e2e5e8"></i>
+                <i style="left:41px;top:114px;width:18px;height:18px;border-radius:50%;background:#fff;border:1px solid #e2e5e8"></i>
+                <i style="left:70px;top:114px;width:18px;height:18px;border-radius:50%;background:#fff;border:1px solid #e2e5e8"></i>
+                <i style="left:99px;top:114px;width:18px;height:18px;border-radius:50%;background:#fff;border:1px solid #e2e5e8"></i>
+                <i style="left:8px;top:148px;width:112px;height:28px;border-radius:8px;background:#fff;border:1.5px solid #a7e8d1"></i>
+                <i style="left:8px;top:182px;width:112px;height:28px;border-radius:8px;background:#fff;border:1px solid #e2e5e8"></i>
+                <i style="left:8px;top:216px;width:112px;height:28px;border-radius:8px;background:#fff;border:1px solid #e2e5e8"></i>
+                <i class="s5-sheen"></i>
+              </div>
+              <div class="s5-lab">Mobile</div>
+            </div>
+            <div id="s5-d3" class="s5-dev">
+              <div class="s5-mini s5-con">
+                <i style="left:0;top:0;width:400px;height:16px;background:#e6e9eb"></i>
+                <i style="left:0;top:16px;width:74px;height:234px;background:#10171c"></i>
+                <i style="left:12px;top:30px;width:48px;height:8px;border-radius:3px;background:rgba(255,255,255,.7)"></i>
+                <i style="left:10px;top:52px;width:54px;height:12px;border-radius:4px;background:rgba(255,255,255,.14)"></i>
+                <i style="left:88px;top:28px;width:298px;height:46px;border-radius:10px;background:linear-gradient(135deg,#10171c,#173039)"></i>
+                <i style="left:100px;top:46px;width:150px;height:9px;border-radius:3px;background:#fff"></i>
+                <i style="left:88px;top:84px;width:68px;height:46px;border-radius:8px;background:#fff;border:1px solid #e2e5e8"></i>
+                <i style="left:164px;top:84px;width:68px;height:46px;border-radius:8px;background:#fff;border:1px solid #e2e5e8"></i>
+                <i style="left:240px;top:84px;width:68px;height:46px;border-radius:8px;background:#fff;border:1px solid #e2e5e8"></i>
+                <i style="left:316px;top:84px;width:70px;height:46px;border-radius:8px;background:#fff;border:1px solid #e2e5e8"></i>
+                <i style="left:88px;top:140px;width:298px;height:98px;border-radius:10px;background:#fff;border:1px solid #e2e5e8"></i>
+                <i style="left:100px;top:162px;width:150px;height:6px;border-radius:3px;background:#d4d9dd"></i>
+                <i style="left:100px;top:186px;width:130px;height:6px;border-radius:3px;background:#d4d9dd"></i>
+                <i style="left:100px;top:210px;width:140px;height:6px;border-radius:3px;background:#d4d9dd"></i>
+                <i style="left:322px;top:158px;width:52px;height:13px;border-radius:7px;background:#e4f5ee"></i>
+                <i style="left:322px;top:182px;width:52px;height:13px;border-radius:7px;background:#fdf0e1"></i>
+                <i style="left:322px;top:206px;width:52px;height:13px;border-radius:7px;background:#fdf0e1"></i>
+                <i class="s5-sheen"></i>
+              </div>
+              <div class="s5-lab">Console</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        (function () {
+          const K = window.AuraKit;
+          const S = 11.9;
+          const g = K.at(S);
+          const tl = gsap.timeline({ paused: true });
+          const OUT = "expo.out";
+
+          function build() {
+            /* ---------- out of the flash: the world settles back ---------- */
+            tl.fromTo("#s5-cam", { opacity: 0, scale: 1.16, filter: "blur(14px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 1.0, ease: OUT }, g(11.98));
+            tl.set("#s5-cam", { filter: "none" }, g(13.0));
+            tl.to("#s5-cam", { scale: 1.04, duration: 2.0, ease: "sine.inOut" }, g(13.0));
+
+            /* ---------- the badge turns into place: a real tile with depth ---------- */
+            tl.fromTo("#s5-badge", { rotationY: 64, rotationX: -14, scale: 0.6 }, { rotationY: 0, rotationX: 0, scale: 1, duration: 1.1, ease: OUT }, g(12.0));
+            tl.to("#s5-badge", { rotationY: -10, rotationX: 4, duration: 1.9, ease: "sine.inOut" }, g(13.1));
+            tl.fromTo("#s5-glint", { xPercent: -190 }, { xPercent: 290, duration: 0.8, ease: "power2.inOut" }, g(12.45));
+
+            /* ---------- "Aura." (12.23) ---------- */
+            tl.fromTo("#s5-word", { x: -60, clipPath: "inset(-20% 100% -20% 0%)" }, { x: 0, clipPath: "inset(-20% -6% -20% 0%)", duration: 0.85, ease: "power3.out" }, g(12.1));
+            gsap.utils.toArray("#s5-word span").forEach((el, i) => {
+              tl.fromTo(el, { opacity: 0, yPercent: 38, rotationX: -64, filter: "blur(7px)" }, { opacity: 1, yPercent: 0, rotationX: 0, filter: "blur(0px)", duration: 0.7, ease: OUT }, g(12.16 + i * 0.07));
+            });
+            tl.set("#s5-word span", { filter: "none" }, g(13.0));
+
+            /* ---------- "Banking," (12.95) "in a new light." (13.58), then the light passes through it ---------- */
+            tl.fromTo("#s5-t1", { yPercent: 112, rotationX: -60 }, { yPercent: 0, rotationX: 0, duration: 0.85, ease: OUT }, g(12.92));
+            tl.fromTo("#s5-t2", { yPercent: 112 }, { yPercent: 0, duration: 0.9, ease: OUT }, g(13.52));
+            tl.fromTo("#s5-t2", { backgroundPosition: "100% 50%" }, { backgroundPosition: "0% 50%", duration: 1.2, ease: "power2.inOut", immediateRender: false }, g(13.85));
+
+            /* ---------- one bank, three surfaces ---------- */
+            [["#s5-d1", 20], ["#s5-d2", 0], ["#s5-d3", -20]].forEach(([s, ry], i) => {
+              tl.fromTo(s, { opacity: 0, y: 110, rotationY: ry, rotationX: 18 }, { opacity: 1, y: 0, rotationY: ry * 0.4, rotationX: 0, duration: 1.1, ease: OUT }, g(13.0 + i * 0.1));
+              tl.to(s, { y: -6 + i * 3, duration: 1.4, ease: "sine.inOut" }, g(14.1 + i * 0.1));
+            });
+            gsap.utils.toArray(".s5-sheen").forEach((el, i) => tl.fromTo(el, { xPercent: -150 }, { xPercent: 330, duration: 0.9, ease: "power2.inOut" }, g(13.5 + i * 0.12)));
+
+            window.__timelines["s5"] = tl;
+          }
+
+          K.ready.then(build);
+        })();
+      </script>
+    </template>
+  </body>
+</html>

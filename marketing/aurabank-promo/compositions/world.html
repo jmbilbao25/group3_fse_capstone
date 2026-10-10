@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>World: aurora sky and star field</title>
+  </head>
+  <body>
+    <template id="world-template">
+      <style>
+        #root { position: absolute; inset: 0; overflow: hidden; background: #05080b; }
+        #world-sky, #world-stars { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
+        #world-shade {
+          position: absolute; inset: 0;
+          background: radial-gradient(ellipse 78% 72% at 50% 44%, rgba(3, 5, 7, 0) 52%, rgba(3, 5, 7, 0.62) 100%);
+        }
+      </style>
+
+      <div id="root" data-composition-id="world" data-width="1920" data-height="1080">
+        <canvas id="world-sky" width="1280" height="720"></canvas>
+        <canvas id="world-stars" width="1920" height="1080"></canvas>
+        <div id="world-shade"></div>
+      </div>
+
+      <script>
+        (function () {
+          const K = window.AuraKit;
+          const ASPECT = 1920 / 1080;
+
+          /* The camera that every scene implies: a slow push on the logo, a dive
+             through the mark, a whip to the web, a tilt down to the back office,
+             a rush into the finale. Scenes move their own content; the sky and
+             stars move with them so the film reads as one continuous space. */
+          const CAM_X = [[0, 0], [5.28, -0.02, "sine.inOut"], [5.62, 0.34, "power3.inOut"], [8.12, 0.38, "sine.inOut"], [11.5, 0.42, "sine.inOut"], [12.0, 0.1, "power2.in"], [15, 0, "sine.out"]];
+          const CAM_Y = [[0, 0], [8.12, 0], [8.56, -0.42, "power2.inOut"], [11.5, -0.4, "sine.inOut"], [12.0, -0.04, "power3.in"], [15, 0, "sine.out"]];
+          const CAM_Z = [[0, 1], [2.05, 1.06, "sine.inOut"], [2.48, 1.9, "power4.in"], [3.4, 1, "expo.out"], [11.45, 1.02, "sine.inOut"], [12.0, 1.7, "power3.in"], [13.4, 1, "expo.out"], [15, 1.04, "sine.inOut"]];
+          const GAIN = [[0, 0], [0.25, 0.08], [1.5, 0.95, "power2.inOut"], [2.4, 1.25, "power2.in"], [2.75, 0.9, "power2.out"], [5.3, 0.9], [5.5, 1.1, "power2.inOut"], [6.2, 0.85, "power2.out"], [8.2, 0.85], [8.6, 0.72, "power2.inOut"], [11.5, 0.78], [12.0, 1.6, "power3.in"], [12.7, 1.15, "power2.out"], [15, 1.1]];
+          const SURGE = [[0, 0], [2.3, 0], [2.47, 0.55, "power2.in"], [2.8, 0, "power2.out"], [11.9, 0], [12.0, 1, "power2.in"], [12.9, 0, "power2.out"]];
+          const cam = (t) => ({ x: K.track(CAM_X, t), y: K.track(CAM_Y, t), z: K.track(CAM_Z, t) });
+
+          /* ---------- aurora: one fragment pass over a seeded noise texture ---------- */
+          const VERT = "attribute vec2 a; void main(){ gl_Position = vec4(a, 0.0, 1.0); }";
+          const FRAG = `
+            precision highp float;
+            uniform sampler2D uNoise;
+            uniform vec2 uRes;
+            uniform float uTime;
+            uniform vec3 uCam;
+            uniform float uGain;
+            uniform float uSurge;
+
+            // Value noise with a smoothstep remap: one bilinear fetch per octave.
+            float noise(vec2 x) {
+              vec2 i = floor(x);
+              vec2 f = fract(x);
+              f = f * f * (3.0 - 2.0 * f);
+              return texture2D(uNoise, (i + f + 0.5) / 256.0).r;
+            }
+            float fbm(vec2 p) {
+              float v = 0.5 * noise(p);
+              v += 0.25 * noise(p * 2.03 + vec2(13.1, 7.7));
+              v += 0.125 * noise(p * 4.07 + vec2(3.3, 21.9));
+              return v / 0.875;
+            }
+
+            // One curtain: a folded ribbon with a crisp lower edge and rays that
+            // fade upward, mint at the hem, sky above, periwinkle at the crown.
+            vec3 curtain(vec2 p, float t, float k) {
+              float x = p.x * (0.78 + 0.2 * k) + k * 3.1 + t * (0.014 + 0.008 * k);
+              // Two scales of folding, so hems cross instead of stacking into a horizon.
+              float fold = fbm(vec2(x * 0.9, k * 4.0 + t * 0.04));
+              float fold2 = noise(vec2(x * 3.2 + 5.0 * k, t * 0.12 + k));
+              float y0 = 0.15 * k + 0.36 * (fold - 0.5) + 0.08 * (fold2 - 0.5) + 0.03 * sin(x * 2.6 + t * 0.35 + k * 1.7);
+              float d = p.y - y0;
+              float edge = smoothstep(-0.01, 0.025, d);
+              // Rays come in clusters and each reaches its own height.
+              float rx = x * 46.0 + fold * 14.0;
+              float ray = noise(vec2(rx, t * 0.5 + k * 9.0));
+              float cluster = smoothstep(0.22, 0.8, noise(vec2(x * 5.0 + k * 2.0, t * 0.08)));
+              float reach = 2.6 + 4.4 * (1.0 - noise(vec2(rx * 0.5 + 3.0, k + 0.5)));
+              float tail = exp(-max(d, 0.0) * reach * (1.0 + 0.3 * k));
+              float rays = (0.25 + 0.75 * ray * ray) * (0.4 + 0.6 * cluster);
+              float under = exp(-max(-d, 0.0) * 26.0);
+              float drift = 0.6 + 0.4 * noise(vec2(x * 7.0 - t * 0.4, k * 3.0 + t * 0.15));
+              float a = edge * tail * rays * drift + 0.3 * under * drift * (0.5 + 0.5 * cluster);
+              float h = clamp(d / 0.5, 0.0, 1.0);
+              vec3 c = mix(vec3(0.42, 0.95, 0.76), vec3(0.40, 0.75, 1.0), smoothstep(0.02, 0.4, h));
+              c = mix(c, vec3(0.66, 0.60, 1.0), smoothstep(0.4, 1.0, h));
+              return c * a;
+            }
+
+            void main() {
+              vec2 uv = gl_FragCoord.xy / uRes;
+              float aspect = uRes.x / uRes.y;
+              vec2 p = (uv - 0.5) / uCam.z;
+              p.x *= aspect;
+              p += vec2(uCam.x * aspect, uCam.y);
+              float t = uTime;
+
+              vec3 col = mix(vec3(0.020, 0.040, 0.050), vec3(0.008, 0.014, 0.020), smoothstep(-0.6, 0.5, p.y));
+
+              // The horizon is an arc, the same gesture as the mark.
+              float hy = -0.6 - 0.16 * p.x * p.x;
+              float above = p.y - hy;
+              col += vec3(0.05, 0.22, 0.20) * exp(-max(above, 0.0) * 5.5) * 0.55;
+              col += vec3(0.30, 0.75, 0.68) * exp(-abs(above) * 90.0) * 0.6;
+              col = mix(col, vec3(0.006, 0.010, 0.012), smoothstep(0.0, -0.02, above));
+
+              vec3 au = curtain(p, t, 0.0) * 0.95 + curtain(p, t, 1.0) * 0.7 + curtain(p, t, 2.0) * 0.5;
+              au *= smoothstep(-0.02, 0.06, above);
+              col += au * uGain * 0.55;
+              col += au * au * 0.12 * uGain;
+              col *= 1.0 + uSurge * 1.2;
+              col = 1.0 - exp(-col * 1.15);
+              col += (noise(gl_FragCoord.xy * 0.71 + t * 37.0) - 0.5) * (1.5 / 255.0);
+              gl_FragColor = vec4(col, 1.0);
+            }`;
+
+          const skyCanvas = document.getElementById("world-sky");
+          const gl = skyCanvas.getContext("webgl", { alpha: false, antialias: false, depth: false, stencil: false, preserveDrawingBuffer: true });
+          let drawSky = () => {};
+          if (gl) {
+            const sh = (type, src) => {
+              const s = gl.createShader(type);
+              gl.shaderSource(s, src);
+              gl.compileShader(s);
+              if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+              return s;
+            };
+            const prog = gl.createProgram();
+            gl.attachShader(prog, sh(gl.VERTEX_SHADER, VERT));
+            gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FRAG));
+            gl.linkProgram(prog);
+            gl.useProgram(prog);
+            gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+            const loc = gl.getAttribLocation(prog, "a");
+            gl.enableVertexAttribArray(loc);
+            gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+
+            const r = K.rng(1337);
+            const texels = new Uint8Array(256 * 256 * 4);
+            for (let i = 0; i < texels.length; i++) texels[i] = Math.floor(r() * 256);
+            gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 256, 256, 0, gl.RGBA, gl.UNSIGNED_BYTE, texels);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+
+            const u = (n) => gl.getUniformLocation(prog, n);
+            const U = { noise: u("uNoise"), res: u("uRes"), time: u("uTime"), cam: u("uCam"), gain: u("uGain"), surge: u("uSurge") };
+            gl.uniform1i(U.noise, 0);
+            gl.uniform2f(U.res, skyCanvas.width, skyCanvas.height);
+            gl.viewport(0, 0, skyCanvas.width, skyCanvas.height);
+            drawSky = (t) => {
+              const c = cam(t);
+              gl.uniform1f(U.time, t);
+              gl.uniform3f(U.cam, c.x, c.y, c.z);
+              gl.uniform1f(U.gain, K.track(GAIN, t));
+              gl.uniform1f(U.surge, K.track(SURGE, t));
+              gl.drawArrays(gl.TRIANGLES, 0, 3);
+            };
+          } else {
+            skyCanvas.style.background = "radial-gradient(120% 90% at 50% 115%, #13262c 0%, #0a0f13 55%, #070a0d 100%)";
+          }
+
+          /* ---------- stars: seeded, depth-layered, streaking with camera speed ---------- */
+          const starCanvas = document.getElementById("world-stars");
+          const ctx = starCanvas.getContext("2d");
+          const sr = K.rng(20261010);
+          const TINTS = ["255,255,255", "214,232,255", "222,248,238", "236,236,255"];
+          const STARS = [];
+          for (let i = 0; i < 620; i++) {
+            const d = sr();
+            STARS.push({
+              x: (sr() - 0.5) * 3.9,
+              y: (sr() - 0.5) * 1.9 + 0.1,
+              d,
+              size: 0.5 + Math.pow(sr(), 4) * 1.7 + d * 0.45,
+              a: 0.22 + 0.78 * Math.pow(sr(), 1.6),
+              w: 0.9 + sr() * 3.4,
+              ph: sr() * Math.PI * 2,
+              tint: TINTS[Math.floor(sr() * TINTS.length)],
+            });
+          }
+          // A handful of bright stars carry soft halos and diffraction spikes.
+          STARS.slice(0, 11).forEach((s) => { s.size = 1.6 + s.d * 0.9; s.a = 0.95; s.hero = true; });
+
+          const project = (s, c) => {
+            const par = 0.7 + 0.6 * s.d;
+            const z = 1 + (c.z - 1) * (0.55 + 0.9 * s.d);
+            return [960 + (s.x - c.x * ASPECT * par) * z * 1080, 540 - (s.y - c.y * par) * z * 1080];
+          };
+
+          function drawStars(t) {
+            ctx.clearRect(0, 0, 1920, 1080);
+            const c = cam(t);
+            const prev = cam(Math.max(0, t - 1 / 60));
+            const fade = K.smoothstep(0.02, 1.1, t);
+            ctx.lineCap = "round";
+            for (const s of STARS) {
+              const horizon = -0.6 - 0.16 * s.x * s.x;
+              const ext = K.smoothstep(horizon + 0.02, horizon + 0.3, s.y);
+              if (ext <= 0) continue;
+              const [x, y] = project(s, c);
+              if (x < -60 || x > 1980 || y < -60 || y > 1140) continue;
+              const [px, py] = project(s, prev);
+              const tw = 0.6 + 0.4 * Math.sin(t * s.w + s.ph);
+              const a = s.a * tw * fade * ext;
+              const dx = x - px;
+              const dy = y - py;
+              const len = Math.hypot(dx, dy);
+              if (len > 1.6) {
+                const g = ctx.createLinearGradient(px, py, x, y);
+                g.addColorStop(0, `rgba(${s.tint},0)`);
+                g.addColorStop(1, `rgba(${s.tint},${Math.min(1, a * 1.15)})`);
+                ctx.strokeStyle = g;
+                ctx.lineWidth = s.size * 1.1;
+                ctx.beginPath();
+                ctx.moveTo(px - dx * 0.6, py - dy * 0.6);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                continue;
+              }
+              ctx.fillStyle = `rgba(${s.tint},${a})`;
+              if (s.size < 1.15) {
+                ctx.fillRect(x - s.size / 2, y - s.size / 2, s.size, s.size);
+              } else {
+                ctx.beginPath();
+                ctx.arc(x, y, s.size / 2, 0, Math.PI * 2);
+                ctx.fill();
+              }
+              if (s.hero) {
+                const halo = ctx.createRadialGradient(x, y, 0, x, y, s.size * 7);
+                halo.addColorStop(0, `rgba(${s.tint},${a * 0.32})`);
+                halo.addColorStop(1, `rgba(${s.tint},0)`);
+                ctx.fillStyle = halo;
+                ctx.fillRect(x - s.size * 7, y - s.size * 7, s.size * 14, s.size * 14);
+                ctx.strokeStyle = `rgba(${s.tint},${a * 0.35})`;
+                ctx.lineWidth = 0.7;
+                const L = s.size * (5 + 2 * tw);
+                ctx.beginPath();
+                ctx.moveTo(x - L, y);
+                ctx.lineTo(x + L, y);
+                ctx.moveTo(x, y - L);
+                ctx.lineTo(x, y + L);
+                ctx.stroke();
+              }
+            }
+          }
+
+          const tl = gsap.timeline({ paused: true });
+          K.clock(tl, 15, (t) => {
+            drawSky(t);
+            drawStars(t);
+          });
+          window.__timelines["world"] = tl;
+        })();
+      </script>
+    </template>
+  </body>
+</html>

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Finish: leaks, flash, grain, fade</title>
+  </head>
+  <body>
+    <template id="finish-template">
+      <style>
+        #root { position: absolute; inset: 0; pointer-events: none; }
+        .fin-layer { position: absolute; inset: 0; }
+        .fin-leak { position: absolute; border-radius: 50%; mix-blend-mode: screen; }
+        #fin-leak1 { left: 360px; top: 40px; width: 1200px; height: 1000px; background: radial-gradient(closest-side, rgba(214, 245, 233, .85), rgba(167, 232, 209, .35) 45%, rgba(167, 232, 209, 0)); }
+        #fin-leak2 { left: -700px; top: -200px; width: 900px; height: 1500px; background: radial-gradient(closest-side, rgba(151, 207, 243, .55), rgba(151, 207, 243, 0)); }
+        #fin-leak3 { left: 260px; top: 700px; width: 1400px; height: 700px; background: radial-gradient(closest-side, rgba(190, 198, 247, .45), rgba(190, 198, 247, 0)); }
+        #fin-flash { background: radial-gradient(60% 60% at 50% 30%, rgba(236, 252, 245, .95), rgba(167, 232, 209, .4) 45%, rgba(167, 232, 209, 0) 78%); mix-blend-mode: screen; }
+        #fin-grain { mix-blend-mode: overlay; opacity: .09; background-size: 256px 256px; }
+        #fin-fade { background: #040608; }
+      </style>
+
+      <div id="root" data-composition-id="finish" data-width="1920" data-height="1080">
+        <div id="fin-leak1" class="fin-leak" style="opacity: 0"></div>
+        <div id="fin-leak2" class="fin-leak" style="opacity: 0"></div>
+        <div id="fin-leak3" class="fin-leak" style="opacity: 0"></div>
+        <div id="fin-flash" class="fin-layer" style="opacity: 0"></div>
+        <div id="fin-grain" class="fin-layer"></div>
+        <div id="fin-fade" class="fin-layer" style="opacity: 0"></div>
+      </div>
+
+      <script>
+        (function () {
+          const K = window.AuraKit;
+          const tl = gsap.timeline({ paused: true });
+
+          // Seeded grain tile, generated once, offset per frame.
+          const tile = document.createElement("canvas");
+          tile.width = tile.height = 256;
+          const tc = tile.getContext("2d");
+          const img = tc.createImageData(256, 256);
+          const r = K.rng(9001);
+          for (let i = 0; i < img.data.length; i += 4) {
+            const v = Math.floor(96 + r() * 64);
+            img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
+            img.data[i + 3] = 255;
+          }
+          tc.putImageData(img, 0, 0);
+          const grain = document.getElementById("fin-grain");
+          grain.style.backgroundImage = `url(${tile.toDataURL()})`;
+          K.clock(tl, 15, (t) => {
+            const f = Math.round(t * K.FPS);
+            grain.style.backgroundPosition = `${Math.floor(K.hash(f, 1) * 256)}px ${Math.floor(K.hash(f, 2) * 256)}px`;
+          });
+
+          // Light leaks ride the three hand-offs.
+          tl.fromTo("#fin-leak1", { opacity: 0, scale: 0.6 }, { opacity: 0.7, scale: 1.1, duration: 0.14, ease: "power2.in" }, 2.4);
+          tl.to("#fin-leak1", { opacity: 0, scale: 1.4, duration: 0.5, ease: "power2.out" }, 2.54);
+          tl.fromTo("#fin-leak2", { opacity: 0, x: 0 }, { opacity: 0.8, x: 1500, duration: 0.42, ease: "power2.inOut" }, 5.26);
+          tl.to("#fin-leak2", { opacity: 0, x: 2500, duration: 0.3, ease: "power1.in" }, 5.68);
+          tl.fromTo("#fin-leak3", { opacity: 0, y: 0 }, { opacity: 0.7, y: -760, duration: 0.42, ease: "power2.inOut" }, 8.12);
+          tl.to("#fin-leak3", { opacity: 0, y: -1200, duration: 0.3, ease: "power1.in" }, 8.54);
+
+          // The finale downbeat.
+          tl.fromTo("#fin-flash", { opacity: 0 }, { opacity: 0.92, duration: 0.07, ease: "power2.in" }, 11.93);
+          tl.to("#fin-flash", { opacity: 0, duration: 0.85, ease: "power2.out" }, 12.0);
+
+          tl.fromTo("#fin-fade", { opacity: 0 }, { opacity: 1, duration: 0.45, ease: "power1.in" }, 14.55);
+          window.__timelines["finish"] = tl;
+        })();
+      </script>
+    </template>
+  </body>
+</html>

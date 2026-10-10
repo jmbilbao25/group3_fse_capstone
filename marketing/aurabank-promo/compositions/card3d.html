@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Hero card: real 3D</title>
+  </head>
+  <body>
+    <template id="card3d-template">
+      <style>
+        #root { position: absolute; inset: 0; }
+        #card3d-canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
+      </style>
+
+      <div id="root" data-composition-id="card3d" data-width="1920" data-height="1080">
+        <canvas id="card3d-canvas" width="1920" height="1080" data-layout-allow-occlusion></canvas>
+      </div>
+
+      <script>
+        (function () {
+          const K = window.AuraKit;
+          const H = K.HANDOFF;
+          const START = 4.6; // host data-start
+          const DUR = 1.2;
+          const W = 1920;
+          const HGT = 1080;
+          const FOV = 30;
+          const DEG = Math.PI / 180;
+          const HALF_TAN = Math.tan((FOV / 2) * DEG);
+          const tl = gsap.timeline({ paused: true });
+          const canvas = document.getElementById("card3d-canvas");
+
+          /* Where the DOM card sits on screen at the hand-off: the phone's CSS
+             transform (rotateY then rotateX, perspective on the rig) applied to the
+             card centre, so the 3D card starts exactly where the flat one was. */
+          function handoffPoint() {
+            const p = H.phone;
+            const ax = p.rotX * DEG;
+            const ay = p.rotY * DEG;
+            let x = H.card.dx;
+            let y = H.card.dy * Math.cos(ax) - 1 * Math.sin(ax);
+            let z = H.card.dy * Math.sin(ax) + 1 * Math.cos(ax);
+            const x2 = x * Math.cos(ay) + z * Math.sin(ay);
+            const z2 = -x * Math.sin(ay) + z * Math.cos(ay);
+            const s = p.perspective / (p.perspective - z2);
+            return { sx: p.cx + x2 * s, sy: p.cy + y * s };
+          }
+
+          // The flight, in screen terms: centre (px), apparent width (px), CSS-style degrees.
+          // Lift and spin out of the phone, hover in the light, then carry the whip to the web.
+          const T0 = H.t;
+          const LIFT = 5.22;
+          const HOVER = 5.38;
+          const END = 5.62;
+          const A = handoffPoint();
+          const POSE = {
+            sx: [[T0, A.sx], [LIFT, 862, "expo.out"], [HOVER, 846, "sine.inOut"], [END, -1300, "power3.in"]],
+            sy: [[T0, A.sy], [LIFT, 556, "expo.out"], [HOVER, 548, "sine.inOut"], [END, 660, "power3.in"]],
+            w: [[T0, H.card.w], [LIFT, 1010, "expo.out"], [HOVER, 1040, "sine.inOut"], [END, 1600, "power3.in"]],
+            rx: [[T0, H.phone.rotX], [LIFT, -15, "power2.out"], [HOVER, -10, "sine.inOut"], [END, -20, "power2.in"]],
+            ry: [[T0, H.phone.rotY], [T0 + 0.02, H.phone.rotY], [LIFT, 336, "power3.out"], [HOVER, 344, "sine.inOut"], [END, 296, "power3.in"]],
+            rz: [[T0, 0], [LIFT, -6, "power2.out"], [HOVER, -4, "sine.inOut"], [END, -15, "power2.in"]],
+          };
+          const pose = (g) => {
+            const o = {};
+            for (const k in POSE) o[k] = K.track(POSE[k], g);
+            return o;
+          };
+
+          Promise.all([import("./assets/vendor/three.module.min.js"), K.ready]).then(([THREE]) => {
+            const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: true, premultipliedAlpha: true, preserveDrawingBuffer: true });
+            renderer.setPixelRatio(1);
+            renderer.setSize(W, HGT, false);
+            renderer.setClearColor(0x000000, 0);
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.08;
+            renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(FOV, W / HGT, 1, 60);
+            camera.position.set(0, 0, 10);
+
+            /* ---------- studio: an aurora-toned dome with HDR softboxes ---------- */
+            const env = new THREE.Scene();
+            env.add(new THREE.Mesh(new THREE.SphereGeometry(20, 48, 24), new THREE.ShaderMaterial({
+              side: THREE.BackSide,
+              vertexShader: "varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+              fragmentShader: "varying vec3 vP; void main(){ float y = vP.y; vec3 top = vec3(0.04, 0.07, 0.10); vec3 hor = vec3(0.07, 0.22, 0.21); vec3 bot = vec3(0.008, 0.012, 0.016); vec3 c = y > 0.0 ? mix(hor, top, smoothstep(0.0, 0.75, y)) : mix(hor, bot, smoothstep(0.0, -0.35, y)); gl_FragColor = vec4(c, 1.0); }",
+            })));
+            const softbox = (w, h, hex, power, pos) => {
+              const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(hex).multiplyScalar(power), side: THREE.DoubleSide }));
+              m.position.set(pos[0], pos[1], pos[2]);
+              m.lookAt(0, 0, 0);
+              env.add(m);
+            };
+            softbox(16, 2.6, 0xffffff, 7, [0, 9, 5]);
+            softbox(2.4, 11, 0x97cff3, 5, [-10, 1.5, 4]);
+            softbox(2.4, 11, 0xa7e8d1, 5, [10, 0.5, 3]);
+            softbox(9, 9, 0xbec6f7, 1.4, [0, -1, -13]);
+            softbox(7, 1.6, 0xffffff, 3.2, [3.5, -7, 6]);
+            const pmrem = new THREE.PMREMGenerator(renderer);
+            scene.environment = pmrem.fromScene(env, 0.03).texture;
+            scene.add(new THREE.HemisphereLight(0xcfeaff, 0x0b1418, 0.55));
+            const key = new THREE.DirectionalLight(0xffffff, 1.3);
+            key.position.set(-3, 5, 6);
+            scene.add(key);
+            // A light that sweeps the face while the card hovers.
+            const sweep = new THREE.PointLight(0xe9fff7, 0, 9, 1.6);
+            scene.add(sweep);
+
+            /* ---------- the card: ISO ID-1 stock, beveled, two printed faces ---------- */
+            const CW = 3.4;
+            const CH = CW / K.CARD_ASPECT;
+            const R = 0.055 * CW;
+            const T = 0.026;
+            const BEV = 0.007;
+            const shape = new THREE.Shape();
+            shape.moveTo(-CW / 2 + R, -CH / 2);
+            shape.lineTo(CW / 2 - R, -CH / 2);
+            shape.quadraticCurveTo(CW / 2, -CH / 2, CW / 2, -CH / 2 + R);
+            shape.lineTo(CW / 2, CH / 2 - R);
+            shape.quadraticCurveTo(CW / 2, CH / 2, CW / 2 - R, CH / 2);
+            shape.lineTo(-CW / 2 + R, CH / 2);
+            shape.quadraticCurveTo(-CW / 2, CH / 2, -CW / 2, CH / 2 - R);
+            shape.lineTo(-CW / 2, -CH / 2 + R);
+            shape.quadraticCurveTo(-CW / 2, -CH / 2, -CW / 2 + R, -CH / 2);
+
+            const paint = (draw, color) => {
+              const c = document.createElement("canvas");
+              c.width = 2048;
+              c.height = Math.round(2048 / K.CARD_ASPECT);
+              draw(c.getContext("2d"), c.width, c.height);
+              const tex = new THREE.CanvasTexture(c);
+              tex.colorSpace = color ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+              tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+              return tex;
+            };
+            const card = { last4: "2314", holder: "Elijah R. Montefalco", network: "visa", edge: false };
+            const faceMap = paint((ctx, w, h) => K.drawCardFace(ctx, w, h, { ...card, balance: K.peso(76302.5) }), true);
+            const backMap = paint((ctx, w, h) => K.drawCardBack(ctx, w, h, card), true);
+            // Roughness in G, metalness in B: printed stock is satin, the ribbon is foil.
+            const ormMap = paint((ctx, w, h) => {
+              ctx.fillStyle = "rgb(255,112,0)";
+              ctx.fillRect(0, 0, w, h);
+              K.ribbonPath(ctx, w, h);
+              ctx.lineWidth = w * 0.036;
+              ctx.lineCap = "round";
+              ctx.strokeStyle = "rgb(255,40,255)";
+              ctx.stroke();
+            }, false);
+            const foilMap = paint((ctx, w, h) => {
+              ctx.fillStyle = "#000";
+              ctx.fillRect(0, 0, w, h);
+              K.ribbonPath(ctx, w, h);
+              ctx.lineWidth = w * 0.036;
+              ctx.lineCap = "round";
+              ctx.strokeStyle = "#fff";
+              ctx.stroke();
+            }, false);
+
+            const print = (map) => new THREE.MeshPhysicalMaterial({
+              map,
+              roughnessMap: ormMap,
+              metalnessMap: ormMap,
+              roughness: 1,
+              metalness: 1,
+              clearcoat: 1,
+              clearcoatRoughness: 0.09,
+              iridescence: 1,
+              iridescenceMap: foilMap,
+              iridescenceIOR: 1.45,
+              iridescenceThicknessRange: [280, 760],
+              envMapIntensity: 1.15,
+              polygonOffset: true,
+              polygonOffsetFactor: -2,
+              polygonOffsetUnits: -2,
+            });
+            const faceGeo = new THREE.ShapeGeometry(shape, 24);
+            const uv = faceGeo.attributes.uv;
+            const pos = faceGeo.attributes.position;
+            for (let i = 0; i < uv.count; i++) uv.setXY(i, (pos.getX(i) + CW / 2) / CW, (pos.getY(i) + CH / 2) / CH);
+            const edgeMat = new THREE.MeshPhysicalMaterial({ color: 0x1d2a31, metalness: 0.85, roughness: 0.26, clearcoat: 0.7, clearcoatRoughness: 0.2 });
+            const body = new THREE.ExtrudeGeometry(shape, { depth: T, bevelEnabled: true, bevelThickness: BEV, bevelSize: BEV, bevelSegments: 4, curveSegments: 24 });
+            body.translate(0, 0, -T / 2);
+
+            const cardGroup = new THREE.Group();
+            cardGroup.rotation.order = "YXZ";
+            cardGroup.add(new THREE.Mesh(body, edgeMat));
+            const front = new THREE.Mesh(faceGeo, print(faceMap));
+            front.position.z = T / 2 + BEV;
+            cardGroup.add(front);
+            const back = new THREE.Mesh(faceGeo, print(backMap));
+            back.rotation.y = Math.PI;
+            back.position.z = -(T / 2 + BEV);
+            cardGroup.add(back);
+            scene.add(cardGroup);
+
+            const place = (p) => {
+              const D = (CW * HGT) / (2 * HALF_TAN * p.w);
+              const unit = (2 * D * HALF_TAN) / HGT;
+              cardGroup.position.set((p.sx - W / 2) * unit, -(p.sy - HGT / 2) * unit, camera.position.z - D);
+              cardGroup.rotation.set(-p.rx * DEG, p.ry * DEG, -p.rz * DEG);
+              cardGroup.updateMatrixWorld(true);
+            };
+
+            /* ---------- motion blur: average sub-frame renders in linear HDR ----------
+               Ping-pong between two targets (prev + sample * w) instead of additive
+               blending, which float targets do not support on every GPU. */
+            const rtSample = new THREE.WebGLRenderTarget(W, HGT, { type: THREE.HalfFloatType, samples: 4 });
+            const rtAcc = [0, 1].map(() => new THREE.WebGLRenderTarget(W, HGT, { type: THREE.HalfFloatType }));
+            const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2));
+            const quadScene = new THREE.Scene();
+            quadScene.add(quad);
+            const quadCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+            const VS = "varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }";
+            const accumMat = new THREE.ShaderMaterial({
+              uniforms: { prev: { value: null }, tex: { value: null }, weight: { value: 1 }, first: { value: 1 } },
+              vertexShader: VS,
+              fragmentShader: "uniform sampler2D prev; uniform sampler2D tex; uniform float weight; uniform float first; varying vec2 vUv; void main(){ vec4 p = first > 0.5 ? vec4(0.0) : texture2D(prev, vUv); gl_FragColor = p + texture2D(tex, vUv) * weight; }",
+              blending: THREE.NoBlending,
+              depthTest: false,
+              depthWrite: false,
+              toneMapped: false,
+            });
+            // Tone-map the average, not each sample, so a blurred highlight stays physical.
+            const outMat = new THREE.ShaderMaterial({
+              uniforms: { tex: { value: null } },
+              vertexShader: VS,
+              fragmentShader: `uniform sampler2D tex; varying vec2 vUv;
+                void main() {
+                  vec4 c = texture2D(tex, vUv);
+                  gl_FragColor = vec4(c.a > 0.0001 ? c.rgb / c.a : vec3(0.0), 1.0);
+                  #include <tonemapping_fragment>
+                  #include <colorspace_fragment>
+                  gl_FragColor = vec4(gl_FragColor.rgb * c.a, c.a);
+                }`,
+              blending: THREE.NoBlending,
+              depthTest: false,
+              depthWrite: false,
+            });
+
+            const corners = [[-CW / 2, -CH / 2], [CW / 2, -CH / 2], [CW / 2, CH / 2], [-CW / 2, CH / 2]].map(([x, y]) => new THREE.Vector3(x, y, 0));
+            const screenCorners = (g) => {
+              place(pose(g));
+              return corners.map((c) => c.clone().applyMatrix4(cardGroup.matrixWorld).project(camera));
+            };
+            // Samples scale with how far a corner travels while the shutter is open.
+            const SHUTTER = 1 / 90;
+            const samplesAt = (g) => {
+              const a = screenCorners(g - SHUTTER / 2);
+              const b = screenCorners(g + SHUTTER / 2);
+              let px = 0;
+              for (let i = 0; i < 4; i++) px = Math.max(px, Math.hypot((a[i].x - b[i].x) * W * 0.5, (a[i].y - b[i].y) * HGT * 0.5));
+              return Math.max(1, Math.min(28, Math.ceil(px / 4)));
+            };
+
+            const clear = () => {
+              renderer.setRenderTarget(null);
+              renderer.clear();
+            };
+            function render(g) {
+              canvas.style.visibility = g < T0 || g > END ? "hidden" : "visible";
+              if (g < T0 || g > END) return clear();
+              const n = samplesAt(g);
+              let read = 0;
+              for (let i = 0; i < n; i++) {
+                const gs = n === 1 ? g : g - SHUTTER / 2 + (SHUTTER * (i + 0.5)) / n;
+                place(pose(gs));
+                const sw = K.clamp((gs - 5.0) / 0.42);
+                sweep.position.set(-5 + 10 * K.ease("sine.inOut")(sw), 1.4, cardGroup.position.z + 3.2);
+                sweep.intensity = 30 * Math.sin(Math.PI * sw);
+                renderer.setRenderTarget(rtSample);
+                renderer.clear();
+                renderer.render(scene, camera);
+                const write = 1 - read;
+                Object.assign(accumMat.uniforms, { prev: { value: rtAcc[read].texture }, tex: { value: rtSample.texture }, weight: { value: 1 / n }, first: { value: i === 0 ? 1 : 0 } });
+                quad.material = accumMat;
+                renderer.setRenderTarget(rtAcc[write]);
+                renderer.render(quadScene, quadCam);
+                read = write;
+              }
+              outMat.uniforms.tex.value = rtAcc[read].texture;
+              quad.material = outMat;
+              renderer.setRenderTarget(null);
+              renderer.clear();
+              renderer.render(quadScene, quadCam);
+            }
+
+            K.clock(tl, DUR, (lt) => render(START + lt));
+            window.__timelines["card3d"] = tl;
+          });
+        })();
+      </script>
+    </template>
+  </body>
+</html>

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=1920, height=1080" />
     <title>Aura Bank, 15s promo</title>
     <script src="assets/vendor/gsap.min.js"></script>
+    <script src="assets/js/aura-kit.js"></script>
     <style>
       @font-face { font-family: "Onest"; src: url("assets/fonts/Onest-Regular.ttf") format("truetype"); font-weight: 400; }
       @font-face { font-family: "Onest"; src: url("assets/fonts/Onest-Medium.ttf") format("truetype"); font-weight: 500; }
@@ -12,657 +13,75 @@
       @font-face { font-family: "Onest"; src: url("assets/fonts/Onest-Bold.ttf") format("truetype"); font-weight: 700; }
 
       * { margin: 0; padding: 0; box-sizing: border-box; }
-      html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #070a0d; }
+      html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #05080b; }
       #root {
         position: relative; width: 100%; height: 100%; overflow: hidden;
         font-family: "Onest", sans-serif; color: #fff;
         -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums;
       }
-      .layer, .scene, .inner { position: absolute; inset: 0; }
+      .clip { position: absolute; inset: 0; }
+
+      /* Paint order. Track indices are Studio lanes only; z-index decides depth. */
+      #world { z-index: 0; }
+      #s1 { z-index: 10; }
+      #s2 { z-index: 20; }
+      #s3 { z-index: 30; }
+      #s4 { z-index: 40; }
+      #s5 { z-index: 50; }
+      #card3d { z-index: 60; }
+      #fx { z-index: 70; }
+      #finish { z-index: 80; }
+
+      /* Shared type, used by every scene. */
       .ic { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-
-      /* ---------- background ---------- */
-      #bg { background: radial-gradient(120% 90% at 50% 115%, #13262c 0%, #0a0f13 55%, #070a0d 100%); }
-      #aurora { position: absolute; inset: -200px; }
-      .blob { position: absolute; border-radius: 50%; mix-blend-mode: screen; }
-      .b1 { left: 260px; top: 260px; width: 1300px; height: 620px; background: radial-gradient(closest-side, rgba(151,207,243,.50), rgba(151,207,243,.22) 45%, rgba(151,207,243,0)); }
-      .b2 { left: 980px; top: 520px; width: 1400px; height: 700px; background: radial-gradient(closest-side, rgba(167,232,209,.46), rgba(167,232,209,.20) 45%, rgba(167,232,209,0)); }
-      .b3 { left: 620px; top: 80px; width: 1000px; height: 520px; background: radial-gradient(closest-side, rgba(190,198,247,.34), rgba(190,198,247,.14) 45%, rgba(190,198,247,0)); }
-      .b4 { left: 1460px; top: 60px; width: 900px; height: 640px; background: radial-gradient(closest-side, rgba(28,110,90,.55), rgba(28,110,90,.2) 50%, rgba(28,110,90,0)); }
-      .b5 { left: 0px; top: 820px; width: 1100px; height: 560px; background: radial-gradient(closest-side, rgba(47,120,168,.40), rgba(47,120,168,.14) 50%, rgba(47,120,168,0)); }
-      #stars { position: absolute; inset: 0; }
-      #stars i { position: absolute; display: block; border-radius: 50%; background: #fff; }
-      .vignette { background: radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 52%, rgba(0,0,0,.6) 100%); }
-
-      /* ---------- shared type ---------- */
-      .copy { position: absolute; }
       .eyebrow {
-        display: flex; align-items: center; gap: 14px; margin-bottom: 30px;
+        display: flex; align-items: center; gap: 14px;
         font-size: 22px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: #a7e8d1;
       }
-      .eyebrow i { display: block; width: 9px; height: 9px; border-radius: 50%; background: #a7e8d1; box-shadow: 0 0 14px 2px rgba(167,232,209,.7); }
+      .eyebrow i { display: block; flex: none; width: 9px; height: 9px; border-radius: 50%; background: #a7e8d1; box-shadow: 0 0 14px 2px rgba(167, 232, 209, .7); }
+      .eyebrow b { display: inline-block; font-weight: 600; }
       .headline { font-size: 100px; font-weight: 600; line-height: 1.02; letter-spacing: -.04em; white-space: nowrap; }
-      .ln { display: block; overflow: hidden; padding: 0 .05em .1em 0; margin-bottom: -.06em; }
-      .ln > span { display: block; }
-      .grad { background: linear-gradient(92deg, #97cff3 0%, #a7e8d1 62%, #d9f6ea 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      .ln { display: block; overflow: hidden; padding: .04em .08em .14em 0; margin: -.04em 0 -.1em; perspective: 640px; }
+      .ln .w { display: inline-block; transform-origin: 50% 100%; }
+      .grad {
+        background: linear-gradient(100deg, #97cff3 0%, #a7e8d1 38%, #f2fffa 50%, #a7e8d1 62%, #97cff3 100%);
+        background-size: 260% 100%; background-position: 100% 50%;
+        -webkit-background-clip: text; background-clip: text; color: transparent;
+      }
       .pills { display: flex; gap: 14px; margin-top: 46px; }
       .pill {
         display: flex; align-items: center; gap: 10px; height: 52px; padding: 0 22px 0 16px; white-space: nowrap;
-        border-radius: 999px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.16);
-        font-size: 19px; font-weight: 500; color: rgba(255,255,255,.94);
+        border-radius: 999px; background: rgba(16, 23, 28, .55); border: 1px solid rgba(255, 255, 255, .18);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08);
+        font-size: 19px; font-weight: 500; color: #fff;
       }
-      .pill svg { width: 22px; height: 22px; color: #a7e8d1; }
-
-      /* ---------- scene 1: logo ---------- */
-      .s1-eyebrow { position: absolute; left: 0; right: 0; top: 370px; text-align: center; font-size: 22px; font-weight: 600; letter-spacing: .42em; text-transform: uppercase; color: rgba(255,255,255,.72); }
-      .lockup { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 40px; }
-      .badge { position: relative; width: 168px; height: 168px; border-radius: 47px; overflow: hidden; box-shadow: 0 30px 90px rgba(167,232,209,.22), 0 0 0 1px rgba(255,255,255,.08); }
-      .badge svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-      .glint { position: absolute; top: -20%; left: 0; width: 60%; height: 140%; background: linear-gradient(100deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.28) 50%, rgba(255,255,255,0) 100%); }
-      .word { font-size: 156px; font-weight: 600; letter-spacing: -.045em; line-height: 1; padding-bottom: .06em; }
-
-      /* ---------- scene 2: phone ---------- */
-      .phone-stage { position: absolute; left: 1060px; top: 0; width: 680px; height: 1080px; perspective: 1800px; display: flex; align-items: center; justify-content: center; }
-      .phone {
-        position: relative; width: 430px; height: 880px; border-radius: 66px; padding: 12px; background: #05080a;
-        box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.16), 0 60px 120px rgba(0,0,0,.55), 0 0 100px rgba(167,232,209,.14);
+      .pill svg { width: 22px; height: 22px; color: #a7e8d1; flex: none; }
+      .avatar {
+        width: 44px; height: 44px; border-radius: 50%; background: #a7e8d1; color: #10171c; flex: none;
+        display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 18px;
       }
-      .scr { position: relative; width: 100%; height: 100%; border-radius: 54px; overflow: hidden; background: #10171c; }
-      .island { position: absolute; top: 24px; left: 50%; margin-left: -60px; width: 120px; height: 34px; border-radius: 20px; background: #000; z-index: 9; }
-      .sbar { position: absolute; top: 0; left: 0; right: 0; height: 60px; display: flex; justify-content: space-between; align-items: center; padding: 8px 38px 0; font-size: 15px; font-weight: 600; z-index: 4; }
-      .sbar span:last-child { letter-spacing: .1em; font-size: 12px; }
-      .view { position: absolute; inset: 0; }
-      .login .lb { position: absolute; border-radius: 50%; mix-blend-mode: screen; }
-      .lb1 { left: -60px; top: 40px; width: 420px; height: 280px; background: radial-gradient(closest-side, rgba(151,207,243,.55), rgba(151,207,243,0)); }
-      .lb2 { left: 90px; top: 150px; width: 380px; height: 260px; background: radial-gradient(closest-side, rgba(167,232,209,.55), rgba(167,232,209,0)); }
-      .lb3 { left: -10px; top: 0px; width: 280px; height: 210px; background: radial-gradient(closest-side, rgba(190,198,247,.45), rgba(190,198,247,0)); }
-      .l-nav { position: absolute; top: 70px; left: 26px; right: 26px; display: flex; justify-content: space-between; align-items: center; }
-      .l-brand { display: flex; align-items: center; gap: 10px; font-size: 21px; font-weight: 600; }
-      .l-brand svg, .mini-mark { width: 34px; height: 34px; }
-      .l-nav > span { font-size: 14px; font-weight: 600; }
-      .l-hello { position: absolute; left: 28px; top: 300px; font-size: 38px; font-weight: 600; line-height: 1.12; letter-spacing: -.02em; }
-      .l-hello b { display: block; font-weight: 600; color: #a7e8d1; }
-      .l-hello p { font-size: 15px; font-weight: 400; color: rgba(255,255,255,.78); margin-top: 12px; letter-spacing: 0; }
-      .sheet { position: absolute; left: 0; right: 0; bottom: 0; height: 392px; background: #fff; border-radius: 30px 30px 0 0; padding: 30px 24px; color: #10171c; }
-      .field { height: 62px; border-radius: 16px; background: #f3f4f5; padding: 11px 18px; margin-bottom: 12px; position: relative; }
-      .field small { display: block; font-size: 12px; color: #525d67; }
-      .field div { font-size: 16px; margin-top: 3px; }
-      .field svg { position: absolute; right: 16px; top: 20px; width: 22px; height: 22px; color: #10171c; }
-      .btn-ink { height: 56px; border-radius: 18px; background: #10171c; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 600; margin-top: 18px; }
-      .l-links { text-align: center; margin-top: 22px; font-size: 14px; color: #47525c; }
-      .l-links b { color: #10171c; font-weight: 600; }
-      .faceid { position: absolute; left: 118px; top: 250px; width: 170px; height: 170px; border-radius: 38px; background: rgba(247,247,247,.96); box-shadow: 0 24px 60px rgba(0,0,0,.45), 0 0 0 1px rgba(167,232,209,.6); display: flex; align-items: center; justify-content: center; z-index: 6; }
-      .faceid svg { width: 92px; height: 92px; color: #1c6e5a; }
-      .faceid .ic { stroke-width: 1.6; }
-
-      .dash { background: #f7f7f7; color: #10171c; }
-      .d-head { position: absolute; top: 72px; left: 22px; right: 22px; display: flex; align-items: center; gap: 12px; }
-      .avatar { width: 44px; height: 44px; border-radius: 50%; background: #a7e8d1; color: #10171c; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 18px; flex: none; }
-      .d-head small { display: block; font-size: 13px; color: #525d67; }
-      .d-head b { display: block; font-size: 19px; font-weight: 600; }
-      .d-bell { margin-left: auto; width: 42px; height: 42px; border-radius: 50%; background: #fff; border: 1px solid #eaecee; display: flex; align-items: center; justify-content: center; }
-      .d-bell svg { width: 20px; height: 20px; }
-      .hero-card {
-        position: absolute; top: 134px; left: 18px; right: 18px; height: 212px; border-radius: 28px; padding: 22px 24px; overflow: hidden; color: #fff;
-        background: radial-gradient(70% 90% at 95% 110%, rgba(167,232,209,.35), rgba(167,232,209,0) 70%), linear-gradient(135deg, #10171c, #15232a 55%, #173039);
-      }
-      .hero-card .ribbon { position: absolute; inset: 0; width: 100%; height: 100%; }
-      .hc-top { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: rgba(255,255,255,.75); position: relative; }
-      .visa { font-size: 19px; font-weight: 700; font-style: italic; letter-spacing: .02em; color: #fff; }
-      .hc-lbl { font-size: 13px; color: rgba(255,255,255,.7); margin-top: 30px; position: relative; }
-      .hc-amt { font-size: 40px; font-weight: 600; letter-spacing: -.02em; margin-top: 4px; position: relative; }
-      .chip { display: inline-flex; align-items: center; height: 28px; padding: 0 12px; border-radius: 999px; background: rgba(167,232,209,.16); color: #a7e8d1; font-size: 13px; font-weight: 600; margin-top: 12px; position: relative; }
-      .actions { position: absolute; top: 368px; left: 18px; right: 18px; display: flex; justify-content: space-between; }
-      .act { width: 82px; display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 500; color: #47525c; }
-      .act div { width: 58px; height: 58px; border-radius: 50%; background: #fff; border: 1px solid #eaecee; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 16px rgba(16,23,28,.05); }
-      .act svg { width: 24px; height: 24px; color: #10171c; }
-      .d-sec { position: absolute; top: 474px; left: 24px; right: 24px; display: flex; justify-content: space-between; font-size: 16px; font-weight: 600; }
-      .d-sec span { font-size: 13px; color: #1c6e5a; }
-      .list { position: absolute; top: 510px; left: 16px; right: 16px; }
-      .row { position: relative; height: 70px; border-radius: 18px; background: #fff; border: 1px solid #eaecee; display: flex; align-items: center; gap: 12px; padding: 0 16px; margin-bottom: 8px; }
-      .row .hl { position: absolute; inset: -1px; border-radius: 18px; border: 2px solid #a7e8d1; background: rgba(167,232,209,.16); }
-      .row .ri { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex: none; position: relative; }
-      .row .rt { flex: 1; position: relative; }
-      .row .rt b { display: block; font-size: 15px; font-weight: 600; }
-      .row .rt small { font-size: 12.5px; color: #525d67; }
-      .row .ra { font-size: 15px; font-weight: 600; position: relative; }
-      .cr { color: #17805f; }
-      .tabbar { position: absolute; left: 0; right: 0; bottom: 0; height: 86px; background: #fff; border-top: 1px solid #eaecee; display: flex; justify-content: space-around; padding-top: 12px; }
-      .tab { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; color: #5f6a74; }
-      .tab svg { width: 22px; height: 22px; }
-      .tab.on { color: #10171c; font-weight: 600; }
-      .notif {
-        position: absolute; top: 66px; left: 12px; right: 12px; height: 80px; border-radius: 24px; z-index: 8; padding: 14px 16px;
-        background: rgba(28,36,42,.94); border: 1px solid rgba(255,255,255,.1); box-shadow: 0 18px 40px rgba(0,0,0,.35);
-        display: flex; gap: 12px; align-items: center; color: #fff;
-      }
-      .notif svg { width: 44px; height: 44px; flex: none; }
-      .notif b { font-size: 14px; font-weight: 600; display: flex; justify-content: space-between; }
-      .notif b span { font-weight: 400; color: rgba(255,255,255,.6); font-size: 12px; }
-      .notif p { font-size: 14px; color: rgba(255,255,255,.9); margin-top: 2px; }
-      .notif .n-t { flex: 1; }
-
-      /* ---------- scene 3: web ---------- */
-      .browser-stage { position: absolute; left: 940px; top: 0; width: 980px; height: 1080px; perspective: 2200px; }
-      .browser {
-        position: absolute; left: 20px; top: 250px; width: 900px; height: 600px; border-radius: 20px; overflow: hidden; background: #0c1216;
-        border: 1px solid rgba(255,255,255,.14); box-shadow: 0 60px 140px rgba(0,0,0,.6), 0 0 120px rgba(151,207,243,.12);
-      }
-      .chrome { height: 44px; background: #151d23; display: flex; align-items: center; gap: 8px; padding: 0 16px; border-bottom: 1px solid rgba(255,255,255,.06); }
-      .chrome .d { width: 12px; height: 12px; border-radius: 50%; background: #3a454e; }
-      .url { margin-left: 18px; width: 380px; height: 28px; border-radius: 14px; background: #0b1115; color: rgba(255,255,255,.75); font-size: 13px; display: flex; align-items: center; gap: 8px; padding: 0 14px; }
-      .url svg { width: 13px; height: 13px; color: #a7e8d1; }
-      .bview { position: absolute; top: 44px; left: 0; right: 0; bottom: 0; overflow: hidden; background: radial-gradient(110% 90% at 50% 120%, #13262c, #0c1216 60%); }
-      .bv-a { position: absolute; border-radius: 50%; mix-blend-mode: screen; }
-      .bva1 { left: 120px; top: -60px; width: 700px; height: 340px; background: radial-gradient(closest-side, rgba(151,207,243,.42), rgba(151,207,243,0)); }
-      .bva2 { left: 380px; top: 120px; width: 620px; height: 360px; background: radial-gradient(closest-side, rgba(167,232,209,.42), rgba(167,232,209,0)); }
-      .bva3 { left: -80px; top: 220px; width: 460px; height: 300px; background: radial-gradient(closest-side, rgba(190,198,247,.25), rgba(190,198,247,0)); }
-      .b-nav { position: absolute; top: 22px; left: 32px; right: 32px; display: flex; align-items: center; }
-      .b-nav .l-brand { font-size: 18px; }
-      .b-nav .l-brand svg { width: 30px; height: 30px; }
-      .b-links { margin-left: auto; display: flex; gap: 26px; align-items: center; font-size: 14px; color: rgba(255,255,255,.78); }
-      .b-links .avatar { width: 32px; height: 32px; font-size: 13px; }
-      .b-hero { position: absolute; left: 48px; top: 140px; }
-      .b-hero h3 { font-size: 56px; font-weight: 600; line-height: 1.02; letter-spacing: -.035em; }
-      .b-hero h3 span { display: block; }
-      .b-hero p { width: 330px; font-size: 15px; line-height: 1.45; color: rgba(255,255,255,.78); margin-top: 18px; }
-      .cta { display: inline-flex; align-items: center; gap: 10px; height: 46px; padding: 0 20px; border-radius: 999px; background: #a7e8d1; color: #10171c; font-size: 15px; font-weight: 600; margin-top: 26px; }
-      .cta svg { width: 18px; height: 18px; }
-      .gcard-wrap { position: absolute; width: 300px; height: 188px; }
-      .gcard {
-        position: absolute; inset: 0; border-radius: 22px; padding: 20px 22px; transform: rotate(-7deg); overflow: hidden;
-        background: linear-gradient(150deg, rgba(255,255,255,.16), rgba(255,255,255,.05)); border: 1px solid rgba(255,255,255,.32);
-        box-shadow: 0 30px 60px rgba(0,0,0,.35);
-      }
-      .gcard svg.rb { position: absolute; inset: 0; width: 100%; height: 100%; }
-      .gcard small { position: relative; font-size: 13px; color: rgba(255,255,255,.75); }
-      .gcard .gamt { position: relative; font-size: 30px; font-weight: 600; letter-spacing: -.02em; margin-top: 2px; }
-      .gcard .gfoot { position: absolute; left: 22px; right: 22px; bottom: 18px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: rgba(255,255,255,.8); }
-      .dim { position: absolute; inset: 0; background: rgba(6,10,13,.6); }
-      .modal { position: absolute; left: 270px; top: 56px; width: 360px; border-radius: 22px; background: #fff; color: #10171c; padding: 22px 24px 24px; box-shadow: 0 40px 90px rgba(0,0,0,.5); }
-      .m-head { display: flex; justify-content: space-between; align-items: center; font-size: 19px; font-weight: 600; }
-      .m-head svg { width: 18px; height: 18px; color: #525d67; }
-      .m-lbl { font-size: 11.5px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: #525d67; margin-top: 18px; }
-      .m-row { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
-      .m-row .avatar { width: 36px; height: 36px; font-size: 13px; background: #dceefb; }
-      .m-row b { display: block; font-size: 15px; font-weight: 600; }
-      .m-row small { font-size: 12.5px; color: #525d67; }
-      .m-row .m-r { margin-left: auto; font-size: 13px; color: #525d67; }
-      .m-amt { font-size: 42px; font-weight: 600; letter-spacing: -.02em; margin-top: 4px; }
-      .laya-chip { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 14px 0 10px; border-radius: 999px; background: #e6f6ef; color: #1c6e5a; font-size: 13px; font-weight: 600; margin-top: 12px; }
-      .laya-chip svg { width: 16px; height: 16px; }
-      .send { position: relative; height: 52px; border-radius: 16px; background: #10171c; margin-top: 18px; overflow: hidden; }
-      .send > div { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 16px; font-weight: 600; }
-      .send-a { color: #fff; }
-      .send-b { color: #10171c; }
-      .send-b svg { width: 20px; height: 20px; }
-      .cursor { position: absolute; left: 0; top: 0; width: 28px; height: 28px; z-index: 10; filter: drop-shadow(0 4px 8px rgba(0,0,0,.45)); }
-
-      /* ---------- scene 4: console ---------- */
-      .copy-center { position: absolute; left: 0; right: 0; top: 92px; display: flex; flex-direction: column; align-items: center; }
-      .headline.sm { font-size: 80px; display: flex; gap: .26em; }
-      .console-stage { position: absolute; inset: 0; perspective: 2400px; }
-      .console {
-        position: absolute; left: 210px; top: 300px; width: 1500px; height: 860px; border-radius: 22px; overflow: hidden; background: #f4f5f6; color: #10171c;
-        border: 1px solid rgba(255,255,255,.22); box-shadow: 0 -10px 60px rgba(0,0,0,.25), 0 60px 140px rgba(0,0,0,.6), 0 0 140px rgba(167,232,209,.12);
-        transform-origin: 50% 100%;
-      }
-      .c-chrome { height: 38px; background: #e6e9eb; display: flex; align-items: center; gap: 8px; padding: 0 16px; border-bottom: 1px solid #dadfe2; }
-      .c-chrome .d { width: 11px; height: 11px; border-radius: 50%; background: #c6ccd1; }
-      .c-chrome .url { background: #fff; color: #47525c; width: 340px; height: 24px; font-size: 12.5px; }
-      .c-chrome .url svg { color: #1c6e5a; }
-      .c-body { position: absolute; top: 38px; left: 0; right: 0; bottom: 0; display: flex; }
-      .c-side { position: relative; width: 250px; flex: none; padding: 22px 14px; color: #fff; background: radial-gradient(120% 40% at 30% 0%, rgba(167,232,209,.22), rgba(167,232,209,0) 70%), #10171c; }
-      .c-brand { display: flex; gap: 12px; align-items: center; padding: 0 8px; margin-bottom: 28px; }
-      .c-brand svg { width: 38px; height: 38px; }
-      .c-brand b { display: block; font-size: 16px; font-weight: 600; }
-      .c-brand small { font-size: 12px; color: rgba(255,255,255,.62); }
-      .c-nav > div { display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; color: rgba(255,255,255,.76); margin-bottom: 4px; }
-      .c-nav > div.on { background: rgba(255,255,255,.1); color: #fff; font-weight: 500; }
-      .c-nav svg { width: 17px; height: 17px; }
-      .c-user { position: absolute; left: 14px; right: 14px; bottom: 22px; display: flex; gap: 10px; align-items: center; padding: 10px; border-radius: 14px; background: rgba(255,255,255,.07); }
-      .c-user .avatar { width: 34px; height: 34px; font-size: 14px; }
-      .c-user b { display: block; font-size: 13.5px; font-weight: 600; }
-      .c-user small { font-size: 11.5px; color: rgba(255,255,255,.62); }
-      .c-main { flex: 1; padding: 30px 44px; }
-      .c-hero {
-        height: 150px; border-radius: 24px; padding: 32px 38px; color: #fff; overflow: hidden;
-        background: radial-gradient(50% 140% at 72% 0%, rgba(167,232,209,.38), rgba(167,232,209,0) 70%), radial-gradient(40% 140% at 35% 0%, rgba(151,207,243,.3), rgba(151,207,243,0) 70%), linear-gradient(135deg, #10171c, #173039);
-      }
-      .c-hero small { font-size: 15px; color: rgba(255,255,255,.75); }
-      .c-hero h3 { font-size: 38px; font-weight: 600; letter-spacing: -.02em; margin-top: 8px; }
-      .c-stats { display: flex; gap: 18px; margin-top: 22px; }
-      .c-stat { position: relative; flex: 1; height: 148px; background: #fff; border-radius: 20px; border: 1px solid #eaecee; padding: 20px 22px; }
-      .c-ico { width: 40px; height: 40px; border-radius: 12px; background: #e6f6ef; color: #1c6e5a; display: flex; align-items: center; justify-content: center; }
-      .c-ico svg { width: 20px; height: 20px; }
-      .c-stat > svg { position: absolute; right: 20px; top: 20px; width: 16px; height: 16px; color: #7d8892; }
-      .c-num { font-size: 40px; font-weight: 600; letter-spacing: -.02em; margin-top: 14px; }
-      .c-lbl { font-size: 14px; color: #47525c; margin-top: 2px; }
-      .c-holds { margin-top: 22px; background: #fff; border-radius: 20px; border: 1px solid #eaecee; padding: 4px 24px; }
-      .c-hhead { display: flex; justify-content: space-between; align-items: center; height: 50px; font-size: 17px; font-weight: 600; }
-      .c-hhead span { font-size: 14px; font-weight: 500; }
-      .c-row { position: relative; display: flex; align-items: center; height: 54px; border-top: 1px solid #eef0f2; font-size: 15px; color: #47525c; }
-      .c-row .hl { position: absolute; top: 3px; bottom: 3px; left: -14px; right: -14px; border-radius: 12px; background: rgba(167,232,209,.22); border: 1.5px solid #a7e8d1; }
-      .c-row b { position: relative; width: 160px; color: #10171c; font-weight: 600; }
-      .c-row .acct { position: relative; flex: 1; }
-      .c-bwrap { position: relative; width: 160px; height: 28px; margin-right: 26px; }
-      .c-badge { position: absolute; right: 0; top: 0; height: 28px; padding: 0 12px; border-radius: 999px; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; white-space: nowrap; }
-      .c-badge.amber { background: #fdf0e1; color: #8f5115; }
-      .c-badge.ok { background: #e4f5ee; color: #13704f; }
-      .c-badge.ok svg { width: 14px; height: 14px; }
-      .c-ago { position: relative; width: 70px; text-align: right; font-size: 14px; color: #525d67; }
-      .laya {
-        position: absolute; left: 50px; top: 560px; width: 420px; border-radius: 24px; padding: 22px 24px; color: #fff;
-        background: linear-gradient(160deg, rgba(28,38,45,.97), rgba(14,20,24,.98)); border: 1px solid rgba(167,232,209,.38);
-        box-shadow: 0 30px 80px rgba(0,0,0,.55), 0 0 70px rgba(167,232,209,.18);
-      }
-      .ly-head { display: flex; align-items: center; gap: 12px; }
-      .ly-ico { width: 38px; height: 38px; border-radius: 12px; background: rgba(167,232,209,.16); color: #a7e8d1; display: flex; align-items: center; justify-content: center; }
-      .ly-ico svg { width: 20px; height: 20px; }
-      .ly-head b { display: block; font-size: 16px; font-weight: 600; }
-      .ly-head small { font-size: 12.5px; color: rgba(255,255,255,.64); }
-      .ly-ms { margin-left: auto; height: 28px; padding: 0 12px; border-radius: 999px; background: rgba(167,232,209,.14); color: #a7e8d1; font-size: 13px; font-weight: 600; display: flex; align-items: center; }
-      .ly-tx { font-size: 14px; color: rgba(255,255,255,.78); margin-top: 16px; }
-      .ly-score { display: flex; justify-content: space-between; align-items: baseline; margin-top: 14px; font-size: 13px; color: rgba(255,255,255,.66); }
-      .ly-score b { font-size: 34px; font-weight: 600; color: #f2a25c; letter-spacing: -.02em; }
-      .ly-track { height: 8px; border-radius: 4px; background: rgba(255,255,255,.1); margin-top: 8px; overflow: hidden; }
-      .ly-fill { width: 64%; height: 100%; border-radius: 4px; background: linear-gradient(90deg, #a7e8d1, #f2a25c); transform-origin: 0 50%; }
-      .ly-tags { display: flex; gap: 8px; margin-top: 14px; }
-      .ly-tags span { height: 28px; padding: 0 11px; border-radius: 999px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12); font-size: 12.5px; display: flex; align-items: center; color: rgba(255,255,255,.88); white-space: nowrap; }
-      .ly-sep { height: 1px; background: rgba(255,255,255,.1); margin: 18px 0 6px; }
-      .ly-sign { display: flex; align-items: center; gap: 12px; height: 50px; }
-      .ly-sign .avatar { width: 34px; height: 34px; font-size: 12.5px; }
-      .ly-sign b { display: block; font-size: 14px; font-weight: 600; }
-      .ly-sign small { font-size: 12px; color: rgba(255,255,255,.64); }
-      .ly-ok { margin-left: auto; width: 28px; height: 28px; border-radius: 50%; background: #a7e8d1; color: #10171c; display: flex; align-items: center; justify-content: center; }
-      .ly-ok svg { width: 16px; height: 16px; stroke-width: 2.4; }
-      .ly-foot { font-size: 13.5px; color: #a7e8d1; margin-top: 10px; font-weight: 500; }
-
-      /* ---------- scene 5: finale ---------- */
-      .f-lockup { position: absolute; left: 0; right: 0; top: 214px; display: flex; justify-content: center; align-items: center; gap: 34px; }
-      .f-lockup .badge { width: 136px; height: 136px; border-radius: 38px; }
-      .f-word { font-size: 140px; font-weight: 600; letter-spacing: -.045em; line-height: 1; padding-bottom: .06em; }
-      .f-tag { position: absolute; left: 0; right: 0; top: 418px; display: flex; justify-content: center; gap: .26em; font-size: 60px; font-weight: 500; letter-spacing: -.03em; white-space: nowrap; }
-      .f-devices { position: absolute; left: 0; right: 0; top: 590px; display: flex; justify-content: center; align-items: flex-end; gap: 60px; }
-      .f-dev { display: flex; flex-direction: column; align-items: center; gap: 20px; }
-      .f-lab { font-size: 17px; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; color: rgba(255,255,255,.72); }
-      .mini { position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,.2); box-shadow: 0 30px 70px rgba(0,0,0,.5), 0 0 60px rgba(167,232,209,.1); }
-      .m-web, .m-con { width: 400px; height: 250px; border-radius: 14px; }
-      .m-web { background: radial-gradient(110% 90% at 50% 120%, #173039, #0c1216 60%); }
-      .m-con { background: #f4f5f6; }
-      .m-phone { width: 140px; height: 286px; border-radius: 30px; border: 6px solid #05080a; outline: 1px solid rgba(255,255,255,.2); background: #f7f7f7; }
-      .mini i { position: absolute; display: block; }
-      .f-fade { opacity: 0; background: #050709; }
-      .flash { opacity: 0; background: radial-gradient(60% 60% at 50% 50%, rgba(214,245,233,.9), rgba(167,232,209,.35) 45%, rgba(167,232,209,0) 75%); mix-blend-mode: screen; }
     </style>
   </head>
   <body>
     <div id="root" data-composition-id="main" data-start="0" data-duration="15" data-fps="60" data-width="1920" data-height="1080">
-      <!-- shared Aura mark (64-unit grid, same geometry as aura_logo.dart) -->
-      <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-        <defs>
-          <linearGradient id="g-arch" x1="18" y1="15" x2="46" y2="48" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#97CFF3" /><stop offset="1" stop-color="#A7E8D1" /></linearGradient>
-          <radialGradient id="g-glow" cx="32" cy="67" r="58" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#A7E8D1" stop-opacity=".3" /><stop offset="1" stop-color="#A7E8D1" stop-opacity="0" /></radialGradient>
-          <symbol id="aura-mark" viewBox="0 0 64 64">
-            <rect width="64" height="64" rx="18" fill="#10171C" />
-            <rect width="64" height="64" rx="18" fill="url(#g-glow)" />
-            <path d="M18 48C18 29 24.5 15 32 15C39.5 15 46 29 46 48" fill="none" stroke="url(#g-arch)" stroke-width="6.4" stroke-linecap="round" />
-            <path d="M22.5 37C26.5 33 29.5 33 32 35.5C34.5 38 37.5 38 41.5 34" fill="none" stroke="#fff" stroke-opacity=".94" stroke-width="3.6" stroke-linecap="round" />
-          </symbol>
-          <symbol id="ribbon-line" viewBox="0 0 300 188" preserveAspectRatio="none">
-            <path d="M-10 150C60 150 90 40 160 40S260 120 310 60" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="1.4" />
-          </symbol>
-        </defs>
-      </svg>
+      <!-- persistent sky: GPU aurora + parallax stars, 0-15s -->
+      <div id="world" class="clip" data-composition-id="world" data-composition-src="compositions/world.html" data-start="0" data-duration="15" data-track-index="0" data-width="1920" data-height="1080"></div>
 
-      <!-- ===== background: persistent aurora, 0-15s ===== -->
-      <div id="bg" class="layer clip" data-start="0" data-duration="15" data-track-index="0">
-        <div id="aurora">
-          <div class="blob b5"></div><div class="blob b1"></div><div class="blob b3"></div><div class="blob b2"></div><div class="blob b4"></div>
-        </div>
-        <div id="stars"></div>
-        <div class="layer vignette"></div>
-      </div>
+      <!-- scenes -->
+      <div id="s1" class="clip" data-composition-id="s1" data-composition-src="compositions/s1-logo.html" data-start="0" data-duration="2.6" data-track-index="1" data-width="1920" data-height="1080"></div>
+      <div id="s2" class="clip" data-composition-id="s2" data-composition-src="compositions/s2-mobile.html" data-start="2.3" data-duration="3.45" data-track-index="2" data-width="1920" data-height="1080"></div>
+      <div id="s3" class="clip" data-composition-id="s3" data-composition-src="compositions/s3-web.html" data-start="5.3" data-duration="3.45" data-track-index="3" data-width="1920" data-height="1080"></div>
+      <div id="s4" class="clip" data-composition-id="s4" data-composition-src="compositions/s4-console.html" data-start="8.15" data-duration="4" data-track-index="4" data-width="1920" data-height="1080"></div>
+      <div id="s5" class="clip" data-composition-id="s5" data-composition-src="compositions/s5-endcard.html" data-start="11.9" data-duration="3.1" data-track-index="5" data-width="1920" data-height="1080"></div>
 
-      <!-- ===== scene 1: logo reveal, 0-2.9s ===== -->
-      <div id="s1" class="scene clip" data-start="0" data-duration="2.9" data-track-index="1">
-        <div id="s1-inner" class="inner">
-          <div id="s1-eyebrow" class="s1-eyebrow">Introducing</div>
-          <div class="lockup">
-            <div id="s1-badge" class="badge">
-              <svg viewBox="0 0 64 64" aria-label="Aura Bank">
-                <rect width="64" height="64" fill="#10171C" />
-                <rect width="64" height="64" fill="url(#g-glow)" />
-                <path id="s1-arch" pathLength="1" stroke-dasharray="1 2" d="M18 48C18 29 24.5 15 32 15C39.5 15 46 29 46 48" fill="none" stroke="url(#g-arch)" stroke-width="6.4" stroke-linecap="round" />
-                <path id="s1-ribbon" pathLength="1" stroke-dasharray="1 2" d="M22.5 37C26.5 33 29.5 33 32 35.5C34.5 38 37.5 38 41.5 34" fill="none" stroke="#fff" stroke-opacity=".94" stroke-width="3.6" stroke-linecap="round" />
-              </svg>
-              <div id="s1-glint" class="glint" data-layout-allow-overflow></div>
-            </div>
-            <div id="s1-word" class="word">Aura</div>
-          </div>
-        </div>
-      </div>
+      <!-- the hero card: real 3D, lifts out of the phone and carries the cut to the web -->
+      <div id="card3d" class="clip" data-composition-id="card3d" data-composition-src="compositions/card3d.html" data-start="4.6" data-duration="1.2" data-track-index="6" data-width="1920" data-height="1080"></div>
 
-      <!-- ===== scene 2: mobile app, 2.3-5.9s ===== -->
-      <div id="s2" class="scene clip" data-start="2.3" data-duration="3.6" data-track-index="2">
-        <div id="s2-inner" class="inner">
-          <div class="copy" style="left: 170px; top: 318px; width: 900px">
-            <div id="s2-eyebrow" class="eyebrow"><i></i>Aura Mobile</div>
-            <h2 class="headline">
-              <span class="ln"><span id="s2-l1">Your whole bank,</span></span>
-              <span class="ln"><span id="s2-l2" class="grad">in your pocket.</span></span>
-            </h2>
-            <div class="pills">
-              <div id="s2-p1" class="pill"><svg class="ic" viewBox="0 0 24 24"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M9 9v1M15 9v1M12 9v4h-1M9 16c1.5 1 4.5 1 6 0" /></svg>Face ID &amp; fingerprint</div>
-              <div id="s2-p2" class="pill"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2" /><path d="M3 10h18M7 15h3" /></svg>Visa &amp; Mastercard debit</div>
-              <div id="s2-p3" class="pill"><svg class="ic" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0" /></svg>Push approvals</div>
-            </div>
-          </div>
-          <div class="phone-stage">
-            <div id="s2-phone" class="phone">
-              <div class="scr">
-                <div class="island"></div>
-                <!-- login view (matches the Flutter sign-in screen) -->
-                <div id="s2-login" class="view login">
-                  <div class="lb lb3"></div><div class="lb lb1"></div><div class="lb lb2"></div>
-                  <div class="sbar"><span>9:41</span><span>5G ▮▮▮</span></div>
-                  <div class="l-nav"><div class="l-brand"><svg><use href="#aura-mark" /></svg>Aura</div><span>Create account</span></div>
-                  <div class="l-hello">Welcome back,<b>Elijah</b><p>Please enter your email and password</p></div>
-                  <div class="sheet">
-                    <div class="field"><small>Username</small><div>elijah@aurabank.ph</div></div>
-                    <div class="field"><small>Password</small><div>•••••••••••••</div><svg class="ic" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 6.1A9.7 9.7 0 0 1 12 6c5 0 8.5 4.5 9.5 6-.5.8-1.6 2.3-3.2 3.6M6.4 7.5C4.6 8.8 3.3 10.6 2.5 12c1 1.5 4.5 6 9.5 6 1.6 0 3-.4 4.3-1.1M9.9 9.9a3 3 0 0 0 4.2 4.2" /></svg></div>
-                    <div id="s2-signin" class="btn-ink">Sign in</div>
-                    <div class="l-links">Forgot Passcode? &nbsp;·&nbsp; <b>Switch Account</b></div>
-                  </div>
-                  <div id="s2-faceid" class="faceid">
-                    <svg viewBox="0 0 24 24">
-                      <g id="s2-face" class="ic"><path pathLength="1" stroke-dasharray="1 2" class="s2-fp" d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2" /><path pathLength="1" stroke-dasharray="1 2" class="s2-fp" d="M9 9v1M15 9v1M12 9v4h-1M9 16c1.5 1 4.5 1 6 0" /></g>
-                      <path id="s2-check" class="ic" pathLength="1" stroke-dasharray="1 2" d="M7 12.5l3.5 3.5L17 9" stroke-width="2.2" />
-                    </svg>
-                  </div>
-                </div>
-                <!-- dashboard view -->
-                <div id="s2-dash" class="view dash" data-layout-allow-occlusion>
-                  <div class="sbar"><span>9:41</span><span>5G ▮▮▮</span></div>
-                  <div id="s2-dhead" class="d-head">
-                    <div class="avatar">E</div>
-                    <div><small>Good evening,</small><b>Elijah</b></div>
-                    <div class="d-bell"><svg class="ic" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0" /></svg></div>
-                  </div>
-                  <div id="s2-hero" class="hero-card">
-                    <svg class="ribbon"><use href="#ribbon-line" /></svg>
-                    <div class="hc-top"><span>Savings &nbsp;•••• 2314</span><span class="visa">VISA</span></div>
-                    <div class="hc-lbl">Available balance</div>
-                    <div id="s2-bal" class="hc-amt">₱61,302.50</div>
-                    <div id="s2-chip" class="chip">+₱15,000.00 just now</div>
-                  </div>
-                  <div id="s2-actions" class="actions">
-                    <div class="act"><div><svg class="ic" viewBox="0 0 24 24"><path d="M7 17L17 7M9 7h8v8" /></svg></div>Send</div>
-                    <div class="act"><div><svg class="ic" viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6" /></svg></div>Pay bills</div>
-                    <div class="act"><div><svg class="ic" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1" /><rect x="14" y="4" width="6" height="6" rx="1" /><rect x="4" y="14" width="6" height="6" rx="1" /><path d="M14 14h2v2h-2zM18 18h2v2h-2zM14 18h1" /></svg></div>QR Pay</div>
-                    <div class="act"><div><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2" /><path d="M3 10h18M7 15h3" /></svg></div>Cards</div>
-                  </div>
-                  <div id="s2-sec" class="d-sec">Recent activity<span>See all</span></div>
-                  <div class="list">
-                    <div id="s2-r1" class="row">
-                      <div id="s2-r1hl" class="hl"></div>
-                      <div class="ri" style="background:#e4f5ee;color:#17805f">MS</div>
-                      <div class="rt"><b>Maria Santos</b><small>Transfer in · just now</small></div>
-                      <div class="ra cr">+₱15,000.00</div>
-                    </div>
-                    <div id="s2-rest">
-                      <div class="row">
-                        <div class="ri" style="background:#eff6fb;color:#245f87">ME</div>
-                        <div class="rt"><b>Meralco</b><small>Bills payment · Yesterday</small></div>
-                        <div class="ra">−₱2,340.75</div>
-                      </div>
-                      <div class="row">
-                        <div class="ri" style="background:#fbe9e7;color:#a8352f">JB</div>
-                        <div class="rt"><b>Jollibee</b><small>Visa •••• 2314 · Oct 8</small></div>
-                        <div class="ra">−₱389.00</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="tabbar">
-                    <div class="tab on"><svg class="ic" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9H4z" /></svg>Home</div>
-                    <div class="tab"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2" /><path d="M3 10h18" /></svg>Cards</div>
-                    <div class="tab"><svg class="ic" viewBox="0 0 24 24"><path d="M4 8h14l-3-3M20 16H6l3 3" /></svg>Transfer</div>
-                    <div class="tab"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" /><path d="M4 21c1.5-4 5-6 8-6s6.5 2 8 6" /></svg>Profile</div>
-                  </div>
-                  <div id="s2-notif" class="notif" data-layout-allow-occlusion>
-                    <svg><use href="#aura-mark" /></svg>
-                    <div class="n-t"><b>Aura<span>now</span></b><p>You received ₱15,000.00 from Maria Santos</p></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <!-- light: comets, rush streaks, finale burst -->
+      <div id="fx" class="clip" data-composition-id="fx" data-composition-src="compositions/fx.html" data-start="0" data-duration="15" data-track-index="7" data-width="1920" data-height="1080"></div>
 
-      <!-- ===== scene 3: web banking, 5.3-8.9s ===== -->
-      <div id="s3" class="scene clip" data-start="5.3" data-duration="3.6" data-track-index="3">
-        <div id="s3-inner" class="inner">
-          <div class="copy" style="left: 170px; top: 330px; width: 760px">
-            <div id="s3-eyebrow" class="eyebrow"><i></i>Aura Web</div>
-            <h2 class="headline">
-              <span class="ln"><span id="s3-l1">Transfers that</span></span>
-              <span class="ln"><span id="s3-l2" class="grad">land in seconds.</span></span>
-            </h2>
-            <div class="pills">
-              <div id="s3-p1" class="pill"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18" /></svg>Any browser, no install</div>
-              <div id="s3-p2" class="pill"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2.5" /><path d="M11 18h2" /></svg>Approve from your phone</div>
-            </div>
-          </div>
-          <div class="browser-stage">
-            <div id="s3-browser" class="browser">
-              <div class="chrome">
-                <div class="d"></div><div class="d"></div><div class="d"></div>
-                <div class="url"><svg class="ic" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>aurabank.ph</div>
-              </div>
-              <div class="bview">
-                <div class="bv-a bva1"></div><div class="bv-a bva2"></div><div class="bv-a bva3"></div>
-                <div class="b-nav">
-                  <div class="l-brand"><svg><use href="#aura-mark" /></svg>Aura</div>
-                  <div class="b-links"><span>Accounts</span><span>Transfers</span><span>Cards</span><div class="avatar">E</div></div>
-                </div>
-                <div id="s3-hero" class="b-hero">
-                  <h3><span>Manage</span><span>your money</span></h3>
-                  <p>One savings account, Visa and Mastercard debit cards, and transfers that land in seconds.</p>
-                  <div id="s3-cta" class="cta">Send money<svg class="ic" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg></div>
-                </div>
-                <div id="s3-c1" class="gcard-wrap" style="left: 560px; top: 70px">
-                  <div class="gcard" data-layout-allow-occlusion><svg class="rb"><use href="#ribbon-line" /></svg><small>Balance</small><div class="gamt">₱76,302.50</div><div class="gfoot"><span>•••• 3417</span><span class="visa">VISA</span></div></div>
-                </div>
-                <div id="s3-c2" class="gcard-wrap" style="left: 470px; top: 220px">
-                  <div class="gcard" data-layout-allow-occlusion><svg class="rb"><use href="#ribbon-line" /></svg><small>Balance</small><div class="gamt">₱34,240.31</div><div class="gfoot"><span>•••• 2314</span><span class="visa">VISA</span></div></div>
-                </div>
-                <div id="s3-dim" class="dim"></div>
-                <div id="s3-modal" class="modal" data-layout-allow-occlusion>
-                  <div class="m-head">Send money<svg class="ic" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></svg></div>
-                  <div class="m-lbl">From</div>
-                  <div class="m-row"><div><b>Savings •••• 2314</b><small>Aura Bank</small></div><div class="m-r">₱76,302.50</div></div>
-                  <div class="m-lbl">To</div>
-                  <div class="m-row"><div class="avatar">MS</div><div><b>Maria Santos</b><small>BPI •••• 4471</small></div></div>
-                  <div class="m-lbl">Amount</div>
-                  <div id="s3-amt" class="m-amt">₱0.00</div>
-                  <div id="s3-laya" class="laya-chip"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" /><path d="M9 12l2 2 4-4" /></svg>Screened by Laya · Clear</div>
-                  <div id="s3-send" class="send">
-                    <div id="s3-send-a" class="send-a">Send now</div>
-                    <div id="s3-send-b" class="send-b"><svg class="ic" viewBox="0 0 24 24"><path id="s3-sendchk" pathLength="1" stroke-dasharray="1 2" d="M5 12.5l4.5 4.5L19 7.5" stroke-width="2.4" /></svg>Sent · landed in 1.8 s</div>
-                  </div>
-                </div>
-                <svg id="s3-cursor" class="cursor" viewBox="0 0 24 24"><path d="M4 2.5l15 9.2-6.6 1.6-3.4 6.2z" fill="#fff" stroke="#10171c" stroke-width="1.3" stroke-linejoin="round" /></svg>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ===== scene 4: Aura Console back office, 8.3-12.3s ===== -->
-      <div id="s4" class="scene clip" data-start="8.3" data-duration="4" data-track-index="4">
-        <div id="s4-inner" class="inner">
-          <div class="copy-center">
-            <div id="s4-eyebrow" class="eyebrow"><i></i>Aura Console</div>
-            <h2 class="headline sm">
-              <span class="ln"><span id="s4-l1">Screened by AI.</span></span>
-              <span class="ln"><span id="s4-l2" class="grad">Signed off by people.</span></span>
-            </h2>
-          </div>
-          <div id="s4-cam" class="console-stage">
-            <div id="s4-console" class="console">
-              <div class="c-chrome">
-                <div class="d"></div><div class="d"></div><div class="d"></div>
-                <div class="url"><svg class="ic" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>console.aurabank.ph/overview</div>
-              </div>
-              <div class="c-body">
-                <div class="c-side">
-                  <div class="c-brand"><svg><use href="#aura-mark" /></svg><div><b>Aura Console</b><small>Back office</small></div></div>
-                  <div class="c-nav">
-                    <div class="on"><svg class="ic" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5" /><rect x="13" y="4" width="7" height="7" rx="1.5" /><rect x="4" y="13" width="7" height="7" rx="1.5" /><rect x="13" y="13" width="7" height="7" rx="1.5" /></svg>Overview</div>
-                    <div><svg class="ic" viewBox="0 0 24 24"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M9 10h6M9 14h4" /></svg>Identity review</div>
-                    <div><svg class="ic" viewBox="0 0 24 24"><path d="M4 8h14l-3-3M20 16H6l3 3" /></svg>Held transfers</div>
-                    <div><svg class="ic" viewBox="0 0 24 24"><path d="M9 7L5 11l4 4M5 11h9a5 5 0 0 1 0 10h-2" /></svg>Reversals</div>
-                    <div><svg class="ic" viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7zM14 3v5h5M12 12v4M12 18.5v.5" /></svg>SAR / STR</div>
-                    <div><svg class="ic" viewBox="0 0 24 24"><path d="M12 21s-6-6-6-11a6 6 0 0 1 12 0c0 5-6 11-6 11z" /><circle cx="12" cy="10" r="2" /></svg>Location simulator</div>
-                    <div><svg class="ic" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" /></svg>Audit trail</div>
-                  </div>
-                  <div class="c-user"><div class="avatar">D</div><div><b>Diana Vance</b><small>Chief Compliance Officer</small></div></div>
-                </div>
-                <div class="c-main">
-                  <div id="s4-hero" class="c-hero"><small>Good evening, Diana</small><h3>Here is what needs a person today.</h3></div>
-                  <div class="c-stats">
-                    <div class="c-stat s4-stat"><svg class="ic" viewBox="0 0 24 24"><path d="M7 17L17 7M9 7h8v8" /></svg><div class="c-ico"><svg class="ic" viewBox="0 0 24 24"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M9 10h6M9 14h4" /></svg></div><div class="c-num" data-to="12">0</div><div class="c-lbl">Identities to review</div></div>
-                    <div class="c-stat s4-stat"><svg class="ic" viewBox="0 0 24 24"><path d="M7 17L17 7M9 7h8v8" /></svg><div class="c-ico"><svg class="ic" viewBox="0 0 24 24"><path d="M4 8h14l-3-3M20 16H6l3 3" /></svg></div><div class="c-num" data-to="48">0</div><div class="c-lbl">Transfers on hold</div></div>
-                    <div class="c-stat s4-stat"><svg class="ic" viewBox="0 0 24 24"><path d="M7 17L17 7M9 7h8v8" /></svg><div class="c-ico"><svg class="ic" viewBox="0 0 24 24"><path d="M9 7L5 11l4 4M5 11h9a5 5 0 0 1 0 10h-2" /></svg></div><div class="c-num" data-to="6">0</div><div class="c-lbl">Reversals awaiting sign-off</div></div>
-                    <div class="c-stat s4-stat"><svg class="ic" viewBox="0 0 24 24"><path d="M7 17L17 7M9 7h8v8" /></svg><div class="c-ico"><svg class="ic" viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7zM14 3v5h5M12 12v4M12 18.5v.5" /></svg></div><div class="c-num" data-to="87">0</div><div class="c-lbl">Reports awaiting sign-off</div></div>
-                  </div>
-                  <div class="c-holds">
-                    <div class="c-hhead">Latest holds<span>See all</span></div>
-                    <div class="c-row s4-row">
-                      <div id="s4-hl" class="hl"></div>
-                      <b>₱150,000.00</b><span class="acct">acc-2001-sav-001 → acc-2003-sav-002</span>
-                      <div class="c-bwrap">
-                        <div id="s4-b-amber" class="c-badge amber">Needs approval</div>
-                        <div id="s4-b-ok" class="c-badge ok"><svg class="ic" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" stroke-width="2.6" /></svg>Approved · 2 of 2</div>
-                      </div>
-                      <span class="c-ago">just now</span>
-                    </div>
-                    <div class="c-row s4-row"><b>₱5,000,000.00</b><span class="acct">acc-2001-sav-001 → acc-2003-sav-002</span><div class="c-bwrap"><div class="c-badge amber">Needs approval</div></div><span class="c-ago">16 d ago</span></div>
-                    <div class="c-row s4-row"><b>₱100,000.00</b><span class="acct">acc-2001-sav-001 → acc-2003-sav-002</span><div class="c-bwrap"><div class="c-badge amber">Needs approval</div></div><span class="c-ago">11 d ago</span></div>
-                    <div class="c-row s4-row"><b>₱75,000.00</b><span class="acct">acc-2001-sav-001 → acc-2003-sav-002</span><div class="c-bwrap"><div class="c-badge amber">Needs approval</div></div><span class="c-ago">11 d ago</span></div>
-                    <div class="c-row s4-row"><b>₱85,000.00</b><span class="acct">1000-2000-3001 → 1000-2000-3002</span><div class="c-bwrap"><div class="c-badge amber">Needs approval</div></div><span class="c-ago">11 d ago</span></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <!-- Laya risk card floats over the console's left edge -->
-            <div id="s4-laya" class="laya" data-layout-allow-occlusion>
-              <div class="ly-head">
-                <div class="ly-ico"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM18.5 16l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z" /></svg></div>
-                <div><b>Laya</b><small>Risk engine</small></div>
-                <div class="ly-ms">24 ms</div>
-              </div>
-              <div class="ly-tx">₱150,000.00 · acc-2001 → acc-2003</div>
-              <div class="ly-score"><span>Risk score</span><b id="s4-score">0.00</b></div>
-              <div class="ly-track"><div id="s4-fill" class="ly-fill"></div></div>
-              <div class="ly-tags"><span class="s4-tag">New payee</span><span class="s4-tag">Over ₱50,000</span><span class="s4-tag">Active call</span></div>
-              <div class="ly-sep"></div>
-              <div id="s4-maker" class="ly-sign">
-                <div class="avatar" style="background:#bec6f7">BO</div>
-                <div><b>Beatriz Ocampo</b><small>Maker · onboarding</small></div>
-                <div id="s4-ok1" class="ly-ok"><svg class="ic" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg></div>
-              </div>
-              <div id="s4-checker" class="ly-sign">
-                <div class="avatar">DV</div>
-                <div><b>Diana Vance</b><small>Checker · compliance</small></div>
-                <div id="s4-ok2" class="ly-ok"><svg class="ic" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg></div>
-              </div>
-              <div id="s4-foot" class="ly-foot">Every decision has two names on it.</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- impact flash at the finale downbeat -->
-      <div id="flash" class="layer clip" data-start="11.9" data-duration="0.9" data-track-index="6">
-        <div id="flash-in" class="layer flash"></div>
-      </div>
-
-      <!-- ===== scene 5: end card, 11.85-15s ===== -->
-      <div id="s5" class="scene clip" data-start="11.85" data-duration="3.15" data-track-index="5">
-        <div id="s5-inner" class="inner">
-          <div id="s5-cam" class="inner">
-            <div class="f-lockup">
-              <div id="s5-badge" class="badge"><svg viewBox="0 0 64 64"><use href="#aura-mark" /></svg></div>
-              <div id="s5-word" class="f-word">Aura</div>
-            </div>
-            <div class="f-tag">
-              <span class="ln" data-layout-allow-overflow><span id="s5-t1">Banking,</span></span>
-              <span class="ln" data-layout-allow-overflow><span id="s5-t2" class="grad">in a new light.</span></span>
-            </div>
-            <div class="f-devices">
-              <div id="s5-d1" class="f-dev">
-                <div class="mini m-web" data-layout-allow-overflow>
-                  <i style="left:0;top:0;width:400px;height:18px;background:#151d23"></i>
-                  <i style="left:40px;top:10px;width:320px;height:170px;border-radius:50%;background:radial-gradient(closest-side,rgba(151,207,243,.45),rgba(151,207,243,0))"></i>
-                  <i style="left:170px;top:90px;width:260px;height:160px;border-radius:50%;background:radial-gradient(closest-side,rgba(167,232,209,.45),rgba(167,232,209,0))"></i>
-                  <i style="left:22px;top:66px;width:118px;height:15px;border-radius:4px;background:#fff"></i>
-                  <i style="left:22px;top:88px;width:92px;height:15px;border-radius:4px;background:#fff"></i>
-                  <i style="left:22px;top:116px;width:130px;height:6px;border-radius:3px;background:rgba(255,255,255,.5)"></i>
-                  <i style="left:22px;top:128px;width:108px;height:6px;border-radius:3px;background:rgba(255,255,255,.5)"></i>
-                  <i style="left:22px;top:148px;width:74px;height:20px;border-radius:10px;background:#a7e8d1"></i>
-                  <i style="left:222px;top:46px;width:140px;height:88px;border-radius:12px;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.1);transform:rotate(-7deg)"></i>
-                  <i style="left:184px;top:118px;width:140px;height:88px;border-radius:12px;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.12);transform:rotate(-7deg)"></i>
-                </div>
-                <div class="f-lab">Web</div>
-              </div>
-              <div id="s5-d2" class="f-dev">
-                <div class="mini m-phone">
-                  <i style="left:8px;top:32px;width:112px;height:70px;border-radius:12px;background:linear-gradient(135deg,#10171c,#173039)"></i>
-                  <i style="left:18px;top:70px;width:64px;height:11px;border-radius:3px;background:#fff"></i>
-                  <i style="left:18px;top:86px;width:40px;height:7px;border-radius:3px;background:#a7e8d1"></i>
-                  <i style="left:12px;top:114px;width:18px;height:18px;border-radius:50%;background:#fff;border:1px solid #e2e5e8"></i>
-                  <i style="left:41px;top:114px;width:18px;height:18px;border-radius:50%;background:#fff;border:1px solid #e2e5e8"></i>
-                  <i style="left:70px;top:114px;width:18px;height:18px;border-radius:50%;background:#fff;border:1px solid #e2e5e8"></i>
-                  <i style="left:99px;top:114px;width:18px;height:18px;border-radius:50%;background:#fff;border:1px solid #e2e5e8"></i>
-                  <i style="left:8px;top:148px;width:112px;height:28px;border-radius:8px;background:#fff;border:1.5px solid #a7e8d1"></i>
-                  <i style="left:8px;top:182px;width:112px;height:28px;border-radius:8px;background:#fff;border:1px solid #e2e5e8"></i>
-                  <i style="left:8px;top:216px;width:112px;height:28px;border-radius:8px;background:#fff;border:1px solid #e2e5e8"></i>
-                </div>
-                <div class="f-lab">Mobile</div>
-              </div>
-              <div id="s5-d3" class="f-dev">
-                <div class="mini m-con">
-                  <i style="left:0;top:0;width:400px;height:16px;background:#e6e9eb"></i>
-                  <i style="left:0;top:16px;width:74px;height:234px;background:#10171c"></i>
-                  <i style="left:12px;top:30px;width:48px;height:8px;border-radius:3px;background:rgba(255,255,255,.7)"></i>
-                  <i style="left:10px;top:52px;width:54px;height:12px;border-radius:4px;background:rgba(255,255,255,.14)"></i>
-                  <i style="left:88px;top:28px;width:298px;height:46px;border-radius:10px;background:linear-gradient(135deg,#10171c,#173039)"></i>
-                  <i style="left:100px;top:46px;width:150px;height:9px;border-radius:3px;background:#fff"></i>
-                  <i style="left:88px;top:84px;width:68px;height:46px;border-radius:8px;background:#fff;border:1px solid #e2e5e8"></i>
-                  <i style="left:164px;top:84px;width:68px;height:46px;border-radius:8px;background:#fff;border:1px solid #e2e5e8"></i>
-                  <i style="left:240px;top:84px;width:68px;height:46px;border-radius:8px;background:#fff;border:1px solid #e2e5e8"></i>
-                  <i style="left:316px;top:84px;width:70px;height:46px;border-radius:8px;background:#fff;border:1px solid #e2e5e8"></i>
-                  <i style="left:88px;top:140px;width:298px;height:98px;border-radius:10px;background:#fff;border:1px solid #e2e5e8"></i>
-                  <i style="left:100px;top:162px;width:150px;height:6px;border-radius:3px;background:#d4d9dd"></i>
-                  <i style="left:100px;top:186px;width:130px;height:6px;border-radius:3px;background:#d4d9dd"></i>
-                  <i style="left:100px;top:210px;width:140px;height:6px;border-radius:3px;background:#d4d9dd"></i>
-                  <i style="left:322px;top:158px;width:52px;height:13px;border-radius:7px;background:#e4f5ee"></i>
-                  <i style="left:322px;top:182px;width:52px;height:13px;border-radius:7px;background:#fdf0e1"></i>
-                  <i style="left:322px;top:206px;width:52px;height:13px;border-radius:7px;background:#fdf0e1"></i>
-                </div>
-                <div class="f-lab">Console</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- fade to black -->
-      <div id="fade" class="layer clip" data-start="14.55" data-duration="0.45" data-track-index="7">
-        <div id="fade-in" class="layer f-fade"></div>
-      </div>
+      <!-- finishing: light leaks, impact flash, grain, fade -->
+      <div id="finish" class="clip" data-composition-id="finish" data-composition-src="compositions/finish.html" data-start="0" data-duration="15" data-track-index="8" data-width="1920" data-height="1080"></div>
 
       <!-- ===== audio ===== -->
       <audio id="vo-1" src="assets/vo/vo1.wav" data-start="0.62" data-duration="1.08" data-track-index="10" data-volume="1" data-audio-group="voiceover"></audio>
@@ -671,178 +90,30 @@
       <audio id="vo-4" src="assets/vo/vo4.wav" data-start="8.42" data-duration="3.63" data-track-index="10" data-volume="1" data-audio-group="voiceover"></audio>
       <audio id="vo-5" src="assets/vo/vo5.wav" data-start="12.2" data-duration="2.44" data-track-index="10" data-volume="1" data-audio-group="voiceover"></audio>
 
-      <audio id="sfx-sparkle" src="assets/sfx/sparkle.mp3" data-start="1.15" data-duration="1.8" data-track-index="12" data-volume="0.28" data-audio-group="sfx"></audio>
-      <audio id="sfx-whoosh-1" src="assets/sfx/whoosh.mp3" data-start="2.2" data-duration="0.57" data-track-index="11" data-volume="0.45" data-audio-group="sfx"></audio>
-      <audio id="sfx-tap-1" src="assets/sfx/click-soft.mp3" data-start="3.3" data-duration="0.37" data-track-index="11" data-volume="0.55" data-audio-group="sfx"></audio>
-      <audio id="sfx-notify" src="assets/sfx/notification.mp3" data-start="4.4" data-duration="2.46" data-track-index="12" data-volume="0.3" data-audio-group="sfx"></audio>
-      <audio id="sfx-whoosh-2" src="assets/sfx/whoosh-short.mp3" data-start="5.25" data-duration="0.57" data-track-index="11" data-volume="0.45" data-audio-group="sfx"></audio>
+      <audio id="sfx-sparkle" src="assets/sfx/sparkle.mp3" data-start="1.12" data-duration="1.8" data-track-index="12" data-volume="0.28" data-audio-group="sfx"></audio>
+      <audio id="sfx-whoosh-1" src="assets/sfx/whoosh.mp3" data-start="2.1" data-duration="0.57" data-track-index="11" data-volume="0.5" data-audio-group="sfx"></audio>
+      <audio id="sfx-tap-1" src="assets/sfx/click-soft.mp3" data-start="3.18" data-duration="0.37" data-track-index="11" data-volume="0.55" data-audio-group="sfx"></audio>
+      <audio id="sfx-faceid" src="assets/sfx/pop.mp3" data-start="3.64" data-duration="0.72" data-track-index="14" data-volume="0.22" data-audio-group="sfx"></audio>
+      <audio id="sfx-notify" src="assets/sfx/notification.mp3" data-start="4.1" data-duration="2.46" data-track-index="12" data-volume="0.3" data-audio-group="sfx"></audio>
+      <audio id="sfx-card" src="assets/sfx/whoosh-short.mp3" data-start="4.86" data-duration="0.57" data-track-index="14" data-volume="0.32" data-audio-group="sfx"></audio>
+      <audio id="sfx-whoosh-2" src="assets/sfx/whoosh-short.mp3" data-start="5.3" data-duration="0.57" data-track-index="11" data-volume="0.45" data-audio-group="sfx"></audio>
       <audio id="sfx-tap-2" src="assets/sfx/click-soft.mp3" data-start="6.48" data-duration="0.37" data-track-index="11" data-volume="0.5" data-audio-group="sfx"></audio>
       <audio id="sfx-click" src="assets/sfx/click.mp3" data-start="7.5" data-duration="0.37" data-track-index="11" data-volume="0.45" data-audio-group="sfx"></audio>
-      <audio id="sfx-chime" src="assets/sfx/chime.mp3" data-start="7.62" data-duration="2.5" data-track-index="12" data-volume="0.3" data-audio-group="sfx"></audio>
-      <audio id="sfx-whoosh-3" src="assets/sfx/whoosh.mp3" data-start="8.22" data-duration="0.57" data-track-index="11" data-volume="0.4" data-audio-group="sfx"></audio>
-      <audio id="sfx-pop" src="assets/sfx/pop.mp3" data-start="9.9" data-duration="0.72" data-track-index="11" data-volume="0.42" data-audio-group="sfx"></audio>
-      <audio id="sfx-ping" src="assets/sfx/ping.mp3" data-start="11.2" data-duration="1.32" data-track-index="12" data-volume="0.3" data-audio-group="sfx"></audio>
+      <audio id="sfx-chime" src="assets/sfx/chime.mp3" data-start="7.82" data-duration="2.5" data-track-index="12" data-volume="0.3" data-audio-group="sfx"></audio>
+      <audio id="sfx-whoosh-3" src="assets/sfx/whoosh.mp3" data-start="8.14" data-duration="0.57" data-track-index="11" data-volume="0.4" data-audio-group="sfx"></audio>
+      <audio id="sfx-pop" src="assets/sfx/pop.mp3" data-start="9.86" data-duration="0.72" data-track-index="11" data-volume="0.42" data-audio-group="sfx"></audio>
+      <audio id="sfx-sign-1" src="assets/sfx/click-soft.mp3" data-start="10.86" data-duration="0.37" data-track-index="14" data-volume="0.4" data-audio-group="sfx"></audio>
+      <audio id="sfx-sign-2" src="assets/sfx/click-soft.mp3" data-start="11.3" data-duration="0.37" data-track-index="14" data-volume="0.4" data-audio-group="sfx"></audio>
+      <audio id="sfx-ping" src="assets/sfx/ping.mp3" data-start="11.38" data-duration="1.32" data-track-index="12" data-volume="0.3" data-audio-group="sfx"></audio>
       <audio id="sfx-impact" src="assets/sfx/impact-bass-1.mp3" data-start="11.98" data-duration="2.12" data-track-index="11" data-volume="0.4" data-audio-group="sfx"></audio>
 
       <audio id="music-bed" src="assets/music/aura-bed.wav" data-start="0" data-duration="15" data-track-index="13" data-volume="0.42" data-audio-group="music" data-fx-carve="{&quot;enabled&quot;:true,&quot;sources&quot;:[&quot;voiceover&quot;],&quot;strength&quot;:0.8}" data-fx-chain="{&quot;version&quot;:1,&quot;nodes&quot;:[{&quot;type&quot;:&quot;peaking&quot;,&quot;id&quot;:&quot;n1&quot;,&quot;fromCarve&quot;:true,&quot;params&quot;:{&quot;frequency&quot;:160,&quot;gain&quot;:-7.4,&quot;q&quot;:2.06}},{&quot;type&quot;:&quot;peaking&quot;,&quot;id&quot;:&quot;n2&quot;,&quot;fromCarve&quot;:true,&quot;params&quot;:{&quot;frequency&quot;:250,&quot;gain&quot;:-7.4,&quot;q&quot;:2.06}},{&quot;type&quot;:&quot;peaking&quot;,&quot;id&quot;:&quot;n3&quot;,&quot;fromCarve&quot;:true,&quot;params&quot;:{&quot;frequency&quot;:630,&quot;gain&quot;:-7.4,&quot;q&quot;:2.06}},{&quot;type&quot;:&quot;peaking&quot;,&quot;id&quot;:&quot;n4&quot;,&quot;fromCarve&quot;:true,&quot;params&quot;:{&quot;frequency&quot;:1000,&quot;gain&quot;:-7.4,&quot;q&quot;:2.06}},{&quot;type&quot;:&quot;peaking&quot;,&quot;id&quot;:&quot;n5&quot;,&quot;fromCarve&quot;:true,&quot;params&quot;:{&quot;frequency&quot;:1600,&quot;gain&quot;:-14.8,&quot;q&quot;:2.06}},{&quot;type&quot;:&quot;peaking&quot;,&quot;id&quot;:&quot;n6&quot;,&quot;fromCarve&quot;:true,&quot;params&quot;:{&quot;frequency&quot;:2500,&quot;gain&quot;:-7.4,&quot;q&quot;:2.06}},{&quot;type&quot;:&quot;gain&quot;,&quot;id&quot;:&quot;n7&quot;,&quot;fromCarve&quot;:true,&quot;params&quot;:{&quot;gain&quot;:0}}]}" data-automation="{&quot;version&quot;:1,&quot;lanes&quot;:[{&quot;target&quot;:&quot;fx.n1.gain&quot;,&quot;points&quot;:[{&quot;t&quot;:0,&quot;v&quot;:0},{&quot;t&quot;:0.555,&quot;v&quot;:0},{&quot;t&quot;:0.64,&quot;v&quot;:-3.4},{&quot;t&quot;:0.725,&quot;v&quot;:-4.5},{&quot;t&quot;:0.811,&quot;v&quot;:-3.2},{&quot;t&quot;:0.896,&quot;v&quot;:-2.3},{&quot;t&quot;:0.981,&quot;v&quot;:-1.6},{&quot;t&quot;:1.067,&quot;v&quot;:-1.9},{&quot;t&quot;:1.152,&quot;v&quot;:-4.5},{&quot;t&quot;:1.237,&quot;v&quot;:-5.3},{&quot;t&quot;:1.323,&quot;v&quot;:-4.6},{&quot;t&quot;:1.408,&quot;v&quot;:-4.5},{&quot;t&quot;:1.493,&quot;v&quot;:-3.2},{&quot;t&quot;:1.579,&quot;v&quot;:-2.2},{&quot;t&quot;:1.664,&quot;v&quot;:-1.6},{&quot;t&quot;:1.749,&quot;v&quot;:-1.1},{&quot;t&quot;:1.835,&quot;v&quot;:-0.8},{&quot;t&quot;:1.92,&quot;v&quot;:-0.6},{&quot;t&quot;:2.176,&quot;v&quot;:-0.2},{&quot;t&quot;:2.261,&quot;v&quot;:0},{&quot;t&quot;:2.603,&quot;v&quot;:0},{&quot;t&quot;:2.688,&quot;v&quot;:-3.4},{&quot;t&quot;:2.773,&quot;v&quot;:-2.5},{&quot;t&quot;:2.859,&quot;v&quot;:-1.8},{&quot;t&quot;:2.944,&quot;v&quot;:-1.3},{&quot;t&quot;:3.029,&quot;v&quot;:-0.9},{&quot;t&quot;:3.115,&quot;v&quot;:-5.1},{&quot;t&quot;:3.2,&quot;v&quot;:-5.1},{&quot;t&quot;:3.285,&quot;v&quot;:-3.6},{&quot;t&quot;:3.371,&quot;v&quot;:-2.6},{&quot;t&quot;:3.456,&quot;v&quot;:-1.8},{&quot;t&quot;:3.541,&quot;v&quot;:-1.3},{&quot;t&quot;:3.627,&quot;v&quot;:-3.9},{&quot;t&quot;:3.712,&quot;v&quot;:-2.7},{&quot;t&quot;:3.797,&quot;v&quot;:-2},{&quot;t&quot;:3.883,&quot;v&quot;:-1.4},{&quot;t&quot;:3.968,&quot;v&quot;:-2.7},{&quot;t&quot;:4.053,&quot;v&quot;:-3.5},{&quot;t&quot;:4.139,&quot;v&quot;:-4.7},{&quot;t&quot;:4.224,&quot;v&quot;:-4},{&quot;t&quot;:4.309,&quot;v&quot;:-3.3},{&quot;t&quot;:4.395,&quot;v&quot;:-2.3},{&quot;t&quot;:4.48,&quot;v&quot;:-1.7},{&quot;t&quot;:4.565,&quot;v&quot;:-1.2},{&quot;t&quot;:4.651,&quot;v&quot;:-0.8},{&quot;t&quot;:4.736,&quot;v&quot;:-0.6},{&quot;t&quot;:4.992,&quot;v&quot;:-0.2},{&quot;t&quot;:5.077,&quot;v&quot;:0},{&quot;t&quot;:5.504,&quot;v&quot;:0},{&quot;t&quot;:5.589,&quot;v&quot;:-3.8},{&quot;t&quot;:5.675,&quot;v&quot;:-4.9},{&quot;t&quot;:5.76,&quot;v&quot;:-5.5},{&quot;t&quot;:5.845,&quot;v&quot;:-3.9},{&quot;t&quot;:5.931,&quot;v&quot;:-3.3},{&quot;t&quot;:6.016,&quot;v&quot;:-5.2},{&quot;t&quot;:6.101,&quot;v&quot;:-4.8},{&quot;t&quot;:6.187,&quot;v&quot;:-3.4},{&quot;t&quot;:6.272,&quot;v&quot;:-2.4},{&quot;t&quot;:6.357,&quot;v&quot;:-1.7},{&quot;t&quot;:6.443,&quot;v&quot;:-1.2},{&quot;t&quot;:6.528,&quot;v&quot;:-0.9},{&quot;t&quot;:6.613,&quot;v&quot;:-1.8},{&quot;t&quot;:6.699,&quot;v&quot;:-1.3},{&quot;t&quot;:6.784,&quot;v&quot;:-0.9},{&quot;t&quot;:6.869,&quot;v&quot;:-0.6},{&quot;t&quot;:7.04,&quot;v&quot;:-0.3},{&quot;t&quot;:7.125,&quot;v&quot;:-4.5},{&quot;t&quot;:7.211,&quot;v&quot;:-5.2},{&quot;t&quot;:7.296,&quot;v&quot;:-5.3},{&quot;t&quot;:7.381,&quot;v&quot;:-6.8},{&quot;t&quot;:7.467,&quot;v&quot;:-6.8},{&quot;t&quot;:7.552,&quot;v&quot;:-7.3},{&quot;t&quot;:7.637,&quot;v&quot;:-6.1},{&quot;t&quot;:7.808,&quot;v&quot;:-5.8},{&quot;t&quot;:7.893,&quot;v&quot;:-4.9},{&quot;t&quot;:7.979,&quot;v&quot;:-3.5},{&quot;t&quot;:8.064,&quot;v&quot;:-2.5},{&quot;t&quot;:8.149,&quot;v&quot;:-1.8},{&quot;t&quot;:8.235,&quot;v&quot;:-1.3},{&quot;t&quot;:8.32,&quot;v&quot;:-0.9},{&quot;t&quot;:8.405,&quot;v&quot;:-0.6},{&quot;t&quot;:8.661,&quot;v&quot;:-0.2},{&quot;t&quot;:8.747,&quot;v&quot;:0},{&quot;t&quot;:9.003,&quot;v&quot;:0},{&quot;t&quot;:9.088,&quot;v&quot;:-1.1},{&quot;t&quot;:9.173,&quot;v&quot;:-0.7},{&quot;t&quot;:9.259,&quot;v&quot;:-3.5},{&quot;t&quot;:9.344,&quot;v&quot;:-4.1},{&quot;t&quot;:9.429,&quot;v&quot;:-5.2},{&quot;t&quot;:9.515,&quot;v&quot;:-3.7},{&quot;t&quot;:9.6,&quot;v&quot;:-3.2},{&quot;t&quot;:9.685,&quot;v&quot;:-3.1},{&quot;t&quot;:9.771,&quot;v&quot;:-4.9},{&quot;t&quot;:9.856,&quot;v&quot;:-5.2},{&quot;t&quot;:9.941,&quot;v&quot;:-5.6},{&quot;t&quot;:10.027,&quot;v&quot;:-4.9},{&quot;t&quot;:10.112,&quot;v&quot;:-3.5},{&quot;t&quot;:10.197,&quot;v&quot;:-4},{&quot;t&quot;:10.283,&quot;v&quot;:-5.1},{&quot;t&quot;:10.368,&quot;v&quot;:-6.3},{&quot;t&quot;:10.453,&quot;v&quot;:-4.4},{&quot;t&quot;:10.539,&quot;v&quot;:-3.7},{&quot;t&quot;:10.624,&quot;v&quot;:-2.6},{&quot;t&quot;:10.709,&quot;v&quot;:-1.9},{&quot;t&quot;:10.795,&quot;v&quot;:-1.3},{&quot;t&quot;:10.88,&quot;v&quot;:-0.9},{&quot;t&quot;:10.965,&quot;v&quot;:-0.7},{&quot;t&quot;:11.051,&quot;v&quot;:-3.8},{&quot;t&quot;:11.136,&quot;v&quot;:-5.6},{&quot;t&quot;:11.221,&quot;v&quot;:-5.6},{&quot;t&quot;:11.307,&quot;v&quot;:-4},{&quot;t&quot;:11.392,&quot;v&quot;:-3.5},{&quot;t&quot;:11.477,&quot;v&quot;:-4.5},{&quot;t&quot;:11.648,&quot;v&quot;:-4.4},{&quot;t&quot;:11.733,&quot;v&quot;:-3.8},{&quot;t&quot;:11.819,&quot;v&quot;:-2.7},{&quot;t&quot;:11.904,&quot;v&quot;:-1.9},{&quot;t&quot;:11.989,&quot;v&quot;:-1.4},{&quot;t&quot;:12.075,&quot;v&quot;:-1},{&quot;t&quot;:12.16,&quot;v&quot;:-0.7},{&quot;t&quot;:12.331,&quot;v&quot;:-0.6},{&quot;t&quot;:12.416,&quot;v&quot;:-1.6},{&quot;t&quot;:12.501,&quot;v&quot;:-3.5},{&quot;t&quot;:12.587,&quot;v&quot;:-2.5},{&quot;t&quot;:12.672,&quot;v&quot;:-1.7},{&quot;t&quot;:12.757,&quot;v&quot;:-1.2},{&quot;t&quot;:12.843,&quot;v&quot;:-0.9},{&quot;t&quot;:12.928,&quot;v&quot;:-0.6},{&quot;t&quot;:13.099,&quot;v&quot;:-0.9},{&quot;t&quot;:13.184,&quot;v&quot;:-3.6},{&quot;t&quot;:13.269,&quot;v&quot;:-4.8},{&quot;t&quot;:13.355,&quot;v&quot;:-5.3},{&quot;t&quot;:13.44,&quot;v&quot;:-4.8},{&quot;t&quot;:13.525,&quot;v&quot;:-3.4},{&quot;t&quot;:13.611,&quot;v&quot;:-3.5},{&quot;t&quot;:13.696,&quot;v&quot;:-5.8},{&quot;t&quot;:13.781,&quot;v&quot;:-6.9},{&quot;t&quot;:13.867,&quot;v&quot;:-6.6},{&quot;t&quot;:13.952,&quot;v&quot;:-4.7},{&quot;t&quot;:14.037,&quot;v&quot;:-3.3},{&quot;t&quot;:14.123,&quot;v&quot;:-3.3},{&quot;t&quot;:14.208,&quot;v&quot;:-5.3},{&quot;t&quot;:14.293,&quot;v&quot;:-4.2},{&quot;t&quot;:14.379,&quot;v&quot;:-3},{&quot;t&quot;:14.464,&quot;v&quot;:-2.1},{&quot;t&quot;:14.549,&quot;v&quot;:-1.5},{&quot;t&quot;:14.635,&quot;v&quot;:-1.1},{&quot;t&quot;:14.644,&quot;v&quot;:0}]},{&quot;target&quot;:&quot;fx.n2.gain&quot;,&quot;points&quot;:[{&quot;t&quot;:0,&quot;v&quot;:0},{&quot;t&quot;:0.555,&quot;v&quot;:0},{&quot;t&quot;:0.64,&quot;v&quot;:-0.9},{&quot;t&quot;:0.725,&quot;v&quot;:-1.2},{&quot;t&quot;:0.811,&quot;v&quot;:-6.3},{&quot;t&quot;:0.896,&quot;v&quot;:-5.2},{&quot;t&quot;:0.981,&quot;v&quot;:-3.7},{&quot;t&quot;:1.067,&quot;v&quot;:-2.7},{&quot;t&quot;:1.152,&quot;v&quot;:-1.9},{&quot;t&quot;:1.237,&quot;v&quot;:-1.4},{&quot;t&quot;:1.323,&quot;v&quot;:-2.2},{&quot;t&quot;:1.408,&quot;v&quot;:-1.6},{&quot;t&quot;:1.493,&quot;v&quot;:-1.1},{&quot;t&quot;:1.579,&quot;v&quot;:-0.8},{&quot;t&quot;:1.664,&quot;v&quot;:-0.6},{&quot;t&quot;:1.92,&quot;v&quot;:-0.2},{&quot;t&quot;:2.005,&quot;v&quot;:0},{&quot;t&quot;:2.688,&quot;v&quot;:0},{&quot;t&quot;:2.773,&quot;v&quot;:-2.7},{&quot;t&quot;:2.859,&quot;v&quot;:-4.8},{&quot;t&quot;:2.944,&quot;v&quot;:-5.4},{&quot;t&quot;:3.029,&quot;v&quot;:-4.9},{&quot;t&quot;:3.115,&quot;v&quot;:-3.5},{&quot;t&quot;:3.2,&quot;v&quot;:-3.6},{&quot;t&quot;:3.285,&quot;v&quot;:-2.5},{&quot;t&quot;:3.371,&quot;v&quot;:-1.8},{&quot;t&quot;:3.456,&quot;v&quot;:-1.3},{&quot;t&quot;:3.541,&quot;v&quot;:-0.9},{&quot;t&quot;:3.627,&quot;v&quot;:-0.6},{&quot;t&quot;:3.712,&quot;v&quot;:-3.2},{&quot;t&quot;:3.797,&quot;v&quot;:-6.2},{&quot;t&quot;:3.883,&quot;v&quot;:-7.1},{&quot;t&quot;:3.968,&quot;v&quot;:-5.3},{&quot;t&quot;:4.053,&quot;v&quot;:-4.1},{&quot;t&quot;:4.139,&quot;v&quot;:-2.9},{&quot;t&quot;:4.224,&quot;v&quot;:-2.4},{&quot;t&quot;:4.309,&quot;v&quot;:-2.1},{&quot;t&quot;:4.395,&quot;v&quot;:-1.5},{&quot;t&quot;:4.48,&quot;v&quot;:-1},{&quot;t&quot;:4.565,&quot;v&quot;:-0.7},{&quot;t&quot;:4.651,&quot;v&quot;:-0.5},{&quot;t&quot;:4.821,&quot;v&quot;:-0.3},{&quot;t&quot;:4.907,&quot;v&quot;:0},{&quot;t&quot;:5.76,&quot;v&quot;:0},{&quot;t&quot;:5.845,&quot;v&quot;:-4.1},{&quot;t&quot;:5.931,&quot;v&quot;:-3.3},{&quot;t&quot;:6.016,&quot;v&quot;:-2.5},{&quot;t&quot;:6.101,&quot;v&quot;:-1.8},{&quot;t&quot;:6.187,&quot;v&quot;:-1.3},{&quot;t&quot;:6.272,&quot;v&quot;:-0.9},{&quot;t&quot;:6.357,&quot;v&quot;:-0.6},{&quot;t&quot;:6.528,&quot;v&quot;:-0.3},{&quot;t&quot;:6.613,&quot;v&quot;:-4.3},{&quot;t&quot;:6.699,&quot;v&quot;:-6.7},{&quot;t&quot;:6.784,&quot;v&quot;:-5.6},{&quot;t&quot;:6.869,&quot;v&quot;:-4},{&quot;t&quot;:6.955,&quot;v&quot;:-5},{&quot;t&quot;:7.04,&quot;v&quot;:-3.6},{&quot;t&quot;:7.125,&quot;v&quot;:-2.6},{&quot;t&quot;:7.211,&quot;v&quot;:-1.8},{&quot;t&quot;:7.296,&quot;v&quot;:-1.3},{&quot;t&quot;:7.381,&quot;v&quot;:-0.9},{&quot;t&quot;:7.467,&quot;v&quot;:-0.7},{&quot;t&quot;:7.552,&quot;v&quot;:-0.5},{&quot;t&quot;:7.637,&quot;v&quot;:-1.4},{&quot;t&quot;:7.808,&quot;v&quot;:-1.3},{&quot;t&quot;:7.893,&quot;v&quot;:-2},{&quot;t&quot;:7.979,&quot;v&quot;:-1.5},{&quot;t&quot;:8.064,&quot;v&quot;:-1},{&quot;t&quot;:8.149,&quot;v&quot;:-0.7},{&quot;t&quot;:8.235,&quot;v&quot;:-0.5},{&quot;t&quot;:8.405,&quot;v&quot;:-0.3},{&quot;t&quot;:8.491,&quot;v&quot;:-4.3},{&quot;t&quot;:8.576,&quot;v&quot;:-4},{&quot;t&quot;:8.661,&quot;v&quot;:-2.9},{&quot;t&quot;:8.747,&quot;v&quot;:-6.4},{&quot;t&quot;:8.832,&quot;v&quot;:-5.5},{&quot;t&quot;:8.917,&quot;v&quot;:-3.9},{&quot;t&quot;:9.003,&quot;v&quot;:-2.8},{&quot;t&quot;:9.088,&quot;v&quot;:-2.8},{&quot;t&quot;:9.173,&quot;v&quot;:-2},{&quot;t&quot;:9.429,&quot;v&quot;:-1.7},{&quot;t&quot;:9.515,&quot;v&quot;:-1.2},{&quot;t&quot;:9.6,&quot;v&quot;:-0.9},{&quot;t&quot;:9.685,&quot;v&quot;:-0.6},{&quot;t&quot;:9.941,&quot;v&quot;:-0.2},{&quot;t&quot;:10.027,&quot;v&quot;:0},{&quot;t&quot;:10.453,&quot;v&quot;:0},{&quot;t&quot;:10.539,&quot;v&quot;:-3.3},{&quot;t&quot;:10.624,&quot;v&quot;:-5.1},{&quot;t&quot;:10.709,&quot;v&quot;:-6.8},{&quot;t&quot;:10.795,&quot;v&quot;:-4.8},{&quot;t&quot;:10.88,&quot;v&quot;:-4},{&quot;t&quot;:10.965,&quot;v&quot;:-2.8},{&quot;t&quot;:11.051,&quot;v&quot;:-2},{&quot;t&quot;:11.136,&quot;v&quot;:-1.4},{&quot;t&quot;:11.392,&quot;v&quot;:-1},{&quot;t&quot;:11.477,&quot;v&quot;:-2.2},{&quot;t&quot;:11.563,&quot;v&quot;:-2},{&quot;t&quot;:11.648,&quot;v&quot;:-1.6},{&quot;t&quot;:11.733,&quot;v&quot;:-1.3},{&quot;t&quot;:11.819,&quot;v&quot;:-1},{&quot;t&quot;:11.904,&quot;v&quot;:-0.7},{&quot;t&quot;:11.989,&quot;v&quot;:-0.5},{&quot;t&quot;:12.16,&quot;v&quot;:-0.2},{&quot;t&quot;:12.245,&quot;v&quot;:-3.3},{&quot;t&quot;:12.331,&quot;v&quot;:-4.6},{&quot;t&quot;:12.416,&quot;v&quot;:-3.9},{&quot;t&quot;:12.501,&quot;v&quot;:-2.8},{&quot;t&quot;:12.587,&quot;v&quot;:-2},{&quot;t&quot;:12.672,&quot;v&quot;:-1.4},{&quot;t&quot;:12.757,&quot;v&quot;:-1},{&quot;t&quot;:12.843,&quot;v&quot;:-0.7},{&quot;t&quot;:13.013,&quot;v&quot;:-0.4},{&quot;t&quot;:13.099,&quot;v&quot;:-4},{&quot;t&quot;:13.184,&quot;v&quot;:-3.7},{&quot;t&quot;:13.269,&quot;v&quot;:-2.6},{&quot;t&quot;:13.355,&quot;v&quot;:-1.9},{&quot;t&quot;:13.44,&quot;v&quot;:-1.3},{&quot;t&quot;:13.525,&quot;v&quot;:-0.9},{&quot;t&quot;:13.611,&quot;v&quot;:-0.7},{&quot;t&quot;:13.867,&quot;v&quot;:-0.3},{&quot;t&quot;:13.952,&quot;v&quot;:-5.7},{&quot;t&quot;:14.037,&quot;v&quot;:-6.1},{&quot;t&quot;:14.123,&quot;v&quot;:-4.4},{&quot;t&quot;:14.208,&quot;v&quot;:-3.2},{&quot;t&quot;:14.293,&quot;v&quot;:-2.8},{&quot;t&quot;:14.379,&quot;v&quot;:-2},{&quot;t&quot;:14.464,&quot;v&quot;:-1.4},{&quot;t&quot;:14.549,&quot;v&quot;:-1},{&quot;t&quot;:14.635,&quot;v&quot;:-0.7},{&quot;t&quot;:14.644,&quot;v&quot;:0}]},{&quot;target&quot;:&quot;fx.n3.gain&quot;,&quot;points&quot;:[{&quot;t&quot;:0,&quot;v&quot;:0},{&quot;t&quot;:0.64,&quot;v&quot;:0},{&quot;t&quot;:0.725,&quot;v&quot;:-2.6},{&quot;t&quot;:0.811,&quot;v&quot;:-1.8},{&quot;t&quot;:0.896,&quot;v&quot;:-1.3},{&quot;t&quot;:0.981,&quot;v&quot;:-0.9},{&quot;t&quot;:1.067,&quot;v&quot;:-4.8},{&quot;t&quot;:1.152,&quot;v&quot;:-6.4},{&quot;t&quot;:1.237,&quot;v&quot;:-6.5},{&quot;t&quot;:1.323,&quot;v&quot;:-5.5},{&quot;t&quot;:1.408,&quot;v&quot;:-4},{&quot;t&quot;:1.493,&quot;v&quot;:-2.9},{&quot;t&quot;:1.579,&quot;v&quot;:-2},{&quot;t&quot;:1.664,&quot;v&quot;:-1.5},{&quot;t&quot;:1.749,&quot;v&quot;:-1},{&quot;t&quot;:1.835,&quot;v&quot;:-0.7},{&quot;t&quot;:1.92,&quot;v&quot;:-0.5},{&quot;t&quot;:2.091,&quot;v&quot;:-0.3},{&quot;t&quot;:2.176,&quot;v&quot;:0},{&quot;t&quot;:2.603,&quot;v&quot;:0},{&quot;t&quot;:2.688,&quot;v&quot;:-5.1},{&quot;t&quot;:2.773,&quot;v&quot;:-4.2},{&quot;t&quot;:2.859,&quot;v&quot;:-5.8},{&quot;t&quot;:2.944,&quot;v&quot;:-4.3},{&quot;t&quot;:3.029,&quot;v&quot;:-6.8},{&quot;t&quot;:3.115,&quot;v&quot;:-6.5},{&quot;t&quot;:3.2,&quot;v&quot;:-5},{&quot;t&quot;:3.285,&quot;v&quot;:-3.5},{&quot;t&quot;:3.371,&quot;v&quot;:-2.5},{&quot;t&quot;:3.456,&quot;v&quot;:-1.8},{&quot;t&quot;:3.541,&quot;v&quot;:-1.3},{&quot;t&quot;:3.627,&quot;v&quot;:-6},{&quot;t&quot;:3.712,&quot;v&quot;:-6.9},{&quot;t&quot;:3.797,&quot;v&quot;:-5.8},{&quot;t&quot;:3.883,&quot;v&quot;:-4.4},{&quot;t&quot;:3.968,&quot;v&quot;:-3.8},{&quot;t&quot;:4.224,&quot;v&quot;:-3.9},{&quot;t&quot;:4.309,&quot;v&quot;:-5},{&quot;t&quot;:4.395,&quot;v&quot;:-3.5},{&quot;t&quot;:4.48,&quot;v&quot;:-2.5},{&quot;t&quot;:4.565,&quot;v&quot;:-1.8},{&quot;t&quot;:4.651,&quot;v&quot;:-1.3},{&quot;t&quot;:4.736,&quot;v&quot;:-0.9},{&quot;t&quot;:4.821,&quot;v&quot;:-0.6},{&quot;t&quot;:5.077,&quot;v&quot;:-0.2},{&quot;t&quot;:5.163,&quot;v&quot;:0},{&quot;t&quot;:5.504,&quot;v&quot;:-0.3},{&quot;t&quot;:5.589,&quot;v&quot;:-3.1},{&quot;t&quot;:5.675,&quot;v&quot;:-6},{&quot;t&quot;:5.76,&quot;v&quot;:-5.5},{&quot;t&quot;:5.845,&quot;v&quot;:-4.5},{&quot;t&quot;:5.931,&quot;v&quot;:-5.2},{&quot;t&quot;:6.016,&quot;v&quot;:-4.7},{&quot;t&quot;:6.101,&quot;v&quot;:-3.6},{&quot;t&quot;:6.187,&quot;v&quot;:-2.6},{&quot;t&quot;:6.272,&quot;v&quot;:-1.8},{&quot;t&quot;:6.357,&quot;v&quot;:-1.3},{&quot;t&quot;:6.443,&quot;v&quot;:-0.9},{&quot;t&quot;:6.528,&quot;v&quot;:-0.7},{&quot;t&quot;:6.613,&quot;v&quot;:-4.5},{&quot;t&quot;:6.699,&quot;v&quot;:-4.1},{&quot;t&quot;:6.784,&quot;v&quot;:-2.9},{&quot;t&quot;:6.869,&quot;v&quot;:-2.1},{&quot;t&quot;:6.955,&quot;v&quot;:-5.6},{&quot;t&quot;:7.04,&quot;v&quot;:-4},{&quot;t&quot;:7.125,&quot;v&quot;:-5.5},{&quot;t&quot;:7.296,&quot;v&quot;:-5.6},{&quot;t&quot;:7.381,&quot;v&quot;:-4.1},{&quot;t&quot;:7.467,&quot;v&quot;:-3.7},{&quot;t&quot;:7.552,&quot;v&quot;:-2.7},{&quot;t&quot;:7.637,&quot;v&quot;:-3.9},{&quot;t&quot;:7.723,&quot;v&quot;:-4},{&quot;t&quot;:7.808,&quot;v&quot;:-4.6},{&quot;t&quot;:7.893,&quot;v&quot;:-3.3},{&quot;t&quot;:7.979,&quot;v&quot;:-2.3},{&quot;t&quot;:8.064,&quot;v&quot;:-1.7},{&quot;t&quot;:8.149,&quot;v&quot;:-1.2},{&quot;t&quot;:8.235,&quot;v&quot;:-0.8},{&quot;t&quot;:8.32,&quot;v&quot;:-0.6},{&quot;t&quot;:8.405,&quot;v&quot;:-0.4},{&quot;t&quot;:8.491,&quot;v&quot;:-3.6},{&quot;t&quot;:8.576,&quot;v&quot;:-3.3},{&quot;t&quot;:8.661,&quot;v&quot;:-4.5},{&quot;t&quot;:8.747,&quot;v&quot;:-3.8},{&quot;t&quot;:8.832,&quot;v&quot;:-2.9},{&quot;t&quot;:8.917,&quot;v&quot;:-2.1},{&quot;t&quot;:9.003,&quot;v&quot;:-1.5},{&quot;t&quot;:9.088,&quot;v&quot;:-3.5},{&quot;t&quot;:9.173,&quot;v&quot;:-4.7},{&quot;t&quot;:9.259,&quot;v&quot;:-3.9},{&quot;t&quot;:9.344,&quot;v&quot;:-5.6},{&quot;t&quot;:9.429,&quot;v&quot;:-5.6},{&quot;t&quot;:9.515,&quot;v&quot;:-5},{&quot;t&quot;:9.6,&quot;v&quot;:-6.7},{&quot;t&quot;:9.685,&quot;v&quot;:-7.1},{&quot;t&quot;:9.771,&quot;v&quot;:-6.2},{&quot;t&quot;:9.856,&quot;v&quot;:-5.3},{&quot;t&quot;:9.941,&quot;v&quot;:-5.1},{&quot;t&quot;:10.027,&quot;v&quot;:-3.6},{&quot;t&quot;:10.112,&quot;v&quot;:-2.6},{&quot;t&quot;:10.197,&quot;v&quot;:-2.4},{&quot;t&quot;:10.283,&quot;v&quot;:-3.7},{&quot;t&quot;:10.368,&quot;v&quot;:-2.9},{&quot;t&quot;:10.453,&quot;v&quot;:-2.1},{&quot;t&quot;:10.539,&quot;v&quot;:-5.8},{&quot;t&quot;:10.624,&quot;v&quot;:-5},{&quot;t&quot;:10.709,&quot;v&quot;:-3.7},{&quot;t&quot;:10.795,&quot;v&quot;:-6.3},{&quot;t&quot;:10.88,&quot;v&quot;:-5.8},{&quot;t&quot;:10.965,&quot;v&quot;:-4.1},{&quot;t&quot;:11.051,&quot;v&quot;:-6},{&quot;t&quot;:11.136,&quot;v&quot;:-4.3},{&quot;t&quot;:11.221,&quot;v&quot;:-3.1},{&quot;t&quot;:11.307,&quot;v&quot;:-5.1},{&quot;t&quot;:11.392,&quot;v&quot;:-4},{&quot;t&quot;:11.477,&quot;v&quot;:-2.9},{&quot;t&quot;:11.563,&quot;v&quot;:-2},{&quot;t&quot;:11.648,&quot;v&quot;:-4.9},{&quot;t&quot;:11.733,&quot;v&quot;:-4.7},{&quot;t&quot;:11.819,&quot;v&quot;:-3.3},{&quot;t&quot;:11.904,&quot;v&quot;:-2.4},{&quot;t&quot;:11.989,&quot;v&quot;:-1.7},{&quot;t&quot;:12.075,&quot;v&quot;:-1.2},{&quot;t&quot;:12.16,&quot;v&quot;:-0.9},{&quot;t&quot;:12.245,&quot;v&quot;:-5.6},{&quot;t&quot;:12.331,&quot;v&quot;:-4},{&quot;t&quot;:12.416,&quot;v&quot;:-4.6},{&quot;t&quot;:12.501,&quot;v&quot;:-3.8},{&quot;t&quot;:12.587,&quot;v&quot;:-2.7},{&quot;t&quot;:12.672,&quot;v&quot;:-1.9},{&quot;t&quot;:12.757,&quot;v&quot;:-1.4},{&quot;t&quot;:12.843,&quot;v&quot;:-1},{&quot;t&quot;:12.928,&quot;v&quot;:-0.7},{&quot;t&quot;:13.013,&quot;v&quot;:-6},{&quot;t&quot;:13.099,&quot;v&quot;:-5},{&quot;t&quot;:13.184,&quot;v&quot;:-4.5},{&quot;t&quot;:13.269,&quot;v&quot;:-4.5},{&quot;t&quot;:13.355,&quot;v&quot;:-3.6},{&quot;t&quot;:13.44,&quot;v&quot;:-2.6},{&quot;t&quot;:13.525,&quot;v&quot;:-1.8},{&quot;t&quot;:13.611,&quot;v&quot;:-5.5},{&quot;t&quot;:13.696,&quot;v&quot;:-4.6},{&quot;t&quot;:13.781,&quot;v&quot;:-3.3},{&quot;t&quot;:13.867,&quot;v&quot;:-3},{&quot;t&quot;:13.952,&quot;v&quot;:-2.1},{&quot;t&quot;:14.037,&quot;v&quot;:-4.4},{&quot;t&quot;:14.123,&quot;v&quot;:-6},{&quot;t&quot;:14.208,&quot;v&quot;:-5.9},{&quot;t&quot;:14.293,&quot;v&quot;:-4.2},{&quot;t&quot;:14.379,&quot;v&quot;:-3},{&quot;t&quot;:14.464,&quot;v&quot;:-2.1},{&quot;t&quot;:14.549,&quot;v&quot;:-1.5},{&quot;t&quot;:14.635,&quot;v&quot;:-1.1},{&quot;t&quot;:14.644,&quot;v&quot;:0}]},{&quot;target&quot;:&quot;fx.n4.gain&quot;,&quot;points&quot;:[{&quot;t&quot;:0,&quot;v&quot;:0},{&quot;t&quot;:0.981,&quot;v&quot;:0},{&quot;t&quot;:1.067,&quot;v&quot;:-0.7},{&quot;t&quot;:1.152,&quot;v&quot;:-5.5},{&quot;t&quot;:1.408,&quot;v&quot;:-5.2},{&quot;t&quot;:1.493,&quot;v&quot;:-3.7},{&quot;t&quot;:1.579,&quot;v&quot;:-2.6},{&quot;t&quot;:1.664,&quot;v&quot;:-1.9},{&quot;t&quot;:1.749,&quot;v&quot;:-1.3},{&quot;t&quot;:1.835,&quot;v&quot;:-0.9},{&quot;t&quot;:1.92,&quot;v&quot;:-0.7},{&quot;t&quot;:2.176,&quot;v&quot;:-0.2},{&quot;t&quot;:2.261,&quot;v&quot;:0},{&quot;t&quot;:2.603,&quot;v&quot;:0},{&quot;t&quot;:2.688,&quot;v&quot;:-2.5},{&quot;t&quot;:2.773,&quot;v&quot;:-3.7},{&quot;t&quot;:2.859,&quot;v&quot;:-3.1},{&quot;t&quot;:2.944,&quot;v&quot;:-2.2},{&quot;t&quot;:3.029,&quot;v&quot;:-4.3},{&quot;t&quot;:3.115,&quot;v&quot;:-4.1},{&quot;t&quot;:3.2,&quot;v&quot;:-3},{&quot;t&quot;:3.285,&quot;v&quot;:-2.3},{&quot;t&quot;:3.371,&quot;v&quot;:-1.7},{&quot;t&quot;:3.456,&quot;v&quot;:-1.2},{&quot;t&quot;:3.541,&quot;v&quot;:-0.8},{&quot;t&quot;:3.627,&quot;v&quot;:-5.1},{&quot;t&quot;:3.712,&quot;v&quot;:-4.8},{&quot;t&quot;:3.797,&quot;v&quot;:-3.9},{&quot;t&quot;:3.883,&quot;v&quot;:-3.5},{&quot;t&quot;:3.968,&quot;v&quot;:-3},{&quot;t&quot;:4.053,&quot;v&quot;:-5.4},{&quot;t&quot;:4.139,&quot;v&quot;:-5.7},{&quot;t&quot;:4.224,&quot;v&quot;:-4.2},{&quot;t&quot;:4.309,&quot;v&quot;:-3.7},{&quot;t&quot;:4.395,&quot;v&quot;:-2.6},{&quot;t&quot;:4.48,&quot;v&quot;:-1.8},{&quot;t&quot;:4.565,&quot;v&quot;:-1.3},{&quot;t&quot;:4.651,&quot;v&quot;:-0.9},{&quot;t&quot;:4.736,&quot;v&quot;:-0.7},{&quot;t&quot;:4.992,&quot;v&quot;:-0.2},{&quot;t&quot;:5.077,&quot;v&quot;:0},{&quot;t&quot;:5.419,&quot;v&quot;:0},{&quot;t&quot;:5.504,&quot;v&quot;:-2.5},{&quot;t&quot;:5.589,&quot;v&quot;:-6.5},{&quot;t&quot;:5.675,&quot;v&quot;:-5.8},{&quot;t&quot;:5.76,&quot;v&quot;:-4.5},{&quot;t&quot;:5.845,&quot;v&quot;:-6},{&quot;t&quot;:5.931,&quot;v&quot;:-6.4},{&quot;t&quot;:6.016,&quot;v&quot;:-4.6},{&quot;t&quot;:6.101,&quot;v&quot;:-4},{&quot;t&quot;:6.187,&quot;v&quot;:-2.8},{&quot;t&quot;:6.272,&quot;v&quot;:-2},{&quot;t&quot;:6.357,&quot;v&quot;:-1.4},{&quot;t&quot;:6.443,&quot;v&quot;:-1},{&quot;t&quot;:6.528,&quot;v&quot;:-0.7},{&quot;t&quot;:6.613,&quot;v&quot;:-3.4},{&quot;t&quot;:6.699,&quot;v&quot;:-3.9},{&quot;t&quot;:6.784,&quot;v&quot;:-2.8},{&quot;t&quot;:6.869,&quot;v&quot;:-2},{&quot;t&quot;:6.955,&quot;v&quot;:-2.5},{&quot;t&quot;:7.04,&quot;v&quot;:-1.8},{&quot;t&quot;:7.125,&quot;v&quot;:-4.8},{&quot;t&quot;:7.296,&quot;v&quot;:-5.1},{&quot;t&quot;:7.381,&quot;v&quot;:-3.6},{&quot;t&quot;:7.467,&quot;v&quot;:-2.6},{&quot;t&quot;:7.552,&quot;v&quot;:-1.8},{&quot;t&quot;:7.637,&quot;v&quot;:-1.7},{&quot;t&quot;:7.723,&quot;v&quot;:-2.9},{&quot;t&quot;:7.808,&quot;v&quot;:-2.6},{&quot;t&quot;:7.893,&quot;v&quot;:-1.8},{&quot;t&quot;:7.979,&quot;v&quot;:-1.3},{&quot;t&quot;:8.064,&quot;v&quot;:-0.9},{&quot;t&quot;:8.149,&quot;v&quot;:-0.7},{&quot;t&quot;:8.405,&quot;v&quot;:-0.2},{&quot;t&quot;:8.491,&quot;v&quot;:-5.2},{&quot;t&quot;:8.576,&quot;v&quot;:-4.2},{&quot;t&quot;:8.661,&quot;v&quot;:-3.7},{&quot;t&quot;:8.747,&quot;v&quot;:-3.4},{&quot;t&quot;:8.832,&quot;v&quot;:-2.6},{&quot;t&quot;:8.917,&quot;v&quot;:-1.8},{&quot;t&quot;:9.003,&quot;v&quot;:-1.3},{&quot;t&quot;:9.259,&quot;v&quot;:-1.2},{&quot;t&quot;:9.344,&quot;v&quot;:-4.3},{&quot;t&quot;:9.429,&quot;v&quot;:-4.3},{&quot;t&quot;:9.515,&quot;v&quot;:-3},{&quot;t&quot;:9.6,&quot;v&quot;:-3.7},{&quot;t&quot;:9.685,&quot;v&quot;:-4.2},{&quot;t&quot;:9.771,&quot;v&quot;:-5.8},{&quot;t&quot;:9.856,&quot;v&quot;:-6.3},{&quot;t&quot;:9.941,&quot;v&quot;:-4.9},{&quot;t&quot;:10.027,&quot;v&quot;:-3.5},{&quot;t&quot;:10.112,&quot;v&quot;:-2.5},{&quot;t&quot;:10.197,&quot;v&quot;:-6.5},{&quot;t&quot;:10.283,&quot;v&quot;:-6.1},{&quot;t&quot;:10.368,&quot;v&quot;:-4.6},{&quot;t&quot;:10.453,&quot;v&quot;:-3.3},{&quot;t&quot;:10.539,&quot;v&quot;:-5.2},{&quot;t&quot;:10.624,&quot;v&quot;:-6.4},{&quot;t&quot;:10.709,&quot;v&quot;:-4.6},{&quot;t&quot;:10.795,&quot;v&quot;:-6},{&quot;t&quot;:10.88,&quot;v&quot;:-5.6},{&quot;t&quot;:10.965,&quot;v&quot;:-4},{&quot;t&quot;:11.051,&quot;v&quot;:-4.9},{&quot;t&quot;:11.136,&quot;v&quot;:-4.2},{&quot;t&quot;:11.221,&quot;v&quot;:-3.7},{&quot;t&quot;:11.307,&quot;v&quot;:-3.3},{&quot;t&quot;:11.392,&quot;v&quot;:-2.9},{&quot;t&quot;:11.477,&quot;v&quot;:-2},{&quot;t&quot;:11.563,&quot;v&quot;:-1.5},{&quot;t&quot;:11.648,&quot;v&quot;:-4.7},{&quot;t&quot;:11.733,&quot;v&quot;:-4.2},{&quot;t&quot;:11.819,&quot;v&quot;:-3},{&quot;t&quot;:11.904,&quot;v&quot;:-2.1},{&quot;t&quot;:11.989,&quot;v&quot;:-1.5},{&quot;t&quot;:12.075,&quot;v&quot;:-1.1},{&quot;t&quot;:12.16,&quot;v&quot;:-0.8},{&quot;t&quot;:12.245,&quot;v&quot;:-5},{&quot;t&quot;:12.331,&quot;v&quot;:-5.4},{&quot;t&quot;:12.416,&quot;v&quot;:-6.6},{&quot;t&quot;:12.501,&quot;v&quot;:-6.2},{&quot;t&quot;:12.587,&quot;v&quot;:-4.4},{&quot;t&quot;:12.672,&quot;v&quot;:-3.1},{&quot;t&quot;:12.757,&quot;v&quot;:-2.2},{&quot;t&quot;:12.843,&quot;v&quot;:-1.6},{&quot;t&quot;:12.928,&quot;v&quot;:-1.1},{&quot;t&quot;:13.013,&quot;v&quot;:-2.7},{&quot;t&quot;:13.099,&quot;v&quot;:-2.4},{&quot;t&quot;:13.184,&quot;v&quot;:-2},{&quot;t&quot;:13.269,&quot;v&quot;:-2},{&quot;t&quot;:13.355,&quot;v&quot;:-1.4},{&quot;t&quot;:13.44,&quot;v&quot;:-1},{&quot;t&quot;:13.525,&quot;v&quot;:-0.7},{&quot;t&quot;:13.611,&quot;v&quot;:-2.5},{&quot;t&quot;:13.696,&quot;v&quot;:-3.2},{&quot;t&quot;:13.781,&quot;v&quot;:-2.3},{&quot;t&quot;:13.867,&quot;v&quot;:-1.6},{&quot;t&quot;:13.952,&quot;v&quot;:-1.5},{&quot;t&quot;:14.037,&quot;v&quot;:-3.5},{&quot;t&quot;:14.123,&quot;v&quot;:-5.5},{&quot;t&quot;:14.208,&quot;v&quot;:-4.8},{&quot;t&quot;:14.293,&quot;v&quot;:-3.4},{&quot;t&quot;:14.379,&quot;v&quot;:-2.4},{&quot;t&quot;:14.464,&quot;v&quot;:-1.7},{&quot;t&quot;:14.549,&quot;v&quot;:-1.2},{&quot;t&quot;:14.635,&quot;v&quot;:-0.9},{&quot;t&quot;:14.644,&quot;v&quot;:0}]},{&quot;target&quot;:&quot;fx.n5.gain&quot;,&quot;points&quot;:[{&quot;t&quot;:0,&quot;v&quot;:0},{&quot;t&quot;:0.64,&quot;v&quot;:0},{&quot;t&quot;:0.725,&quot;v&quot;:-1.7},{&quot;t&quot;:0.811,&quot;v&quot;:-1.2},{&quot;t&quot;:0.896,&quot;v&quot;:-0.9},{&quot;t&quot;:0.981,&quot;v&quot;:-0.6},{&quot;t&quot;:1.067,&quot;v&quot;:-0.4},{&quot;t&quot;:1.152,&quot;v&quot;:-2.2},{&quot;t&quot;:1.237,&quot;v&quot;:-10},{&quot;t&quot;:1.323,&quot;v&quot;:-11.4},{&quot;t&quot;:1.408,&quot;v&quot;:-10.8},{&quot;t&quot;:1.493,&quot;v&quot;:-7.7},{&quot;t&quot;:1.579,&quot;v&quot;:-5.5},{&quot;t&quot;:1.664,&quot;v&quot;:-3.9},{&quot;t&quot;:1.749,&quot;v&quot;:-2.8},{&quot;t&quot;:1.835,&quot;v&quot;:-2},{&quot;t&quot;:1.92,&quot;v&quot;:-1.4},{&quot;t&quot;:2.005,&quot;v&quot;:-1},{&quot;t&quot;:2.091,&quot;v&quot;:-0.7},{&quot;t&quot;:2.347,&quot;v&quot;:-0.3},{&quot;t&quot;:2.432,&quot;v&quot;:0},{&quot;t&quot;:2.603,&quot;v&quot;:0},{&quot;t&quot;:2.688,&quot;v&quot;:-9.1},{&quot;t&quot;:2.773,&quot;v&quot;:-7.9},{&quot;t&quot;:2.859,&quot;v&quot;:-5.9},{&quot;t&quot;:2.944,&quot;v&quot;:-4.2},{&quot;t&quot;:3.029,&quot;v&quot;:-10.5},{&quot;t&quot;:3.115,&quot;v&quot;:-9.6},{&quot;t&quot;:3.2,&quot;v&quot;:-6.8},{&quot;t&quot;:3.285,&quot;v&quot;:-6.5},{&quot;t&quot;:3.371,&quot;v&quot;:-4.9},{&quot;t&quot;:3.456,&quot;v&quot;:-3.5},{&quot;t&quot;:3.541,&quot;v&quot;:-2.5},{&quot;t&quot;:3.627,&quot;v&quot;:-11.6},{&quot;t&quot;:3.712,&quot;v&quot;:-11},{&quot;t&quot;:3.797,&quot;v&quot;:-8.7},{&quot;t&quot;:3.883,&quot;v&quot;:-7.4},{&quot;t&quot;:4.053,&quot;v&quot;:-7.3},{&quot;t&quot;:4.139,&quot;v&quot;:-8.5},{&quot;t&quot;:4.224,&quot;v&quot;:-7.4},{&quot;t&quot;:4.309,&quot;v&quot;:-7.3},{&quot;t&quot;:4.395,&quot;v&quot;:-5.2},{&quot;t&quot;:4.48,&quot;v&quot;:-3.7},{&quot;t&quot;:4.565,&quot;v&quot;:-2.6},{&quot;t&quot;:4.651,&quot;v&quot;:-1.9},{&quot;t&quot;:4.736,&quot;v&quot;:-1.3},{&quot;t&quot;:4.821,&quot;v&quot;:-0.9},{&quot;t&quot;:4.907,&quot;v&quot;:-0.7},{&quot;t&quot;:5.163,&quot;v&quot;:-0.2},{&quot;t&quot;:5.248,&quot;v&quot;:0},{&quot;t&quot;:5.504,&quot;v&quot;:0},{&quot;t&quot;:5.589,&quot;v&quot;:-7.5},{&quot;t&quot;:5.675,&quot;v&quot;:-11.2},{&quot;t&quot;:5.76,&quot;v&quot;:-7.9},{&quot;t&quot;:5.845,&quot;v&quot;:-13.6},{&quot;t&quot;:5.931,&quot;v&quot;:-13.9},{&quot;t&quot;:6.016,&quot;v&quot;:-11.7},{&quot;t&quot;:6.101,&quot;v&quot;:-10.1},{&quot;t&quot;:6.187,&quot;v&quot;:-7.2},{&quot;t&quot;:6.272,&quot;v&quot;:-5.1},{&quot;t&quot;:6.357,&quot;v&quot;:-3.6},{&quot;t&quot;:6.443,&quot;v&quot;:-2.6},{&quot;t&quot;:6.528,&quot;v&quot;:-6.2},{&quot;t&quot;:6.613,&quot;v&quot;:-12},{&quot;t&quot;:6.699,&quot;v&quot;:-11.4},{&quot;t&quot;:6.784,&quot;v&quot;:-8.1},{&quot;t&quot;:6.869,&quot;v&quot;:-5.7},{&quot;t&quot;:6.955,&quot;v&quot;:-13.1},{&quot;t&quot;:7.04,&quot;v&quot;:-9.7},{&quot;t&quot;:7.125,&quot;v&quot;:-9.2},{&quot;t&quot;:7.211,&quot;v&quot;:-9.9},{&quot;t&quot;:7.296,&quot;v&quot;:-12.7},{&quot;t&quot;:7.381,&quot;v&quot;:-9.3},{&quot;t&quot;:7.467,&quot;v&quot;:-8.4},{&quot;t&quot;:7.552,&quot;v&quot;:-5.9},{&quot;t&quot;:7.637,&quot;v&quot;:-7.2},{&quot;t&quot;:7.723,&quot;v&quot;:-7.7},{&quot;t&quot;:7.808,&quot;v&quot;:-6.8},{&quot;t&quot;:7.893,&quot;v&quot;:-4.8},{&quot;t&quot;:7.979,&quot;v&quot;:-3.4},{&quot;t&quot;:8.064,&quot;v&quot;:-3.1},{&quot;t&quot;:8.149,&quot;v&quot;:-2.2},{&quot;t&quot;:8.235,&quot;v&quot;:-1.6},{&quot;t&quot;:8.32,&quot;v&quot;:-1.1},{&quot;t&quot;:8.405,&quot;v&quot;:-0.8},{&quot;t&quot;:8.491,&quot;v&quot;:-9.2},{&quot;t&quot;:8.576,&quot;v&quot;:-7.8},{&quot;t&quot;:8.832,&quot;v&quot;:-7.8},{&quot;t&quot;:8.917,&quot;v&quot;:-6.5},{&quot;t&quot;:9.003,&quot;v&quot;:-6.4},{&quot;t&quot;:9.088,&quot;v&quot;:-11.9},{&quot;t&quot;:9.173,&quot;v&quot;:-9.4},{&quot;t&quot;:9.259,&quot;v&quot;:-7.9},{&quot;t&quot;:9.344,&quot;v&quot;:-10.9},{&quot;t&quot;:9.429,&quot;v&quot;:-10.5},{&quot;t&quot;:9.515,&quot;v&quot;:-7.7},{&quot;t&quot;:9.6,&quot;v&quot;:-7.1},{&quot;t&quot;:9.685,&quot;v&quot;:-7.4},{&quot;t&quot;:9.771,&quot;v&quot;:-12.2},{&quot;t&quot;:9.856,&quot;v&quot;:-13.1},{&quot;t&quot;:9.941,&quot;v&quot;:-10},{&quot;t&quot;:10.027,&quot;v&quot;:-7.1},{&quot;t&quot;:10.112,&quot;v&quot;:-5},{&quot;t&quot;:10.197,&quot;v&quot;:-9},{&quot;t&quot;:10.283,&quot;v&quot;:-8.6},{&quot;t&quot;:10.368,&quot;v&quot;:-6.1},{&quot;t&quot;:10.453,&quot;v&quot;:-4.3},{&quot;t&quot;:10.539,&quot;v&quot;:-11.7},{&quot;t&quot;:10.624,&quot;v&quot;:-13.9},{&quot;t&quot;:10.709,&quot;v&quot;:-10.5},{&quot;t&quot;:10.795,&quot;v&quot;:-10.8},{&quot;t&quot;:10.88,&quot;v&quot;:-7.7},{&quot;t&quot;:10.965,&quot;v&quot;:-5.5},{&quot;t&quot;:11.051,&quot;v&quot;:-12.1},{&quot;t&quot;:11.136,&quot;v&quot;:-10.9},{&quot;t&quot;:11.221,&quot;v&quot;:-9.4},{&quot;t&quot;:11.307,&quot;v&quot;:-10.9},{&quot;t&quot;:11.392,&quot;v&quot;:-7.8},{&quot;t&quot;:11.477,&quot;v&quot;:-5.7},{&quot;t&quot;:11.563,&quot;v&quot;:-4.1},{&quot;t&quot;:11.648,&quot;v&quot;:-2.9},{&quot;t&quot;:11.733,&quot;v&quot;:-2.1},{&quot;t&quot;:11.819,&quot;v&quot;:-1.5},{&quot;t&quot;:11.904,&quot;v&quot;:-1.1},{&quot;t&quot;:11.989,&quot;v&quot;:-0.7},{&quot;t&quot;:12.16,&quot;v&quot;:-0.4},{&quot;t&quot;:12.245,&quot;v&quot;:-6.7},{&quot;t&quot;:12.331,&quot;v&quot;:-5.3},{&quot;t&quot;:12.416,&quot;v&quot;:-9.7},{&quot;t&quot;:12.501,&quot;v&quot;:-9.3},{&quot;t&quot;:12.587,&quot;v&quot;:-6.6},{&quot;t&quot;:12.672,&quot;v&quot;:-4.7},{&quot;t&quot;:12.757,&quot;v&quot;:-3.3},{&quot;t&quot;:12.843,&quot;v&quot;:-2.4},{&quot;t&quot;:12.928,&quot;v&quot;:-1.7},{&quot;t&quot;:13.013,&quot;v&quot;:-5.8},{&quot;t&quot;:13.099,&quot;v&quot;:-5.3},{&quot;t&quot;:13.184,&quot;v&quot;:-4.7},{&quot;t&quot;:13.269,&quot;v&quot;:-3.4},{&quot;t&quot;:13.355,&quot;v&quot;:-2.5},{&quot;t&quot;:13.44,&quot;v&quot;:-1.8},{&quot;t&quot;:13.525,&quot;v&quot;:-1.3},{&quot;t&quot;:13.611,&quot;v&quot;:-1.3},{&quot;t&quot;:13.696,&quot;v&quot;:-2.2},{&quot;t&quot;:13.781,&quot;v&quot;:-1.8},{&quot;t&quot;:13.867,&quot;v&quot;:-1.3},{&quot;t&quot;:13.952,&quot;v&quot;:-5.4},{&quot;t&quot;:14.037,&quot;v&quot;:-3.8},{&quot;t&quot;:14.123,&quot;v&quot;:-9.9},{&quot;t&quot;:14.208,&quot;v&quot;:-9.2},{&quot;t&quot;:14.293,&quot;v&quot;:-6.6},{&quot;t&quot;:14.379,&quot;v&quot;:-4.7},{&quot;t&quot;:14.464,&quot;v&quot;:-3.3},{&quot;t&quot;:14.549,&quot;v&quot;:-2.4},{&quot;t&quot;:14.635,&quot;v&quot;:-1.7},{&quot;t&quot;:14.644,&quot;v&quot;:0}]},{&quot;target&quot;:&quot;fx.n6.gain&quot;,&quot;points&quot;:[{&quot;t&quot;:0,&quot;v&quot;:0},{&quot;t&quot;:0.64,&quot;v&quot;:0},{&quot;t&quot;:0.725,&quot;v&quot;:-1.9},{&quot;t&quot;:0.811,&quot;v&quot;:-5.3},{&quot;t&quot;:0.896,&quot;v&quot;:-4.5},{&quot;t&quot;:0.981,&quot;v&quot;:-3.2},{&quot;t&quot;:1.067,&quot;v&quot;:-2.3},{&quot;t&quot;:1.152,&quot;v&quot;:-2},{&quot;t&quot;:1.237,&quot;v&quot;:-1.4},{&quot;t&quot;:1.323,&quot;v&quot;:-2.5},{&quot;t&quot;:1.408,&quot;v&quot;:-1.9},{&quot;t&quot;:1.493,&quot;v&quot;:-1.4},{&quot;t&quot;:1.579,&quot;v&quot;:-1},{&quot;t&quot;:1.664,&quot;v&quot;:-0.7},{&quot;t&quot;:1.92,&quot;v&quot;:-0.3},{&quot;t&quot;:2.005,&quot;v&quot;:0},{&quot;t&quot;:2.688,&quot;v&quot;:-0.4},{&quot;t&quot;:2.773,&quot;v&quot;:-2.1},{&quot;t&quot;:2.859,&quot;v&quot;:-1.5},{&quot;t&quot;:2.944,&quot;v&quot;:-1},{&quot;t&quot;:3.029,&quot;v&quot;:-4.8},{&quot;t&quot;:3.115,&quot;v&quot;:-5.4},{&quot;t&quot;:3.2,&quot;v&quot;:-3.9},{&quot;t&quot;:3.285,&quot;v&quot;:-3.4},{&quot;t&quot;:3.371,&quot;v&quot;:-2.4},{&quot;t&quot;:3.456,&quot;v&quot;:-1.7},{&quot;t&quot;:3.541,&quot;v&quot;:-1.2},{&quot;t&quot;:3.627,&quot;v&quot;:-2.8},{&quot;t&quot;:3.712,&quot;v&quot;:-5.9},{&quot;t&quot;:3.797,&quot;v&quot;:-6.4},{&quot;t&quot;:3.883,&quot;v&quot;:-6.1},{&quot;t&quot;:3.968,&quot;v&quot;:-4.4},{&quot;t&quot;:4.053,&quot;v&quot;:-4.3},{&quot;t&quot;:4.139,&quot;v&quot;:-3.9},{&quot;t&quot;:4.309,&quot;v&quot;:-4.1},{&quot;t&quot;:4.395,&quot;v&quot;:-2.9},{&quot;t&quot;:4.48,&quot;v&quot;:-2.1},{&quot;t&quot;:4.565,&quot;v&quot;:-1.5},{&quot;t&quot;:4.651,&quot;v&quot;:-1},{&quot;t&quot;:4.736,&quot;v&quot;:-0.7},{&quot;t&quot;:4.821,&quot;v&quot;:-0.5},{&quot;t&quot;:4.992,&quot;v&quot;:-0.3},{&quot;t&quot;:5.077,&quot;v&quot;:0},{&quot;t&quot;:5.589,&quot;v&quot;:0},{&quot;t&quot;:5.675,&quot;v&quot;:-1},{&quot;t&quot;:5.76,&quot;v&quot;:-0.7},{&quot;t&quot;:5.845,&quot;v&quot;:-3.4},{&quot;t&quot;:5.931,&quot;v&quot;:-3.4},{&quot;t&quot;:6.016,&quot;v&quot;:-2.4},{&quot;t&quot;:6.101,&quot;v&quot;:-2.2},{&quot;t&quot;:6.187,&quot;v&quot;:-1.6},{&quot;t&quot;:6.272,&quot;v&quot;:-1.1},{&quot;t&quot;:6.357,&quot;v&quot;:-0.8},{&quot;t&quot;:6.443,&quot;v&quot;:-0.6},{&quot;t&quot;:6.528,&quot;v&quot;:-3.6},{&quot;t&quot;:6.699,&quot;v&quot;:-3.3},{&quot;t&quot;:6.784,&quot;v&quot;:-2.3},{&quot;t&quot;:6.869,&quot;v&quot;:-1.6},{&quot;t&quot;:6.955,&quot;v&quot;:-1.2},{&quot;t&quot;:7.04,&quot;v&quot;:-0.8},{&quot;t&quot;:7.125,&quot;v&quot;:-0.6},{&quot;t&quot;:7.211,&quot;v&quot;:-4.6},{&quot;t&quot;:7.296,&quot;v&quot;:-4.3},{&quot;t&quot;:7.381,&quot;v&quot;:-3},{&quot;t&quot;:7.467,&quot;v&quot;:-2.8},{&quot;t&quot;:7.552,&quot;v&quot;:-2},{&quot;t&quot;:7.637,&quot;v&quot;:-1.8},{&quot;t&quot;:7.723,&quot;v&quot;:-2.5},{&quot;t&quot;:7.808,&quot;v&quot;:-4.5},{&quot;t&quot;:7.893,&quot;v&quot;:-3.2},{&quot;t&quot;:7.979,&quot;v&quot;:-2.3},{&quot;t&quot;:8.064,&quot;v&quot;:-1.6},{&quot;t&quot;:8.149,&quot;v&quot;:-1.1},{&quot;t&quot;:8.235,&quot;v&quot;:-0.8},{&quot;t&quot;:8.32,&quot;v&quot;:-0.6},{&quot;t&quot;:8.405,&quot;v&quot;:-0.4},{&quot;t&quot;:8.491,&quot;v&quot;:-4.6},{&quot;t&quot;:8.576,&quot;v&quot;:-3.4},{&quot;t&quot;:8.661,&quot;v&quot;:-6.2},{&quot;t&quot;:8.747,&quot;v&quot;:-5.1},{&quot;t&quot;:8.832,&quot;v&quot;:-4.3},{&quot;t&quot;:8.917,&quot;v&quot;:-3.3},{&quot;t&quot;:9.003,&quot;v&quot;:-3},{&quot;t&quot;:9.088,&quot;v&quot;:-4.7},{&quot;t&quot;:9.173,&quot;v&quot;:-6.9},{&quot;t&quot;:9.259,&quot;v&quot;:-5.7},{&quot;t&quot;:9.515,&quot;v&quot;:-5.5},{&quot;t&quot;:9.6,&quot;v&quot;:-6.7},{&quot;t&quot;:9.685,&quot;v&quot;:-7},{&quot;t&quot;:9.771,&quot;v&quot;:-6.2},{&quot;t&quot;:9.856,&quot;v&quot;:-5.6},{&quot;t&quot;:9.941,&quot;v&quot;:-5.2},{&quot;t&quot;:10.027,&quot;v&quot;:-3.7},{&quot;t&quot;:10.112,&quot;v&quot;:-2.6},{&quot;t&quot;:10.197,&quot;v&quot;:-4.5},{&quot;t&quot;:10.283,&quot;v&quot;:-4.4},{&quot;t&quot;:10.368,&quot;v&quot;:-3.1},{&quot;t&quot;:10.453,&quot;v&quot;:-2.2},{&quot;t&quot;:10.539,&quot;v&quot;:-2.3},{&quot;t&quot;:10.624,&quot;v&quot;:-4.3},{&quot;t&quot;:10.709,&quot;v&quot;:-3.6},{&quot;t&quot;:10.795,&quot;v&quot;:-3.5},{&quot;t&quot;:10.88,&quot;v&quot;:-2.5},{&quot;t&quot;:10.965,&quot;v&quot;:-1.8},{&quot;t&quot;:11.051,&quot;v&quot;:-4.6},{&quot;t&quot;:11.136,&quot;v&quot;:-3.6},{&quot;t&quot;:11.221,&quot;v&quot;:-2.5},{&quot;t&quot;:11.307,&quot;v&quot;:-4.6},{&quot;t&quot;:11.392,&quot;v&quot;:-3.2},{&quot;t&quot;:11.477,&quot;v&quot;:-3.2},{&quot;t&quot;:11.563,&quot;v&quot;:-2.3},{&quot;t&quot;:11.648,&quot;v&quot;:-1.6},{&quot;t&quot;:11.733,&quot;v&quot;:-1.2},{&quot;t&quot;:11.819,&quot;v&quot;:-0.8},{&quot;t&quot;:11.989,&quot;v&quot;:-0.4},{&quot;t&quot;:12.075,&quot;v&quot;:-0.3},{&quot;t&quot;:12.16,&quot;v&quot;:-0.2},{&quot;t&quot;:12.245,&quot;v&quot;:-1.4},{&quot;t&quot;:12.587,&quot;v&quot;:-0.9},{&quot;t&quot;:12.672,&quot;v&quot;:-0.6},{&quot;t&quot;:12.928,&quot;v&quot;:-0.2},{&quot;t&quot;:13.013,&quot;v&quot;:-5.6},{&quot;t&quot;:13.269,&quot;v&quot;:-5.2},{&quot;t&quot;:13.355,&quot;v&quot;:-3.7},{&quot;t&quot;:13.44,&quot;v&quot;:-2.6},{&quot;t&quot;:13.525,&quot;v&quot;:-1.9},{&quot;t&quot;:13.611,&quot;v&quot;:-4.6},{&quot;t&quot;:13.696,&quot;v&quot;:-4.3},{&quot;t&quot;:13.781,&quot;v&quot;:-3.1},{&quot;t&quot;:13.867,&quot;v&quot;:-2.9},{&quot;t&quot;:13.952,&quot;v&quot;:-2.6},{&quot;t&quot;:14.037,&quot;v&quot;:-1.9},{&quot;t&quot;:14.123,&quot;v&quot;:-1.7},{&quot;t&quot;:14.208,&quot;v&quot;:-4.9},{&quot;t&quot;:14.293,&quot;v&quot;:-4.6},{&quot;t&quot;:14.379,&quot;v&quot;:-3.2},{&quot;t&quot;:14.464,&quot;v&quot;:-2.3},{&quot;t&quot;:14.549,&quot;v&quot;:-1.6},{&quot;t&quot;:14.635,&quot;v&quot;:-1.2},{&quot;t&quot;:14.644,&quot;v&quot;:0}]},{&quot;target&quot;:&quot;fx.n7.gain&quot;,&quot;points&quot;:[{&quot;t&quot;:0,&quot;v&quot;:0},{&quot;t&quot;:0.555,&quot;v&quot;:0},{&quot;t&quot;:0.64,&quot;v&quot;:-4.7},{&quot;t&quot;:0.811,&quot;v&quot;:-5.1},{&quot;t&quot;:0.896,&quot;v&quot;:-15},{&quot;t&quot;:0.981,&quot;v&quot;:-18.4},{&quot;t&quot;:1.152,&quot;v&quot;:-18},{&quot;t&quot;:1.237,&quot;v&quot;:-17.8},{&quot;t&quot;:1.323,&quot;v&quot;:-17.8},{&quot;t&quot;:1.408,&quot;v&quot;:-18.9},{&quot;t&quot;:1.493,&quot;v&quot;:-18.3},{&quot;t&quot;:1.579,&quot;v&quot;:-17.6},{&quot;t&quot;:1.664,&quot;v&quot;:-17},{&quot;t&quot;:1.749,&quot;v&quot;:-16.4},{&quot;t&quot;:1.835,&quot;v&quot;:-15.9},{&quot;t&quot;:1.92,&quot;v&quot;:-15.3},{&quot;t&quot;:2.005,&quot;v&quot;:-14.8},{&quot;t&quot;:2.091,&quot;v&quot;:-14.3},{&quot;t&quot;:2.176,&quot;v&quot;:-13.8},{&quot;t&quot;:2.261,&quot;v&quot;:-13.3},{&quot;t&quot;:2.347,&quot;v&quot;:-12.8},{&quot;t&quot;:2.432,&quot;v&quot;:-12.4},{&quot;t&quot;:2.517,&quot;v&quot;:-11.9},{&quot;t&quot;:2.603,&quot;v&quot;:-17.9},{&quot;t&quot;:2.688,&quot;v&quot;:-19},{&quot;t&quot;:3.285,&quot;v&quot;:-19.2},{&quot;t&quot;:3.371,&quot;v&quot;:-18.5},{&quot;t&quot;:3.456,&quot;v&quot;:-17.9},{&quot;t&quot;:3.541,&quot;v&quot;:-19},{&quot;t&quot;:4.309,&quot;v&quot;:-19.2},{&quot;t&quot;:4.395,&quot;v&quot;:-18.5},{&quot;t&quot;:4.48,&quot;v&quot;:-17.9},{&quot;t&quot;:4.565,&quot;v&quot;:-17.3},{&quot;t&quot;:4.651,&quot;v&quot;:-16.7},{&quot;t&quot;:4.736,&quot;v&quot;:-16.1},{&quot;t&quot;:4.821,&quot;v&quot;:-15.5},{&quot;t&quot;:4.907,&quot;v&quot;:-15},{&quot;t&quot;:4.992,&quot;v&quot;:-14.4},{&quot;t&quot;:5.077,&quot;v&quot;:-13.9},{&quot;t&quot;:5.163,&quot;v&quot;:-13.5},{&quot;t&quot;:5.248,&quot;v&quot;:-13},{&quot;t&quot;:5.333,&quot;v&quot;:-12.5},{&quot;t&quot;:5.419,&quot;v&quot;:-12.1},{&quot;t&quot;:5.504,&quot;v&quot;:-17.9},{&quot;t&quot;:5.589,&quot;v&quot;:-19},{&quot;t&quot;:6.101,&quot;v&quot;:-19.2},{&quot;t&quot;:6.187,&quot;v&quot;:-18.5},{&quot;t&quot;:6.272,&quot;v&quot;:-17.9},{&quot;t&quot;:6.357,&quot;v&quot;:-17.3},{&quot;t&quot;:6.443,&quot;v&quot;:-16.7},{&quot;t&quot;:6.528,&quot;v&quot;:-18.7},{&quot;t&quot;:6.699,&quot;v&quot;:-19.1},{&quot;t&quot;:6.784,&quot;v&quot;:-19.2},{&quot;t&quot;:8.064,&quot;v&quot;:-19.2},{&quot;t&quot;:8.149,&quot;v&quot;:-18.5},{&quot;t&quot;:8.235,&quot;v&quot;:-17.9},{&quot;t&quot;:8.32,&quot;v&quot;:-17.3},{&quot;t&quot;:8.405,&quot;v&quot;:-16.7},{&quot;t&quot;:8.491,&quot;v&quot;:-18.7},{&quot;t&quot;:8.576,&quot;v&quot;:-19.1},{&quot;t&quot;:8.661,&quot;v&quot;:-19.2},{&quot;t&quot;:10.027,&quot;v&quot;:-19.2},{&quot;t&quot;:10.112,&quot;v&quot;:-18.5},{&quot;t&quot;:10.197,&quot;v&quot;:-18.5},{&quot;t&quot;:10.283,&quot;v&quot;:-19.1},{&quot;t&quot;:11.819,&quot;v&quot;:-19.2},{&quot;t&quot;:11.904,&quot;v&quot;:-18.5},{&quot;t&quot;:11.989,&quot;v&quot;:-17.9},{&quot;t&quot;:12.075,&quot;v&quot;:-17.3},{&quot;t&quot;:12.16,&quot;v&quot;:-16.7},{&quot;t&quot;:12.245,&quot;v&quot;:-18.7},{&quot;t&quot;:12.331,&quot;v&quot;:-19.1},{&quot;t&quot;:12.416,&quot;v&quot;:-19.2},{&quot;t&quot;:12.501,&quot;v&quot;:-19.2},{&quot;t&quot;:12.587,&quot;v&quot;:-18.5},{&quot;t&quot;:12.672,&quot;v&quot;:-17.9},{&quot;t&quot;:12.757,&quot;v&quot;:-17.3},{&quot;t&quot;:12.843,&quot;v&quot;:-16.7},{&quot;t&quot;:12.928,&quot;v&quot;:-18.7},{&quot;t&quot;:13.355,&quot;v&quot;:-19.1},{&quot;t&quot;:13.44,&quot;v&quot;:-19.2},{&quot;t&quot;:13.525,&quot;v&quot;:-18.5},{&quot;t&quot;:13.781,&quot;v&quot;:-18.1},{&quot;t&quot;:13.867,&quot;v&quot;:-17.9},{&quot;t&quot;:13.952,&quot;v&quot;:-17.6},{&quot;t&quot;:14.037,&quot;v&quot;:-17.4},{&quot;t&quot;:14.123,&quot;v&quot;:-17.1},{&quot;t&quot;:14.208,&quot;v&quot;:-16.9},{&quot;t&quot;:14.293,&quot;v&quot;:-17.8},{&quot;t&quot;:14.379,&quot;v&quot;:-17.2},{&quot;t&quot;:14.464,&quot;v&quot;:-16.6},{&quot;t&quot;:14.549,&quot;v&quot;:-16},{&quot;t&quot;:14.635,&quot;v&quot;:-15.5},{&quot;t&quot;:14.72,&quot;v&quot;:-14.9},{&quot;t&quot;:14.805,&quot;v&quot;:-14.4},{&quot;t&quot;:14.891,&quot;v&quot;:-13.9},{&quot;t&quot;:14.976,&quot;v&quot;:-13.4},{&quot;t&quot;:15.061,&quot;v&quot;:-13},{&quot;t&quot;:15.147,&quot;v&quot;:-12.5},{&quot;t&quot;:15.232,&quot;v&quot;:-12.1},{&quot;t&quot;:15.317,&quot;v&quot;:-11.6},{&quot;t&quot;:15.403,&quot;v&quot;:-11.2},{&quot;t&quot;:15.488,&quot;v&quot;:-10.8},{&quot;t&quot;:15.573,&quot;v&quot;:-10.5},{&quot;t&quot;:15.659,&quot;v&quot;:-10.1},{&quot;t&quot;:15.744,&quot;v&quot;:-9.7},{&quot;t&quot;:15.829,&quot;v&quot;:-9.4},{&quot;t&quot;:15.915,&quot;v&quot;:-9.1},{&quot;t&quot;:16,&quot;v&quot;:-8.8},{&quot;t&quot;:16.085,&quot;v&quot;:-8.5},{&quot;t&quot;:16.171,&quot;v&quot;:-8.2},{&quot;t&quot;:16.256,&quot;v&quot;:-7.9},{&quot;t&quot;:16.341,&quot;v&quot;:-7.6},{&quot;t&quot;:16.427,&quot;v&quot;:-7.3},{&quot;t&quot;:16.512,&quot;v&quot;:-7.1},{&quot;t&quot;:16.597,&quot;v&quot;:-6.8},{&quot;t&quot;:16.683,&quot;v&quot;:-6.6},{&quot;t&quot;:16.768,&quot;v&quot;:-6.4},{&quot;t&quot;:16.853,&quot;v&quot;:-6.1},{&quot;t&quot;:17.024,&quot;v&quot;:-5.7},{&quot;t&quot;:17.109,&quot;v&quot;:-5.5},{&quot;t&quot;:17.28,&quot;v&quot;:-5.1},{&quot;t&quot;:17.365,&quot;v&quot;:-5},{&quot;t&quot;:17.536,&quot;v&quot;:-4.6},{&quot;t&quot;:17.621,&quot;v&quot;:-4.5},{&quot;t&quot;:17.792,&quot;v&quot;:-4.2},{&quot;t&quot;:17.877,&quot;v&quot;:-4},{&quot;t&quot;:18.133,&quot;v&quot;:-3.6},{&quot;t&quot;:18.219,&quot;v&quot;:-3.5},{&quot;t&quot;:18.475,&quot;v&quot;:-3.1},{&quot;t&quot;:18.56,&quot;v&quot;:-3},{&quot;t&quot;:18.901,&quot;v&quot;:-2.6},{&quot;t&quot;:18.987,&quot;v&quot;:-2.5},{&quot;t&quot;:19.413,&quot;v&quot;:-2.1},{&quot;t&quot;:19.499,&quot;v&quot;:-2},{&quot;t&quot;:20.096,&quot;v&quot;:-1.6},{&quot;t&quot;:20.181,&quot;v&quot;:-1.5},{&quot;t&quot;:21.035,&quot;v&quot;:-1.1},{&quot;t&quot;:21.12,&quot;v&quot;:-1},{&quot;t&quot;:22.571,&quot;v&quot;:-0.6},{&quot;t&quot;:22.656,&quot;v&quot;:-0.5},{&quot;t&quot;:25.045,&quot;v&quot;:-0.2},{&quot;t&quot;:25.131,&quot;v&quot;:0}]}]}"></audio>
     </div>
 
     <script>
-      (function () {
-        const tl = gsap.timeline({ paused: true });
-        const $ = (s) => document.querySelector(s);
-        const OUT = "expo.out"; // brand "emphasized" curve, no bounce
-        const IO = "power3.inOut";
-        const peso = (v) => "₱" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-        // Seeded star field, built once at setup so every frame is identical.
-        (function stars() {
-          let s = 20261010;
-          const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
-          let html = "";
-          for (let i = 0; i < 110; i++) {
-            const z = (1 + r() * 1.7).toFixed(2);
-            html += `<i style="left:${(r() * 1920).toFixed(1)}px;top:${(r() * 1080).toFixed(1)}px;width:${z}px;height:${z}px;opacity:${(0.15 + r() * 0.6).toFixed(2)}"></i>`;
-          }
-          $("#stars").innerHTML = html;
-        })();
-
-        // Line-mask reveal shared by every headline.
-        const rise = (sels, at, gap = 0.1) =>
-          sels.forEach((s, i) => tl.fromTo(s, { yPercent: 115 }, { yPercent: 0, duration: 0.9, ease: OUT }, at + i * gap));
-        const fadeUp = (sel, at, y = 22, dur = 0.7) => tl.fromTo(sel, { opacity: 0, y }, { opacity: 1, y: 0, duration: dur, ease: OUT }, at);
-        const press = (sel, at, s = 0.95) => {
-          tl.to(sel, { scale: s, duration: 0.08, ease: "power1.out" }, at);
-          tl.to(sel, { scale: 1, duration: 0.22, ease: "power2.out" }, at + 0.08);
-        };
-        const draw = (sel, at, dur) => tl.fromTo(sel, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: dur, ease: "power2.inOut" }, at);
-        const count = (el, from, to, at, dur, fmt) => {
-          const o = { v: from };
-          tl.to(o, { v: to, duration: dur, ease: "power3.out", onUpdate: () => { el.textContent = fmt(o.v); } }, at);
-        };
-
-        function build() {
-          /* ---------- background: one slow aurora drift under everything ---------- */
-          tl.fromTo("#aurora", { opacity: 0.15, scale: 1.08 }, { opacity: 0.85, scale: 1, duration: 2.4, ease: "power2.out" }, 0);
-          tl.fromTo(".b1", { x: -90, y: 30, rotation: -6 }, { x: 160, y: -60, rotation: 8, duration: 15, ease: "sine.inOut" }, 0);
-          tl.fromTo(".b2", { x: 80, y: -20, rotation: 4 }, { x: -180, y: 50, rotation: -10, duration: 15, ease: "sine.inOut" }, 0);
-          tl.fromTo(".b3", { x: -40, y: 0, scale: 0.95 }, { x: 240, y: 70, scale: 1.2, duration: 15, ease: "sine.inOut" }, 0);
-          tl.fromTo(".b4", { x: 0, y: 0, scale: 0.9 }, { x: -220, y: 90, scale: 1.15, duration: 15, ease: "sine.inOut" }, 0);
-          tl.fromTo(".b5", { x: 0, y: 0 }, { x: 260, y: -120, duration: 15, ease: "sine.inOut" }, 0);
-          tl.fromTo("#stars", { y: 0, opacity: 0 }, { y: -50, opacity: 1, duration: 15, ease: "power1.out" }, 0);
-          tl.to("#aurora", { opacity: 1, scale: 1.05, duration: 1.4, ease: "power2.out" }, 11.95);
-
-          /* ---------- scene 1: mark draws, wordmark slides out of it ---------- */
-          const shift = (40 + $("#s1-word").offsetWidth) / 2; // badge sits dead-centre before the word arrives
-          tl.fromTo("#s1-badge", { opacity: 0, scale: 0.55, x: shift, filter: "blur(14px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 1.1, ease: OUT }, 0.1);
-          draw("#s1-arch", 0.35, 0.85);
-          draw("#s1-ribbon", 0.95, 0.5);
-          tl.fromTo("#s1-glint", { xPercent: -180 }, { xPercent: 260, duration: 0.8, ease: "power2.inOut" }, 1.15);
-          tl.fromTo("#s1-eyebrow", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 1.0, ease: OUT }, 0.45);
-          tl.to("#s1-badge", { x: 0, duration: 0.9, ease: IO }, 1.2);
-          tl.fromTo("#s1-word", { x: -60, clipPath: "inset(0% 100% 0% 0%)" }, { x: 0, clipPath: "inset(0% 0% 0% 0%)", duration: 0.9, ease: IO }, 1.25);
-          tl.to("#s1-eyebrow", { opacity: 0, y: -10, duration: 0.4, ease: "power2.in" }, 2.0);
-          tl.fromTo("#s1-inner", { scale: 1, opacity: 1, filter: "blur(0px)" }, { scale: 1.55, opacity: 0, filter: "blur(16px)", duration: 0.5, ease: "power2.in" }, 2.22);
-
-          /* ---------- scene 2: mobile, sign in with Face ID, money arrives ---------- */
-          tl.fromTo("#s2-inner", { opacity: 0, scale: 0.86, filter: "blur(14px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.8, ease: OUT }, 2.33);
-          fadeUp("#s2-eyebrow", 2.42);
-          rise(["#s2-l1", "#s2-l2"], 2.48);
-          ["#s2-p1", "#s2-p2", "#s2-p3"].forEach((s, i) => fadeUp(s, 2.95 + i * 0.09, 18, 0.6));
-          tl.fromTo("#s2-phone", { y: 170, rotationY: -34, rotationX: 10, opacity: 0 }, { y: 0, rotationY: -16, rotationX: 4, opacity: 1, duration: 1.15, ease: OUT }, 2.33);
-          tl.to("#s2-phone", { rotationY: -6, rotationX: 2, y: -14, duration: 2.4, ease: "sine.inOut" }, 3.48);
-          press("#s2-signin", 3.3, 0.96);
-          tl.fromTo("#s2-faceid", { opacity: 0, scale: 0.82 }, { opacity: 1, scale: 1, duration: 0.35, ease: OUT }, 3.4);
-          draw(".s2-fp", 3.44, 0.32);
-          tl.to("#s2-face", { opacity: 0, duration: 0.15, ease: "power1.in" }, 3.7);
-          draw("#s2-check", 3.72, 0.24);
-          tl.to("#s2-login", { opacity: 0, scale: 0.94, duration: 0.38, ease: "power2.in" }, 3.92);
-          tl.fromTo("#s2-dash", { opacity: 0, y: 70 }, { opacity: 1, y: 0, duration: 0.6, ease: OUT }, 4.0);
-          ["#s2-dhead", "#s2-hero", "#s2-actions", "#s2-sec"].forEach((s, i) => fadeUp(s, 4.02 + i * 0.05, 26, 0.6));
-          tl.fromTo("#s2-notif", { y: -140, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: OUT }, 4.38);
-          tl.to("#s2-notif", { y: -140, opacity: 0, duration: 0.4, ease: "power2.in" }, 5.3);
-          tl.fromTo("#s2-rest", { y: -78 }, { y: 0, duration: 0.6, ease: OUT }, 4.45);
-          tl.fromTo("#s2-r1", { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.5, ease: OUT }, 4.5);
-          tl.fromTo("#s2-r1hl", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power1.out" }, 4.5);
-          tl.to("#s2-r1hl", { opacity: 0, duration: 0.8, ease: "power1.inOut" }, 5.05);
-          count($("#s2-bal"), 61302.5, 76302.5, 4.5, 1.0, peso);
-          tl.fromTo("#s2-chip", { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.5, ease: OUT }, 4.62);
-          tl.to("#s2-inner", { x: -260, opacity: 0, filter: "blur(14px)", duration: 0.5, ease: "power2.in" }, 5.3);
-
-          /* ---------- scene 3: web, send money, it lands ---------- */
-          tl.fromTo("#s3-inner", { opacity: 0, x: 320, filter: "blur(14px)" }, { opacity: 1, x: 0, filter: "blur(0px)", duration: 0.85, ease: OUT }, 5.36);
-          fadeUp("#s3-eyebrow", 5.45);
-          rise(["#s3-l1", "#s3-l2"], 5.5);
-          ["#s3-p1", "#s3-p2"].forEach((s, i) => fadeUp(s, 5.95 + i * 0.09, 18, 0.6));
-          tl.fromTo("#s3-browser", { rotationY: -28, rotationX: 6, y: 50 }, { rotationY: -12, rotationX: 3, y: 0, duration: 1.2, ease: OUT }, 5.36);
-          tl.to("#s3-browser", { rotationY: -5, rotationX: 1, duration: 2.3, ease: "sine.inOut" }, 6.6);
-          fadeUp("#s3-hero", 5.62, 24, 0.8);
-          tl.fromTo("#s3-c1", { opacity: 0, y: 60, rotation: 4 }, { opacity: 1, y: 0, rotation: 0, duration: 1.0, ease: OUT }, 5.7);
-          tl.fromTo("#s3-c2", { opacity: 0, y: 80, rotation: 6 }, { opacity: 1, y: 0, rotation: 0, duration: 1.0, ease: OUT }, 5.8);
-          tl.to("#s3-c1", { y: -10, duration: 2.2, ease: "sine.inOut" }, 6.7);
-          tl.to("#s3-c2", { y: 8, duration: 2.2, ease: "sine.inOut" }, 6.8);
-          tl.fromTo("#s3-cursor", { x: 760, y: 470, opacity: 0 }, { x: 118, y: 382, opacity: 1, duration: 0.55, ease: IO }, 5.92);
-          press("#s3-cta", 6.48);
-          press("#s3-cursor", 6.48, 0.82);
-          tl.fromTo("#s3-dim", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power1.out" }, 6.58);
-          tl.fromTo("#s3-modal", { opacity: 0, y: 34, scale: 0.95 }, { opacity: 1, y: 0, scale: 1, duration: 0.55, ease: OUT }, 6.6);
-          count($("#s3-amt"), 0, 15000, 6.82, 0.6, peso);
-          tl.fromTo("#s3-laya", { opacity: 0, x: -12 }, { opacity: 1, x: 0, duration: 0.45, ease: OUT }, 7.12);
-          tl.to("#s3-cursor", { x: 436, y: 425, duration: 0.5, ease: IO }, 6.95);
-          press("#s3-send", 7.5, 0.97);
-          press("#s3-cursor", 7.5, 0.82);
-          tl.fromTo("#s3-send", { backgroundColor: "#10171c" }, { backgroundColor: "#a7e8d1", duration: 0.3, ease: "power1.out" }, 7.62);
-          tl.fromTo("#s3-send-a", { opacity: 1, y: 0 }, { opacity: 0, y: -16, duration: 0.25, ease: "power2.in" }, 7.6);
-          tl.fromTo("#s3-send-b", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: OUT }, 7.68);
-          draw("#s3-sendchk", 7.74, 0.3);
-          tl.to("#s3-cursor", { opacity: 0, y: 460, duration: 0.4, ease: "power2.in" }, 7.9);
-          tl.to("#s3-inner", { y: -90, scale: 1.04, opacity: 0, filter: "blur(14px)", duration: 0.5, ease: "power2.in" }, 8.26);
-
-          /* ---------- scene 4: console, Laya screens, two people sign ---------- */
-          tl.fromTo("#s4-inner", { opacity: 0, scale: 1, filter: "blur(0px)" }, { opacity: 1, duration: 0.35, ease: "power1.out" }, 8.34);
-          fadeUp("#s4-eyebrow", 8.42);
-          rise(["#s4-l1", "#s4-l2"], 8.48, 0.14);
-          tl.fromTo("#s4-console", { y: 470, rotationX: 24, opacity: 0 }, { y: 0, rotationX: 0, opacity: 1, duration: 1.25, ease: OUT }, 8.36);
-          tl.fromTo("#s4-cam", { scale: 1 }, { scale: 1.035, duration: 2.7, ease: "sine.inOut" }, 8.9);
-          fadeUp("#s4-hero", 8.85, 18, 0.7);
-          gsap.utils.toArray(".s4-stat").forEach((el, i) => {
-            fadeUp(el, 8.95 + i * 0.07, 26, 0.7);
-            const n = el.querySelector(".c-num");
-            count(n, 0, Number(n.dataset.to), 9.0 + i * 0.07, 1.1, (v) => String(Math.round(v)));
-          });
-          gsap.utils.toArray(".s4-row").forEach((el, i) => tl.fromTo(el, { opacity: 0, x: -18 }, { opacity: 1, x: 0, duration: 0.6, ease: OUT }, 9.2 + i * 0.06));
-          tl.fromTo("#s4-hl", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power1.out" }, 9.92);
-          tl.fromTo("#s4-laya", { opacity: 0, x: -50, scale: 0.94 }, { opacity: 1, x: 0, scale: 1, duration: 0.65, ease: OUT }, 9.9);
-          tl.fromTo("#s4-fill", { scaleX: 0 }, { scaleX: 1, duration: 0.8, ease: "power3.out" }, 10.1);
-          count($("#s4-score"), 0, 0.64, 10.1, 0.8, (v) => v.toFixed(2));
-          gsap.utils.toArray(".s4-tag").forEach((el, i) => fadeUp(el, 10.2 + i * 0.07, 10, 0.45));
-          fadeUp("#s4-maker", 10.5, 14, 0.5);
-          tl.fromTo("#s4-ok1", { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(1.6)" }, 10.68);
-          fadeUp("#s4-checker", 10.85, 14, 0.5);
-          tl.fromTo("#s4-ok2", { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(1.6)" }, 11.03);
-          fadeUp("#s4-foot", 11.1, 8, 0.5);
-          tl.to("#s4-b-amber", { opacity: 0, scale: 0.9, duration: 0.2, ease: "power2.in" }, 11.18);
-          tl.fromTo("#s4-b-ok", { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.45, ease: OUT }, 11.22);
-          tl.to("#s4-inner", { scale: 1.16, opacity: 0, filter: "blur(16px)", duration: 0.45, ease: "power3.in" }, 11.56);
-
-          /* ---------- scene 5: end card ---------- */
-          tl.fromTo("#flash-in", { opacity: 0 }, { opacity: 0.6, duration: 0.12, ease: "power1.out" }, 11.94);
-          tl.to("#flash-in", { opacity: 0, duration: 0.7, ease: "power2.out" }, 12.06);
-          tl.fromTo("#s5-inner", { opacity: 0, scale: 1.14, filter: "blur(16px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 1.0, ease: OUT }, 11.97);
-          tl.fromTo("#s5-badge", { scale: 0.6, rotation: -8 }, { scale: 1, rotation: 0, duration: 1.0, ease: OUT }, 12.0);
-          tl.fromTo("#s5-word", { x: -50, clipPath: "inset(0% 100% 0% 0%)" }, { x: 0, clipPath: "inset(0% 0% 0% 0%)", duration: 0.9, ease: "power3.out" }, 12.12);
-          rise(["#s5-t1", "#s5-t2"], 12.85, 0.14);
-          ["#s5-d1", "#s5-d2", "#s5-d3"].forEach((s, i) => tl.fromTo(s, { opacity: 0, y: 90 }, { opacity: 1, y: 0, duration: 1.0, ease: OUT }, 13.05 + i * 0.1));
-          tl.fromTo("#s5-cam", { scale: 1 }, { scale: 1.035, duration: 2.6, ease: "sine.inOut" }, 12.4);
-          tl.fromTo("#fade-in", { opacity: 0 }, { opacity: 1, duration: 0.45, ease: "power1.in" }, 14.55);
-
-          window.__timelines["main"] = tl;
-        }
-
-        Promise.all(["400", "500", "600", "700"].map((w) => document.fonts.load(`${w} 40px Onest`)))
-          .then(() => document.fonts.ready)
-          .then(build);
-      })();
+      // Every layer above is a sub-composition that owns its own timeline; the
+      // root only needs to exist so the runtime can seek them together.
+      window.__timelines["main"] = gsap.timeline({ paused: true });
     </script>
   </body>
 </html>

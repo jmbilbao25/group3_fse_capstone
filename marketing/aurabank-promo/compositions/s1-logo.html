@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Scene 1: logo sting</title>
+  </head>
+  <body>
+    <template id="s1-template">
+      <style>
+        #root { position: absolute; inset: 0; overflow: hidden; }
+        #s1-cam { position: absolute; inset: 0; }
+        .s1-eyebrow {
+          position: absolute; left: 0; right: 0; top: 368px; display: flex; justify-content: center;
+          font-size: 22px; font-weight: 600; letter-spacing: .42em; text-transform: uppercase; color: rgba(255, 255, 255, .78);
+        }
+        .s1-eyebrow span { display: inline-block; }
+        .s1-lockup { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 42px; }
+        .s1-badge-rig { position: relative; z-index: 2; width: 176px; height: 176px; flex: none; }
+        .s1-body {
+          position: absolute; inset: 0; border-radius: 48px; overflow: hidden;
+          background: radial-gradient(90% 80% at 50% 108%, rgba(167, 232, 209, .34), rgba(167, 232, 209, 0) 72%), #10171c;
+          box-shadow: 0 30px 90px rgba(167, 232, 209, .2), 0 0 0 1px rgba(255, 255, 255, .09), inset 0 1px 0 rgba(255, 255, 255, .12);
+        }
+        .s1-glint {
+          position: absolute; top: -30%; left: 0; width: 55%; height: 160%;
+          background: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, .34) 50%, rgba(255, 255, 255, 0) 100%);
+        }
+        .s1-mark { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+        #s1-sparks { position: absolute; left: -82px; top: -82px; width: 340px; height: 340px; }
+        .s1-word { position: relative; z-index: 1; display: flex; font-size: 158px; font-weight: 600; letter-spacing: -.045em; line-height: 1; padding: 0 .04em .08em 0; perspective: 700px; }
+        .s1-word span { display: inline-block; transform-origin: 50% 85%; }
+      </style>
+
+      <div id="root" data-composition-id="s1" data-width="1920" data-height="1080">
+        <div id="s1-cam">
+          <div id="s1-eyebrow" class="s1-eyebrow"><span>I</span><span>n</span><span>t</span><span>r</span><span>o</span><span>d</span><span>u</span><span>c</span><span>i</span><span>n</span><span>g</span></div>
+          <div class="s1-lockup">
+            <div id="s1-badge-rig" class="s1-badge-rig">
+              <div id="s1-body" class="s1-body"><div id="s1-glint" class="s1-glint"></div></div>
+              <canvas id="s1-sparks" width="680" height="680" data-layout-allow-occlusion data-layout-allow-overflow></canvas>
+              <svg id="s1-mark" class="s1-mark" viewBox="0 0 64 64" aria-label="Aura Bank">
+                <defs>
+                  <linearGradient id="s1-arch-g" x1="18" y1="15" x2="46" y2="48" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#97CFF3" /><stop offset="1" stop-color="#A7E8D1" /></linearGradient>
+                  <radialGradient id="s1-head-g"><stop offset="0" stop-color="#ffffff" /><stop offset=".35" stop-color="#d9f6ea" stop-opacity=".85" /><stop offset="1" stop-color="#a7e8d1" stop-opacity="0" /></radialGradient>
+                  <filter id="s1-soft" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="2.4" /></filter>
+                  <filter id="s1-hot" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="0.9" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
+                </defs>
+                <!-- Round caps paint a dot at zero dash length, so every stroke is
+                     gated by its own opacity until its draw begins. -->
+                <g id="s1-aura-glow" filter="url(#s1-soft)">
+                  <path id="s1-arch-glow" opacity="0" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" d="M18 48C18 29 24.5 15 32 15C39.5 15 46 29 46 48" fill="none" stroke="#A7E8D1" stroke-width="7" stroke-linecap="round" />
+                  <path id="s1-ribbon-glow" opacity="0" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" d="M22.5 37C26.5 33 29.5 33 32 35.5C34.5 38 37.5 38 41.5 34" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" />
+                </g>
+                <path id="s1-arch" opacity="0" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" d="M18 48C18 29 24.5 15 32 15C39.5 15 46 29 46 48" fill="none" stroke="url(#s1-arch-g)" stroke-width="6.4" stroke-linecap="round" />
+                <path id="s1-ribbon" opacity="0" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" d="M22.5 37C26.5 33 29.5 33 32 35.5C34.5 38 37.5 38 41.5 34" fill="none" stroke="#fff" stroke-opacity=".94" stroke-width="3.6" stroke-linecap="round" />
+                <path id="s1-arch-hot" opacity="0" filter="url(#s1-hot)" pathLength="1" stroke-dasharray="0.07 2" stroke-dashoffset="0.07" d="M18 48C18 29 24.5 15 32 15C39.5 15 46 29 46 48" fill="none" stroke="#ffffff" stroke-width="6.4" stroke-linecap="round" />
+                <path id="s1-ribbon-hot" opacity="0" filter="url(#s1-hot)" pathLength="1" stroke-dasharray="0.1 2" stroke-dashoffset="0.1" d="M22.5 37C26.5 33 29.5 33 32 35.5C34.5 38 37.5 38 41.5 34" fill="none" stroke="#e9fff7" stroke-width="3.6" stroke-linecap="round" />
+                <circle id="s1-head" r="6" cx="18" cy="48" fill="url(#s1-head-g)" opacity="0" />
+              </svg>
+            </div>
+            <div id="s1-word" class="s1-word"><span>A</span><span>u</span><span>r</span><span>a</span></div>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        (function () {
+          const K = window.AuraKit;
+          const tl = gsap.timeline({ paused: true });
+          const $ = (s) => document.querySelector(s);
+          const OUT = "expo.out";
+
+          // Draw-on windows (seconds). The comet head and the sparks read the same numbers.
+          const ARCH = { at: 0.22, dur: 0.8, ease: "power2.inOut" };
+          const RIBBON = { at: 0.86, dur: 0.4, ease: "power2.inOut" };
+
+          function build() {
+            // Geometry is measured once, here, never inside a tween.
+            const sample = (path, n = 120) => {
+              const L = path.getTotalLength();
+              return Array.from({ length: n + 1 }, (_, i) => {
+                const pt = path.getPointAtLength((L * i) / n);
+                return [pt.x, pt.y];
+              });
+            };
+            const archPts = sample($("#s1-arch"));
+            const ribbonPts = sample($("#s1-ribbon"));
+            const pointAt = (pts, p) => {
+              const f = K.clamp(p) * (pts.length - 1);
+              const i = Math.min(pts.length - 2, Math.floor(f));
+              const u = f - i;
+              return [K.lerp(pts[i][0], pts[i + 1][0], u), K.lerp(pts[i][1], pts[i + 1][1], u)];
+            };
+            const progress = (w, t) => K.ease(w.ease)(K.clamp((t - w.at) / w.dur));
+
+            const wordW = $("#s1-word").offsetWidth;
+            const shift = (42 + wordW) / 2; // the badge sits dead centre before the word arrives
+            const badgeCx = 960 - (176 + 42 + wordW) / 2 + 88;
+            // The camera dives into the arch, just above the ribbon.
+            gsap.set("#s1-cam", { transformOrigin: `${badgeCx}px ${540 - 22}px` }); // grid (32, 24): clear of every stroke at 40x
+
+            /* ---- the mark is traced in light ---- */
+            const draw = (sel, w, glow) => {
+              tl.fromTo(sel, { opacity: 0 }, { opacity: glow ? 0.95 : 1, duration: glow ? 0.2 : 0.04, ease: "none" }, w.at);
+              tl.fromTo(sel, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: w.dur, ease: w.ease }, w.at);
+            };
+            draw("#s1-arch", ARCH);
+            draw("#s1-arch-glow", ARCH, true);
+            draw("#s1-ribbon", RIBBON);
+            draw("#s1-ribbon-glow", RIBBON, true);
+            // The light cools into ink once the badge is behind it.
+            tl.to("#s1-aura-glow", { opacity: 0, duration: 0.6, ease: "power2.inOut" }, 1.12);
+            // The hot segment rides the leading edge: its dash ends where the stroke does.
+            // Opacity starts from the authored opacity="0", so it needs no fromTo of its own.
+            tl.fromTo("#s1-arch-hot", { strokeDashoffset: 0.07 }, { strokeDashoffset: -0.93, duration: ARCH.dur, ease: ARCH.ease }, ARCH.at);
+            tl.to("#s1-arch-hot", { opacity: 1, duration: 0.06, ease: "none" }, ARCH.at);
+            tl.to("#s1-arch-hot", { opacity: 0, duration: 0.22, ease: "power2.in" }, ARCH.at + ARCH.dur - 0.08);
+            tl.fromTo("#s1-ribbon-hot", { strokeDashoffset: 0.1 }, { strokeDashoffset: -0.9, duration: RIBBON.dur, ease: RIBBON.ease }, RIBBON.at);
+            tl.to("#s1-ribbon-hot", { opacity: 1, duration: 0.05, ease: "none" }, RIBBON.at);
+            tl.to("#s1-ribbon-hot", { opacity: 0, duration: 0.2, ease: "power2.in" }, RIBBON.at + RIBBON.dur - 0.06);
+
+            // The comet head rides whichever stroke is drawing.
+            const head = $("#s1-head");
+            const headState = (t) => {
+              if (t >= ARCH.at && t <= ARCH.at + ARCH.dur + 0.04) return [pointAt(archPts, progress(ARCH, t)), K.smoothstep(ARCH.at, ARCH.at + 0.08, t) * (1 - K.smoothstep(ARCH.at + ARCH.dur - 0.1, ARCH.at + ARCH.dur + 0.04, t))];
+              if (t >= RIBBON.at && t <= RIBBON.at + RIBBON.dur + 0.04) return [pointAt(ribbonPts, progress(RIBBON, t)), 0.8 * K.smoothstep(RIBBON.at, RIBBON.at + 0.06, t) * (1 - K.smoothstep(RIBBON.at + RIBBON.dur - 0.08, RIBBON.at + RIBBON.dur + 0.04, t))];
+              return [archPts[0], 0];
+            };
+
+            // Sparks shed from the head: seeded, each a pure function of time.
+            const sparks = $("#s1-sparks").getContext("2d");
+            const r = K.rng(1104);
+            const SPARKS = Array.from({ length: 70 }, (_, i) => {
+              const onArch = i < 48;
+              const w = onArch ? ARCH : RIBBON;
+              const born = w.at + (onArch ? i / 48 : (i - 48) / 22) * w.dur * 0.94;
+              const ang = r() * Math.PI * 2;
+              const sp = 5 + r() * 14;
+              return { born, life: 0.35 + r() * 0.45, pts: onArch ? archPts : ribbonPts, w, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp - 4, size: 0.5 + r() * 1.1 };
+            });
+            const U = 176 / 64; // one grid unit in CSS px; the canvas is 2x and offset 82px
+            const drawSparks = (t) => {
+              sparks.clearRect(0, 0, 680, 680);
+              sparks.globalCompositeOperation = "lighter";
+              for (const s of SPARKS) {
+                const age = t - s.born;
+                if (age < 0 || age > s.life) continue;
+                const [x0, y0] = pointAt(s.pts, progress(s.w, s.born));
+                const k = age / s.life;
+                const x = (82 + (x0 + s.vx * age * (1 - 0.35 * k)) * U) * 2;
+                const y = (82 + (y0 + s.vy * age + 9 * age * age) * U) * 2;
+                const a = (1 - k) * (1 - k);
+                const rad = s.size * U * 2 * (1 - 0.5 * k);
+                const g = sparks.createRadialGradient(x, y, 0, x, y, rad * 3);
+                g.addColorStop(0, `rgba(240,255,250,${a})`);
+                g.addColorStop(0.4, `rgba(167,232,209,${a * 0.5})`);
+                g.addColorStop(1, "rgba(151,207,243,0)");
+                sparks.fillStyle = g;
+                sparks.fillRect(x - rad * 3, y - rad * 3, rad * 6, rad * 6);
+              }
+            };
+            K.clock(tl, 2.6, (t) => {
+              const [[x, y], a] = headState(t);
+              head.setAttribute("cx", x.toFixed(3));
+              head.setAttribute("cy", y.toFixed(3));
+              head.setAttribute("opacity", a.toFixed(3));
+              drawSparks(t);
+            });
+
+            /* ---- the badge forms behind the mark ---- */
+            tl.fromTo("#s1-body", { opacity: 0, scale: 0.62, filter: "blur(12px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.75, ease: OUT }, 0.98);
+            // A resting blur(0px) still clips the glow to a filter region; drop it.
+            tl.set("#s1-body", { filter: "none" }, 1.74);
+            tl.fromTo("#s1-glint", { xPercent: -190 }, { xPercent: 290, duration: 0.7, ease: "power2.inOut" }, 1.16);
+
+            /* ---- lockup: the badge slides left and the word unrolls from behind it ---- */
+            const SLIDE = { at: 1.16, dur: 0.8, ease: "power3.inOut" };
+            tl.fromTo("#s1-badge-rig", { x: shift }, { x: 0, duration: SLIDE.dur, ease: SLIDE.ease }, SLIDE.at);
+            tl.fromTo("#s1-word", { x: -70, clipPath: "inset(-20% 100% -20% 0%)" }, { x: 0, clipPath: "inset(-20% -6% -20% 0%)", duration: SLIDE.dur + 0.06, ease: SLIDE.ease }, SLIDE.at + 0.04);
+            gsap.utils.toArray("#s1-word span").forEach((el, i) => {
+              tl.fromTo(el, { opacity: 0, yPercent: 38, rotationX: -64, filter: "blur(7px)" }, { opacity: 1, yPercent: 0, rotationX: 0, filter: "blur(0px)", duration: 0.7, ease: OUT }, 1.3 + i * 0.075);
+            });
+            tl.set("#s1-word span", { filter: "none" }, 2.05);
+
+            /* ---- eyebrow tracks in from wide spacing, per glyph ---- */
+            const chars = gsap.utils.toArray("#s1-eyebrow span");
+            const mid = (chars.length - 1) / 2;
+            chars.forEach((el, i) => {
+              tl.fromTo(el, { opacity: 0, x: (i - mid) * 16, filter: "blur(6px)" }, { opacity: 1, x: 0, filter: "blur(0px)", duration: 1.0, ease: OUT }, 0.42 + Math.abs(i - mid) * 0.025);
+            });
+            tl.to("#s1-eyebrow", { opacity: 0, y: -12, duration: 0.3, ease: "power2.in" }, 1.92);
+
+            /* ---- camera: a slow push, then a dive through the arch ---- */
+            tl.fromTo("#s1-cam", { scale: 1 }, { scale: 1.035, duration: 2.05, ease: "sine.inOut" }, 0);
+            tl.to("#s1-cam", { scale: 46, duration: 0.45, ease: "power4.in" }, 2.05);
+            tl.to("#s1-cam", { opacity: 0, duration: 0.06, ease: "none" }, 2.48);
+
+            window.__timelines["s1"] = tl;
+          }
+
+          K.ready.then(build);
+        })();
+      </script>
+    </template>
+  </body>
+</html>

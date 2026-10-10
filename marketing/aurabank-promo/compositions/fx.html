@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>FX: light that crosses the cuts</title>
+  </head>
+  <body>
+    <template id="fx-template">
+      <style>
+        #root { position: absolute; inset: 0; pointer-events: none; }
+        #fx-canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
+      </style>
+
+      <div id="root" data-composition-id="fx" data-width="1920" data-height="1080">
+        <canvas id="fx-canvas" width="1920" height="1080" data-layout-allow-occlusion></canvas>
+      </div>
+
+      <script>
+        (function () {
+          const K = window.AuraKit;
+          const tl = gsap.timeline({ paused: true });
+          const fxCanvas = document.getElementById("fx-canvas");
+          const ctx = fxCanvas.getContext("2d");
+          const r = K.rng(777);
+
+          const glow = (x, y, rad, a, inner = "245,255,251", outer = "167,232,209") => {
+            const gr = ctx.createRadialGradient(x, y, 0, x, y, rad);
+            gr.addColorStop(0, `rgba(${inner},${a})`);
+            gr.addColorStop(0.3, `rgba(${outer},${a * 0.45})`);
+            gr.addColorStop(1, `rgba(${outer},0)`);
+            ctx.fillStyle = gr;
+            ctx.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+          };
+
+          /* The sent transfer leaves the browser as light and leads the tilt down. */
+          const COMET = { at: 7.98, dur: 0.5, p: [[1395, 688], [1500, 760], [1240, 980], [930, 1260]] };
+          const cometAt = (t) => {
+            const u = K.ease("power2.in")(K.clamp((t - COMET.at) / COMET.dur));
+            const P = COMET.p;
+            return [K.bez(P[0][0], P[1][0], P[2][0], P[3][0], u), K.bez(P[0][1], P[1][1], P[2][1], P[3][1], u)];
+          };
+          function comet(t) {
+            if (t < COMET.at || t > COMET.at + COMET.dur + 0.05) return;
+            for (let i = 14; i >= 0; i--) {
+              const [x, y] = cometAt(t - i * 0.012);
+              const k = 1 - i / 15;
+              glow(x, y, 6 + 26 * k, 0.75 * k * k);
+            }
+            const [x, y] = cometAt(t);
+            glow(x, y, 70, 0.35);
+          }
+
+          /* The rush into the approval: streaks stretch out of the focal point. */
+          const FOCUS = [1466, 791];
+          const STREAKS = Array.from({ length: 110 }, () => ({ a: r() * Math.PI * 2, d: 60 + r() * 900, len: 0.4 + r() * 0.9, w: 0.8 + r() * 2.2, tint: r() < 0.5 ? "167,232,209" : "151,207,243" }));
+          function rush(t) {
+            const k = K.ease("power3.in")(K.clamp((t - 11.45) / 0.55));
+            if (k <= 0 || t > 12.03) return;
+            for (const s of STREAKS) {
+              const d0 = s.d * (1 + 1.6 * k);
+              const d1 = d0 + (40 + 520 * k) * s.len;
+              const c = Math.cos(s.a);
+              const sn = Math.sin(s.a);
+              const gr = ctx.createLinearGradient(FOCUS[0] + c * d0, FOCUS[1] + sn * d0, FOCUS[0] + c * d1, FOCUS[1] + sn * d1);
+              gr.addColorStop(0, `rgba(${s.tint},0)`);
+              gr.addColorStop(1, `rgba(${s.tint},${0.7 * k})`);
+              ctx.strokeStyle = gr;
+              ctx.lineWidth = s.w * (1 + k);
+              ctx.beginPath();
+              ctx.moveTo(FOCUS[0] + c * d0, FOCUS[1] + sn * d0);
+              ctx.lineTo(FOCUS[0] + c * d1, FOCUS[1] + sn * d1);
+              ctx.stroke();
+            }
+            glow(FOCUS[0], FOCUS[1], 160 + 500 * k, 0.5 * k);
+          }
+
+          /* The downbeat: a shockwave and sparks, from where the logo will land. */
+          const CENTER = [960, 300];
+          const SPARKS = Array.from({ length: 90 }, () => ({ a: r() * Math.PI * 2, v: 300 + r() * 1100, life: 0.5 + r() * 0.8, size: 1 + r() * 2.6, delay: r() * 0.06 }));
+          function burst(t) {
+            const age0 = t - 12.0;
+            if (age0 < 0 || age0 > 1.5) return;
+            const ring = K.clamp(age0 / 0.75);
+            if (ring < 1) {
+              const R = 40 + 1250 * K.ease("expo.out")(ring);
+              ctx.strokeStyle = `rgba(214,245,233,${0.55 * (1 - ring) * (1 - ring)})`;
+              ctx.lineWidth = 3 + 18 * (1 - ring);
+              ctx.beginPath();
+              ctx.arc(CENTER[0], CENTER[1], R, 0, Math.PI * 2);
+              ctx.stroke();
+            }
+            for (const s of SPARKS) {
+              const age = age0 - s.delay;
+              if (age < 0 || age > s.life) continue;
+              const k = age / s.life;
+              const dist = s.v * s.life * 0.55 * (1 - Math.pow(1 - k, 3));
+              const x = CENTER[0] + Math.cos(s.a) * dist;
+              const y = CENTER[1] + Math.sin(s.a) * dist * 0.75 + 60 * age * age;
+              glow(x, y, s.size * 4 * (1 - 0.5 * k), (1 - k) * 0.9);
+            }
+          }
+
+          // The canvas only exists while light is on screen.
+          const live = (t) => (t >= COMET.at && t <= COMET.at + COMET.dur + 0.05) || (t >= 11.45 && t <= 13.5);
+          K.clock(tl, 15, (t) => {
+            fxCanvas.style.visibility = live(t) ? "visible" : "hidden";
+            ctx.clearRect(0, 0, 1920, 1080);
+            ctx.globalCompositeOperation = "lighter";
+            comet(t);
+            rush(t);
+            burst(t);
+            ctx.globalCompositeOperation = "source-over";
+          });
+          window.__timelines["fx"] = tl;
+        })();
+      </script>
+    </template>
+  </body>
+</html>

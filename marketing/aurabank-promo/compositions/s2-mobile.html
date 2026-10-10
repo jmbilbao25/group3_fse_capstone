@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Scene 2: Aura Mobile</title>
+  </head>
+  <body>
+    <template id="s2-template">
+      <style>
+        #root { position: absolute; inset: 0; overflow: hidden; }
+        .s2-inner { position: absolute; inset: 0; }
+        .s2-copy { position: absolute; left: 170px; top: 318px; width: 900px; }
+        .s2-copy .eyebrow { margin-bottom: 30px; }
+
+        /* phone: a 3D object with a real milled edge */
+        .s2-rig { position: absolute; left: 1185px; top: 100px; width: 430px; height: 880px; perspective: 1800px; }
+        .s2-shadow {
+          position: absolute; left: 40px; right: 40px; bottom: -46px; height: 70px; border-radius: 50%;
+          background: radial-gradient(closest-side, rgba(0, 0, 0, .55), rgba(0, 0, 0, 0));
+        }
+        .s2-halo {
+          position: absolute; left: -140px; right: -140px; top: 60px; bottom: 60px; border-radius: 50%;
+          background: radial-gradient(closest-side, rgba(167, 232, 209, .16), rgba(167, 232, 209, 0));
+        }
+        .s2-phone { position: absolute; inset: 0; transform-style: preserve-3d; }
+        .s2-side {
+          position: absolute; inset: 0; border-radius: 66px;
+          background: linear-gradient(90deg, #39434a 0%, #93a0a8 9%, #2a3237 30%, #20272c 52%, #5c6870 82%, #a3afb6 93%, #3a444b 100%);
+          transform: translateZ(calc(var(--z) * -1.3px));
+        }
+        .s2-face {
+          position: absolute; inset: 0; border-radius: 66px; padding: 12px; background: #04070a;
+          box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .18), inset 0 0 0 4px #0b1014, 0 60px 120px rgba(0, 0, 0, .5);
+          transform: translateZ(1px);
+        }
+        .s2-scr { position: relative; width: 100%; height: 100%; border-radius: 54px; overflow: hidden; background: #10171c; }
+        .s2-island { position: absolute; top: 22px; left: 50%; margin-left: -60px; width: 120px; height: 34px; border-radius: 20px; background: #000; z-index: 9; }
+        .s2-glare {
+          position: absolute; top: -20%; left: -60%; width: 220%; height: 140%; z-index: 12;
+          background: linear-gradient(112deg, rgba(255, 255, 255, 0) 38%, rgba(255, 255, 255, .13) 46%, rgba(255, 255, 255, .03) 52%, rgba(255, 255, 255, 0) 60%);
+        }
+        #s2-fx { position: absolute; left: 0; top: 0; width: 406px; height: 856px; z-index: 10; }
+        .s2-view { position: absolute; inset: 0; }
+        .s2-sbar { position: absolute; top: 0; left: 0; right: 0; height: 58px; display: flex; justify-content: space-between; align-items: center; padding: 6px 36px 0 40px; font-size: 15px; font-weight: 600; z-index: 4; }
+        .s2-sbar svg { width: 64px; height: 14px; fill: currentColor; color: inherit; }
+
+        /* login: aurora sky over a docked sheet */
+        .s2-sky { position: absolute; left: 0; right: 0; top: 0; height: 520px; overflow: hidden; background: linear-gradient(180deg, #0b1216 0%, #10171c 100%); }
+        .s2-lb { position: absolute; border-radius: 50%; mix-blend-mode: screen; }
+        .s2-lb1 { left: -70px; top: 30px; width: 430px; height: 290px; background: radial-gradient(closest-side, rgba(151, 207, 243, .55), rgba(151, 207, 243, 0)); }
+        .s2-lb2 { left: 90px; top: 140px; width: 400px; height: 270px; background: radial-gradient(closest-side, rgba(167, 232, 209, .58), rgba(167, 232, 209, 0)); } .s2-lb3 { left: -20px; top: -20px; width: 300px; height: 220px; background: radial-gradient(closest-side, rgba(190, 198, 247, .45), rgba(190, 198, 247, 0)); }
+        .s2-star { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: #fff; }
+        .s2-lnav { position: absolute; top: 70px; left: 26px; right: 26px; display: flex; justify-content: space-between; align-items: center; }
+        .s2-brand { display: flex; align-items: center; gap: 10px; font-size: 21px; font-weight: 600; }
+        .s2-brand svg { width: 34px; height: 34px; }
+        .s2-lnav > span { font-size: 14px; font-weight: 600; }
+        .s2-hello { position: absolute; left: 28px; top: 300px; font-size: 38px; font-weight: 600; line-height: 1.12; letter-spacing: -.02em; }
+        .s2-hello b { display: block; font-weight: 600; color: #a7e8d1; }
+        .s2-hello p { font-size: 15px; font-weight: 400; color: rgba(255, 255, 255, .82); margin-top: 12px; letter-spacing: 0; }
+        .s2-sheet { position: absolute; left: 0; right: 0; bottom: 0; height: 392px; background: #fff; border-radius: 30px 30px 0 0; padding: 30px 24px; color: #10171c; }
+        .s2-field { position: relative; height: 62px; border-radius: 16px; background: #f3f4f5; padding: 11px 18px; margin-bottom: 12px; }
+        .s2-field small { display: block; font-size: 12px; color: #4a555f; }
+        .s2-field div { font-size: 16px; margin-top: 3px; }
+        .s2-field svg { position: absolute; right: 16px; top: 20px; width: 22px; height: 22px; color: #10171c; }
+        .s2-btn { height: 56px; border-radius: 18px; background: #10171c; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 600; margin-top: 18px; }
+        .s2-links { text-align: center; margin-top: 22px; font-size: 14px; color: #3f4a54; }
+        .s2-links b { color: #10171c; font-weight: 600; }
+        .s2-faceid {
+          position: absolute; left: 113px; top: 236px; width: 180px; height: 180px; border-radius: 42px; z-index: 6;
+          background: rgba(12, 18, 22, .9); border: 1px solid rgba(167, 232, 209, .32);
+          box-shadow: 0 30px 70px rgba(0, 0, 0, .55), 0 0 60px rgba(167, 232, 209, .12);
+        }
+        .s2-faceid svg { position: absolute; left: 20px; top: 20px; width: 140px; height: 140px; overflow: visible; }
+
+        /* dashboard */
+        .s2-dash { background: #f7f7f7; color: #10171c; }
+        .s2-dhead { position: absolute; top: 66px; left: 22px; right: 22px; display: flex; align-items: center; gap: 12px; }
+        .s2-dhead small { display: block; font-size: 13px; color: #4a555f; }
+        .s2-dhead b { display: block; font-size: 19px; font-weight: 600; }
+        .s2-bell { margin-left: auto; width: 42px; height: 42px; border-radius: 50%; background: #fff; border: 1px solid #e6e9eb; display: flex; align-items: center; justify-content: center; }
+        .s2-bell svg { width: 20px; height: 20px; }
+        .s2-card { position: absolute; left: 18px; top: 120px; width: 370px; height: 233.3px; border-radius: 20px; }
+        .s2-card-face { position: absolute; inset: 0; box-shadow: 0 18px 30px -10px rgba(16, 23, 28, .45); border-radius: 20px; }
+        #s2-card-canvas { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 20px; }
+        .s2-bal { position: absolute; left: 24px; top: 58px; height: 36px; display: flex; font-size: 34px; font-weight: 600; letter-spacing: -.6px; line-height: 36px; color: #fff; }
+        .s2-bal span { display: block; }
+        .s2-col { height: 36px; overflow: hidden; }
+        .s2-strip { display: flex; flex-direction: column; }
+        .s2-shine { position: absolute; inset: 0; border-radius: 20px; overflow: hidden; }
+        .s2-shine i { position: absolute; top: -20%; left: 0; width: 40%; height: 140%; background: linear-gradient(100deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, .28), rgba(255, 255, 255, 0)); }
+        .s2-slot {
+          position: absolute; inset: 0; border-radius: 20px; background: #e9eceb;
+          box-shadow: inset 0 3px 10px rgba(16, 23, 28, .18), inset 0 0 0 1.5px rgba(167, 232, 209, .9), 0 0 40px rgba(167, 232, 209, .55);
+        }
+        .s2-actions { position: absolute; top: 372px; left: 18px; right: 18px; display: flex; justify-content: space-between; }
+        .s2-act { width: 82px; display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 500; color: #3f4a54; }
+        .s2-act div { width: 58px; height: 58px; border-radius: 50%; background: #fff; border: 1px solid #e6e9eb; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 16px rgba(16, 23, 28, .05); }
+        .s2-act svg { width: 24px; height: 24px; color: #10171c; }
+        .s2-sec { position: absolute; top: 474px; left: 24px; right: 24px; display: flex; justify-content: space-between; font-size: 16px; font-weight: 600; }
+        .s2-sec span { font-size: 13px; color: #17614f; }
+        .s2-list { position: absolute; top: 508px; left: 16px; right: 16px; }
+        .s2-row { position: relative; height: 70px; border-radius: 18px; background: #fff; border: 1px solid #e6e9eb; display: flex; align-items: center; gap: 12px; padding: 0 16px; margin-bottom: 8px; }
+        .s2-row .s2-hl { position: absolute; inset: -1px; border-radius: 18px; border: 2px solid #a7e8d1; background: rgba(167, 232, 209, .16); }
+        .s2-ri { position: relative; width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex: none; }
+        .s2-rt { position: relative; flex: 1; } .s2-rt b { display: block; font-size: 15px; font-weight: 600; } .s2-rt small { font-size: 12.5px; color: #4a555f; }
+        .s2-ra { position: relative; font-size: 15px; font-weight: 600; } .s2-cr { color: #13704f; }
+        .s2-tabbar { position: absolute; left: 0; right: 0; bottom: 0; height: 86px; background: #fff; border-top: 1px solid #e6e9eb; display: flex; justify-content: space-around; padding-top: 12px; }
+        .s2-tab { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; color: #56616b; }
+        .s2-tab svg { width: 22px; height: 22px; }
+        .s2-tab.on { color: #10171c; font-weight: 600; }
+        .s2-notif {
+          position: absolute; top: 50px; left: 10px; right: 10px; height: 78px; border-radius: 24px; z-index: 8; padding: 14px 16px;
+          background: rgba(24, 32, 38, .96); border: 1px solid rgba(255, 255, 255, .1); box-shadow: 0 18px 40px rgba(0, 0, 0, .35);
+          display: flex; gap: 12px; align-items: center; color: #fff;
+        }
+        .s2-notif svg { width: 44px; height: 44px; flex: none; }
+        .s2-nt { flex: 1; } .s2-nt b { font-size: 14px; font-weight: 600; display: flex; justify-content: space-between; }
+        .s2-nt b span { font-weight: 400; color: rgba(255, 255, 255, .66); font-size: 12px; } .s2-nt p { font-size: 14px; color: rgba(255, 255, 255, .92); margin-top: 2px; }
+      </style>
+
+      <div id="root" data-composition-id="s2" data-width="1920" data-height="1080">
+        <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+          <defs>
+            <linearGradient id="s2-arch-g" x1="18" y1="15" x2="46" y2="48" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#97CFF3" /><stop offset="1" stop-color="#A7E8D1" /></linearGradient>
+            <radialGradient id="s2-glow-g" cx="32" cy="67" r="58" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#A7E8D1" stop-opacity=".3" /><stop offset="1" stop-color="#A7E8D1" stop-opacity="0" /></radialGradient>
+            <symbol id="s2-mark" viewBox="0 0 64 64">
+              <rect width="64" height="64" rx="18" fill="#10171C" />
+              <rect width="64" height="64" rx="18" fill="url(#s2-glow-g)" />
+              <path d="M18 48C18 29 24.5 15 32 15C39.5 15 46 29 46 48" fill="none" stroke="url(#s2-arch-g)" stroke-width="6.4" stroke-linecap="round" />
+              <path d="M22.5 37C26.5 33 29.5 33 32 35.5C34.5 38 37.5 38 41.5 34" fill="none" stroke="#fff" stroke-opacity=".94" stroke-width="3.6" stroke-linecap="round" />
+            </symbol>
+            <symbol id="s2-sbar-g" viewBox="0 0 64 14"><rect x="0" y="9" width="3" height="5" rx="1" /><rect x="5" y="6" width="3" height="8" rx="1" /><rect x="10" y="3" width="3" height="11" rx="1" /><rect x="15" y="0" width="3" height="14" rx="1" /><rect x="38" y="1" width="22" height="12" rx="3.5" fill="none" stroke="currentColor" stroke-opacity=".5" /><rect x="40" y="3" width="16" height="8" rx="2" /><rect x="61" y="5" width="2" height="4" rx="1" fill-opacity=".5" /></symbol>
+            <filter id="s2-whip" x="-10%" y="0%" width="120%" height="100%"><feGaussianBlur id="s2-whip-b" stdDeviation="0 0" /></filter>
+          </defs>
+        </svg>
+
+        <div id="s2-inner" class="s2-inner">
+          <div id="s2-copy" class="s2-copy">
+            <div id="s2-eyebrow" class="eyebrow"><i id="s2-dot"></i><span id="s2-eb-t">Aura Mobile</span></div>
+            <h2 class="headline">
+              <span class="ln"><span class="w s2-w">Your</span> <span class="w s2-w">whole</span> <span class="w s2-w">bank,</span></span>
+              <span class="ln"><span id="s2-l2" class="w grad">in your pocket.</span></span>
+            </h2>
+            <div class="pills">
+              <div id="s2-p1" class="pill"><svg class="ic s2-pill-ic" viewBox="0 0 24 24"><path pathLength="1" stroke-dasharray="1 2" d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M9 9v1M15 9v1M12 9v4h-1M9 16c1.5 1 4.5 1 6 0" /></svg>Face ID &amp; fingerprint</div>
+              <div id="s2-p2" class="pill"><svg class="ic s2-pill-ic" viewBox="0 0 24 24"><path pathLength="1" stroke-dasharray="1 2" d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0" /></svg>Instant alerts</div>
+              <div id="s2-p3" class="pill"><svg class="ic s2-pill-ic" viewBox="0 0 24 24"><path pathLength="1" stroke-dasharray="1 2" d="M5 6h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zM3 10h18M7 15h3" /></svg>Visa &amp; Mastercard debit</div>
+            </div>
+          </div>
+
+          <div id="s2-rig" class="s2-rig">
+            <div class="s2-halo"></div>
+            <div class="s2-shadow"></div>
+            <div id="s2-phone" class="s2-phone">
+              <div class="s2-side" style="--z: 10"></div><div class="s2-side" style="--z: 9"></div><div class="s2-side" style="--z: 8"></div><div class="s2-side" style="--z: 7"></div><div class="s2-side" style="--z: 6"></div>
+              <div class="s2-side" style="--z: 5"></div><div class="s2-side" style="--z: 4"></div><div class="s2-side" style="--z: 3"></div><div class="s2-side" style="--z: 2"></div><div class="s2-side" style="--z: 1"></div>
+              <div class="s2-face">
+                <div class="s2-scr">
+                  <div class="s2-island"></div>
+
+                  <!-- sign in: aurora sky over a docked sheet (login_screen.dart) -->
+                  <div id="s2-login" class="s2-view">
+                    <div id="s2-sky" class="s2-sky">
+                      <div id="s2-lb3" class="s2-lb s2-lb3"></div><div id="s2-lb1" class="s2-lb s2-lb1"></div><div id="s2-lb2" class="s2-lb s2-lb2"></div>
+                      <i class="s2-star" style="left: 52px; top: 118px; opacity: .7"></i><i class="s2-star" style="left: 140px; top: 74px; opacity: .45"></i><i class="s2-star" style="left: 230px; top: 132px; opacity: .8"></i><i class="s2-star" style="left: 318px; top: 96px; opacity: .5"></i><i class="s2-star" style="left: 362px; top: 196px; opacity: .65"></i><i class="s2-star" style="left: 96px; top: 230px; opacity: .4"></i>
+                    </div>
+                    <div class="s2-sbar"><span data-layout-allow-overlap>9:41</span><svg aria-hidden="true"><use href="#s2-sbar-g" /></svg></div>
+                    <div class="s2-lnav"><div class="s2-brand"><svg aria-hidden="true"><use href="#s2-mark" /></svg>Aura</div><span>Create account</span></div>
+                    <div id="s2-hello" class="s2-hello">Welcome back,<b>Elijah</b><p>Please enter your email and password</p></div>
+                    <div id="s2-sheet" class="s2-sheet">
+                      <div class="s2-field"><small>Username</small><div>elijah@aurabank.ph</div></div>
+                      <div class="s2-field"><small>Password</small><div>•••••••••••••</div><svg class="ic" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 6.1A9.7 9.7 0 0 1 12 6c5 0 8.5 4.5 9.5 6-.5.8-1.6 2.3-3.2 3.6M6.4 7.5C4.6 8.8 3.3 10.6 2.5 12c1 1.5 4.5 6 9.5 6 1.6 0 3-.4 4.3-1.1M9.9 9.9a3 3 0 0 0 4.2 4.2" /></svg></div>
+                      <div id="s2-signin" class="s2-btn">Sign in</div>
+                      <div class="s2-links">Forgot Passcode? &nbsp;·&nbsp; <b>Switch Account</b></div>
+                    </div>
+                    <div id="s2-faceid" class="s2-faceid">
+                      <svg viewBox="0 0 120 120" aria-hidden="true">
+                        <g id="s2-ticks"></g>
+                        <circle id="s2-ring" cx="60" cy="60" r="50" fill="none" stroke="#a7e8d1" stroke-width="3" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" transform="rotate(-90 60 60)" opacity="0" />
+                        <g id="s2-face"><g transform="translate(30 30) scale(2.5)" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                          <path class="s2-fp" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2" />
+                          <path class="s2-fp" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" d="M9 9v1M15 9v1M12 9v4h-1M9 16c1.5 1 4.5 1 6 0" />
+                        </g></g>
+                        <path id="s2-check" opacity="0" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" d="M40 61 54 75 82 46" fill="none" stroke="#a7e8d1" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    </div>
+                  </div>
+
+                  <!-- home: wallet card, actions, activity -->
+                  <div id="s2-dash" class="s2-view s2-dash">
+                    <div class="s2-sbar" style="color: #10171c" data-layout-allow-occlusion><span data-layout-allow-overlap>9:41</span><svg aria-hidden="true"><use href="#s2-sbar-g" /></svg></div>
+                    <div id="s2-dhead" class="s2-dhead" data-layout-allow-overlap>
+                      <div class="avatar">E</div>
+                      <div><small data-layout-allow-overlap>Good evening,</small><b data-layout-allow-overlap>Elijah</b></div>
+                      <div class="s2-bell"><svg class="ic" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0" /></svg></div>
+                    </div>
+                    <div id="s2-card" class="s2-card">
+                      <div id="s2-slot" class="s2-slot" style="opacity: 0"></div>
+                      <div id="s2-card-face" class="s2-card-face">
+                        <canvas id="s2-card-canvas" width="740" height="467"></canvas>
+                        <div id="s2-bal" class="s2-bal" aria-label="₱76,302.50" data-layout-allow-occlusion><span>₱</span><span class="s2-col"><span id="s2-c1" class="s2-strip"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></span></span><span class="s2-col"><span id="s2-c2" class="s2-strip"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></span></span><span>,302.50</span></div>
+                        <div class="s2-shine"><i id="s2-shine"></i></div>
+                      </div>
+                    </div>
+                    <div id="s2-actions" class="s2-actions">
+                      <div class="s2-act"><div><svg class="ic" viewBox="0 0 24 24"><path d="M7 17L17 7M9 7h8v8" /></svg></div>Send</div>
+                      <div class="s2-act"><div><svg class="ic" viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6" /></svg></div>Pay bills</div>
+                      <div class="s2-act"><div><svg class="ic" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1" /><rect x="14" y="4" width="6" height="6" rx="1" /><rect x="4" y="14" width="6" height="6" rx="1" /><path d="M14 14h2v2h-2zM18 18h2v2h-2zM14 18h1" /></svg></div>QR Pay</div>
+                      <div class="s2-act"><div><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2" /><path d="M3 10h18M7 15h3" /></svg></div>Cards</div>
+                    </div>
+                    <div id="s2-sec" class="s2-sec">Recent activity<span>See all</span></div>
+                    <div id="s2-list" class="s2-list">
+                      <div id="s2-r1" class="s2-row">
+                        <div id="s2-r1hl" class="s2-hl"></div>
+                        <div class="s2-ri" style="background: #e4f5ee; color: #13704f">MS</div>
+                        <div class="s2-rt"><b>Maria Santos</b><small>Transfer in · just now</small></div>
+                        <div class="s2-ra s2-cr">+₱15,000.00</div>
+                      </div>
+                      <div id="s2-rest">
+                        <div class="s2-row"><div class="s2-ri" style="background: #eaf3fa; color: #1f5679">ME</div><div class="s2-rt"><b>Meralco</b><small>Bills payment · Yesterday</small></div><div class="s2-ra">−₱2,340.75</div></div>
+                        <div class="s2-row"><div class="s2-ri" style="background: #fbe9e7; color: #9a2f2a">JB</div><div class="s2-rt"><b>Jollibee</b><small>Visa •••• 2314 · Oct 8</small></div><div class="s2-ra">−₱389.00</div></div>
+                      </div>
+                    </div>
+                    <div class="s2-tabbar">
+                      <div class="s2-tab on"><svg class="ic" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9H4z" /></svg>Home</div>
+                      <div class="s2-tab"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2" /><path d="M3 10h18" /></svg>Cards</div>
+                      <div class="s2-tab"><svg class="ic" viewBox="0 0 24 24"><path d="M4 8h14l-3-3M20 16H6l3 3" /></svg>Transfer</div>
+                      <div class="s2-tab"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" /><path d="M4 21c1.5-4 5-6 8-6s6.5 2 8 6" /></svg>Profile</div>
+                    </div>
+                    <div id="s2-notif" class="s2-notif" data-layout-allow-overlap>
+                      <svg aria-hidden="true"><use href="#s2-mark" /></svg>
+                      <div class="s2-nt"><b data-layout-allow-overlap>Aura<span>now</span></b><p data-layout-allow-overlap>You received ₱15,000.00 from Maria Santos</p></div>
+                    </div>
+                  </div>
+
+                  <canvas id="s2-fx" width="812" height="1712" data-layout-allow-occlusion></canvas>
+                  <div id="s2-glare" class="s2-glare" data-layout-allow-occlusion data-layout-allow-overflow></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        (function () {
+          const K = window.AuraKit;
+          const H = K.HANDOFF;
+          const S = 2.3; // host data-start: tweens below are written in root seconds
+          const g = K.at(S);
+          const tl = gsap.timeline({ paused: true });
+          const $ = (s) => document.querySelector(s);
+          const OUT = "expo.out";
+
+          function build() {
+            // The wallet face is painted by the same routine as the 3D card's texture.
+            K.paintCardCanvas($("#s2-card-canvas"), { last4: "2314", holder: "Elijah R. Montefalco", network: "visa", balance: true });
+
+            // Face ID ticks, built once.
+            const ticks = $("#s2-ticks");
+            for (let i = 0; i < 36; i++) {
+              const a = (i / 36) * Math.PI * 2 - Math.PI / 2;
+              const ln = document.createElementNS("http://www.w3.org/2000/svg", "line");
+              ln.setAttribute("x1", (60 + Math.cos(a) * 46).toFixed(2));
+              ln.setAttribute("y1", (60 + Math.sin(a) * 46).toFixed(2));
+              ln.setAttribute("x2", (60 + Math.cos(a) * 54).toFixed(2));
+              ln.setAttribute("y2", (60 + Math.sin(a) * 54).toFixed(2));
+              ln.setAttribute("stroke", "#a7e8d1");
+              ln.setAttribute("stroke-width", "2.6");
+              ln.setAttribute("stroke-linecap", "round");
+              ln.setAttribute("class", "s2-tick");
+              ln.setAttribute("opacity", "0.16");
+              ticks.appendChild(ln);
+            }
+
+            /* ---------- camera: pull back out of the logo dive ---------- */
+            // The dive ended inside the arch; we come out of the login sky.
+            const PULL = { at: 2.46, dur: 1.0 };
+            // At 5.2x the login sky fills the frame: screen point (203, 212) sits dead centre.
+            tl.fromTo("#s2-rig", { scale: 5.2, x: -440, y: 1186 }, { scale: 1, x: 0, y: 0, duration: PULL.dur, ease: OUT }, g(PULL.at));
+            tl.fromTo("#s2-phone", { rotationY: 0, rotationX: 0 }, { rotationY: -22, rotationX: 7, duration: PULL.dur + 0.15, ease: "power3.out" }, g(PULL.at));
+            tl.fromTo("#s2-glare", { x: -120 }, { x: 150, duration: PULL.dur + 0.15, ease: "power3.out" }, g(PULL.at));
+            tl.fromTo("#s2-inner", { opacity: 0 }, { opacity: 1, duration: 0.07, ease: "none" }, g(2.46));
+            // Settle into the hand-off pose; the 3D card picks up from here.
+            tl.to("#s2-phone", { rotationY: H.phone.rotY, rotationX: H.phone.rotX, duration: H.t - (PULL.at + PULL.dur + 0.15), ease: "sine.inOut" }, g(PULL.at + PULL.dur + 0.15));
+            tl.to("#s2-glare", { x: 40, duration: H.t - (PULL.at + PULL.dur + 0.15), ease: "sine.inOut" }, g(PULL.at + PULL.dur + 0.15));
+            tl.to("#s2-phone", { rotationY: -2, duration: 0.6, ease: "sine.in" }, g(H.t));
+
+            /* ---------- copy, locked to the VO ---------- */
+            tl.fromTo("#s2-dot", { scale: 0 }, { scale: 1, duration: 0.5, ease: "back.out(3)" }, g(2.56));
+            tl.fromTo("#s2-eb-t", { opacity: 0, x: -18, clipPath: "inset(0% 100% 0% 0%)" }, { opacity: 1, x: 0, clipPath: "inset(0% 0% 0% 0%)", duration: 0.7, ease: "power3.out" }, g(2.6));
+            // "Your whole bank," word by word as it is spoken (2.63-3.22).
+            [2.63, 2.8, 2.98].forEach((at, i) => {
+              tl.fromTo(gsap.utils.toArray(".s2-w")[i], { yPercent: 112, rotationX: -60, filter: "blur(6px)" }, { yPercent: 0, rotationX: 0, filter: "blur(0px)", duration: 0.8, ease: OUT }, g(at));
+            });
+            // "in your pocket." lands with "pocket" (3.9) and then catches the light.
+            tl.set(".s2-w", { filter: "none" }, g(3.85));
+            tl.fromTo("#s2-l2", { yPercent: 112 }, { yPercent: 0, duration: 0.9, ease: OUT }, g(3.66));
+            tl.fromTo("#s2-l2", { backgroundPosition: "100% 50%" }, { backgroundPosition: "0% 50%", duration: 1.0, ease: "power2.inOut", immediateRender: false }, g(4.02));
+
+            // Each pill arrives as the phone demonstrates it.
+            const pill = (sel, at) => {
+              tl.fromTo(sel, { opacity: 0, y: 18, scale: 0.88 }, { opacity: 1, y: 0, scale: 1, duration: 0.55, ease: "back.out(1.7)" }, g(at));
+              tl.fromTo(`${sel} path`, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "power2.out" }, g(at + 0.08));
+            };
+            [["#s2-p1", 3.36], ["#s2-p2", 4.14], ["#s2-p3", 4.72]].forEach(([sel, at]) => pill(sel, at));
+
+            /* ---------- the login sky keeps moving ---------- */
+            tl.fromTo("#s2-lb1", { x: -20, y: 10 }, { x: 34, y: -12, duration: 1.8, ease: "sine.inOut" }, g(2.3));
+            tl.fromTo("#s2-lb2", { x: 18, y: -8 }, { x: -30, y: 14, duration: 1.8, ease: "sine.inOut" }, g(2.3));
+            tl.fromTo("#s2-lb3", { x: 0, scale: 0.92 }, { x: 26, scale: 1.08, duration: 1.8, ease: "sine.inOut" }, g(2.3));
+
+            /* ---------- sign in with Face ID ---------- */
+            tl.to("#s2-signin", { keyframes: [{ scale: 0.95, duration: 0.08, ease: "power1.out" }, { scale: 1, duration: 0.24, ease: "back.out(2)" }] }, g(3.18));
+            tl.fromTo("#s2-faceid", { opacity: 0, scale: 0.84 }, { opacity: 1, scale: 1, duration: 0.36, ease: "back.out(1.6)" }, g(3.24));
+            tl.fromTo(".s2-fp", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "power2.out", stagger: 0.06 }, g(3.28));
+            // The scan sweeps the ring, one tick at a time.
+            tl.fromTo(".s2-tick", { opacity: 0.16 }, { opacity: 1, duration: 0.12, ease: "power1.out", stagger: 0.009 }, g(3.3));
+            tl.to(".s2-tick", { opacity: 0, duration: 0.18, ease: "power1.in" }, g(3.66));
+            tl.fromTo("#s2-ring", { opacity: 0, strokeDashoffset: 1 }, { opacity: 1, strokeDashoffset: 0, duration: 0.3, ease: "power2.inOut" }, g(3.62));
+            tl.to("#s2-face", { opacity: 0, scale: 1.3, svgOrigin: "60 60", duration: 0.16, ease: "power2.in" }, g(3.6));
+            tl.fromTo("#s2-check", { opacity: 0, strokeDashoffset: 1 }, { opacity: 1, strokeDashoffset: 0, duration: 0.26, ease: "power2.out" }, g(3.66));
+            tl.to("#s2-faceid", { scale: 1.06, duration: 0.12, ease: "power2.out" }, g(3.72));
+            tl.to("#s2-faceid", { opacity: 0, scale: 0.9, duration: 0.2, ease: "power2.in" }, g(3.86));
+
+            /* ---------- into the wallet ---------- */
+            tl.to("#s2-sheet", { y: 420, duration: 0.3, ease: "power3.in" }, g(3.86));
+            tl.to(["#s2-sky", "#s2-hello"], { opacity: 0, y: -40, duration: 0.3, ease: "power2.in" }, g(3.9));
+            tl.fromTo("#s2-dash", { opacity: 0 }, { opacity: 1, duration: 0.14, ease: "power1.out" }, g(3.98));
+            tl.to("#s2-login", { opacity: 0, duration: 0.08, ease: "none" }, g(4.04));
+            ["#s2-dhead", "#s2-card", "#s2-actions", "#s2-sec", "#s2-list"].forEach((s, i) => {
+              tl.fromTo(s, { y: 46 }, { y: 0, duration: 0.6, ease: OUT }, g(4.0 + i * 0.04));
+            });
+
+            /* ---------- money arrives ---------- */
+            tl.fromTo("#s2-notif", { y: -140, scale: 0.96 }, { y: 0, scale: 1, duration: 0.55, ease: "back.out(1.25)" }, g(4.1));
+            tl.to("#s2-notif", { y: -140, duration: 0.34, ease: "power2.in" }, g(4.9));
+            // The odometer rolls only forward, and never past the true balance.
+            tl.fromTo("#s2-c1", { yPercent: -60 }, { yPercent: -70, duration: 0.34, ease: "power3.out" }, g(4.46));
+            tl.fromTo("#s2-c2", { yPercent: -10 }, { yPercent: -60, duration: 0.38, ease: "power3.out" }, g(4.42));
+            tl.fromTo("#s2-shine", { xPercent: -160 }, { xPercent: 330, duration: 0.7, ease: "power2.inOut" }, g(4.46));
+            tl.fromTo("#s2-r1", { opacity: 0, scale: 0.94 }, { opacity: 1, scale: 1, duration: 0.5, ease: OUT }, g(4.5));
+            // Old rows sit in the top slot until the new one lands, then make room.
+            tl.fromTo("#s2-rest", { y: -78 }, { y: 0, duration: 0.6, ease: OUT }, g(4.46));
+            tl.fromTo("#s2-r1hl", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power1.out" }, g(4.5));
+            tl.to("#s2-r1hl", { opacity: 0, duration: 0.6, ease: "power1.inOut" }, g(5.0));
+
+            // Sparks burst from the balance on the beat (4.5), in screen space.
+            const fx = $("#s2-fx").getContext("2d");
+            const r = K.rng(4500);
+            const SPARKS = Array.from({ length: 34 }, () => {
+              const a = r() * Math.PI * 2;
+              return { a, v: 90 + r() * 170, life: 0.4 + r() * 0.45, size: 1.2 + r() * 2.2, delay: r() * 0.08 };
+            });
+            const BX = 18 + 130;
+            const BY = 120 + 73;
+            const fxCanvas = $("#s2-fx");
+            K.clock(tl, 3.45, (lt) => {
+              const t = lt + S;
+              fxCanvas.style.visibility = t < 4.48 || t > 5.4 ? "hidden" : "visible";
+              fx.clearRect(0, 0, 812, 1712);
+              if (t < 4.48 || t > 5.4) return;
+              fx.globalCompositeOperation = "lighter";
+              const ring = K.clamp((t - 4.5) / 0.55);
+              if (ring > 0 && ring < 1) {
+                const e = K.ease("power2.out")(ring);
+                Object.assign(fx, { strokeStyle: `rgba(167,232,209,${0.6 * (1 - ring)})`, lineWidth: 2 * (3 - 2 * ring) });
+                fx.beginPath();
+                fx.ellipse(BX * 2, BY * 2, (40 + 220 * e) * 2, (16 + 90 * e) * 2, 0, 0, Math.PI * 2);
+                fx.stroke();
+              }
+              for (const s of SPARKS) {
+                const age = t - 4.5 - s.delay;
+                if (age < 0 || age > s.life) continue;
+                const k = age / s.life;
+                const d = s.v * (1 - Math.pow(1 - k, 3)) * s.life * 0.9;
+                const x = (BX + Math.cos(s.a) * d * 1.6) * 2;
+                const y = (BY + Math.sin(s.a) * d * 0.7 + 40 * age * age) * 2;
+                const rad = s.size * 2 * (1 - 0.6 * k);
+                const gr = fx.createRadialGradient(x, y, 0, x, y, rad * 3.5);
+                gr.addColorStop(0, `rgba(245,255,251,${(1 - k) * 0.95})`);
+                gr.addColorStop(0.35, `rgba(167,232,209,${(1 - k) * 0.6})`);
+                gr.addColorStop(1, "rgba(151,207,243,0)");
+                fx.fillStyle = gr;
+                fx.fillRect(x - rad * 3.5, y - rad * 3.5, rad * 7, rad * 7);
+              }
+            });
+
+            /* ---------- the card leaves the phone (card3d takes it from here) ---------- */
+            tl.to("#s2-card-face", { opacity: 0, duration: 0.05, ease: "none" }, g(H.t));
+            tl.fromTo("#s2-slot", { opacity: 0 }, { opacity: 1, duration: 0.18, ease: "power1.out" }, g(H.t));
+            // Focus racks to the card: the phone and copy fall back.
+            tl.fromTo("#s2-rig", { filter: "blur(0px)" }, { filter: "blur(7px)", opacity: 0.72, duration: 0.42, ease: "power2.out", immediateRender: false }, g(H.t + 0.04));
+            tl.fromTo("#s2-copy", { filter: "blur(0px)" }, { filter: "blur(5px)", opacity: 0.6, duration: 0.42, ease: "power2.out", immediateRender: false }, g(H.t + 0.04));
+
+            /* ---------- whip pan to the web ---------- */
+            tl.set("#s2-inner", { filter: "url(#s2-whip)" }, g(5.3));
+            tl.fromTo("#s2-whip-b", { attr: { stdDeviation: "0 0" } }, { attr: { stdDeviation: "46 0" }, duration: 0.26, ease: "power2.in" }, g(5.3));
+            tl.to("#s2-inner", { x: -520, duration: 0.3, ease: "power3.in" }, g(5.3));
+            tl.to("#s2-inner", { opacity: 0, duration: 0.12, ease: "power1.in" }, g(5.46));
+
+            window.__timelines["s2"] = tl;
+          }
+
+          K.ready.then(build);
+        })();
+      </script>
+    </template>
+  </body>
+</html>

@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Scene 4: Aura Console</title>
+  </head>
+  <body>
+    <template id="s4-template">
+      <style>
+        #root { position: absolute; inset: 0; overflow: hidden; }
+        .s4-cam { position: absolute; inset: 0; }
+        .s4-copy { position: absolute; left: 0; right: 0; top: 92px; display: flex; flex-direction: column; align-items: center; }
+        .s4-copy .eyebrow { margin-bottom: 26px; }
+        .s4-copy .headline { font-size: 80px; display: flex; gap: .26em; }
+        .s4-rig { position: absolute; left: 210px; top: 300px; width: 1500px; height: 760px; perspective: 2400px; }
+        .s4-console {
+          position: absolute; inset: 0; border-radius: 22px; overflow: hidden; background: #f4f5f6; color: #10171c; transform-origin: 50% 100%;
+          border: 1px solid rgba(255, 255, 255, .22); box-shadow: 0 -10px 60px rgba(0, 0, 0, .25), 0 60px 140px rgba(0, 0, 0, .6), 0 0 140px rgba(167, 232, 209, .12);
+        }
+        .s4-chrome { height: 38px; background: #e6e9eb; display: flex; align-items: center; gap: 8px; padding: 0 16px; border-bottom: 1px solid #dadfe2; }
+        .s4-chrome .d { width: 11px; height: 11px; border-radius: 50%; background: #c6ccd1; }
+        .s4-url { margin-left: 18px; width: 340px; height: 24px; border-radius: 12px; background: #fff; color: #3f4a54; font-size: 12.5px; display: flex; align-items: center; gap: 8px; padding: 0 14px; }
+        .s4-url svg { width: 13px; height: 13px; color: #17614f; }
+        .s4-body { position: absolute; top: 38px; left: 0; right: 0; bottom: 0; display: flex; }
+        .s4-side { position: relative; width: 250px; flex: none; padding: 22px 14px; color: #fff; background: radial-gradient(120% 40% at 30% 0%, rgba(167, 232, 209, .22), rgba(167, 232, 209, 0) 70%), #10171c; }
+        .s4-brand { display: flex; gap: 12px; align-items: center; padding: 0 8px; margin-bottom: 28px; }
+        .s4-brand svg { width: 38px; height: 38px; }
+        .s4-brand b { display: block; font-size: 16px; font-weight: 600; }
+        .s4-brand small { font-size: 12px; color: rgba(255, 255, 255, .7); }
+        .s4-nav > div { display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; color: rgba(255, 255, 255, .8); margin-bottom: 4px; }
+        .s4-nav > div.on { background: rgba(255, 255, 255, .1); color: #fff; font-weight: 500; }
+        .s4-nav svg { width: 17px; height: 17px; }
+        .s4-main { flex: 1; padding: 30px 44px; }
+        .s4-hero {
+          height: 150px; border-radius: 24px; padding: 32px 38px; color: #fff; overflow: hidden;
+          background: radial-gradient(50% 140% at 72% 0%, rgba(167, 232, 209, .38), rgba(167, 232, 209, 0) 70%), radial-gradient(40% 140% at 35% 0%, rgba(151, 207, 243, .3), rgba(151, 207, 243, 0) 70%), linear-gradient(135deg, #10171c, #173039);
+        }
+        .s4-hero small { font-size: 15px; color: rgba(255, 255, 255, .8); }
+        .s4-hero h3 { font-size: 38px; font-weight: 600; letter-spacing: -.02em; margin-top: 8px; }
+        .s4-stats { display: flex; gap: 18px; margin-top: 22px; }
+        .s4-stat { position: relative; flex: 1; height: 148px; background: #fff; border-radius: 20px; border: 1px solid #e6e9eb; padding: 20px 22px; }
+        .s4-ico { width: 40px; height: 40px; border-radius: 12px; background: #e6f6ef; color: #17614f; display: flex; align-items: center; justify-content: center; }
+        .s4-ico svg { width: 20px; height: 20px; }
+        .s4-num { font-size: 40px; font-weight: 600; letter-spacing: -.02em; margin-top: 14px; }
+        .s4-lbl { font-size: 14px; color: #3f4a54; margin-top: 2px; }
+        .s4-holds { position: relative; margin-top: 22px; background: #fff; border-radius: 20px; border: 1px solid #e6e9eb; padding: 4px 24px; overflow: hidden; }
+        .s4-hhead { display: flex; justify-content: space-between; align-items: center; height: 50px; font-size: 17px; font-weight: 600; }
+        .s4-hhead span { font-size: 14px; font-weight: 500; }
+        .s4-row { position: relative; display: flex; align-items: center; height: 54px; border-top: 1px solid #eef0f2; font-size: 15px; color: #3f4a54; }
+        .s4-row .hl { position: absolute; top: 3px; bottom: 3px; left: -14px; right: -14px; border-radius: 12px; background: rgba(242, 162, 92, .14); border: 1.5px solid rgba(242, 162, 92, .7); }
+        .s4-row b { position: relative; width: 160px; color: #10171c; font-weight: 600; }
+        .s4-row .acct { position: relative; flex: 1; }
+        .s4-bwrap { position: relative; width: 160px; height: 28px; margin-right: 26px; perspective: 400px; }
+        .s4-badge { position: absolute; right: 0; top: 0; height: 28px; padding: 0 12px; border-radius: 999px; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; white-space: nowrap; transform-origin: 50% 50% -14px; }
+        .s4-badge.amber { background: #fdf0e1; color: #7a430f; }
+        .s4-badge.ok { background: #e4f5ee; color: #0f5e42; }
+        .s4-badge.ok svg { width: 14px; height: 14px; }
+        .s4-ago { position: relative; width: 70px; text-align: right; font-size: 14px; color: #4a555f; }
+        .s4-scan { position: absolute; left: 0; right: 0; top: 0; height: 90px; background: linear-gradient(180deg, rgba(167, 232, 209, 0), rgba(167, 232, 209, .38) 70%, rgba(28, 110, 90, .55) 100%); }
+        .s4-laya {
+          position: absolute; left: 50px; top: 540px; width: 420px; border-radius: 24px; padding: 22px 24px; color: #fff;
+          background: linear-gradient(160deg, rgba(28, 38, 45, .97), rgba(14, 20, 24, .98)); border: 1px solid rgba(167, 232, 209, .38);
+          box-shadow: 0 30px 80px rgba(0, 0, 0, .55), 0 0 70px rgba(167, 232, 209, .18);
+        }
+        .s4-lyhead { display: flex; align-items: center; gap: 12px; }
+        .s4-lyico { width: 38px; height: 38px; border-radius: 12px; background: rgba(167, 232, 209, .16); color: #a7e8d1; display: flex; align-items: center; justify-content: center; }
+        .s4-lyico svg { width: 20px; height: 20px; }
+        .s4-lyhead b { display: block; font-size: 16px; font-weight: 600; }
+        .s4-lyhead small { font-size: 12.5px; color: rgba(255, 255, 255, .72); }
+        .s4-ms { margin-left: auto; height: 28px; padding: 0 12px; border-radius: 999px; background: rgba(167, 232, 209, .14); color: #a7e8d1; font-size: 13px; font-weight: 600; display: flex; align-items: center; }
+        .s4-tx { font-size: 14px; color: rgba(255, 255, 255, .84); margin-top: 16px; }
+        .s4-score { display: flex; justify-content: space-between; align-items: baseline; margin-top: 14px; font-size: 13px; color: rgba(255, 255, 255, .74); }
+        .s4-score b { font-size: 34px; font-weight: 600; color: #f2a25c; letter-spacing: -.02em; }
+        .s4-track { height: 8px; border-radius: 4px; background: rgba(255, 255, 255, .1); margin-top: 8px; overflow: hidden; }
+        .s4-fill { width: 64%; height: 100%; border-radius: 4px; background: linear-gradient(90deg, #a7e8d1, #f2a25c); transform-origin: 0 50%; }
+        .s4-tags { display: flex; gap: 8px; margin-top: 14px; }
+        .s4-tags span { height: 28px; padding: 0 11px; border-radius: 999px; background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .14); font-size: 12.5px; display: flex; align-items: center; color: rgba(255, 255, 255, .92); white-space: nowrap; }
+        .s4-sep { height: 1px; background: rgba(255, 255, 255, .1); margin: 18px 0 6px; }
+        .s4-sign { display: flex; align-items: center; gap: 12px; height: 50px; }
+        .s4-sign .avatar { width: 34px; height: 34px; font-size: 12.5px; }
+        .s4-sign b { display: block; font-size: 14px; font-weight: 600; }
+        .s4-sign small { font-size: 12px; color: rgba(255, 255, 255, .72); }
+        .s4-sig { margin-left: auto; width: 92px; height: 30px; overflow: visible; }
+        .s4-ok { width: 28px; height: 28px; border-radius: 50%; background: #a7e8d1; color: #10171c; display: flex; align-items: center; justify-content: center; margin-left: 10px; }
+        .s4-ok svg { width: 16px; height: 16px; stroke-width: 2.4; }
+        .s4-foot { font-size: 13.5px; color: #a7e8d1; margin-top: 10px; font-weight: 500; }
+      </style>
+
+      <div id="root" data-composition-id="s4" data-width="1920" data-height="1080">
+        <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+          <defs>
+            <linearGradient id="s4-arch-g" x1="18" y1="15" x2="46" y2="48" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#97CFF3" /><stop offset="1" stop-color="#A7E8D1" /></linearGradient>
+            <symbol id="s4-mark" viewBox="0 0 64 64">
+              <rect width="64" height="64" rx="18" fill="#10171C" />
+              <path d="M18 48C18 29 24.5 15 32 15C39.5 15 46 29 46 48" fill="none" stroke="url(#s4-arch-g)" stroke-width="6.4" stroke-linecap="round" />
+              <path d="M22.5 37C26.5 33 29.5 33 32 35.5C34.5 38 37.5 38 41.5 34" fill="none" stroke="#fff" stroke-opacity=".94" stroke-width="3.6" stroke-linecap="round" />
+            </symbol>
+            <filter id="s4-tilt" x="-5%" y="-10%" width="110%" height="120%"><feGaussianBlur id="s4-tilt-b" stdDeviation="0 34" /></filter>
+          </defs>
+        </svg>
+
+        <div id="s4-cam" class="s4-cam">
+          <div class="s4-copy">
+            <div class="eyebrow"><i id="s4-dot"></i><span id="s4-eb-t">Aura Console</span></div>
+            <h2 class="headline">
+              <span class="ln"><span class="w s4-w">Screened</span> <span class="w s4-w">by</span> <span class="w s4-w">AI.</span></span>
+              <span class="ln"><span id="s4-l2" class="w grad">Signed off by people.</span></span>
+            </h2>
+          </div>
+
+          <div id="s4-rig" class="s4-rig">
+            <div id="s4-console" class="s4-console" data-layout-allow-overflow>
+              <div class="s4-chrome">
+                <div class="d"></div><div class="d"></div><div class="d"></div>
+                <div class="s4-url"><svg class="ic" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>console.aurabank.ph/overview</div>
+              </div>
+              <div class="s4-body">
+                <div class="s4-side">
+                  <div class="s4-brand"><svg aria-hidden="true"><use href="#s4-mark" /></svg><div><b>Aura Console</b><small>Back office</small></div></div>
+                  <div class="s4-nav" data-layout-allow-occlusion>
+                    <div class="on" data-layout-allow-overlap><svg class="ic" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5" /><rect x="13" y="4" width="7" height="7" rx="1.5" /><rect x="4" y="13" width="7" height="7" rx="1.5" /><rect x="13" y="13" width="7" height="7" rx="1.5" /></svg>Overview</div>
+                    <div data-layout-allow-overlap><svg class="ic" viewBox="0 0 24 24"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M9 10h6M9 14h4" /></svg>Identity review</div>
+                    <div data-layout-allow-overlap><svg class="ic" viewBox="0 0 24 24"><path d="M4 8h14l-3-3M20 16H6l3 3" /></svg>Held transfers</div>
+                    <div data-layout-allow-overlap><svg class="ic" viewBox="0 0 24 24"><path d="M9 7L5 11l4 4M5 11h9a5 5 0 0 1 0 10h-2" /></svg>Reversals</div>
+                    <div data-layout-allow-overlap><svg class="ic" viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7zM14 3v5h5M12 12v4M12 18.5v.5" /></svg>SAR / STR</div>
+                    <div data-layout-allow-overlap><svg class="ic" viewBox="0 0 24 24"><path d="M12 21s-6-6-6-11a6 6 0 0 1 12 0c0 5-6 11-6 11z" /><circle cx="12" cy="10" r="2" /></svg>Location simulator</div>
+                    <div data-layout-allow-overlap><svg class="ic" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" /></svg>Audit trail</div>
+                  </div>
+                </div>
+                <div class="s4-main">
+                  <div id="s4-hero" class="s4-hero"><small>Good evening, Diana</small><h3>Here is what needs a person today.</h3></div>
+                  <div class="s4-stats">
+                    <div class="s4-stat"><div class="s4-ico"><svg class="ic" viewBox="0 0 24 24"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M9 10h6M9 14h4" /></svg></div><div class="s4-num" data-to="12">0</div><div class="s4-lbl">Identities to review</div></div>
+                    <div class="s4-stat"><div class="s4-ico"><svg class="ic" viewBox="0 0 24 24"><path d="M4 8h14l-3-3M20 16H6l3 3" /></svg></div><div class="s4-num" data-to="48">0</div><div class="s4-lbl">Transfers on hold</div></div>
+                    <div class="s4-stat"><div class="s4-ico"><svg class="ic" viewBox="0 0 24 24"><path d="M9 7L5 11l4 4M5 11h9a5 5 0 0 1 0 10h-2" /></svg></div><div class="s4-num" data-to="6">0</div><div class="s4-lbl">Reversals awaiting sign-off</div></div>
+                    <div class="s4-stat"><div class="s4-ico"><svg class="ic" viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7zM14 3v5h5M12 12v4M12 18.5v.5" /></svg></div><div class="s4-num" data-to="87">0</div><div class="s4-lbl">Reports awaiting sign-off</div></div>
+                  </div>
+                  <div class="s4-holds">
+                    <div id="s4-scan" class="s4-scan" style="opacity: 0"></div>
+                    <div class="s4-hhead">Latest holds<span>See all</span></div>
+                    <div class="s4-row">
+                      <div id="s4-hl" class="hl" style="opacity: 0"></div>
+                      <b>₱150,000.00</b><span class="acct">acc-2001-sav-001 → acc-2003-sav-002</span>
+                      <div class="s4-bwrap">
+                        <div id="s4-b-amber" class="s4-badge amber">Needs approval</div>
+                        <div id="s4-b-ok" class="s4-badge ok" style="opacity: 0"><svg class="ic" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" stroke-width="2.6" /></svg>Approved · 2 of 2</div>
+                      </div>
+                      <span class="s4-ago">just now</span>
+                    </div>
+                    <div class="s4-row"><b>₱5,000,000.00</b><span class="acct">acc-2001-sav-001 → acc-2003-sav-002</span><div class="s4-bwrap"><div class="s4-badge amber">Needs approval</div></div><span class="s4-ago">16 d ago</span></div>
+                    <div class="s4-row"><b>₱100,000.00</b><span class="acct">acc-2001-sav-001 → acc-2003-sav-002</span><div class="s4-bwrap"><div class="s4-badge amber">Needs approval</div></div><span class="s4-ago">11 d ago</span></div>
+                    <div class="s4-row"><b>₱75,000.00</b><span class="acct">acc-2001-sav-001 → acc-2003-sav-002</span><div class="s4-bwrap"><div class="s4-badge amber">Needs approval</div></div><span class="s4-ago">11 d ago</span></div>
+                    <div class="s4-row"><b>₱85,000.00</b><span class="acct">1000-2000-3001 → 1000-2000-3002</span><div class="s4-bwrap"><div class="s4-badge amber">Needs approval</div></div><span class="s4-ago">11 d ago</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Laya floats over the console's left edge -->
+          <div id="s4-laya" class="s4-laya" data-layout-allow-occlusion>
+            <div class="s4-lyhead">
+              <div class="s4-lyico"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM18.5 16l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z" /></svg></div>
+              <div><b>Laya</b><small>Risk engine</small></div>
+              <div class="s4-ms">24 ms</div>
+            </div>
+            <div class="s4-tx">₱150,000.00 · acc-2001 → acc-2003</div>
+            <div class="s4-score"><span>Risk score</span><b id="s4-score">0.00</b></div>
+            <div class="s4-track"><div id="s4-fill" class="s4-fill"></div></div>
+            <div class="s4-tags"><span class="s4-tag">New payee</span><span class="s4-tag">Over ₱50,000</span><span class="s4-tag">Active call</span></div>
+            <div class="s4-sep"></div>
+            <div id="s4-maker" class="s4-sign">
+              <div class="avatar" style="background: #bec6f7">BO</div>
+              <div><b>Beatriz Ocampo</b><small>Maker · onboarding</small></div>
+              <svg class="s4-sig" viewBox="0 0 92 30"><path id="s4-sig1" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" d="M3 21C7 8 12 4 13 12S10 27 16 20 22 6 26 13 27 24 33 17 38 9 41 15 44 22 50 15C54 10 58 11 60 16S66 22 72 13C76 8 82 9 88 11" fill="none" stroke="#e9fff7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+              <div id="s4-ok1" class="s4-ok"><svg class="ic" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg></div>
+            </div>
+            <div id="s4-checker" class="s4-sign">
+              <div class="avatar">DV</div>
+              <div><b>Diana Vance</b><small>Checker · compliance</small></div>
+              <svg class="s4-sig" viewBox="0 0 92 30"><path id="s4-sig2" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" d="M4 8C9 24 14 26 18 16S16 3 12 9 18 26 27 18C31 14 33 11 36 16S41 22 45 14 51 9 54 17 61 21 64 13 71 8 75 15 82 20 89 9" fill="none" stroke="#e9fff7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+              <div id="s4-ok2" class="s4-ok"><svg class="ic" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg></div>
+            </div>
+            <div id="s4-foot" class="s4-foot">Every decision has two names on it.</div>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        (function () {
+          const K = window.AuraKit;
+          const S = 8.15;
+          const g = K.at(S);
+          const tl = gsap.timeline({ paused: true });
+          const OUT = "expo.out";
+          const fadeUp = (sel, at, y = 22, dur = 0.7) => tl.fromTo(sel, { opacity: 0, y }, { opacity: 1, y: 0, duration: dur, ease: OUT }, g(at));
+          const count = (el, to, at, dur, fmt) => {
+            const o = { v: 0 };
+            tl.fromTo(o, { v: 0 }, { v: to, duration: dur, ease: "power3.out", onUpdate: () => (el.textContent = fmt(o.v)) }, g(at));
+          };
+
+          function build() {
+            /* ---------- the tilt down lands here: the console rises with the camera ---------- */
+            tl.set("#s4-rig", { filter: "url(#s4-tilt)" }, 0);
+            tl.fromTo("#s4-tilt-b", { attr: { stdDeviation: "0 34" } }, { attr: { stdDeviation: "0 0" }, duration: 0.45, ease: "power2.out" }, g(8.3));
+            tl.set("#s4-rig", { filter: "none" }, g(8.78));
+            tl.fromTo("#s4-rig", { y: 760, opacity: 0 }, { y: 0, opacity: 1, duration: 1.1, ease: OUT }, g(8.28));
+            tl.fromTo("#s4-console", { rotationX: 26 }, { rotationX: 0, duration: 1.3, ease: OUT }, g(8.28));
+            tl.fromTo("#s4-cam", { scale: 1 }, { scale: 1.035, duration: 2.6, ease: "sine.inOut" }, g(8.9));
+
+            /* ---------- copy on the VO: "Every move" 8.45, "screened by AI" 9.06, "signed off" 10.15 ---------- */
+            tl.fromTo("#s4-dot", { scale: 0 }, { scale: 1, duration: 0.5, ease: "back.out(3)" }, g(8.42));
+            tl.fromTo("#s4-eb-t", { opacity: 0, clipPath: "inset(0% 100% 0% 0%)" }, { opacity: 1, clipPath: "inset(0% 0% 0% 0%)", duration: 0.7, ease: "power3.out" }, g(8.46));
+            [9.06, 9.4, 9.56].forEach((at, i) => {
+              tl.fromTo(gsap.utils.toArray(".s4-w")[i], { yPercent: 112, rotationX: -60, filter: "blur(6px)" }, { yPercent: 0, rotationX: 0, filter: "blur(0px)", duration: 0.8, ease: OUT }, g(at));
+            });
+            tl.set(".s4-w", { filter: "none" }, g(10.5));
+            tl.fromTo("#s4-l2", { yPercent: 112 }, { yPercent: 0, duration: 0.9, ease: OUT }, g(10.15));
+            tl.fromTo("#s4-l2", { backgroundPosition: "100% 50%" }, { backgroundPosition: "0% 50%", duration: 1.1, ease: "power2.inOut", immediateRender: false }, g(10.6));
+
+            /* ---------- the overview fills in ---------- */
+            fadeUp("#s4-hero", 8.8, 18);
+            gsap.utils.toArray(".s4-stat").forEach((el, i) => {
+              fadeUp(el, 8.9 + i * 0.07, 26);
+              const n = el.querySelector(".s4-num");
+              count(n, Number(n.dataset.to), 8.95 + i * 0.07, 1.1, (v) => String(Math.round(v)));
+            });
+            gsap.utils.toArray(".s4-row").forEach((el, i) => tl.fromTo(el, { opacity: 0, x: -18 }, { opacity: 1, x: 0, duration: 0.6, ease: OUT }, g(9.15 + i * 0.06)));
+
+            /* ---------- Laya scans the queue, then flags the hold ---------- */
+            tl.fromTo("#s4-scan", { opacity: 0, y: -90 }, { opacity: 1, y: 300, duration: 0.55, ease: "power1.inOut" }, g(9.5));
+            tl.to("#s4-scan", { opacity: 0, duration: 0.2, ease: "power1.in" }, g(9.9));
+            tl.fromTo("#s4-hl", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power1.out" }, g(9.84));
+            tl.fromTo("#s4-laya", { opacity: 0, x: -60, rotationY: 24, transformPerspective: 900 }, { opacity: 1, x: 0, rotationY: 0, duration: 0.7, ease: OUT }, g(9.86));
+            tl.fromTo("#s4-fill", { scaleX: 0 }, { scaleX: 1, duration: 0.8, ease: "power3.out" }, g(10.06));
+            count(document.getElementById("s4-score"), 0.64, 10.06, 0.8, (v) => v.toFixed(2));
+            gsap.utils.toArray(".s4-tag").forEach((el, i) => tl.fromTo(el, { opacity: 0, y: 10, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: "back.out(2)" }, g(10.18 + i * 0.07)));
+
+            /* ---------- two people sign, in their own hand ---------- */
+            fadeUp("#s4-maker", 10.4, 14, 0.5);
+            tl.fromTo("#s4-sig1", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.4, ease: "power1.inOut" }, g(10.46));
+            tl.fromTo("#s4-ok1", { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(2.2)" }, g(10.86));
+            fadeUp("#s4-checker", 10.86, 14, 0.5);
+            tl.fromTo("#s4-sig2", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.38, ease: "power1.inOut" }, g(10.92));
+            tl.fromTo("#s4-ok2", { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(2.2)" }, g(11.3));
+            fadeUp("#s4-foot", 11.1, 8, 0.5);
+            // The hold flips to approved, like a departures board.
+            tl.to("#s4-b-amber", { rotationX: 90, opacity: 0, duration: 0.16, ease: "power2.in" }, g(11.34));
+            tl.fromTo("#s4-b-ok", { rotationX: -90, opacity: 0 }, { rotationX: 0, opacity: 1, duration: 0.42, ease: "back.out(2)" }, g(11.48));
+            tl.to("#s4-hl", { backgroundColor: "rgba(167,232,209,.22)", borderColor: "#a7e8d1", duration: 0.3, ease: "power1.out" }, g(11.4));
+
+            /* ---------- the build: rush into the approval ---------- */
+            gsap.set("#s4-cam", { transformOrigin: "1466px 791px" });
+            tl.to("#s4-cam", { scale: 1.6, duration: 0.5, ease: "power3.in" }, g(11.5));
+            tl.to("#s4-cam", { opacity: 0, duration: 0.1, ease: "none" }, g(11.94));
+
+            window.__timelines["s4"] = tl;
+          }
+
+          K.ready.then(build);
+        })();
+      </script>
+    </template>
+  </body>
+</html>

@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Scene 3: Aura Web</title>
+  </head>
+  <body>
+    <template id="s3-template">
+      <style>
+        #root { position: absolute; inset: 0; overflow: hidden; }
+        .s3-inner { position: absolute; inset: 0; }
+        .s3-copy { position: absolute; left: 170px; top: 330px; width: 760px; }
+        .s3-copy .eyebrow { margin-bottom: 30px; }
+        .s3-rig { position: absolute; left: 960px; top: 250px; width: 900px; height: 600px; perspective: 2200px; }
+        .s3-browser {
+          position: absolute; inset: 0; border-radius: 20px; overflow: hidden; background: #0c1216;
+          border: 1px solid rgba(255, 255, 255, .16); box-shadow: 0 60px 140px rgba(0, 0, 0, .6), 0 0 120px rgba(151, 207, 243, .12);
+        }
+        .s3-chrome { height: 44px; background: #151d23; display: flex; align-items: center; gap: 8px; padding: 0 16px; border-bottom: 1px solid rgba(255, 255, 255, .06); }
+        .s3-chrome .d { width: 12px; height: 12px; border-radius: 50%; background: #3a454e; }
+        .s3-url { margin-left: 18px; width: 380px; height: 28px; border-radius: 14px; background: #0b1115; color: rgba(255, 255, 255, .8); font-size: 13px; display: flex; align-items: center; gap: 8px; padding: 0 14px; }
+        .s3-url svg { width: 13px; height: 13px; color: #a7e8d1; }
+        .s3-view { position: absolute; top: 44px; left: 0; right: 0; bottom: 0; overflow: hidden; background: radial-gradient(110% 90% at 50% 120%, #13262c, #0c1216 60%); }
+        .s3-page { position: absolute; inset: 0; }
+        .s3-a { position: absolute; border-radius: 50%; mix-blend-mode: screen; }
+        .s3-a1 { left: 120px; top: -60px; width: 700px; height: 340px; background: radial-gradient(closest-side, rgba(151, 207, 243, .42), rgba(151, 207, 243, 0)); }
+        .s3-a2 { left: 380px; top: 120px; width: 620px; height: 360px; background: radial-gradient(closest-side, rgba(167, 232, 209, .42), rgba(167, 232, 209, 0)); }
+        .s3-nav { position: absolute; top: 22px; left: 32px; right: 32px; display: flex; align-items: center; }
+        .s3-brand { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 600; }
+        .s3-brand svg { width: 30px; height: 30px; }
+        .s3-links { margin-left: auto; display: flex; gap: 26px; align-items: center; font-size: 14px; color: rgba(255, 255, 255, .82); }
+        .s3-links .avatar { width: 32px; height: 32px; font-size: 13px; }
+        .s3-hero { position: absolute; left: 48px; top: 140px; }
+        .s3-hero h3 { font-size: 56px; font-weight: 600; line-height: 1.02; letter-spacing: -.035em; }
+        .s3-hero h3 span { display: block; }
+        .s3-hero p { width: 330px; font-size: 15px; line-height: 1.45; color: rgba(255, 255, 255, .82); margin-top: 18px; }
+        .s3-cta { display: inline-flex; align-items: center; gap: 10px; height: 46px; padding: 0 20px; border-radius: 999px; background: #a7e8d1; color: #10171c; font-size: 15px; font-weight: 600; margin-top: 26px; }
+        .s3-cta svg { width: 18px; height: 18px; }
+        .s3-card { position: absolute; width: 300px; height: 189.2px; }
+        .s3-card canvas { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 16px; box-shadow: 0 30px 60px rgba(0, 0, 0, .45); }
+        .s3-dim { position: absolute; inset: 0; background: rgba(6, 10, 13, .58); }
+        .s3-modal { position: absolute; left: 270px; top: 56px; width: 360px; border-radius: 22px; background: #fff; color: #10171c; padding: 22px 24px 24px; box-shadow: 0 40px 90px rgba(0, 0, 0, .5); }
+        .s3-mhead { display: flex; justify-content: space-between; align-items: center; font-size: 19px; font-weight: 600; }
+        .s3-mhead svg { width: 18px; height: 18px; color: #4a555f; }
+        .s3-lbl { font-size: 11.5px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: #4a555f; margin-top: 18px; }
+        .s3-mrow { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+        .s3-mrow .avatar { width: 36px; height: 36px; font-size: 13px; background: #dceefb; }
+        .s3-mrow b { display: block; font-size: 15px; font-weight: 600; }
+        .s3-mrow small { font-size: 12.5px; color: #4a555f; }
+        .s3-mrow .r { margin-left: auto; font-size: 13px; color: #4a555f; }
+        .s3-amt { font-size: 42px; font-weight: 600; letter-spacing: -.02em; margin-top: 4px; }
+        .s3-laya { position: relative; display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 14px 0 10px; border-radius: 999px; background: #e6f6ef; color: #17614f; font-size: 13px; font-weight: 600; margin-top: 12px; overflow: hidden; }
+        .s3-laya svg { width: 16px; height: 16px; }
+        .s3-laya i { position: absolute; top: 0; bottom: 0; left: 0; width: 40%; background: linear-gradient(100deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, .85), rgba(255, 255, 255, 0)); }
+        .s3-send { position: relative; height: 52px; margin-top: 18px; }
+        .s3-send-bg { position: absolute; inset: 0; border-radius: 16px; background: #10171c; }
+        .s3-send-lbl { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 16px; font-weight: 600; }
+        .s3-send-a { color: #fff; }
+        .s3-send-b { color: #10171c; }
+        .s3-send-b svg { width: 20px; height: 20px; }
+        .s3-spin { position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; margin: -15px 0 0 -15px; }
+        .s3-cursor { position: absolute; left: 0; top: 0; width: 28px; height: 28px; z-index: 10; filter: drop-shadow(0 4px 8px rgba(0, 0, 0, .45)); }
+        .s3-ripple { position: absolute; left: 0; top: 0; width: 60px; height: 60px; margin: -30px 0 0 -30px; border-radius: 50%; border: 2px solid #a7e8d1; z-index: 9; }
+      </style>
+
+      <div id="root" data-composition-id="s3" data-width="1920" data-height="1080">
+        <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+          <defs>
+            <linearGradient id="s3-arch-g" x1="18" y1="15" x2="46" y2="48" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#97CFF3" /><stop offset="1" stop-color="#A7E8D1" /></linearGradient>
+            <symbol id="s3-mark" viewBox="0 0 64 64">
+              <rect width="64" height="64" rx="18" fill="#10171C" />
+              <path d="M18 48C18 29 24.5 15 32 15C39.5 15 46 29 46 48" fill="none" stroke="url(#s3-arch-g)" stroke-width="6.4" stroke-linecap="round" />
+              <path d="M22.5 37C26.5 33 29.5 33 32 35.5C34.5 38 37.5 38 41.5 34" fill="none" stroke="#fff" stroke-opacity=".94" stroke-width="3.6" stroke-linecap="round" />
+            </symbol>
+            <filter id="s3-whip" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur id="s3-whip-b" stdDeviation="40 0" /></filter>
+          </defs>
+        </svg>
+
+        <div id="s3-inner" class="s3-inner">
+          <div id="s3-copy" class="s3-copy">
+            <div id="s3-eyebrow" class="eyebrow"><i id="s3-dot"></i><span id="s3-eb-t">Aura Web</span></div>
+            <h2 class="headline">
+              <span class="ln"><span class="w s3-w">Transfers</span> <span class="w s3-w">that</span></span>
+              <span class="ln"><span id="s3-l2" class="w grad">land in seconds.</span></span>
+            </h2>
+            <div class="pills">
+              <div id="s3-p1" class="pill"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18" /></svg>Any browser, no install</div>
+              <div id="s3-p2" class="pill"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" /><path d="M9 12l2 2 4-4" /></svg>Every transfer screened</div>
+            </div>
+          </div>
+
+          <div id="s3-rig" class="s3-rig">
+            <div id="s3-browser" class="s3-browser">
+              <div class="s3-chrome">
+                <div class="d"></div><div class="d"></div><div class="d"></div>
+                <div class="s3-url"><svg class="ic" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>aurabank.ph</div>
+              </div>
+              <div class="s3-view">
+                <div id="s3-page" class="s3-page" data-layout-allow-occlusion>
+                  <div id="s3-a1" class="s3-a s3-a1"></div><div id="s3-a2" class="s3-a s3-a2"></div>
+                  <div class="s3-nav">
+                    <div class="s3-brand"><svg aria-hidden="true"><use href="#s3-mark" /></svg>Aura</div>
+                    <div class="s3-links"><span>Accounts</span><span>Transfers</span><span>Cards</span><div class="avatar">E</div></div>
+                  </div>
+                  <div id="s3-hero" class="s3-hero">
+                    <h3><span data-layout-allow-overlap>Manage</span><span data-layout-allow-overlap>your money</span></h3>
+                    <p data-layout-allow-overlap>One savings account, Visa and Mastercard debit cards, and transfers that land in seconds.</p>
+                    <div id="s3-cta" class="s3-cta">Send money<svg class="ic" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg></div>
+                  </div>
+                  <div id="s3-c2" class="s3-card" style="left: 560px; top: 64px"><canvas id="s3-c2-canvas" width="600" height="378" style="transform: rotate(-7deg)"></canvas></div>
+                  <div id="s3-c1" class="s3-card" style="left: 470px; top: 222px"><canvas id="s3-c1-canvas" width="600" height="378" style="transform: rotate(-7deg)"></canvas></div>
+                </div>
+                <div id="s3-dim" class="s3-dim" style="opacity: 0"></div>
+                <div id="s3-modal" class="s3-modal" data-layout-allow-overlap>
+                  <div class="s3-mhead">Send money<svg class="ic" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></svg></div>
+                  <div class="s3-lbl">From</div>
+                  <div class="s3-mrow"><div><b>Savings •••• 2314</b><small>Aura Bank</small></div><div class="r">₱76,302.50</div></div>
+                  <div class="s3-lbl">To</div>
+                  <div class="s3-mrow"><div class="avatar">MS</div><div><b>Maria Santos</b><small>BPI •••• 4471</small></div></div>
+                  <div class="s3-lbl">Amount</div>
+                  <div id="s3-amt" class="s3-amt">₱0.00</div>
+                  <div id="s3-laya" class="s3-laya"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" /><path d="M9 12l2 2 4-4" /></svg>Screened by Laya · Clear<i id="s3-laya-sh"></i></div>
+                  <div id="s3-send" class="s3-send">
+                    <div id="s3-send-bg" class="s3-send-bg"></div>
+                    <div id="s3-send-a" class="s3-send-lbl s3-send-a">Send now</div>
+                    <svg id="s3-spin" class="s3-spin" viewBox="0 0 30 30" style="opacity: 0"><circle cx="15" cy="15" r="11" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="3" /><circle id="s3-spin-arc" cx="15" cy="15" r="11" fill="none" stroke="#a7e8d1" stroke-width="3" stroke-linecap="round" pathLength="1" stroke-dasharray="0.3 1" /></svg>
+                    <div id="s3-send-b" class="s3-send-lbl s3-send-b" style="opacity: 0"><svg class="ic" viewBox="0 0 24 24"><path id="s3-chk" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" d="M5 12.5l4.5 4.5L19 7.5" stroke-width="2.4" /></svg>Sent · landed in 1.8 s</div>
+                  </div>
+                </div>
+                <div id="s3-ripple" class="s3-ripple" style="opacity: 0"></div>
+                <svg id="s3-cursor" class="s3-cursor" viewBox="0 0 24 24"><path d="M4 2.5l15 9.2-6.6 1.6-3.4 6.2z" fill="#fff" stroke="#10171c" stroke-width="1.3" stroke-linejoin="round" /></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        (function () {
+          const K = window.AuraKit;
+          const S = 5.3;
+          const g = K.at(S);
+          const tl = gsap.timeline({ paused: true });
+          const $ = (s) => document.querySelector(s);
+          const OUT = "expo.out";
+
+          function build() {
+            K.paintCardCanvas($("#s3-c1-canvas"), { last4: "2314", holder: "Elijah R. Montefalco", network: "visa", balance: K.peso(76302.5) });
+            K.paintCardCanvas($("#s3-c2-canvas"), { last4: "3417", holder: "Elijah R. Montefalco", network: "mastercard", balance: K.peso(34240.31), colourway: "peri" });
+
+            /* ---------- whip in from the right, the card's motion carried on ---------- */
+            tl.set("#s3-inner", { filter: "url(#s3-whip)" }, 0);
+            tl.fromTo("#s3-whip-b", { attr: { stdDeviation: "40 0" } }, { attr: { stdDeviation: "0 0" }, duration: 0.42, ease: "power2.out" }, g(5.34));
+            tl.set("#s3-inner", { filter: "none" }, g(5.78));
+            tl.fromTo("#s3-inner", { x: 620, opacity: 0 }, { x: 0, opacity: 1, duration: 0.8, ease: OUT }, g(5.34));
+            tl.fromTo("#s3-browser", { rotationY: -34, rotationX: 8 }, { rotationY: -12, rotationX: 3, duration: 1.2, ease: OUT }, g(5.34));
+            tl.to("#s3-browser", { rotationY: -5, rotationX: 1, duration: 2.0, ease: "sine.inOut" }, g(6.54));
+
+            /* ---------- copy on the VO: "On the web" 5.53, "transfers" 6.51, "land in seconds" 6.91 ---------- */
+            tl.fromTo("#s3-dot", { scale: 0 }, { scale: 1, duration: 0.5, ease: "back.out(3)" }, g(5.5));
+            tl.fromTo("#s3-eb-t", { opacity: 0, x: -18, clipPath: "inset(0% 100% 0% 0%)" }, { opacity: 1, x: 0, clipPath: "inset(0% 0% 0% 0%)", duration: 0.7, ease: "power3.out" }, g(5.54));
+            [6.42, 6.64].forEach((at, i) => {
+              tl.fromTo(gsap.utils.toArray(".s3-w")[i], { yPercent: 112, rotationX: -60, filter: "blur(6px)" }, { yPercent: 0, rotationX: 0, filter: "blur(0px)", duration: 0.8, ease: OUT }, g(at));
+            });
+            tl.set(".s3-w", { filter: "none" }, g(7.5));
+            tl.fromTo("#s3-l2", { yPercent: 112 }, { yPercent: 0, duration: 0.9, ease: OUT }, g(6.9));
+            tl.fromTo("#s3-l2", { backgroundPosition: "100% 50%" }, { backgroundPosition: "0% 50%", duration: 1.0, ease: "power2.inOut", immediateRender: false }, g(7.3));
+            ["#s3-p1", "#s3-p2"].forEach((s, i) => tl.fromTo(s, { opacity: 0, y: 18, scale: 0.88 }, { opacity: 1, y: 0, scale: 1, duration: 0.55, ease: "back.out(1.7)" }, g(5.9 + i * 1.3)));
+
+            /* ---------- the page lives: light drifts, cards float on their own phases ---------- */
+            tl.fromTo("#s3-a1", { x: -30 }, { x: 40, duration: 3.4, ease: "sine.inOut" }, 0);
+            tl.fromTo("#s3-a2", { x: 30, y: 10 }, { x: -40, y: -14, duration: 3.4, ease: "sine.inOut" }, 0);
+            tl.fromTo("#s3-hero", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.8, ease: OUT }, g(5.56));
+            tl.fromTo("#s3-c2", { opacity: 0, y: 90, rotation: 6 }, { opacity: 1, y: 0, rotation: 0, duration: 1.0, ease: OUT }, g(5.6));
+            tl.fromTo("#s3-c1", { opacity: 0, y: 110, rotation: 9 }, { opacity: 1, y: 0, rotation: 0, duration: 1.0, ease: OUT }, g(5.66));
+            tl.to("#s3-c2", { y: -12, duration: 2.4, ease: "sine.inOut" }, g(6.6));
+            tl.to("#s3-c1", { y: 9, rotation: -1.5, duration: 2.4, ease: "sine.inOut" }, g(6.66));
+
+            /* ---------- the cursor travels in arcs, not straight lines ---------- */
+            const cursor = $("#s3-cursor");
+            const legs = [
+              { at: 5.92, dur: 0.55, ease: "power2.inOut", p: [[760, 470], [600, 520], [260, 470], [118, 384]] },
+              { at: 6.95, dur: 0.5, ease: "power2.inOut", p: [[118, 384], [210, 300], [380, 360], [436, 425]] },
+              { at: 7.9, dur: 0.42, ease: "power2.in", p: [[436, 425], [470, 450], [560, 520], [640, 600]] },
+            ];
+            const cursorAt = (t) => {
+              let leg = legs[0];
+              for (const l of legs) if (t >= l.at) leg = l;
+              const u = K.ease(leg.ease)(K.clamp((t - leg.at) / leg.dur));
+              return [K.bez(leg.p[0][0], leg.p[1][0], leg.p[2][0], leg.p[3][0], u), K.bez(leg.p[0][1], leg.p[1][1], leg.p[2][1], leg.p[3][1], u)];
+            };
+            K.clock(tl, 3.45, (lt) => {
+              const [x, y] = cursorAt(lt + S);
+              gsap.set(cursor, { x, y });
+            });
+            tl.fromTo("#s3-cursor", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none" }, g(5.92));
+            tl.to("#s3-cursor", { opacity: 0, duration: 0.3, ease: "power1.in" }, g(8.0));
+            const click = (at, sel, x, y) => {
+              tl.to(sel, { scale: 0.95, duration: 0.08, ease: "power1.out" }, g(at));
+              tl.to(sel, { scale: 1, duration: 0.24, ease: "back.out(2)" }, g(at + 0.08));
+              tl.to("#s3-cursor", { scale: 0.82, duration: 0.08, ease: "power1.out" }, g(at));
+              tl.to("#s3-cursor", { scale: 1, duration: 0.2, ease: "power2.out" }, g(at + 0.08));
+              tl.fromTo("#s3-ripple", { x, y, scale: 0.2, opacity: 0.9 }, { x, y, scale: 1.4, opacity: 0, duration: 0.5, ease: "power2.out", immediateRender: false }, g(at));
+            };
+            click(6.48, "#s3-cta", 124, 392);
+
+            /* ---------- the button becomes the modal ---------- */
+            gsap.set("#s3-modal", { transformOrigin: "-146px 336px" }); // the CTA, in modal space
+            tl.fromTo("#s3-dim", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power1.out" }, g(6.56));
+            tl.fromTo("#s3-page", { filter: "blur(0px)" }, { filter: "blur(3px)", duration: 0.5, ease: "power2.out" }, g(6.56));
+            tl.fromTo("#s3-modal", { opacity: 0, scale: 0.4, y: 20 }, { opacity: 1, scale: 1, y: 0, duration: 0.6, ease: OUT }, g(6.56));
+            const amt = { v: 0 };
+            tl.fromTo(amt, { v: 0 }, { v: 15000, duration: 0.6, ease: "power3.out", onUpdate: () => ($("#s3-amt").textContent = K.peso(amt.v)) }, g(6.82));
+            tl.fromTo("#s3-laya", { opacity: 0, x: -12 }, { opacity: 1, x: 0, duration: 0.45, ease: OUT }, g(7.12));
+            tl.fromTo("#s3-laya-sh", { xPercent: -120 }, { xPercent: 320, duration: 0.7, ease: "power2.inOut" }, g(7.2));
+
+            /* ---------- send: press, morph to a spinner, land ---------- */
+            click(7.5, "#s3-send", 436, 425);
+            tl.to("#s3-send-a", { opacity: 0, y: -14, duration: 0.18, ease: "power2.in" }, g(7.54));
+            tl.fromTo("#s3-send-bg", { clipPath: "inset(0px 0px 0px 0px round 16px)" }, { clipPath: "inset(0px 130px 0px 130px round 26px)", duration: 0.26, ease: "power3.inOut" }, g(7.54));
+            tl.fromTo("#s3-spin", { opacity: 0, rotation: 0 }, { opacity: 1, rotation: 300, duration: 0.3, ease: "none" }, g(7.6));
+            tl.to("#s3-spin", { opacity: 0, rotation: 420, duration: 0.12, ease: "none" }, g(7.9));
+            tl.to("#s3-send-bg", { clipPath: "inset(0px 0px 0px 0px round 16px)", backgroundColor: "#a7e8d1", duration: 0.34, ease: OUT }, g(7.82));
+            tl.fromTo("#s3-send-b", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.4, ease: OUT }, g(7.86));
+            tl.fromTo("#s3-chk", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "power2.out" }, g(7.92));
+
+            /* ---------- tilt down to the back office ---------- */
+            tl.set("#s3-whip-b", { attr: { stdDeviation: "0 0" } }, g(8.12));
+            tl.set("#s3-inner", { filter: "url(#s3-whip)" }, g(8.14));
+            tl.to("#s3-whip-b", { attr: { stdDeviation: "0 34" }, duration: 0.3, ease: "power2.in" }, g(8.14));
+            tl.to("#s3-inner", { y: -760, duration: 0.42, ease: "power3.in" }, g(8.14));
+            tl.to("#s3-inner", { opacity: 0, duration: 0.14, ease: "power1.in" }, g(8.42));
+
+            window.__timelines["s3"] = tl;
+          }
+
+          K.ready.then(build);
+        })();
+      </script>
+    </template>
+  </body>
+</html>
